@@ -14,7 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         require base_path('routes/console.php');
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(\App\Http\Middleware\ForceJsonMiddleware::class);
+        $middleware->group('api', [
+            \App\Http\Middleware\SetLocaleFromHeader::class,
+            \App\Http\Middleware\ForceJsonMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthenticationException $e, $request) {
