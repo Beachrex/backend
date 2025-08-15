@@ -49,30 +49,21 @@ class AuthController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/login",
-     *     summary="Login user and get token",
+     *     summary="Login user and get API token",
      *     tags={"Auth"},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="secret123")
-     *         )
+     *         @OA\JsonContent(ref="#/components/schemas/LoginRequest")
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Successful login",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="token", type="string", example="1|abc123..."),
-     *             @OA\Property(property="user", type="object",
-     *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="name", type="string", example="John Doe"),
-     *                 @OA\Property(property="email", type="string", example="john@example.com"),
-     *             )
-     *         )
+     *         description="Login successful",
+     *         @OA\JsonContent(ref="#/components/schemas/LoginResponse")
      *     ),
-     *     @OA\Response(response=422, description="Validation error"),
-     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Invalid credentials"
+     *     )
      * )
      */
     public function login(Request $request)
@@ -92,7 +83,22 @@ class AuthController extends Controller
             'user' => new UserResource($user)
         ]);
     }
-
+    /**
+     * @OA\Post(
+     *     path="/api/v1/logout",
+     *     summary="Logout the currently authenticated user",
+     *     tags={"Auth"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful logout",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Logged out")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
+     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
