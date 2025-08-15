@@ -18,4 +18,5 @@ Route::prefix('api/v1')
 
         Route::get('/beaches', [BeachController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);
+        Route::get('/beaches/{id}', [BeachController::class, 'show']);
     });

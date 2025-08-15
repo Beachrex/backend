@@ -143,6 +143,143 @@
                 ]
             }
         },
+        "/api/v1/beaches": {
+            "get": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "List all beaches",
+                "operationId": "336af36be8591e410bac9522c3924823",
+                "responses": {
+                    "200": {
+                        "description": "List of beaches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/BeachSchema"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "Create a new beach",
+                "operationId": "09ec9981daa4e9f7d7fca7cd6ceee764",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "latitude",
+                                    "longitude",
+                                    "translations"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Fallback beach name"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 45.1234567
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 13.9876543
+                                    },
+                                    "translations": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "locale": {
+                                                    "type": "string",
+                                                    "example": "en"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Children's Paradise Beach"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "A beach perfect for families."
+                                                },
+                                                "slug": {
+                                                    "type": "string",
+                                                    "example": "childrens-paradise-beach"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Beach created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BeachSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/beaches/{id}": {
+            "get": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "Get a single beach by ID",
+                "operationId": "29ba39bdeef7e605f8fce75b48a4d74a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Beach ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Beach found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BeachSchema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
         "/api/v1/user": {
             "get": {
                 "tags": [
@@ -176,6 +313,51 @@
     },
     "components": {
         "schemas": {
+            "BeachSchema": {
+                "title": "Beach Schema",
+                "description": "Beach API Resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Active"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Plaža Dječji raj"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Family-friendly beach"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 45.1234567
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 14.9876543
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "LoginRequest": {
                 "required": [
                     "email",
@@ -275,6 +457,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Beaches",
+            "description": "API Endpoints for managing beaches"
+        },
         {
             "name": "Auth",
             "description": "Auth"

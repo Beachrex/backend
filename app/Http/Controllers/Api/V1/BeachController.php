@@ -23,7 +23,7 @@ class BeachController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="List of beaches",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/BeachResource"))
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/BeachSchema"))
      *     )
      * )
      */
@@ -60,7 +60,7 @@ class BeachController extends Controller
      *     @OA\Response(
      *         response=201,
      *         description="Beach created",
-     *         @OA\JsonContent(ref="#/components/schemas/BeachResource")
+     *         @OA\JsonContent(ref="#/components/schemas/BeachSchema")
      *     ),
      *     @OA\Response(response=422, description="Validation error")
      * )
@@ -98,5 +98,35 @@ class BeachController extends Controller
         }
 
         return new BeachResource($beach->load(['translations', 'status', 'user']));
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/beaches/{id}",
+     *     summary="Get a single beach by ID",
+     *     tags={"Beaches"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Beach ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Beach found",
+     *         @OA\JsonContent(ref="#/components/schemas/BeachSchema")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Not found"
+     *     )
+     * )
+     */
+    public function show($id)
+    {
+        $beach = Beach::with(['translations', 'status', 'user'])->findOrFail($id);
+
+        return new BeachResource($beach);
     }
 }
