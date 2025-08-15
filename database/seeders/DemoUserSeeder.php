@@ -8,6 +8,7 @@ use App\Models\User;
 
 class DemoUserSeeder extends Seeder
 {
+
     public function run(): void
     {
         User::updateOrCreate(
