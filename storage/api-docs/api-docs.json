@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Beachrex API",
-        "description": "This is the API documentation for the Beachrex backend",
+        "description": "\nThis is the API documentation for the Beachrex backend. Some of the endpoints use token-based authentication via Laravel Sanctum.\n\n **Authentication**\n\nAll protected endpoints require an `Authorization` header:\n\nAuthorization: Bearer YOUR_API_TOKEN\n\nYou can get your token via the `/api/v1/login` endpoint.\n",
         "version": "1.0.0"
     },
     "servers": [
@@ -113,6 +113,7 @@
                     "Auth"
                 ],
                 "summary": "Logout the currently authenticated user",
+                "description": "**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
                 "operationId": "c5cdd87fdbf9d0f95dede875bd023dec",
                 "responses": {
                     "200": {
@@ -148,6 +149,7 @@
                     "User"
                 ],
                 "summary": "Get current authenticated user",
+                "description": "**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
                 "operationId": "8d11e10a249849c3fd83d513350c8211",
                 "responses": {
                     "200": {
@@ -159,6 +161,9 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -260,9 +265,12 @@
                 "type": "object"
             }
         },
-        "responses": {
-            "401": {
-                "description": "Unauthorized"
+        "securitySchemes": {
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
             }
         }
     },

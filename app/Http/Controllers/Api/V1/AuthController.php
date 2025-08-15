@@ -94,6 +94,7 @@ class AuthController extends Controller
      * @OA\Post(
      *     path="/api/v1/logout",
      *     summary="Logout the currently authenticated user",
+     *     description="**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
      *     tags={"Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(

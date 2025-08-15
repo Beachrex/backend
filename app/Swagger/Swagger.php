@@ -4,9 +4,19 @@ namespace App\Swagger;
 
 /**
  * @OA\Info(
- *     version="1.0.0",
  *     title="Beachrex API",
- *     description="This is the API documentation for the Beachrex backend"
+ *     version="1.0.0",
+ *     description="
+This is the API documentation for the Beachrex backend. Some of the endpoints use token-based authentication via Laravel Sanctum.
+
+ **Authentication**
+
+All protected endpoints require an `Authorization` header:
+
+Authorization: Bearer YOUR_API_TOKEN
+
+You can get your token via the `/api/v1/login` endpoint.
+"
  * )
  *
  * @OA\Server(
