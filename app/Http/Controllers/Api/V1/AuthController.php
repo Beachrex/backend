@@ -26,7 +26,11 @@ class AuthController extends Controller
      *             @OA\Property(property="password_confirmation", type="string", format="password", example="secret123")
      *         )
      *     ),
-     *     @OA\Response(response=200, description="Successful registration"),
+     *     @OA\Response(
+     *              response=201,
+     *              description="Successful registration",
+     *              @OA\JsonContent(ref="#/components/schemas/RegisterResponse")
+     *      ),
      *     @OA\Response(response=422, description="Validation error")
      * )
      */
@@ -44,7 +48,10 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return response()->json(['message' => 'User registered'], 201);
+        return response()->json([
+            'user' => new UserResource($user),
+            'token' => $user->createToken('api-token')->plainTextToken,
+        ], 201);
     }
     /**
      * @OA\Post(

@@ -57,8 +57,15 @@
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "Successful registration"
+                    "201": {
+                        "description": "Successful registration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RegisterResponse"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation error"
@@ -191,6 +198,32 @@
                     },
                     "user": {
                         "$ref": "#/components/schemas/User"
+                    }
+                },
+                "type": "object"
+            },
+            "RegisterResponse": {
+                "properties": {
+                    "user": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "John Doe"
+                            },
+                            "email": {
+                                "type": "string",
+                                "example": "john@example.com"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "token": {
+                        "type": "string",
+                        "example": "abc123token"
                     }
                 },
                 "type": "object"
