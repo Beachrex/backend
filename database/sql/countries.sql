@@ -20,19 +20,6 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Struktura tabele `countries`
---
-
-CREATE TABLE `countries` (
-  `code` char(2) NOT NULL COMMENT 'Two-letter country code (ISO 3166-1 alpha-2)',
-  `name` varchar(255) NOT NULL COMMENT 'English country name',
-  `full_name` varchar(255) NOT NULL COMMENT 'Full English country name',
-  `iso3` char(3) NOT NULL COMMENT 'Three-letter country code (ISO 3166-1 alpha-3)',
-  `number` smallint(3) UNSIGNED ZEROFILL NOT NULL COMMENT 'Three-digit country number (ISO 3166-1 numeric)',
-  `continent_code` char(2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-
---
 -- Odloži podatke za tabelo `countries`
 --
 
@@ -291,12 +278,6 @@ INSERT INTO `countries` (`code`, `name`, `full_name`, `iso3`, `number`, `contine
 -- Indeksi zavrženih tabel
 --
 
---
--- Indeksi tabele `countries`
---
-ALTER TABLE `countries`
-  ADD PRIMARY KEY (`code`),
-  ADD KEY `continent_code` (`continent_code`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

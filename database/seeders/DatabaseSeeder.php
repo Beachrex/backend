@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         // Seed the status table
         $this->call([
             StatusSeeder::class,
+            ContinentSeeder::class,
             CountrySeeder::class,
         ]);
 
