@@ -13,7 +13,8 @@ class DatabaseSeeder extends Seeder
     {
         // Seed the status table
         $this->call([
-            \Database\Seeders\StatusSeeder::class,
+            StatusSeeder::class,
+            CountrySeeder::class,
         ]);
 
         // Optional: create a test user

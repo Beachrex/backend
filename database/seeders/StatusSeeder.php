@@ -9,6 +9,11 @@ class StatusSeeder extends Seeder
 {
     public function run(): void
     {
+        if (DB::table('status')->count() > 0) {
+            $this->command->info('Status table already seeded. Skipping.');
+            return;
+        }
+
         DB::table('status')->insert([
             ['id' => 1, 'name' => 'Active'],
             ['id' => 2, 'name' => 'Disabled'],
@@ -24,5 +29,7 @@ class StatusSeeder extends Seeder
             ['id' => 12, 'name' => 'Mobile active'],
             ['id' => 13, 'name' => 'Media Uploaded'],
         ]);
+
+        $this->command->info('Status table seeded.');
     }
 }
