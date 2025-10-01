@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
 use App\Http\Controllers\Api\V1\ContinentController;
+use App\Http\Controllers\Api\V1\CountryController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -24,4 +25,8 @@ Route::prefix('api/v1')
         // Continent routes
         Route::get('/continents', [ContinentController::class, 'index']);
         Route::get('/continents/{code}', [ContinentController::class, 'show']);
+
+        // Country routes
+        Route::get('/countries', [CountryController::class, 'index']);
+        Route::get('/countries/{code}', [CountryController::class, 'show']);
     });

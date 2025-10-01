@@ -433,6 +433,208 @@
                 }
             }
         },
+        "/api/v1/countries": {
+            "get": {
+                "tags": [
+                    "Countries"
+                ],
+                "summary": "Get all countries that have beaches",
+                "description": "Returns a list of countries that have at least one beach. Can be filtered by continent.",
+                "operationId": "getCountries",
+                "parameters": [
+                    {
+                        "name": "continent",
+                        "in": "query",
+                        "description": "Filter by continent code (e.g., EU, AS, NA)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "EU"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "code": {
+                                                        "type": "string",
+                                                        "example": "SI"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Slovenia"
+                                                    },
+                                                    "full_name": {
+                                                        "type": "string",
+                                                        "example": "Republic of Slovenia"
+                                                    },
+                                                    "iso3": {
+                                                        "type": "string",
+                                                        "example": "SVN"
+                                                    },
+                                                    "continent_code": {
+                                                        "type": "string",
+                                                        "example": "EU"
+                                                    },
+                                                    "beaches_count": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Countries retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/countries/{code}": {
+            "get": {
+                "tags": [
+                    "Countries"
+                ],
+                "summary": "Get a specific country",
+                "description": "Returns a specific country by code with its beaches count and continent information",
+                "operationId": "getCountry",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "path",
+                        "description": "Country code (e.g., SI, US, DE)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "SI"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "example": "SI"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Slovenia"
+                                                },
+                                                "full_name": {
+                                                    "type": "string",
+                                                    "example": "Republic of Slovenia"
+                                                },
+                                                "iso3": {
+                                                    "type": "string",
+                                                    "example": "SVN"
+                                                },
+                                                "continent_code": {
+                                                    "type": "string",
+                                                    "example": "EU"
+                                                },
+                                                "beaches_count": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "continent": {
+                                                    "properties": {
+                                                        "code": {
+                                                            "type": "string",
+                                                            "example": "EU"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Europe"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Country retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Country not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Country not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/user": {
             "get": {
                 "tags": [
@@ -530,6 +732,51 @@
                         "description": "Number of beaches in this continent",
                         "type": "integer",
                         "example": 15
+                    }
+                },
+                "type": "object"
+            },
+            "Country": {
+                "title": "Country",
+                "description": "Country model",
+                "properties": {
+                    "code": {
+                        "description": "Two-letter country code (ISO 3166-1 alpha-2)",
+                        "type": "string",
+                        "maxLength": 2,
+                        "example": "SI"
+                    },
+                    "name": {
+                        "description": "Country name",
+                        "type": "string",
+                        "maxLength": 100,
+                        "example": "Slovenia"
+                    },
+                    "full_name": {
+                        "description": "Full official country name",
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Republic of Slovenia"
+                    },
+                    "iso3": {
+                        "description": "Three-letter country code (ISO 3166-1 alpha-3)",
+                        "type": "string",
+                        "maxLength": 3,
+                        "example": "SVN"
+                    },
+                    "continent_code": {
+                        "description": "Two-letter continent code",
+                        "type": "string",
+                        "maxLength": 2,
+                        "example": "EU"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches in this country",
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "continent": {
+                        "$ref": "#/components/schemas/Continent"
                     }
                 },
                 "type": "object"
@@ -640,6 +887,10 @@
         {
             "name": "Continents",
             "description": "API Endpoints for continents"
+        },
+        {
+            "name": "Countries",
+            "description": "API Endpoints for countries"
         },
         {
             "name": "Auth",

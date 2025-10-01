@@ -18,6 +18,7 @@ class Beach extends Model
         'longitude',
         'status_id',
         'continent_code',
+        'country_code',
     ];
 
     public function translations(): HasMany
@@ -38,5 +39,10 @@ class Beach extends Model
     public function continent(): BelongsTo
     {
         return $this->belongsTo(Continent::class, 'continent_code', 'code');
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'country_code', 'code');
     }
 }
