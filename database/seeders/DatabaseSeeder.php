@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
             StatusSeeder::class,
             ContinentSeeder::class,
             CountrySeeder::class,
+            DemoUserSeeder::class,  // Create a demo user first
+            DemoBeachSeeder::class, // Then create demo beaches
         ]);
 
         // Optional: create a test user
