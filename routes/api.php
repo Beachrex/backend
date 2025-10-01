@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
+use App\Http\Controllers\Api\V1\ContinentController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -19,4 +20,8 @@ Route::prefix('api/v1')
         Route::get('/beaches', [BeachController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
+
+        // Continent routes
+        Route::get('/continents', [ContinentController::class, 'index']);
+        Route::get('/continents/{code}', [ContinentController::class, 'show']);
     });
