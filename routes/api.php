@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
 use App\Http\Controllers\Api\V1\ContinentController;
 use App\Http\Controllers\Api\V1\CountryController;
+use App\Http\Controllers\Api\V1\PostGISController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -29,4 +30,14 @@ Route::prefix('api/v1')
         // Country routes
         Route::get('/countries', [CountryController::class, 'index']);
         Route::get('/countries/{code}', [CountryController::class, 'show']);
+
+        // PostGIS Spatial routes
+        Route::prefix('spatial')->group(function () {
+            Route::get('/beaches/within-radius', [PostGISController::class, 'beachesWithinRadius']);
+            Route::get('/beaches/nearest', [PostGISController::class, 'nearestBeaches']);
+            Route::get('/beaches/bounding-box', [PostGISController::class, 'beachesInBoundingBox']);
+            Route::get('/beaches/density-grid', [PostGISController::class, 'beachDensityGrid']);
+            Route::get('/beaches/statistics', [PostGISController::class, 'beachStatistics']);
+            Route::get('/distance/calculate', [PostGISController::class, 'calculateDistance']);
+        });
     });

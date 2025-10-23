@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://my-default-host.com",
+            "url": "http://localhost:8000",
             "description": "Beachrex API Server"
         }
     ],
@@ -635,6 +635,90 @@
                 }
             }
         },
+        "/api/v1/spatial/beaches/within-radius": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Find beaches within radius",
+                "operationId": "b3a6df08f38dda63557f06d90f02c1d1",
+                "responses": {
+                    "200": {
+                        "description": "Beaches found within radius"
+                    }
+                }
+            }
+        },
+        "/api/v1/spatial/beaches/nearest": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Find nearest beaches",
+                "operationId": "f4eda4778dba477cf7ef5da0bbb30bd9",
+                "responses": {
+                    "200": {
+                        "description": "Nearest beaches found"
+                    }
+                }
+            }
+        },
+        "/api/v1/spatial/distance/calculate": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Calculate distance between two points",
+                "operationId": "bce6b60180601118d63235bbf47294de",
+                "responses": {
+                    "200": {
+                        "description": "Distance calculation result"
+                    }
+                }
+            }
+        },
+        "/api/v1/spatial/beaches/bounding-box": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Get beaches within bounding box",
+                "operationId": "56aded5a34b1a80ea90e74faee20a67e",
+                "responses": {
+                    "200": {
+                        "description": "Beaches found within bounding box"
+                    }
+                }
+            }
+        },
+        "/api/v1/spatial/beaches/density-grid": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Get beach density grid",
+                "operationId": "5d322b01d6d4d9166288189efcfed5f2",
+                "responses": {
+                    "200": {
+                        "description": "Beach density grid data"
+                    }
+                }
+            }
+        },
+        "/api/v1/spatial/beaches/statistics": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Get beach statistics",
+                "operationId": "813df3803fc3da5c391e1167fc4d35bf",
+                "responses": {
+                    "200": {
+                        "description": "Beach statistics"
+                    }
+                }
+            }
+        },
         "/api/v1/user": {
             "get": {
                 "tags": [
@@ -838,6 +922,31 @@
                 },
                 "type": "object"
             },
+            "ValidationError": {
+                "title": "Validation Error",
+                "description": "Validation error response",
+                "properties": {
+                    "message": {
+                        "description": "Error message",
+                        "type": "string",
+                        "example": "The given data was invalid."
+                    },
+                    "errors": {
+                        "description": "Field-specific validation errors",
+                        "properties": {
+                            "latitude": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "example": "The latitude field is required."
+                                }
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
             "TokenResponse": {
                 "title": "Token Response",
                 "properties": {
@@ -891,6 +1000,10 @@
         {
             "name": "Countries",
             "description": "API Endpoints for countries"
+        },
+        {
+            "name": "Spatial",
+            "description": "PostGIS spatial operations for beaches"
         },
         {
             "name": "Auth",
