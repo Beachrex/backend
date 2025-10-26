@@ -11,6 +11,7 @@ class UserController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/user",
+     *     operationId="getCurrentUser",
      *     summary="Get current authenticated user",
      *     description="**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
      *     tags={"User"},

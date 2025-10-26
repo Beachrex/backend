@@ -9,18 +9,6 @@
         {
             "url": "http://localhost:8000",
             "description": "Beachrex API Server"
-        },
-        {
-            "url": "https://dev-api.beachrex.com",
-            "description": "Development Server"
-        },
-        {
-            "url": "https://stage-api.beachrex.com",
-            "description": "Staging Server"
-        },
-        {
-            "url": "https://api.beachrex.com",
-            "description": "Production Server"
         }
     ],
     "paths": {
@@ -30,7 +18,7 @@
                     "Auth"
                 ],
                 "summary": "Register a new user",
-                "operationId": "ad77fe138bcb384ad65d167d5c8d1cc0",
+                "operationId": "registerUser",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -96,7 +84,7 @@
                     "Auth"
                 ],
                 "summary": "Login user and get API token",
-                "operationId": "bae68d1c55329ecb6e41f48285840c8f",
+                "operationId": "loginUser",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -136,7 +124,7 @@
                 ],
                 "summary": "Logout the currently authenticated user",
                 "description": "**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
-                "operationId": "c5cdd87fdbf9d0f95dede875bd023dec",
+                "operationId": "logoutUser",
                 "responses": {
                     "200": {
                         "description": "Successful logout",
@@ -684,7 +672,7 @@
                     "Spatial"
                 ],
                 "summary": "Find beaches within radius",
-                "operationId": "b3a6df08f38dda63557f06d90f02c1d1",
+                "operationId": "getBeachesWithinRadius",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -703,7 +691,7 @@
                     "Spatial"
                 ],
                 "summary": "Find nearest beaches",
-                "operationId": "f4eda4778dba477cf7ef5da0bbb30bd9",
+                "operationId": "getNearestBeaches",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -722,7 +710,7 @@
                     "Spatial"
                 ],
                 "summary": "Calculate distance between two points",
-                "operationId": "bce6b60180601118d63235bbf47294de",
+                "operationId": "calculateDistance",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -741,7 +729,7 @@
                     "Spatial"
                 ],
                 "summary": "Get beaches within bounding box",
-                "operationId": "56aded5a34b1a80ea90e74faee20a67e",
+                "operationId": "getBeachesInBoundingBox",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -760,7 +748,7 @@
                     "Spatial"
                 ],
                 "summary": "Get beach density grid",
-                "operationId": "5d322b01d6d4d9166288189efcfed5f2",
+                "operationId": "getBeachDensityGrid",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -779,7 +767,7 @@
                     "Spatial"
                 ],
                 "summary": "Get beach statistics",
-                "operationId": "813df3803fc3da5c391e1167fc4d35bf",
+                "operationId": "getBeachStatistics",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -799,7 +787,7 @@
                 ],
                 "summary": "Get current authenticated user",
                 "description": "**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
-                "operationId": "8d11e10a249849c3fd83d513350c8211",
+                "operationId": "getCurrentUser",
                 "responses": {
                     "200": {
                         "description": "Authenticated user info",

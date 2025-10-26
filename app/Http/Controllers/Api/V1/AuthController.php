@@ -14,6 +14,7 @@ class AuthController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/register",
+     *     operationId="registerUser",
      *     summary="Register a new user",
      *     tags={"Auth"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -57,6 +58,7 @@ class AuthController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/login",
+     *     operationId="loginUser",
      *     summary="Login user and get API token",
      *     tags={"Auth"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -95,6 +97,7 @@ class AuthController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/logout",
+     *     operationId="logoutUser",
      *     summary="Logout the currently authenticated user",
      *     description="**This endpoint requires an Authorization header with a Bearer token.** Example: `Authorization: Bearer YOUR_TOKEN`",
      *     tags={"Auth"},

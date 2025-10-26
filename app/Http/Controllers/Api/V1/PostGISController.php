@@ -25,6 +25,7 @@ class PostGISController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/spatial/beaches/within-radius",
+     *     operationId="getBeachesWithinRadius",
      *     summary="Find beaches within radius",
      *     tags={"Spatial"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -60,6 +61,7 @@ class PostGISController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/spatial/beaches/nearest",
+     *     operationId="getNearestBeaches",
      *     summary="Find nearest beaches",
      *     tags={"Spatial"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -93,6 +95,7 @@ class PostGISController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/spatial/distance/calculate",
+     *     operationId="calculateDistance",
      *     summary="Calculate distance between two points",
      *     tags={"Spatial"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -130,6 +133,7 @@ class PostGISController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/spatial/beaches/bounding-box",
+     *     operationId="getBeachesInBoundingBox",
      *     summary="Get beaches within bounding box",
      *     tags={"Spatial"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -169,6 +173,7 @@ class PostGISController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/spatial/beaches/density-grid",
+     *     operationId="getBeachDensityGrid",
      *     summary="Get beach density grid",
      *     tags={"Spatial"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -198,6 +203,7 @@ class PostGISController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/spatial/beaches/statistics",
+     *     operationId="getBeachStatistics",
      *     summary="Get beach statistics",
      *     tags={"Spatial"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),

@@ -23,18 +23,6 @@ You can get your token via the `/api/v1/login` endpoint.
  *     url=L5_SWAGGER_CONST_HOST,
  *     description="Beachrex API Server"
  * )
- * @OA\Server(
- *     url="https://dev-api.beachrex.com",
- *     description="Development Server"
- * )
- * @OA\Server(
- *     url="https://stage-api.beachrex.com",
- *     description="Staging Server"
- * )
- * @OA\Server(
- *     url="https://api.beachrex.com",
- *     description="Production Server"
- * )
  *
  * @OA\SecurityScheme(
  *     securityScheme="bearerAuth",
