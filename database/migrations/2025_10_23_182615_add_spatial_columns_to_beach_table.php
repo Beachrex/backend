@@ -12,11 +12,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add PostGIS spatial column for beach locations
-        DB::statement('ALTER TABLE beach ADD COLUMN location GEOMETRY(POINT, 4326)');
+        // Check if location column already exists
+        $hasLocationColumn = DB::select("
+            SELECT EXISTS(
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'beach' AND column_name = 'location'
+            ) as exists
+        ")[0]->exists ?? false;
 
-        // Create spatial index for performance
-        DB::statement('CREATE INDEX beach_location_gist_idx ON beach USING GIST (location)');
+        if (!$hasLocationColumn) {
+            // Add PostGIS spatial column for beach locations
+            DB::statement('ALTER TABLE beach ADD COLUMN location GEOMETRY(POINT, 4326)');
+        }
+
+        // Create spatial index for performance (if it doesn't exist)
+        $hasIndex = DB::select("
+            SELECT EXISTS(
+                SELECT 1 FROM pg_indexes
+                WHERE tablename = 'beach' AND indexname = 'beach_location_gist_idx'
+            ) as exists
+        ")[0]->exists ?? false;
+
+        if (!$hasIndex) {
+            DB::statement('CREATE INDEX beach_location_gist_idx ON beach USING GIST (location)');
+        }
 
         // Update existing records to populate the spatial column
         DB::statement('
@@ -40,12 +59,22 @@ return new class extends Migration
             $$ LANGUAGE plpgsql;
         ');
 
-        DB::statement('
-            CREATE TRIGGER beach_location_trigger
-            BEFORE INSERT OR UPDATE ON beach
-            FOR EACH ROW
-            EXECUTE FUNCTION update_beach_location();
-        ');
+        // Check if trigger already exists
+        $hasTrigger = DB::select("
+            SELECT EXISTS(
+                SELECT 1 FROM pg_trigger
+                WHERE tgname = 'beach_location_trigger'
+            ) as exists
+        ")[0]->exists ?? false;
+
+        if (!$hasTrigger) {
+            DB::statement('
+                CREATE TRIGGER beach_location_trigger
+                BEFORE INSERT OR UPDATE ON beach
+                FOR EACH ROW
+                EXECUTE FUNCTION update_beach_location();
+            ');
+        }
     }
 
     /**
