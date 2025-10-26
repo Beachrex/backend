@@ -27,6 +27,7 @@ class PostGISController extends Controller
      *     path="/api/v1/spatial/beaches/within-radius",
      *     summary="Find beaches within radius",
      *     tags={"Spatial"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Beaches found within radius")
      * )
      */
@@ -61,6 +62,7 @@ class PostGISController extends Controller
      *     path="/api/v1/spatial/beaches/nearest",
      *     summary="Find nearest beaches",
      *     tags={"Spatial"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Nearest beaches found")
      * )
      */
@@ -93,6 +95,7 @@ class PostGISController extends Controller
      *     path="/api/v1/spatial/distance/calculate",
      *     summary="Calculate distance between two points",
      *     tags={"Spatial"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Distance calculation result")
      * )
      */
@@ -129,6 +132,7 @@ class PostGISController extends Controller
      *     path="/api/v1/spatial/beaches/bounding-box",
      *     summary="Get beaches within bounding box",
      *     tags={"Spatial"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Beaches found within bounding box")
      * )
      */
@@ -167,6 +171,7 @@ class PostGISController extends Controller
      *     path="/api/v1/spatial/beaches/density-grid",
      *     summary="Get beach density grid",
      *     tags={"Spatial"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Beach density grid data")
      * )
      */
@@ -195,6 +200,7 @@ class PostGISController extends Controller
      *     path="/api/v1/spatial/beaches/statistics",
      *     summary="Get beach statistics",
      *     tags={"Spatial"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Beach statistics")
      * )
      */

@@ -35,5 +35,27 @@ You can get your token via the `/api/v1/login` endpoint.
  *     url="https://api.beachrex.com",
  *     description="Production Server"
  * )
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="bearerAuth",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT",
+ *     description="Enter your bearer token in the format: Bearer {token}"
+ * )
+ *
+ * @OA\Parameter(
+ *     parameter="AcceptLanguage",
+ *     name="Accept-Language",
+ *     in="header",
+ *     required=false,
+ *     description="Language preference for the response (ISO 639-1 language codes)",
+ *     @OA\Schema(
+ *         type="string",
+ *         enum={"en", "si", "hr", "de", "it", "fr"},
+ *         default="en",
+ *         example="en"
+ *     )
+ * )
  */
 class Swagger {}

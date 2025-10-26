@@ -20,6 +20,7 @@ class BeachController extends Controller
      *     path="/api/v1/beaches",
      *     summary="List all beaches",
      *     tags={"Beaches"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
      *         description="List of beaches",
@@ -38,6 +39,7 @@ class BeachController extends Controller
      *     path="/api/v1/beaches",
      *     summary="Create a new beach",
      *     tags={"Beaches"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -112,6 +114,7 @@ class BeachController extends Controller
      *         description="Beach ID",
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
      *         description="Beach found",

@@ -31,6 +31,11 @@
                 ],
                 "summary": "Register a new user",
                 "operationId": "ad77fe138bcb384ad65d167d5c8d1cc0",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -92,6 +97,11 @@
                 ],
                 "summary": "Login user and get API token",
                 "operationId": "bae68d1c55329ecb6e41f48285840c8f",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -162,6 +172,11 @@
                 ],
                 "summary": "List all beaches",
                 "operationId": "336af36be8591e410bac9522c3924823",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of beaches",
@@ -184,6 +199,11 @@
                 ],
                 "summary": "Create a new beach",
                 "operationId": "09ec9981daa4e9f7d7fca7cd6ceee764",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -273,6 +293,9 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
                     }
                 ],
                 "responses": {
@@ -300,6 +323,11 @@
                 "summary": "Get all continents that have beaches",
                 "description": "Returns a list of continents that have at least one beach",
                 "operationId": "getContinents",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -382,6 +410,9 @@
                             "type": "string",
                             "example": "EU"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
                     }
                 ],
                 "responses": {
@@ -654,6 +685,11 @@
                 ],
                 "summary": "Find beaches within radius",
                 "operationId": "b3a6df08f38dda63557f06d90f02c1d1",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Beaches found within radius"
@@ -668,6 +704,11 @@
                 ],
                 "summary": "Find nearest beaches",
                 "operationId": "f4eda4778dba477cf7ef5da0bbb30bd9",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Nearest beaches found"
@@ -682,6 +723,11 @@
                 ],
                 "summary": "Calculate distance between two points",
                 "operationId": "bce6b60180601118d63235bbf47294de",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Distance calculation result"
@@ -696,6 +742,11 @@
                 ],
                 "summary": "Get beaches within bounding box",
                 "operationId": "56aded5a34b1a80ea90e74faee20a67e",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Beaches found within bounding box"
@@ -710,6 +761,11 @@
                 ],
                 "summary": "Get beach density grid",
                 "operationId": "5d322b01d6d4d9166288189efcfed5f2",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Beach density grid data"
@@ -724,6 +780,11 @@
                 ],
                 "summary": "Get beach statistics",
                 "operationId": "813df3803fc3da5c391e1167fc4d35bf",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Beach statistics"
@@ -991,7 +1052,34 @@
                 "type": "object"
             }
         },
+        "parameters": {
+            "AcceptLanguage": {
+                "name": "Accept-Language",
+                "in": "header",
+                "description": "Language preference for the response (ISO 639-1 language codes)",
+                "required": false,
+                "schema": {
+                    "type": "string",
+                    "default": "en",
+                    "enum": [
+                        "en",
+                        "si",
+                        "hr",
+                        "de",
+                        "it",
+                        "fr"
+                    ],
+                    "example": "en"
+                }
+            }
+        },
         "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter your bearer token in the format: Bearer {token}",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            },
             "sanctum": {
                 "type": "apiKey",
                 "description": "Enter token in format (Bearer <token>)",

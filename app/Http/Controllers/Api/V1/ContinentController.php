@@ -22,6 +22,7 @@ class ContinentController extends Controller
      *     tags={"Continents"},
      *     summary="Get all continents that have beaches",
      *     description="Returns a list of continents that have at least one beach",
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -98,6 +99,7 @@ class ContinentController extends Controller
      *         required=true,
      *         @OA\Schema(type="string", example="EU")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",

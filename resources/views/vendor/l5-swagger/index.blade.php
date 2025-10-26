@@ -141,6 +141,12 @@
 
             requestInterceptor: function(request) {
                 request.headers['X-CSRF-TOKEN'] = '{{ csrf_token() }}';
+
+                // Add Accept-Language header with default value if not already set
+                if (!request.headers['Accept-Language']) {
+                    request.headers['Accept-Language'] = 'en';
+                }
+
                 return request;
             },
 

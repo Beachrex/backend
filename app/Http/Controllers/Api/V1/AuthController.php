@@ -16,6 +16,7 @@ class AuthController extends Controller
      *     path="/api/v1/register",
      *     summary="Register a new user",
      *     tags={"Auth"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -58,6 +59,7 @@ class AuthController extends Controller
      *     path="/api/v1/login",
      *     summary="Login user and get API token",
      *     tags={"Auth"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(ref="#/components/schemas/LoginRequest")
