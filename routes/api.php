@@ -31,7 +31,7 @@ Route::prefix('api/v1')
         Route::get('/countries', [CountryController::class, 'index']);
         Route::get('/countries/{code}', [CountryController::class, 'show']);
 
-        // PostGIS Spatial routes
+        // PostGIS routes
         Route::prefix('spatial')->group(function () {
             Route::get('/beaches/within-radius', [PostGISController::class, 'beachesWithinRadius']);
             Route::get('/beaches/nearest', [PostGISController::class, 'nearestBeaches']);
