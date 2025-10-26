@@ -18,6 +18,7 @@ class BeachController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/beaches",
+     *     operationId="getBeaches",
      *     summary="List all beaches",
      *     tags={"Beaches"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -37,6 +38,7 @@ class BeachController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/beaches",
+     *     operationId="createBeach",
      *     summary="Create a new beach",
      *     tags={"Beaches"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -105,6 +107,7 @@ class BeachController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/beaches/{id}",
+     *     operationId="getBeachById",
      *     summary="Get a single beach by ID",
      *     tags={"Beaches"},
      *     @OA\Parameter(

@@ -171,7 +171,7 @@
                     "Beaches"
                 ],
                 "summary": "List all beaches",
-                "operationId": "336af36be8591e410bac9522c3924823",
+                "operationId": "getBeaches",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -198,7 +198,7 @@
                     "Beaches"
                 ],
                 "summary": "Create a new beach",
-                "operationId": "09ec9981daa4e9f7d7fca7cd6ceee764",
+                "operationId": "createBeach",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -283,7 +283,7 @@
                     "Beaches"
                 ],
                 "summary": "Get a single beach by ID",
-                "operationId": "29ba39bdeef7e605f8fce75b48a4d74a",
+                "operationId": "getBeachById",
                 "parameters": [
                     {
                         "name": "id",
