@@ -8,11 +8,12 @@ The Swagger documentation now supports multiple server environments:
 
 ### Current Configuration
 
-The API documentation includes three server options:
+The API documentation includes four server options:
 
 1. **Local Development**: `http://localhost:8000`
 2. **Development Server**: `https://dev-api.beachrex.com`
-3. **Production Server**: `https://api.beachrex.com`
+3. **Staging Server**: `https://stage-api.beachrex.com`
+4. **Production Server**: `https://api.beachrex.com`
 
 ### Environment Variables
 
@@ -34,10 +35,16 @@ APP_URL=http://localhost:8000
 L5_SWAGGER_CONST_HOST=http://localhost:8000
 ```
 
-**Development/Staging:**
+**Development:**
 ```bash
 APP_URL=https://dev-api.beachrex.com
 L5_SWAGGER_CONST_HOST=https://dev-api.beachrex.com
+```
+
+**Staging:**
+```bash
+APP_URL=https://stage-api.beachrex.com
+L5_SWAGGER_CONST_HOST=https://stage-api.beachrex.com
 ```
 
 **Production:**
@@ -62,6 +69,7 @@ The Swagger UI will show a dropdown with all available servers:
 
 - **Beachrex API Server** (from environment variable)
 - **Development Server** (https://dev-api.beachrex.com)
+- **Staging Server** (https://stage-api.beachrex.com)
 - **Production Server** (https://api.beachrex.com)
 
 Users can switch between servers directly in the Swagger UI.
@@ -85,6 +93,10 @@ Users can switch between servers directly in the Swagger UI.
  * @OA\Server(
  *     url="https://dev-api.beachrex.com",
  *     description="Development Server"
+ * )
+ * @OA\Server(
+ *     url="https://stage-api.beachrex.com",
+ *     description="Staging Server"
  * )
  * @OA\Server(
  *     url="https://api.beachrex.com",
@@ -132,8 +144,9 @@ php artisan l5-swagger:generate
 The environment variables will be automatically used during deployment:
 
 1. **Development Environment**: Uses `dev-api.beachrex.com`
-2. **Production Environment**: Uses `api.beachrex.com`
-3. **Local Environment**: Uses `localhost:8000`
+2. **Staging Environment**: Uses `stage-api.beachrex.com`
+3. **Production Environment**: Uses `api.beachrex.com`
+4. **Local Environment**: Uses `localhost:8000`
 
 ### Manual Override
 

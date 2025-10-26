@@ -15,6 +15,10 @@
             "description": "Development Server"
         },
         {
+            "url": "https://stage-api.beachrex.com",
+            "description": "Staging Server"
+        },
+        {
             "url": "https://api.beachrex.com",
             "description": "Production Server"
         }
