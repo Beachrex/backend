@@ -672,8 +672,60 @@
                     "Spatial"
                 ],
                 "summary": "Find beaches within radius",
+                "description": "Find all beaches within a specified radius from a given point",
                 "operationId": "getBeachesWithinRadius",
                 "parameters": [
+                    {
+                        "name": "latitude",
+                        "in": "query",
+                        "description": "Latitude of the center point (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 46.0569
+                        }
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "query",
+                        "description": "Longitude of the center point (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 14.5058
+                        }
+                    },
+                    {
+                        "name": "radius",
+                        "in": "query",
+                        "description": "Search radius in kilometers (0.1 to 20000)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 20000,
+                            "minimum": 0.1,
+                            "example": 50
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of beaches to return (1 to 100, default: 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 20
+                        }
+                    },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
                     }
@@ -691,8 +743,47 @@
                     "Spatial"
                 ],
                 "summary": "Find nearest beaches",
+                "description": "Find the nearest beaches to a given point, ordered by distance",
                 "operationId": "getNearestBeaches",
                 "parameters": [
+                    {
+                        "name": "latitude",
+                        "in": "query",
+                        "description": "Latitude of the reference point (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 46.0569
+                        }
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "query",
+                        "description": "Longitude of the reference point (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 14.5058
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of beaches to return (1 to 50, default: 10)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 50,
+                            "minimum": 1,
+                            "example": 10
+                        }
+                    },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
                     }
@@ -710,8 +801,61 @@
                     "Spatial"
                 ],
                 "summary": "Calculate distance between two points",
+                "description": "Calculate the distance between two geographic points using PostGIS",
                 "operationId": "calculateDistance",
                 "parameters": [
+                    {
+                        "name": "lat1",
+                        "in": "query",
+                        "description": "Latitude of the first point (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 46.0569
+                        }
+                    },
+                    {
+                        "name": "lon1",
+                        "in": "query",
+                        "description": "Longitude of the first point (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 14.5058
+                        }
+                    },
+                    {
+                        "name": "lat2",
+                        "in": "query",
+                        "description": "Latitude of the second point (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 45.815
+                        }
+                    },
+                    {
+                        "name": "lon2",
+                        "in": "query",
+                        "description": "Longitude of the second point (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 15.9819
+                        }
+                    },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
                     }
@@ -729,8 +873,61 @@
                     "Spatial"
                 ],
                 "summary": "Get beaches within bounding box",
+                "description": "Find all beaches within a rectangular bounding box defined by minimum and maximum coordinates",
                 "operationId": "getBeachesInBoundingBox",
                 "parameters": [
+                    {
+                        "name": "min_lat",
+                        "in": "query",
+                        "description": "Minimum latitude of the bounding box (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 45
+                        }
+                    },
+                    {
+                        "name": "min_lon",
+                        "in": "query",
+                        "description": "Minimum longitude of the bounding box (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 13
+                        }
+                    },
+                    {
+                        "name": "max_lat",
+                        "in": "query",
+                        "description": "Maximum latitude of the bounding box (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 47
+                        }
+                    },
+                    {
+                        "name": "max_lon",
+                        "in": "query",
+                        "description": "Maximum longitude of the bounding box (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 16
+                        }
+                    },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
                     }
@@ -748,8 +945,22 @@
                     "Spatial"
                 ],
                 "summary": "Get beach density grid",
+                "description": "Generate a density grid showing beach distribution across geographic regions",
                 "operationId": "getBeachDensityGrid",
                 "parameters": [
+                    {
+                        "name": "grid_size",
+                        "in": "query",
+                        "description": "Grid cell size in degrees (0.1 to 10, default: 1.0)",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 10,
+                            "minimum": 0.1,
+                            "example": 1
+                        }
+                    },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
                     }
