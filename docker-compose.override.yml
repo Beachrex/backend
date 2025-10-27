@@ -1,0 +1,9 @@
+# Docker Compose Override for Local Development
+# This file is automatically loaded by docker-compose and provides
+# local development specific configurations
+
+version: '3'
+services:
+    pgsql:
+        # Force AMD64 platform for Apple Silicon Macs to avoid compatibility issues
+        platform: linux/amd64

@@ -16,7 +16,7 @@ class PostGISService
      * @param int $limit
      * @return \Illuminate\Support\Collection
      */
-    public function findBeachesWithinRadius(float $latitude, float $longitude, float $radiusKm, int $limit = 50)
+    public function getBeachesWithinRadius(float $latitude, float $longitude, float $radiusKm, int $limit = 50)
     {
         $results = DB::select("
             SELECT
@@ -55,7 +55,7 @@ class PostGISService
      * @param int $limit
      * @return \Illuminate\Support\Collection
      */
-    public function findNearestBeaches(float $latitude, float $longitude, int $limit = 10)
+    public function getNearestBeaches(float $latitude, float $longitude, int $limit = 10)
     {
         $results = DB::select("
             SELECT
