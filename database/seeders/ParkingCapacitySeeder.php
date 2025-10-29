@@ -1,0 +1,266 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class ParkingCapacitySeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $parkingCapacities = [
+            [
+                'id' => 1,
+                'code' => '5',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '5', 'slug' => '5'],
+                    'sl' => ['name' => '5', 'slug' => '5'],
+                    'de' => ['name' => '5', 'slug' => '5'],
+                    'hr' => ['name' => '5', 'slug' => '5'],
+                    'fr' => ['name' => '5', 'slug' => '5'],
+                    'es' => ['name' => '5', 'slug' => '5'],
+                    'it' => ['name' => '5', 'slug' => '5'],
+                    'ua' => ['name' => '5', 'slug' => '5'],
+                    'ru' => ['name' => '5', 'slug' => '5'],
+                ],
+            ],
+            [
+                'id' => 2,
+                'code' => '10',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '10', 'slug' => '10'],
+                    'sl' => ['name' => '10', 'slug' => '10'],
+                    'de' => ['name' => '10', 'slug' => '10'],
+                    'hr' => ['name' => '10', 'slug' => '10'],
+                    'fr' => ['name' => '10', 'slug' => '10'],
+                    'es' => ['name' => '10', 'slug' => '10'],
+                    'it' => ['name' => '10', 'slug' => '10'],
+                    'ua' => ['name' => '10', 'slug' => '10'],
+                    'ru' => ['name' => '10', 'slug' => '10'],
+                ],
+            ],
+            [
+                'id' => 3,
+                'code' => '15',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '15', 'slug' => '15'],
+                    'sl' => ['name' => '15', 'slug' => '15'],
+                    'de' => ['name' => '15', 'slug' => '15'],
+                    'hr' => ['name' => '15', 'slug' => '15'],
+                    'fr' => ['name' => '15', 'slug' => '15'],
+                    'es' => ['name' => '15', 'slug' => '15'],
+                    'it' => ['name' => '15', 'slug' => '15'],
+                    'ua' => ['name' => '15', 'slug' => '15'],
+                    'ru' => ['name' => '15', 'slug' => '15'],
+                ],
+            ],
+            [
+                'id' => 4,
+                'code' => '20',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '20', 'slug' => '20'],
+                    'sl' => ['name' => '20', 'slug' => '20'],
+                    'de' => ['name' => '20', 'slug' => '20'],
+                    'hr' => ['name' => '20', 'slug' => '20'],
+                    'fr' => ['name' => '20', 'slug' => '20'],
+                    'es' => ['name' => '20', 'slug' => '20'],
+                    'it' => ['name' => '20', 'slug' => '20'],
+                    'ua' => ['name' => '20', 'slug' => '20'],
+                    'ru' => ['name' => '20', 'slug' => '20'],
+                ],
+            ],
+            [
+                'id' => 5,
+                'code' => '30',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '30', 'slug' => '30'],
+                    'sl' => ['name' => '30', 'slug' => '30'],
+                    'de' => ['name' => '30', 'slug' => '30'],
+                    'hr' => ['name' => '30', 'slug' => '30'],
+                    'fr' => ['name' => '30', 'slug' => '30'],
+                    'es' => ['name' => '30', 'slug' => '30'],
+                    'it' => ['name' => '30', 'slug' => '30'],
+                    'ua' => ['name' => '30', 'slug' => '30'],
+                    'ru' => ['name' => '30', 'slug' => '30'],
+                ],
+            ],
+            [
+                'id' => 6,
+                'code' => '40',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '40', 'slug' => '40'],
+                    'sl' => ['name' => '40', 'slug' => '40'],
+                    'de' => ['name' => '40', 'slug' => '40'],
+                    'hr' => ['name' => '40', 'slug' => '40'],
+                    'fr' => ['name' => '40', 'slug' => '40'],
+                    'es' => ['name' => '40', 'slug' => '40'],
+                    'it' => ['name' => '40', 'slug' => '40'],
+                    'ua' => ['name' => '40', 'slug' => '40'],
+                    'ru' => ['name' => '40', 'slug' => '40'],
+                ],
+            ],
+            [
+                'id' => 7,
+                'code' => '50',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '50', 'slug' => '50'],
+                    'sl' => ['name' => '50', 'slug' => '50'],
+                    'de' => ['name' => '50', 'slug' => '50'],
+                    'hr' => ['name' => '50', 'slug' => '50'],
+                    'fr' => ['name' => '50', 'slug' => '50'],
+                    'es' => ['name' => '50', 'slug' => '50'],
+                    'it' => ['name' => '50', 'slug' => '50'],
+                    'ua' => ['name' => '50', 'slug' => '50'],
+                    'ru' => ['name' => '50', 'slug' => '50'],
+                ],
+            ],
+            [
+                'id' => 8,
+                'code' => '70',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '70', 'slug' => '70'],
+                    'sl' => ['name' => '70', 'slug' => '70'],
+                    'de' => ['name' => '70', 'slug' => '70'],
+                    'hr' => ['name' => '70', 'slug' => '70'],
+                    'fr' => ['name' => '70', 'slug' => '70'],
+                    'es' => ['name' => '70', 'slug' => '70'],
+                    'it' => ['name' => '70', 'slug' => '70'],
+                    'ua' => ['name' => '70', 'slug' => '70'],
+                    'ru' => ['name' => '70', 'slug' => '70'],
+                ],
+            ],
+            [
+                'id' => 9,
+                'code' => '100',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '100', 'slug' => '100'],
+                    'sl' => ['name' => '100', 'slug' => '100'],
+                    'de' => ['name' => '100', 'slug' => '100'],
+                    'hr' => ['name' => '100', 'slug' => '100'],
+                    'fr' => ['name' => '100', 'slug' => '100'],
+                    'es' => ['name' => '100', 'slug' => '100'],
+                    'it' => ['name' => '100', 'slug' => '100'],
+                    'ua' => ['name' => '100', 'slug' => '100'],
+                    'ru' => ['name' => '100', 'slug' => '100'],
+                ],
+            ],
+            [
+                'id' => 10,
+                'code' => 'more_than_100',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '>100', 'slug' => 'more-than-100'],
+                    'sl' => ['name' => '>100', 'slug' => 'vec-kot-100'],
+                    'de' => ['name' => '>100', 'slug' => 'mehr-als-100'],
+                    'hr' => ['name' => '>100', 'slug' => 'vise-od-100'],
+                    'fr' => ['name' => '>100', 'slug' => 'plus-de-100'],
+                    'es' => ['name' => '>100', 'slug' => 'mas-de-100'],
+                    'it' => ['name' => '>100', 'slug' => 'piu-di-100'],
+                    'ua' => ['name' => '>100', 'slug' => 'bilshe-100'],
+                    'ru' => ['name' => '>100', 'slug' => 'bolshe-100'],
+                ],
+            ],
+            [
+                'id' => 11,
+                'code' => 'on_yard',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => 'On Yard', 'slug' => 'on-yard'],
+                    'sl' => ['name' => 'Na dvorišču', 'slug' => 'na-dvoriscu'],
+                    'de' => ['name' => 'Auf dem Hof', 'slug' => 'auf-dem-hof'],
+                    'hr' => ['name' => 'Na dvorištu', 'slug' => 'na-dvoristu'],
+                    'fr' => ['name' => 'Dans la cour', 'slug' => 'dans-la-cour'],
+                    'es' => ['name' => 'En el patio', 'slug' => 'en-el-patio'],
+                    'it' => ['name' => 'Nel cortile', 'slug' => 'nel-cortile'],
+                    'ua' => ['name' => 'На подвір\'ї', 'slug' => 'na-podviri'],
+                    'ru' => ['name' => 'Во дворе', 'slug' => 'vo-dvore'],
+                ],
+            ],
+            [
+                'id' => 12,
+                'code' => 'roadside',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => 'Roadside', 'slug' => 'roadside'],
+                    'sl' => ['name' => 'Ob cesti', 'slug' => 'ob-cesti'],
+                    'de' => ['name' => 'Straßenrand', 'slug' => 'strassenrand'],
+                    'hr' => ['name' => 'Uz cestu', 'slug' => 'uz-cestu'],
+                    'fr' => ['name' => 'Bord de route', 'slug' => 'bord-de-route'],
+                    'es' => ['name' => 'Al borde de la carretera', 'slug' => 'al-borde-de-la-carretera'],
+                    'it' => ['name' => 'Bordo strada', 'slug' => 'bordo-strada'],
+                    'ua' => ['name' => 'Узбіччя', 'slug' => 'uzbichchia'],
+                    'ru' => ['name' => 'Обочина', 'slug' => 'obochina'],
+                ],
+            ],
+            [
+                'id' => 13,
+                'code' => '0',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => '0', 'slug' => '0'],
+                    'sl' => ['name' => '0', 'slug' => '0'],
+                    'de' => ['name' => '0', 'slug' => '0'],
+                    'hr' => ['name' => '0', 'slug' => '0'],
+                    'fr' => ['name' => '0', 'slug' => '0'],
+                    'es' => ['name' => '0', 'slug' => '0'],
+                    'it' => ['name' => '0', 'slug' => '0'],
+                    'ua' => ['name' => '0', 'slug' => '0'],
+                    'ru' => ['name' => '0', 'slug' => '0'],
+                ],
+            ],
+            [
+                'id' => 14,
+                'code' => 'private_parking_only',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => 'Private Parking Only', 'slug' => 'private-parking-only'],
+                    'sl' => ['name' => 'Samo zasebno parkirišče', 'slug' => 'samo-zasebno-parkirisce'],
+                    'de' => ['name' => 'Nur Privatparkplatz', 'slug' => 'nur-privatparkplatz'],
+                    'hr' => ['name' => 'Samo privatni parking', 'slug' => 'samo-privatni-parking'],
+                    'fr' => ['name' => 'Parking privé uniquement', 'slug' => 'parking-prive-uniquement'],
+                    'es' => ['name' => 'Solo estacionamiento privado', 'slug' => 'solo-estacionamiento-privado'],
+                    'it' => ['name' => 'Solo parcheggio privato', 'slug' => 'solo-parcheggio-privato'],
+                    'ua' => ['name' => 'Тільки приватна парковка', 'slug' => 'tilky-pryvatna-parkovka'],
+                    'ru' => ['name' => 'Только частная парковка', 'slug' => 'tolko-chastnaya-parkovka'],
+                ],
+            ],
+        ];
+
+        foreach ($parkingCapacities as $capacityData) {
+            // Insert parking capacity with explicit ID
+            DB::table('parking_capacity')->insert([
+                'id' => $capacityData['id'],
+                'code' => $capacityData['code'],
+                'status_id' => $capacityData['status_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Insert translations
+            foreach ($capacityData['translations'] as $locale => $translation) {
+                DB::table('parking_capacity_translation')->insert([
+                    'parking_capacity_id' => $capacityData['id'],
+                    'locale' => $locale,
+                    'name' => $translation['name'],
+                    'slug' => $translation['slug'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+}
+

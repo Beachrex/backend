@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\BeachTypeController;
 use App\Http\Controllers\Api\V1\AreaDescriptionController;
 use App\Http\Controllers\Api\V1\AccessibilityController;
 use App\Http\Controllers\Api\V1\RoadToParkingTypeController;
+use App\Http\Controllers\Api\V1\ParkingCapacityController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -55,6 +56,10 @@ Route::prefix('api/v1')
         // Road to Parking Type routes
         Route::get('/road-to-parking-types', [RoadToParkingTypeController::class, 'index']);
         Route::get('/road-to-parking-types/{id}', [RoadToParkingTypeController::class, 'show']);
+
+        // Parking Capacity routes
+        Route::get('/parking-capacities', [ParkingCapacityController::class, 'index']);
+        Route::get('/parking-capacities/{id}', [ParkingCapacityController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

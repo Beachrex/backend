@@ -1115,6 +1115,159 @@
                 }
             }
         },
+        "/api/v1/parking-capacities": {
+            "get": {
+                "tags": [
+                    "Parking Capacities"
+                ],
+                "summary": "Get all parking capacities",
+                "description": "Retrieve a list of all parking capacities with their translations",
+                "operationId": "getParkingCapacities",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ParkingCapacity"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking capacities retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve parking capacities"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/parking-capacities/{id}": {
+            "get": {
+                "tags": [
+                    "Parking Capacities"
+                ],
+                "summary": "Get a specific parking capacity",
+                "description": "Retrieve a single parking capacity by ID with all translations",
+                "operationId": "getParkingCapacityById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Parking Capacity ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ParkingCapacity"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking capacity retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Parking capacity not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking capacity not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve parking capacity"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/spatial/beaches/within-radius": {
             "get": {
                 "tags": [
@@ -2111,6 +2264,67 @@
                 },
                 "type": "object"
             },
+            "ParkingCapacity": {
+                "title": "Parking Capacity",
+                "description": "Parking capacity model (5, 10, 15, 20, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Parking capacity ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Parking capacity code",
+                        "type": "string",
+                        "example": "5"
+                    },
+                    "name": {
+                        "description": "Parking capacity name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "5"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "5"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this parking capacity",
+                        "type": "integer",
+                        "example": 23
+                    },
+                    "translations": {
+                        "description": "All available translations for this parking capacity",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ParkingCapacityTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ParkingCapacityTranslation": {
+                "title": "Parking Capacity Translation",
+                "description": "Translation for a parking capacity",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated parking capacity name",
+                        "type": "string",
+                        "example": "5"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "5"
+                    }
+                },
+                "type": "object"
+            },
             "RegisterResponse": {
                 "properties": {
                     "user": {
@@ -2398,6 +2612,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Parking Capacities",
+            "description": "Parking Capacities"
         },
         {
             "name": "Road to Parking Types",
