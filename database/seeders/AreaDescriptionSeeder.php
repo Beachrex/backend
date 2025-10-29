@@ -1,0 +1,90 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class AreaDescriptionSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $areaDescriptions = [
+            [
+                'id' => 1,
+                'code' => 'urban',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => 'Urban', 'slug' => 'urban'],
+                    'sl' => ['name' => 'Urbano', 'slug' => 'urbano'],
+                    'de' => ['name' => 'Städtisch', 'slug' => 'stadtisch'],
+                    'hr' => ['name' => 'Urbano', 'slug' => 'urbano'],
+                    'fr' => ['name' => 'Urbain', 'slug' => 'urbain'],
+                    'es' => ['name' => 'Urbano', 'slug' => 'urbano'],
+                    'it' => ['name' => 'Urbano', 'slug' => 'urbano'],
+                    'ua' => ['name' => 'Міський', 'slug' => 'miskyi'],
+                    'ru' => ['name' => 'Городской', 'slug' => 'gorodskoy'],
+                ],
+            ],
+            [
+                'id' => 2,
+                'code' => 'part_urban',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => 'Partly Urban', 'slug' => 'partly-urban'],
+                    'sl' => ['name' => 'Delno urbano', 'slug' => 'delno-urbano'],
+                    'de' => ['name' => 'Teilweise städtisch', 'slug' => 'teilweise-stadtisch'],
+                    'hr' => ['name' => 'Djelomično urbano', 'slug' => 'djelomicno-urbano'],
+                    'fr' => ['name' => 'Partiellement urbain', 'slug' => 'partiellement-urbain'],
+                    'es' => ['name' => 'Parcialmente urbano', 'slug' => 'parcialmente-urbano'],
+                    'it' => ['name' => 'Parzialmente urbano', 'slug' => 'parzialmente-urbano'],
+                    'ua' => ['name' => 'Частково міський', 'slug' => 'chastkovo-miskyi'],
+                    'ru' => ['name' => 'Частично городской', 'slug' => 'chastichno-gorodskoy'],
+                ],
+            ],
+            [
+                'id' => 3,
+                'code' => 'natural',
+                'status_id' => 1,
+                'translations' => [
+                    'en' => ['name' => 'Natural', 'slug' => 'natural'],
+                    'sl' => ['name' => 'Naravno', 'slug' => 'naravno'],
+                    'de' => ['name' => 'Natürlich', 'slug' => 'naturlich'],
+                    'hr' => ['name' => 'Prirodno', 'slug' => 'prirodno'],
+                    'fr' => ['name' => 'Naturel', 'slug' => 'naturel'],
+                    'es' => ['name' => 'Natural', 'slug' => 'natural'],
+                    'it' => ['name' => 'Naturale', 'slug' => 'naturale'],
+                    'ua' => ['name' => 'Природний', 'slug' => 'pryrodnyi'],
+                    'ru' => ['name' => 'Природный', 'slug' => 'prirodnyy'],
+                ],
+            ],
+        ];
+
+        foreach ($areaDescriptions as $areaData) {
+            // Insert area description with explicit ID
+            DB::table('area_description')->insert([
+                'id' => $areaData['id'],
+                'code' => $areaData['code'],
+                'status_id' => $areaData['status_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Insert translations
+            foreach ($areaData['translations'] as $locale => $translation) {
+                DB::table('area_description_translation')->insert([
+                    'area_description_id' => $areaData['id'],
+                    'locale' => $locale,
+                    'name' => $translation['name'],
+                    'slug' => $translation['slug'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+}
+

@@ -12,6 +12,159 @@
         }
     ],
     "paths": {
+        "/api/v1/area-descriptions": {
+            "get": {
+                "tags": [
+                    "Area Descriptions"
+                ],
+                "summary": "Get all area descriptions",
+                "description": "Retrieve a list of all area descriptions with their translations",
+                "operationId": "getAreaDescriptions",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AreaDescription"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area descriptions retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve area descriptions"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/area-descriptions/{id}": {
+            "get": {
+                "tags": [
+                    "Area Descriptions"
+                ],
+                "summary": "Get a specific area description",
+                "description": "Retrieve a single area description by ID with all translations",
+                "operationId": "getAreaDescriptionById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Area Description ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AreaDescription"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area description retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Area description not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area description not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve area description"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/register": {
             "post": {
                 "tags": [
@@ -1310,6 +1463,67 @@
     },
     "components": {
         "schemas": {
+            "AreaDescription": {
+                "title": "Area Description",
+                "description": "Area description model (urban, partly urban, natural)",
+                "properties": {
+                    "id": {
+                        "description": "Area description ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Area description code",
+                        "type": "string",
+                        "example": "l_urban"
+                    },
+                    "name": {
+                        "description": "Area description name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Urban"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "urban"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this area description",
+                        "type": "integer",
+                        "example": 75
+                    },
+                    "translations": {
+                        "description": "All available translations for this area description",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AreaDescriptionTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "AreaDescriptionTranslation": {
+                "title": "Area Description Translation",
+                "description": "Translation for an area description",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated area description name",
+                        "type": "string",
+                        "example": "Urban"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "urban"
+                    }
+                },
+                "type": "object"
+            },
             "BeachSchema": {
                 "title": "Beach Schema",
                 "description": "Beach API Resource",
@@ -1729,6 +1943,10 @@
         {
             "name": "Waterbodies",
             "description": "API Endpoints for waterbody types (sea, lake, river, pool)"
+        },
+        {
+            "name": "Area Descriptions",
+            "description": "Area Descriptions"
         },
         {
             "name": "Auth",

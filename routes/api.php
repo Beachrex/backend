@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\CountryController;
 use App\Http\Controllers\Api\V1\PostGISController;
 use App\Http\Controllers\Api\V1\WaterbodyController;
 use App\Http\Controllers\Api\V1\BeachTypeController;
+use App\Http\Controllers\Api\V1\AreaDescriptionController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -40,6 +41,10 @@ Route::prefix('api/v1')
         // Beach Type routes
         Route::get('/beach-types', [BeachTypeController::class, 'index']);
         Route::get('/beach-types/{id}', [BeachTypeController::class, 'show']);
+
+        // Area Description routes
+        Route::get('/area-descriptions', [AreaDescriptionController::class, 'index']);
+        Route::get('/area-descriptions/{id}', [AreaDescriptionController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

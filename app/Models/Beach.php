@@ -21,6 +21,7 @@ class Beach extends Model
         'country_code',
         'waterbody_id',
         'beach_type_id',
+        'area_description_id',
     ];
 
     public function translations(): HasMany
@@ -56,5 +57,10 @@ class Beach extends Model
     public function beachType(): BelongsTo
     {
         return $this->belongsTo(BeachType::class);
+    }
+
+    public function areaDescription(): BelongsTo
+    {
+        return $this->belongsTo(AreaDescription::class);
     }
 }
