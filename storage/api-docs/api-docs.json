@@ -1115,6 +1115,159 @@
                 }
             }
         },
+        "/api/v1/parking-beach-distances": {
+            "get": {
+                "tags": [
+                    "Parking Beach Distances"
+                ],
+                "summary": "Get all parking beach distances",
+                "description": "Retrieve a list of all parking beach distances with their translations",
+                "operationId": "getParkingBeachDistances",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ParkingBeachDistance"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking beach distances retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve parking beach distances"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/parking-beach-distances/{id}": {
+            "get": {
+                "tags": [
+                    "Parking Beach Distances"
+                ],
+                "summary": "Get a specific parking beach distance",
+                "description": "Retrieve a single parking beach distance by ID with all translations",
+                "operationId": "getParkingBeachDistanceById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Parking Beach Distance ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ParkingBeachDistance"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking beach distance retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Parking beach distance not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking beach distance not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve parking beach distance"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/parking-capacities": {
             "get": {
                 "tags": [
@@ -2264,6 +2417,67 @@
                 },
                 "type": "object"
             },
+            "ParkingBeachDistance": {
+                "title": "Parking Beach Distance",
+                "description": "Parking beach distance model (10m, 30m, 50m, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Parking beach distance ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Parking beach distance code",
+                        "type": "string",
+                        "example": "10m"
+                    },
+                    "name": {
+                        "description": "Parking beach distance name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "10m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "10m"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this parking beach distance",
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "translations": {
+                        "description": "All available translations for this parking beach distance",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ParkingBeachDistanceTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ParkingBeachDistanceTranslation": {
+                "title": "Parking Beach Distance Translation",
+                "description": "Translation for a parking beach distance",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated parking beach distance name",
+                        "type": "string",
+                        "example": "10m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "10m"
+                    }
+                },
+                "type": "object"
+            },
             "ParkingCapacity": {
                 "title": "Parking Capacity",
                 "description": "Parking capacity model (5, 10, 15, 20, etc.)",
@@ -2612,6 +2826,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Parking Beach Distances",
+            "description": "Parking Beach Distances"
         },
         {
             "name": "Parking Capacities",
