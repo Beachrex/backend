@@ -1268,6 +1268,159 @@
                 }
             }
         },
+        "/api/v1/parking-beach-heights": {
+            "get": {
+                "tags": [
+                    "Parking Beach Heights"
+                ],
+                "summary": "Get all parking beach heights",
+                "description": "Retrieve a list of all parking beach heights with their translations",
+                "operationId": "getParkingBeachHeights",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ParkingBeachHeight"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking beach heights retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve parking beach heights"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/parking-beach-heights/{id}": {
+            "get": {
+                "tags": [
+                    "Parking Beach Heights"
+                ],
+                "summary": "Get a specific parking beach height",
+                "description": "Retrieve a single parking beach height by ID with all translations",
+                "operationId": "getParkingBeachHeightById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Parking Beach Height ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ParkingBeachHeight"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking beach height retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Parking beach height not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Parking beach height not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve parking beach height"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/parking-capacities": {
             "get": {
                 "tags": [
@@ -2478,6 +2631,67 @@
                 },
                 "type": "object"
             },
+            "ParkingBeachHeight": {
+                "title": "Parking Beach Height",
+                "description": "Parking beach height model (0m, 5m, 10m, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Parking beach height ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Parking beach height code",
+                        "type": "string",
+                        "example": "0m"
+                    },
+                    "name": {
+                        "description": "Parking beach height name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "0m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "0m"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this parking beach height",
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "translations": {
+                        "description": "All available translations for this parking beach height",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ParkingBeachHeightTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ParkingBeachHeightTranslation": {
+                "title": "Parking Beach Height Translation",
+                "description": "Translation for a parking beach height",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated parking beach height name",
+                        "type": "string",
+                        "example": "0m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "0m"
+                    }
+                },
+                "type": "object"
+            },
             "ParkingCapacity": {
                 "title": "Parking Capacity",
                 "description": "Parking capacity model (5, 10, 15, 20, etc.)",
@@ -2830,6 +3044,10 @@
         {
             "name": "Parking Beach Distances",
             "description": "Parking Beach Distances"
+        },
+        {
+            "name": "Parking Beach Heights",
+            "description": "Parking Beach Heights"
         },
         {
             "name": "Parking Capacities",

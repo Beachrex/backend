@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             RoadToParkingTypeSeeder::class,
             ParkingCapacitySeeder::class,
             ParkingBeachDistanceSeeder::class,
+            ParkingBeachHeightSeeder::class,
         ]);
     }
 }
