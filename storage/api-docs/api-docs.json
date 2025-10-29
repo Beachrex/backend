@@ -1020,6 +1020,149 @@
                     }
                 ]
             }
+        },
+        "/api/v1/waterbodies": {
+            "get": {
+                "tags": [
+                    "Waterbodies"
+                ],
+                "summary": "List all waterbody types",
+                "description": "Get a list of all waterbody types with translations. Optionally filter by show_filter flag.",
+                "operationId": "getWaterbodies",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Filter waterbodies shown in filters (true/false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of waterbodies retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Waterbody"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Waterbodies retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/waterbodies/{id}": {
+            "get": {
+                "tags": [
+                    "Waterbodies"
+                ],
+                "summary": "Get waterbody by ID",
+                "description": "Get a specific waterbody type by ID with all translations",
+                "operationId": "getWaterbodyById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Waterbody ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Waterbody retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Waterbody"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Waterbody retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Waterbody not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Waterbody not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -1249,6 +1392,72 @@
                     }
                 },
                 "type": "object"
+            },
+            "Waterbody": {
+                "title": "Waterbody",
+                "description": "Waterbody type model (sea, lake, river, pool)",
+                "properties": {
+                    "id": {
+                        "description": "Waterbody ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Waterbody code",
+                        "type": "string",
+                        "example": "sea"
+                    },
+                    "name": {
+                        "description": "Waterbody name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Sea"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "sea"
+                    },
+                    "show_filter": {
+                        "description": "Whether to show this waterbody in filters",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this waterbody type",
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "translations": {
+                        "description": "All available translations for this waterbody",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WaterbodyTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "WaterbodyTranslation": {
+                "title": "Waterbody Translation",
+                "description": "Translation for a waterbody type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated waterbody name",
+                        "type": "string",
+                        "example": "Sea"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "sea"
+                    }
+                },
+                "type": "object"
             }
         },
         "parameters": {
@@ -1303,6 +1512,10 @@
         {
             "name": "Spatial",
             "description": "PostGIS spatial operations for beaches"
+        },
+        {
+            "name": "Waterbodies",
+            "description": "API Endpoints for waterbody types (sea, lake, river, pool)"
         },
         {
             "name": "Auth",
