@@ -7,10 +7,6 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8000",
-            "description": "Local Development Server"
-        },
-        {
             "url": "https://dev-api.beachrex.com",
             "description": "Development Server"
         }
