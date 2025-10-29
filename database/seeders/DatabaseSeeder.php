@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             CountrySeeder::class,
             DemoUserSeeder::class,
             BeachSeeder::class,
+            WaterbodySeeder::class,
+            BeachTypeSeeder::class,
         ]);
     }
 }
