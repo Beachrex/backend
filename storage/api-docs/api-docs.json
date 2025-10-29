@@ -1628,7 +1628,7 @@
                     "code": {
                         "description": "Accessibility code",
                         "type": "string",
-                        "example": "l_easy"
+                        "example": "easy"
                     },
                     "name": {
                         "description": "Accessibility name (localized based on Accept-Language header)",

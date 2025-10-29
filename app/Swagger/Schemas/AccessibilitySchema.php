@@ -18,7 +18,7 @@ namespace App\Swagger\Schemas;
  *         property="code",
  *         type="string",
  *         description="Accessibility code",
- *         example="l_easy"
+ *         example="easy"
  *     ),
  *     @OA\Property(
  *         property="name",

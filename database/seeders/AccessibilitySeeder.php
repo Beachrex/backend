@@ -15,7 +15,7 @@ class AccessibilitySeeder extends Seeder
         $accessibilities = [
             [
                 'id' => 1,
-                'code' => 'l_easy',
+                'code' => 'easy',
                 'status_id' => 1,
                 'translations' => [
                     'en' => ['name' => 'Easy', 'slug' => 'easy'],
@@ -31,7 +31,7 @@ class AccessibilitySeeder extends Seeder
             ],
             [
                 'id' => 2,
-                'code' => 'l_medium',
+                'code' => 'medium',
                 'status_id' => 1,
                 'translations' => [
                     'en' => ['name' => 'Medium', 'slug' => 'medium'],
@@ -47,7 +47,7 @@ class AccessibilitySeeder extends Seeder
             ],
             [
                 'id' => 3,
-                'code' => 'l_difficult',
+                'code' => 'difficult',
                 'status_id' => 1,
                 'translations' => [
                     'en' => ['name' => 'Difficult', 'slug' => 'difficult'],
