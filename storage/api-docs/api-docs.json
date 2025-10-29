@@ -303,6 +303,149 @@
                 }
             }
         },
+        "/api/v1/beach-types": {
+            "get": {
+                "tags": [
+                    "Beach Types"
+                ],
+                "summary": "List all beach types",
+                "description": "Get a list of all beach surface types with translations. Optionally filter by show_filter flag.",
+                "operationId": "getBeachTypes",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Filter beach types shown in filters (true/false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of beach types retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachType"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach types retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/beach-types/{id}": {
+            "get": {
+                "tags": [
+                    "Beach Types"
+                ],
+                "summary": "Get beach type by ID",
+                "description": "Get a specific beach type by ID with all translations",
+                "operationId": "getBeachTypeById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Beach Type ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Beach type retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/BeachType"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach type retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Beach type not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach type not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/continents": {
             "get": {
                 "tags": [
@@ -1212,6 +1355,72 @@
                 },
                 "type": "object"
             },
+            "BeachType": {
+                "title": "Beach Type",
+                "description": "Beach surface type model (sand, stones, rock, grass, concrete, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Beach type ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Beach type code",
+                        "type": "string",
+                        "example": "sand"
+                    },
+                    "name": {
+                        "description": "Beach type name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Sand"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "sand-beaches"
+                    },
+                    "show_filter": {
+                        "description": "Whether to show this beach type in filters",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this surface type",
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "translations": {
+                        "description": "All available translations for this beach type",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachTypeTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "BeachTypeTranslation": {
+                "title": "Beach Type Translation",
+                "description": "Translation for a beach type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated beach type name",
+                        "type": "string",
+                        "example": "Sand"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "sand-beaches"
+                    }
+                },
+                "type": "object"
+            },
             "Continent": {
                 "title": "Continent",
                 "description": "Continent model",
@@ -1500,6 +1709,10 @@
         {
             "name": "Beaches",
             "description": "API Endpoints for managing beaches"
+        },
+        {
+            "name": "Beach Types",
+            "description": "API Endpoints for beach surface types (sand, stones, rock, etc.)"
         },
         {
             "name": "Continents",

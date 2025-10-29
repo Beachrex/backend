@@ -20,6 +20,7 @@ class Beach extends Model
         'continent_code',
         'country_code',
         'waterbody_id',
+        'beach_type_id',
     ];
 
     public function translations(): HasMany
@@ -50,5 +51,10 @@ class Beach extends Model
     public function waterbody(): BelongsTo
     {
         return $this->belongsTo(Waterbody::class);
+    }
+
+    public function beachType(): BelongsTo
+    {
+        return $this->belongsTo(BeachType::class);
     }
 }

@@ -1,0 +1,153 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\BeachTypeResource;
+use App\Models\BeachType;
+use Illuminate\Http\JsonResponse;
+
+/**
+ * @OA\Tag(
+ *     name="Beach Types",
+ *     description="API Endpoints for beach surface types (sand, stones, rock, etc.)"
+ * )
+ */
+class BeachTypeController extends Controller
+{
+    /**
+     * @OA\Get(
+     *     path="/api/v1/beach-types",
+     *     operationId="getBeachTypes",
+     *     summary="List all beach types",
+     *     description="Get a list of all beach surface types with translations. Optionally filter by show_filter flag.",
+     *     tags={"Beach Types"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Parameter(
+     *         name="filter",
+     *         in="query",
+     *         description="Filter beach types shown in filters (true/false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of beach types retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/BeachType")
+     *             ),
+     *             @OA\Property(property="message", type="string", example="Beach types retrieved successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="An error occurred")
+     *         )
+     *     )
+     * )
+     */
+    public function index(): JsonResponse
+    {
+        try {
+            $query = BeachType::with('translations')
+                ->withCount('beaches')
+                ->active()
+                ->orderBy('id');
+
+            // Filter by show_filter if requested
+            if (request()->has('filter') && request()->get('filter') === 'true') {
+                $query->showInFilter();
+            }
+
+            $beachTypes = $query->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => BeachTypeResource::collection($beachTypes),
+                'message' => 'Beach types retrieved successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving beach types',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/beach-types/{id}",
+     *     operationId="getBeachTypeById",
+     *     summary="Get beach type by ID",
+     *     description="Get a specific beach type by ID with all translations",
+     *     tags={"Beach Types"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Beach Type ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Beach type retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", ref="#/components/schemas/BeachType"),
+     *             @OA\Property(property="message", type="string", example="Beach type retrieved successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Beach type not found",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Beach type not found")
+     *         )
+     *     )
+     * )
+     */
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $beachType = BeachType::with('translations')
+                ->withCount('beaches')
+                ->find($id);
+
+            if (!$beachType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beach type not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => new BeachTypeResource($beachType),
+                'message' => 'Beach type retrieved successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving the beach type',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+}
+
