@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             BeachSeeder::class,
             WaterbodySeeder::class,
             BeachTypeSeeder::class,
+            AreaDescriptionSeeder::class,
         ]);
     }
 }
