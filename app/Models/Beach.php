@@ -24,6 +24,7 @@ class Beach extends Model
         'area_description_id',
         'accessibility_id',
         'road_to_parking_type_id',
+        'parking',
     ];
 
     public function translations(): HasMany
