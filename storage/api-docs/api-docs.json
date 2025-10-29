@@ -1440,6 +1440,169 @@
                 }
             }
         },
+        "/api/v1/road-to-parking-types": {
+            "get": {
+                "tags": [
+                    "Road to Parking Types"
+                ],
+                "summary": "Get all road to parking types",
+                "description": "Retrieve a list of all road to parking types with their translations",
+                "operationId": "getRoadToParkingTypes",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Filter to show only types visible in filters (show_filter=true)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RoadToParkingType"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Road to parking types retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve road to parking types"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/road-to-parking-types/{id}": {
+            "get": {
+                "tags": [
+                    "Road to Parking Types"
+                ],
+                "summary": "Get a specific road to parking type",
+                "description": "Retrieve a single road to parking type by ID with all translations",
+                "operationId": "getRoadToParkingTypeById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Road to Parking Type ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/RoadToParkingType"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Road to parking type retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Road to parking type not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Road to parking type not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve road to parking type"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/user": {
             "get": {
                 "tags": [
@@ -1974,6 +2137,72 @@
                 },
                 "type": "object"
             },
+            "RoadToParkingType": {
+                "title": "Road to Parking Type",
+                "description": "Road to parking type model (asphalt, concrete path, dirt, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Road to parking type ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Road to parking type code",
+                        "type": "string",
+                        "example": "asphalt"
+                    },
+                    "name": {
+                        "description": "Road to parking type name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Asphalt"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "asphalt"
+                    },
+                    "show_filter": {
+                        "description": "Whether this type should be shown in filter options",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this road to parking type",
+                        "type": "integer",
+                        "example": 58
+                    },
+                    "translations": {
+                        "description": "All available translations for this road to parking type",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RoadToParkingTypeTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "RoadToParkingTypeTranslation": {
+                "title": "Road to Parking Type Translation",
+                "description": "Translation for a road to parking type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated road to parking type name",
+                        "type": "string",
+                        "example": "Asphalt"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "asphalt"
+                    }
+                },
+                "type": "object"
+            },
             "ValidationError": {
                 "title": "Validation Error",
                 "description": "Validation error response",
@@ -2169,6 +2398,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Road to Parking Types",
+            "description": "Road to Parking Types"
         },
         {
             "name": "User",
