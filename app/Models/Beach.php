@@ -19,6 +19,7 @@ class Beach extends Model
         'status_id',
         'continent_code',
         'country_code',
+        'waterbody_id',
     ];
 
     public function translations(): HasMany
@@ -44,5 +45,10 @@ class Beach extends Model
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class, 'country_code', 'code');
+    }
+
+    public function waterbody(): BelongsTo
+    {
+        return $this->belongsTo(Waterbody::class);
     }
 }
