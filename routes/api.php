@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\PostGISController;
 use App\Http\Controllers\Api\V1\WaterbodyController;
 use App\Http\Controllers\Api\V1\BeachTypeController;
 use App\Http\Controllers\Api\V1\AreaDescriptionController;
+use App\Http\Controllers\Api\V1\AccessibilityController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -45,6 +46,10 @@ Route::prefix('api/v1')
         // Area Description routes
         Route::get('/area-descriptions', [AreaDescriptionController::class, 'index']);
         Route::get('/area-descriptions/{id}', [AreaDescriptionController::class, 'show']);
+
+        // Accessibility routes
+        Route::get('/accessibilities', [AccessibilityController::class, 'index']);
+        Route::get('/accessibilities/{id}', [AccessibilityController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

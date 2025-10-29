@@ -18,7 +18,7 @@ namespace App\Swagger\Schemas;
  *         property="code",
  *         type="string",
  *         description="Area description code",
- *         example="l_urban"
+ *         example="urban"
  *     ),
  *     @OA\Property(
  *         property="name",

@@ -12,6 +12,159 @@
         }
     ],
     "paths": {
+        "/api/v1/accessibilities": {
+            "get": {
+                "tags": [
+                    "Accessibility"
+                ],
+                "summary": "Get all accessibility options",
+                "description": "Retrieve a list of all accessibility options with their translations",
+                "operationId": "getAccessibilities",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Accessibility"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accessibility options retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve accessibility options"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/accessibilities/{id}": {
+            "get": {
+                "tags": [
+                    "Accessibility"
+                ],
+                "summary": "Get a specific accessibility option",
+                "description": "Retrieve a single accessibility option by ID with all translations",
+                "operationId": "getAccessibilityById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Accessibility ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Accessibility"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accessibility option retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Accessibility option not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accessibility option not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve accessibility option"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/area-descriptions": {
             "get": {
                 "tags": [
@@ -1463,6 +1616,67 @@
     },
     "components": {
         "schemas": {
+            "Accessibility": {
+                "title": "Accessibility",
+                "description": "Accessibility option model (easy, medium, difficult)",
+                "properties": {
+                    "id": {
+                        "description": "Accessibility ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Accessibility code",
+                        "type": "string",
+                        "example": "l_easy"
+                    },
+                    "name": {
+                        "description": "Accessibility name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Easy"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "easy"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this accessibility",
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "translations": {
+                        "description": "All available translations for this accessibility",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AccessibilityTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "AccessibilityTranslation": {
+                "title": "Accessibility Translation",
+                "description": "Translation for an accessibility option",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated accessibility name",
+                        "type": "string",
+                        "example": "Easy"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "easy"
+                    }
+                },
+                "type": "object"
+            },
             "AreaDescription": {
                 "title": "Area Description",
                 "description": "Area description model (urban, partly urban, natural)",
@@ -1475,7 +1689,7 @@
                     "code": {
                         "description": "Area description code",
                         "type": "string",
-                        "example": "l_urban"
+                        "example": "urban"
                     },
                     "name": {
                         "description": "Area description name (localized based on Accept-Language header)",
@@ -1943,6 +2157,10 @@
         {
             "name": "Waterbodies",
             "description": "API Endpoints for waterbody types (sea, lake, river, pool)"
+        },
+        {
+            "name": "Accessibility",
+            "description": "Accessibility"
         },
         {
             "name": "Area Descriptions",

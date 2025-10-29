@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             WaterbodySeeder::class,
             BeachTypeSeeder::class,
             AreaDescriptionSeeder::class,
+            AccessibilitySeeder::class,
         ]);
     }
 }
