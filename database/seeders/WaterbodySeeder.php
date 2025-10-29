@@ -13,43 +13,14 @@ class WaterbodySeeder extends Seeder
      */
     public function run(): void
     {
+        // Order and IDs must match old database for migration compatibility:
+        // 1 = river, 2 = pool, 3 = sea, 4 = lake
         $waterbodies = [
             [
-                'code' => 'sea',
-                'status_id' => 1,
-                'show_filter' => true,
-                'translations' => [
-                    'en' => ['name' => 'Sea', 'slug' => 'sea'],
-                    'sl' => ['name' => 'Morje', 'slug' => 'morje'],
-                    'de' => ['name' => 'Meer', 'slug' => 'meer'],
-                    'hr' => ['name' => 'More', 'slug' => 'more'],
-                    'fr' => ['name' => 'Mer', 'slug' => 'mer'],
-                    'es' => ['name' => 'Mar', 'slug' => 'mar'],
-                    'it' => ['name' => 'Mare', 'slug' => 'mare'],
-                    'ua' => ['name' => 'Море', 'slug' => 'more'],
-                    'ru' => ['name' => 'Море', 'slug' => 'more'],
-                ],
-            ],
-            [
-                'code' => 'lake',
-                'status_id' => 1,
-                'show_filter' => true,
-                'translations' => [
-                    'en' => ['name' => 'Lake', 'slug' => 'lake'],
-                    'sl' => ['name' => 'Jezero', 'slug' => 'jezero'],
-                    'de' => ['name' => 'See', 'slug' => 'see'],
-                    'hr' => ['name' => 'Jezero', 'slug' => 'jezero'],
-                    'fr' => ['name' => 'Lac', 'slug' => 'lac'],
-                    'es' => ['name' => 'Lago', 'slug' => 'lago'],
-                    'it' => ['name' => 'Lago', 'slug' => 'lago'],
-                    'ua' => ['name' => 'Озеро', 'slug' => 'ozero'],
-                    'ru' => ['name' => 'Озеро', 'slug' => 'ozero'],
-                ],
-            ],
-            [
+                'id' => 1,
                 'code' => 'river',
                 'status_id' => 1,
-                'show_filter' => true,
+                'show_filter' => false, // show_filter = 0 in old DB
                 'translations' => [
                     'en' => ['name' => 'River', 'slug' => 'river'],
                     'sl' => ['name' => 'Reka', 'slug' => 'reka'],
@@ -63,9 +34,10 @@ class WaterbodySeeder extends Seeder
                 ],
             ],
             [
+                'id' => 2,
                 'code' => 'pool',
                 'status_id' => 1,
-                'show_filter' => false, // Don't show pool in filters by default
+                'show_filter' => false, // show_filter = 0 in old DB
                 'translations' => [
                     'en' => ['name' => 'Pool', 'slug' => 'pool'],
                     'sl' => ['name' => 'Bazen', 'slug' => 'bazen'],
@@ -78,11 +50,46 @@ class WaterbodySeeder extends Seeder
                     'ru' => ['name' => 'Бассейн', 'slug' => 'basseyn'],
                 ],
             ],
+            [
+                'id' => 3,
+                'code' => 'sea',
+                'status_id' => 1,
+                'show_filter' => false, // show_filter = 0 in old DB
+                'translations' => [
+                    'en' => ['name' => 'Sea', 'slug' => 'sea'],
+                    'sl' => ['name' => 'Morje', 'slug' => 'morje'],
+                    'de' => ['name' => 'Meer', 'slug' => 'meer'],
+                    'hr' => ['name' => 'More', 'slug' => 'more'],
+                    'fr' => ['name' => 'Mer', 'slug' => 'mer'],
+                    'es' => ['name' => 'Mar', 'slug' => 'mar'],
+                    'it' => ['name' => 'Mare', 'slug' => 'mare'],
+                    'ua' => ['name' => 'Море', 'slug' => 'more'],
+                    'ru' => ['name' => 'Море', 'slug' => 'more'],
+                ],
+            ],
+            [
+                'id' => 4,
+                'code' => 'lake',
+                'status_id' => 1,
+                'show_filter' => false, // show_filter = 0 in old DB
+                'translations' => [
+                    'en' => ['name' => 'Lake', 'slug' => 'lake'],
+                    'sl' => ['name' => 'Jezero', 'slug' => 'jezero'],
+                    'de' => ['name' => 'See', 'slug' => 'see'],
+                    'hr' => ['name' => 'Jezero', 'slug' => 'jezero'],
+                    'fr' => ['name' => 'Lac', 'slug' => 'lac'],
+                    'es' => ['name' => 'Lago', 'slug' => 'lago'],
+                    'it' => ['name' => 'Lago', 'slug' => 'lago'],
+                    'ua' => ['name' => 'Озеро', 'slug' => 'ozero'],
+                    'ru' => ['name' => 'Озеро', 'slug' => 'ozero'],
+                ],
+            ],
         ];
 
         foreach ($waterbodies as $waterbodyData) {
-            // Create the waterbody
+            // Create the waterbody with explicit ID
             $waterbody = Waterbody::create([
+                'id' => $waterbodyData['id'],
                 'code' => $waterbodyData['code'],
                 'status_id' => $waterbodyData['status_id'],
                 'show_filter' => $waterbodyData['show_filter'],
