@@ -45,7 +45,7 @@ class ParkingBeachDistanceSeeder extends Seeder
             // Determine display name based on code
             $displayName = $distanceData['code'];
             $slug = $distanceData['code'];
-            
+
             // Special handling for specific codes
             if ($distanceData['code'] === 'more_than_1000m') {
                 $translations = [
@@ -58,6 +58,12 @@ class ParkingBeachDistanceSeeder extends Seeder
                     'it' => ['name' => '>1000m', 'slug' => 'piu-di-1000m'],
                     'ua' => ['name' => '>1000м', 'slug' => 'bilshe-1000m'],
                     'ru' => ['name' => '>1000м', 'slug' => 'bolshe-1000m'],
+                    'pl' => ['name' => '>1000m', 'slug' => 'wiecej-niz-1000m'],
+                    'cs' => ['name' => '>1000m', 'slug' => 'vice-nez-1000m'],
+                    'hu' => ['name' => '>1000m', 'slug' => 'tobb-mint-1000m'],
+                    'bg' => ['name' => '>1000м', 'slug' => 'poveche-ot-1000m'],
+                    'sk' => ['name' => '>1000m', 'slug' => 'viac-ako-1000m'],
+
                 ];
             } elseif ($distanceData['code'] === 'no_parking') {
                 $translations = [
@@ -70,6 +76,12 @@ class ParkingBeachDistanceSeeder extends Seeder
                     'it' => ['name' => 'Nessun parcheggio', 'slug' => 'nessun-parcheggio'],
                     'ua' => ['name' => 'Без парковки', 'slug' => 'bez-parkovky'],
                     'ru' => ['name' => 'Без парковки', 'slug' => 'bez-parkovki'],
+                    'pl' => ['name' => 'Brak parkingu', 'slug' => 'brak-parkingu'],
+                    'cs' => ['name' => 'Bez parkování', 'slug' => 'bez-parkovani'],
+                    'hu' => ['name' => 'Nincs parkoló', 'slug' => 'nincs-parkolo'],
+                    'bg' => ['name' => 'Без паркинг', 'slug' => 'bez-parking'],
+                    'sk' => ['name' => 'Bez parkovania', 'slug' => 'bez-parkovania'],
+
                 ];
             } else {
                 // For numeric distances, use the same value for all languages
@@ -83,6 +95,12 @@ class ParkingBeachDistanceSeeder extends Seeder
                     'it' => ['name' => $displayName, 'slug' => $slug],
                     'ua' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
                     'ru' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
+                    'pl' => ['name' => $displayName, 'slug' => $slug],
+                    'cs' => ['name' => $displayName, 'slug' => $slug],
+                    'hu' => ['name' => $displayName, 'slug' => $slug],
+                    'bg' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
+                    'sk' => ['name' => $displayName, 'slug' => $slug],
+
                 ];
             }
 
@@ -98,6 +116,8 @@ class ParkingBeachDistanceSeeder extends Seeder
                 ]);
             }
         }
+
+        $this->command->info('Parking beach distances seeded successfully with translations in 14 languages!');
     }
 }
 

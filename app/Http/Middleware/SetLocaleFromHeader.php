@@ -11,7 +11,7 @@ class SetLocaleFromHeader
     /**
      * Supported locales for the application
      */
-    private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru'];
+    private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
 
     /**
      * Locale mappings for frontend compatibility
@@ -19,6 +19,7 @@ class SetLocaleFromHeader
      */
     private array $localeMappings = [
         'si' => 'sl', // Frontend uses 'si' but database uses 'sl' for Slovenian
+        'cz' => 'cs', // Czech Republic uses 'cz' in some contexts but ISO is 'cs'
     ];
 
     public function handle(Request $request, Closure $next)

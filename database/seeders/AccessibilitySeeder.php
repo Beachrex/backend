@@ -27,6 +27,12 @@ class AccessibilitySeeder extends Seeder
                     'it' => ['name' => 'Facile', 'slug' => 'facile'],
                     'ua' => ['name' => 'Легко', 'slug' => 'lehko'],
                     'ru' => ['name' => 'Легко', 'slug' => 'legko'],
+                    'pl' => ['name' => 'Łatwy', 'slug' => 'latwy'],
+                    'cs' => ['name' => 'Snadný', 'slug' => 'snadny'],
+                    'hu' => ['name' => 'Könnyű', 'slug' => 'konnyu'],
+                    'bg' => ['name' => 'Лесен', 'slug' => 'lesen'],
+                    'sk' => ['name' => 'Ľahký', 'slug' => 'lahky'],
+
                 ],
             ],
             [
@@ -43,6 +49,12 @@ class AccessibilitySeeder extends Seeder
                     'it' => ['name' => 'Medio', 'slug' => 'medio'],
                     'ua' => ['name' => 'Середньо', 'slug' => 'seredno'],
                     'ru' => ['name' => 'Средне', 'slug' => 'sredne'],
+                    'pl' => ['name' => 'Średni', 'slug' => 'sredni'],
+                    'cs' => ['name' => 'Střední', 'slug' => 'stredni'],
+                    'hu' => ['name' => 'Közepes', 'slug' => 'kozepes'],
+                    'bg' => ['name' => 'Среден', 'slug' => 'sreden'],
+                    'sk' => ['name' => 'Stredný', 'slug' => 'stredny'],
+
                 ],
             ],
             [

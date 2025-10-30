@@ -27,6 +27,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '5', 'slug' => '5'],
                     'ua' => ['name' => '5', 'slug' => '5'],
                     'ru' => ['name' => '5', 'slug' => '5'],
+                    'pl' => ['name' => '5', 'slug' => '5'],
+                    'cs' => ['name' => '5', 'slug' => '5'],
+                    'hu' => ['name' => '5', 'slug' => '5'],
+                    'bg' => ['name' => '5', 'slug' => '5'],
+                    'sk' => ['name' => '5', 'slug' => '5'],
+
                 ],
             ],
             [
@@ -43,6 +49,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '10', 'slug' => '10'],
                     'ua' => ['name' => '10', 'slug' => '10'],
                     'ru' => ['name' => '10', 'slug' => '10'],
+                    'pl' => ['name' => '10', 'slug' => '10'],
+                    'cs' => ['name' => '10', 'slug' => '10'],
+                    'hu' => ['name' => '10', 'slug' => '10'],
+                    'bg' => ['name' => '10', 'slug' => '10'],
+                    'sk' => ['name' => '10', 'slug' => '10'],
+
                 ],
             ],
             [
@@ -59,6 +71,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '15', 'slug' => '15'],
                     'ua' => ['name' => '15', 'slug' => '15'],
                     'ru' => ['name' => '15', 'slug' => '15'],
+                    'pl' => ['name' => '15', 'slug' => '15'],
+                    'cs' => ['name' => '15', 'slug' => '15'],
+                    'hu' => ['name' => '15', 'slug' => '15'],
+                    'bg' => ['name' => '15', 'slug' => '15'],
+                    'sk' => ['name' => '15', 'slug' => '15'],
+
                 ],
             ],
             [
@@ -75,6 +93,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '20', 'slug' => '20'],
                     'ua' => ['name' => '20', 'slug' => '20'],
                     'ru' => ['name' => '20', 'slug' => '20'],
+                    'pl' => ['name' => '20', 'slug' => '20'],
+                    'cs' => ['name' => '20', 'slug' => '20'],
+                    'hu' => ['name' => '20', 'slug' => '20'],
+                    'bg' => ['name' => '20', 'slug' => '20'],
+                    'sk' => ['name' => '20', 'slug' => '20'],
+
                 ],
             ],
             [
@@ -91,6 +115,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '30', 'slug' => '30'],
                     'ua' => ['name' => '30', 'slug' => '30'],
                     'ru' => ['name' => '30', 'slug' => '30'],
+                    'pl' => ['name' => '30', 'slug' => '30'],
+                    'cs' => ['name' => '30', 'slug' => '30'],
+                    'hu' => ['name' => '30', 'slug' => '30'],
+                    'bg' => ['name' => '30', 'slug' => '30'],
+                    'sk' => ['name' => '30', 'slug' => '30'],
+
                 ],
             ],
             [
@@ -107,6 +137,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '40', 'slug' => '40'],
                     'ua' => ['name' => '40', 'slug' => '40'],
                     'ru' => ['name' => '40', 'slug' => '40'],
+                    'pl' => ['name' => '40', 'slug' => '40'],
+                    'cs' => ['name' => '40', 'slug' => '40'],
+                    'hu' => ['name' => '40', 'slug' => '40'],
+                    'bg' => ['name' => '40', 'slug' => '40'],
+                    'sk' => ['name' => '40', 'slug' => '40'],
+
                 ],
             ],
             [
@@ -123,6 +159,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '50', 'slug' => '50'],
                     'ua' => ['name' => '50', 'slug' => '50'],
                     'ru' => ['name' => '50', 'slug' => '50'],
+                    'pl' => ['name' => '50', 'slug' => '50'],
+                    'cs' => ['name' => '50', 'slug' => '50'],
+                    'hu' => ['name' => '50', 'slug' => '50'],
+                    'bg' => ['name' => '50', 'slug' => '50'],
+                    'sk' => ['name' => '50', 'slug' => '50'],
+
                 ],
             ],
             [
@@ -139,6 +181,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '70', 'slug' => '70'],
                     'ua' => ['name' => '70', 'slug' => '70'],
                     'ru' => ['name' => '70', 'slug' => '70'],
+                    'pl' => ['name' => '70', 'slug' => '70'],
+                    'cs' => ['name' => '70', 'slug' => '70'],
+                    'hu' => ['name' => '70', 'slug' => '70'],
+                    'bg' => ['name' => '70', 'slug' => '70'],
+                    'sk' => ['name' => '70', 'slug' => '70'],
+
                 ],
             ],
             [
@@ -155,6 +203,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '100', 'slug' => '100'],
                     'ua' => ['name' => '100', 'slug' => '100'],
                     'ru' => ['name' => '100', 'slug' => '100'],
+                    'pl' => ['name' => '100', 'slug' => '100'],
+                    'cs' => ['name' => '100', 'slug' => '100'],
+                    'hu' => ['name' => '100', 'slug' => '100'],
+                    'bg' => ['name' => '100', 'slug' => '100'],
+                    'sk' => ['name' => '100', 'slug' => '100'],
+
                 ],
             ],
             [
@@ -219,6 +273,12 @@ class ParkingCapacitySeeder extends Seeder
                     'it' => ['name' => '0', 'slug' => '0'],
                     'ua' => ['name' => '0', 'slug' => '0'],
                     'ru' => ['name' => '0', 'slug' => '0'],
+                    'pl' => ['name' => '0', 'slug' => '0'],
+                    'cs' => ['name' => '0', 'slug' => '0'],
+                    'hu' => ['name' => '0', 'slug' => '0'],
+                    'bg' => ['name' => '0', 'slug' => '0'],
+                    'sk' => ['name' => '0', 'slug' => '0'],
+
                 ],
             ],
             [
@@ -261,6 +321,8 @@ class ParkingCapacitySeeder extends Seeder
                 ]);
             }
         }
+
+        $this->command->info('Parking capacities seeded successfully with translations in 14 languages!');
     }
 }
 

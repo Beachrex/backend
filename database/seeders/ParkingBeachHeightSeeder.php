@@ -46,7 +46,7 @@ class ParkingBeachHeightSeeder extends Seeder
             // Determine display name based on code
             $displayName = $heightData['code'];
             $slug = $heightData['code'];
-            
+
             // Special handling for no_parking
             if ($heightData['code'] === 'no_parking') {
                 $translations = [
@@ -59,6 +59,12 @@ class ParkingBeachHeightSeeder extends Seeder
                     'it' => ['name' => 'Nessun parcheggio', 'slug' => 'nessun-parcheggio'],
                     'ua' => ['name' => 'Без парковки', 'slug' => 'bez-parkovky'],
                     'ru' => ['name' => 'Без парковки', 'slug' => 'bez-parkovki'],
+                    'pl' => ['name' => 'Brak parkingu', 'slug' => 'brak-parkingu'],
+                    'cs' => ['name' => 'Bez parkování', 'slug' => 'bez-parkovani'],
+                    'hu' => ['name' => 'Nincs parkoló', 'slug' => 'nincs-parkolo'],
+                    'bg' => ['name' => 'Без паркинг', 'slug' => 'bez-parking'],
+                    'sk' => ['name' => 'Bez parkovania', 'slug' => 'bez-parkovania'],
+
                 ];
             } else {
                 // For numeric heights, use the same value for all languages
@@ -72,6 +78,12 @@ class ParkingBeachHeightSeeder extends Seeder
                     'it' => ['name' => $displayName, 'slug' => $slug],
                     'ua' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
                     'ru' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
+                    'pl' => ['name' => $displayName, 'slug' => $slug],
+                    'cs' => ['name' => $displayName, 'slug' => $slug],
+                    'hu' => ['name' => $displayName, 'slug' => $slug],
+                    'bg' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
+                    'sk' => ['name' => $displayName, 'slug' => $slug],
+
                 ];
             }
 
@@ -87,6 +99,8 @@ class ParkingBeachHeightSeeder extends Seeder
                 ]);
             }
         }
+
+        $this->command->info('Parking beach heights seeded successfully with translations in 14 languages!');
     }
 }
 

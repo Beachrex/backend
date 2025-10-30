@@ -28,6 +28,12 @@ class RoadToParkingTypeSeeder extends Seeder
                     'it' => ['name' => 'Asfalto', 'slug' => 'asfalto'],
                     'ua' => ['name' => 'Асфальт', 'slug' => 'asfalt'],
                     'ru' => ['name' => 'Асфальт', 'slug' => 'asfalt'],
+                    'pl' => ['name' => 'Asfalt', 'slug' => 'asfalt'],
+                    'cs' => ['name' => 'Asfalt', 'slug' => 'asfalt'],
+                    'hu' => ['name' => 'Aszfalt', 'slug' => 'aszfalt'],
+                    'bg' => ['name' => 'Асфалт', 'slug' => 'asfalt'],
+                    'sk' => ['name' => 'Asfalt', 'slug' => 'asfalt'],
+
                 ],
             ],
             [
@@ -45,6 +51,12 @@ class RoadToParkingTypeSeeder extends Seeder
                     'it' => ['name' => 'Sentiero in cemento', 'slug' => 'sentiero-in-cemento'],
                     'ua' => ['name' => 'Бетонна доріжка', 'slug' => 'betonna-dorizhka'],
                     'ru' => ['name' => 'Бетонная дорожка', 'slug' => 'betonnaya-dorozhka'],
+                    'pl' => ['name' => 'Ścieżka betonowa', 'slug' => 'sciezka-betonowa'],
+                    'cs' => ['name' => 'Betonová cesta', 'slug' => 'betonova-cesta'],
+                    'hu' => ['name' => 'Beton út', 'slug' => 'beton-ut'],
+                    'bg' => ['name' => 'Бетонна пътека', 'slug' => 'betonna-pateka'],
+                    'sk' => ['name' => 'Betónová cesta', 'slug' => 'betonova-cesta'],
+
                 ],
             ],
             [
@@ -62,6 +74,12 @@ class RoadToParkingTypeSeeder extends Seeder
                     'it' => ['name' => 'Terra', 'slug' => 'terra'],
                     'ua' => ['name' => 'Земля', 'slug' => 'zemlya'],
                     'ru' => ['name' => 'Земля', 'slug' => 'zemlya'],
+                    'pl' => ['name' => 'Ziemia', 'slug' => 'ziemia'],
+                    'cs' => ['name' => 'Hlína', 'slug' => 'hlina'],
+                    'hu' => ['name' => 'Föld', 'slug' => 'fold'],
+                    'bg' => ['name' => 'Пръст', 'slug' => 'parst'],
+                    'sk' => ['name' => 'Hlina', 'slug' => 'hlina'],
+
                 ],
             ],
             [
@@ -96,6 +114,12 @@ class RoadToParkingTypeSeeder extends Seeder
                     'it' => ['name' => 'Nessun parcheggio', 'slug' => 'nessun-parcheggio'],
                     'ua' => ['name' => 'Без парковки', 'slug' => 'bez-parkovky'],
                     'ru' => ['name' => 'Без парковки', 'slug' => 'bez-parkovki'],
+                    'pl' => ['name' => 'Brak parkingu', 'slug' => 'brak-parkingu'],
+                    'cs' => ['name' => 'Bez parkování', 'slug' => 'bez-parkovani'],
+                    'hu' => ['name' => 'Nincs parkoló', 'slug' => 'nincs-parkolo'],
+                    'bg' => ['name' => 'Без паркинг', 'slug' => 'bez-parking'],
+                    'sk' => ['name' => 'Bez parkovania', 'slug' => 'bez-parkovania'],
+
                 ],
             ],
         ];
@@ -123,6 +147,8 @@ class RoadToParkingTypeSeeder extends Seeder
                 ]);
             }
         }
+
+        $this->command->info('Road to parking types seeded successfully with translations in 14 languages!');
     }
 }
 

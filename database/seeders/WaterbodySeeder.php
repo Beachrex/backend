@@ -31,6 +31,11 @@ class WaterbodySeeder extends Seeder
                     'it' => ['name' => 'Fiume', 'slug' => 'fiume'],
                     'ua' => ['name' => 'Річка', 'slug' => 'richka'],
                     'ru' => ['name' => 'Река', 'slug' => 'reka'],
+                    'pl' => ['name' => 'Rzeka', 'slug' => 'rzeka'],
+                    'cs' => ['name' => 'Řeka', 'slug' => 'reka'],
+                    'hu' => ['name' => 'Folyó', 'slug' => 'folyo'],
+                    'bg' => ['name' => 'Река', 'slug' => 'reka'],
+                    'sk' => ['name' => 'Rieka', 'slug' => 'rieka'],
                 ],
             ],
             [
@@ -48,6 +53,11 @@ class WaterbodySeeder extends Seeder
                     'it' => ['name' => 'Piscina', 'slug' => 'piscina'],
                     'ua' => ['name' => 'Басейн', 'slug' => 'baseyn'],
                     'ru' => ['name' => 'Бассейн', 'slug' => 'basseyn'],
+                    'pl' => ['name' => 'Basen', 'slug' => 'basen'],
+                    'cs' => ['name' => 'Bazén', 'slug' => 'bazen'],
+                    'hu' => ['name' => 'Medence', 'slug' => 'medence'],
+                    'bg' => ['name' => 'Басейн', 'slug' => 'baseyn'],
+                    'sk' => ['name' => 'Bazén', 'slug' => 'bazen'],
                 ],
             ],
             [
@@ -65,6 +75,11 @@ class WaterbodySeeder extends Seeder
                     'it' => ['name' => 'Mare', 'slug' => 'mare'],
                     'ua' => ['name' => 'Море', 'slug' => 'more'],
                     'ru' => ['name' => 'Море', 'slug' => 'more'],
+                    'pl' => ['name' => 'Morze', 'slug' => 'morze'],
+                    'cs' => ['name' => 'Moře', 'slug' => 'more'],
+                    'hu' => ['name' => 'Tenger', 'slug' => 'tenger'],
+                    'bg' => ['name' => 'Море', 'slug' => 'more'],
+                    'sk' => ['name' => 'More', 'slug' => 'more'],
                 ],
             ],
             [
@@ -82,6 +97,11 @@ class WaterbodySeeder extends Seeder
                     'it' => ['name' => 'Lago', 'slug' => 'lago'],
                     'ua' => ['name' => 'Озеро', 'slug' => 'ozero'],
                     'ru' => ['name' => 'Озеро', 'slug' => 'ozero'],
+                    'pl' => ['name' => 'Jezioro', 'slug' => 'jezioro'],
+                    'cs' => ['name' => 'Jezero', 'slug' => 'jezero'],
+                    'hu' => ['name' => 'Tó', 'slug' => 'to'],
+                    'bg' => ['name' => 'Езеро', 'slug' => 'ezero'],
+                    'sk' => ['name' => 'Jazero', 'slug' => 'jazero'],
                 ],
             ],
         ];
@@ -106,7 +126,7 @@ class WaterbodySeeder extends Seeder
             }
         }
 
-        $this->command->info('Waterbodies seeded successfully with translations in 9 languages.');
+        $this->command->info('Waterbodies seeded successfully with translations in 14 languages.');
     }
 }
 

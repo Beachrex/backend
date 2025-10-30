@@ -11,6 +11,7 @@ trait HandlesTranslations
      */
     private array $localeMappings = [
         'si' => 'sl', // Frontend uses 'si' but database uses 'sl' for Slovenian
+        'cz' => 'cs', // Czech Republic uses 'cz' in some contexts but ISO is 'cs'
     ];
 
     /**

@@ -32,6 +32,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Sabbia', 'slug' => 'spiagge-di-sabbia'],
                     'ua' => ['name' => 'Пісок', 'slug' => 'pischani-plyazhi'],
                     'ru' => ['name' => 'Песок', 'slug' => 'peschanye-plyazhi'],
+                    'pl' => ['name' => 'Piasek', 'slug' => 'plaze-piaskowe'],
+                    'cs' => ['name' => 'Písek', 'slug' => 'piskove-plaze'],
+                    'hu' => ['name' => 'Homok', 'slug' => 'homokos-strandok'],
+                    'bg' => ['name' => 'Пясък', 'slug' => 'peschani-plajove'],
+                    'sk' => ['name' => 'Piesok', 'slug' => 'piesocne-plaze'],
+
                 ],
             ],
             [
@@ -49,6 +55,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Sabbia Marrone', 'slug' => 'spiagge-di-sabbia'],
                     'ua' => ['name' => 'Коричневий Пісок', 'slug' => 'pischani-plyazhi'],
                     'ru' => ['name' => 'Коричневый Песок', 'slug' => 'peschanye-plyazhi'],
+                    'pl' => ['name' => 'Brązowy piasek', 'slug' => 'plaze-brazowy-piasek'],
+                    'cs' => ['name' => 'Hnědý písek', 'slug' => 'hnede-piskove-plaze'],
+                    'hu' => ['name' => 'Barna homok', 'slug' => 'barna-homokos-strandok'],
+                    'bg' => ['name' => 'Кафяв пясък', 'slug' => 'kafjavi-peschani-plajove'],
+                    'sk' => ['name' => 'Hnedý piesok', 'slug' => 'hnede-piesocne-plaze'],
+
                 ],
             ],
             [
@@ -66,6 +78,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Sabbia Nera', 'slug' => 'spiagge-di-sabbia'],
                     'ua' => ['name' => 'Чорний Пісок', 'slug' => 'pischani-plyazhi'],
                     'ru' => ['name' => 'Черный Песок', 'slug' => 'peschanye-plyazhi'],
+                    'pl' => ['name' => 'Czarny piasek', 'slug' => 'plaze-czarny-piasek'],
+                    'cs' => ['name' => 'Černý písek', 'slug' => 'cerne-piskove-plaze'],
+                    'hu' => ['name' => 'Fekete homok', 'slug' => 'fekete-homokos-strandok'],
+                    'bg' => ['name' => 'Черен пясък', 'slug' => 'cherni-peschani-plajove'],
+                    'sk' => ['name' => 'Čierny piesok', 'slug' => 'cierne-piesocne-plaze'],
+
                 ],
             ],
             [
@@ -83,6 +101,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Sassolini', 'slug' => 'spiagge-di-ghiaia'],
                     'ua' => ['name' => 'Дрібне Каміння', 'slug' => 'galkovі-plyazhi'],
                     'ru' => ['name' => 'Мелкая Галька', 'slug' => 'galechnye-plyazhi'],
+                    'pl' => ['name' => 'Małe kamienie', 'slug' => 'plaze-male-kamienie'],
+                    'cs' => ['name' => 'Malé kameny', 'slug' => 'male-kamenite-plaze'],
+                    'hu' => ['name' => 'Apró kövek', 'slug' => 'apro-koves-strandok'],
+                    'bg' => ['name' => 'Малки камъни', 'slug' => 'malki-kamenisti-plajove'],
+                    'sk' => ['name' => 'Malé kamene', 'slug' => 'male-kameniste-plaze'],
+
                 ],
             ],
             [
@@ -100,6 +124,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Ciottoli Grandi', 'slug' => 'spiagge-di-ciottoli'],
                     'ua' => ['name' => 'Велике Каміння', 'slug' => 'galkovі-plyazhi'],
                     'ru' => ['name' => 'Крупная Галька', 'slug' => 'galechnye-plyazhi'],
+                    'pl' => ['name' => 'Duże kamienie', 'slug' => 'plaze-duze-kamienie'],
+                    'cs' => ['name' => 'Velké kameny', 'slug' => 'velke-kamenite-plaze'],
+                    'hu' => ['name' => 'Nagy kövek', 'slug' => 'nagy-koves-strandok'],
+                    'bg' => ['name' => 'Големи камъни', 'slug' => 'golemi-kamenisti-plajove'],
+                    'sk' => ['name' => 'Veľké kamene', 'slug' => 'velke-kameniste-plaze'],
+
                 ],
             ],
             [
@@ -117,6 +147,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Spiaggia Rocciosa', 'slug' => 'spiagge-rocciose'],
                     'ua' => ['name' => 'Скелястий Пляж', 'slug' => 'skelyasti-plyazhi'],
                     'ru' => ['name' => 'Скалистый Пляж', 'slug' => 'skalistyy-plyazh'],
+                    'pl' => ['name' => 'Plaża skalna', 'slug' => 'plaze-skalne'],
+                    'cs' => ['name' => 'Skalnatá pláž', 'slug' => 'skalnate-plaze'],
+                    'hu' => ['name' => 'Sziklás strand', 'slug' => 'sziklas-strandok'],
+                    'bg' => ['name' => 'Скалист плаж', 'slug' => 'skalisti-plajove'],
+                    'sk' => ['name' => 'Skalnatá pláž', 'slug' => 'skalnate-plaze'],
+
                 ],
             ],
             [
@@ -134,6 +170,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Spiaggia Erbosa', 'slug' => 'spiagge-erbose'],
                     'ua' => ['name' => 'Трав\'яний Пляж', 'slug' => 'travyani-plyazhi'],
                     'ru' => ['name' => 'Травяной Пляж', 'slug' => 'travyanoy-plyazh'],
+                    'pl' => ['name' => 'Plaża trawiasta', 'slug' => 'plaze-trawiaste'],
+                    'cs' => ['name' => 'Travnatá pláž', 'slug' => 'travnate-plaze'],
+                    'hu' => ['name' => 'Füves strand', 'slug' => 'fuves-strandok'],
+                    'bg' => ['name' => 'Тревист плаж', 'slug' => 'trevisti-plajove'],
+                    'sk' => ['name' => 'Trávnatá pláž', 'slug' => 'travnate-plaze'],
+
                 ],
             ],
             [
@@ -151,6 +193,12 @@ class BeachTypeSeeder extends Seeder
                     'it' => ['name' => 'Cemento', 'slug' => 'spiagge-di-cemento'],
                     'ua' => ['name' => 'Бетон', 'slug' => 'betonni-plyazhi'],
                     'ru' => ['name' => 'Бетон', 'slug' => 'betonnye-plyazhi'],
+                    'pl' => ['name' => 'Beton', 'slug' => 'plaze-betonowe'],
+                    'cs' => ['name' => 'Beton', 'slug' => 'betonove-plaze'],
+                    'hu' => ['name' => 'Beton', 'slug' => 'beton-strandok'],
+                    'bg' => ['name' => 'Бетон', 'slug' => 'betonni-plajove'],
+                    'sk' => ['name' => 'Betón', 'slug' => 'betonove-plaze'],
+
                 ],
             ],
         ];
@@ -175,7 +223,7 @@ class BeachTypeSeeder extends Seeder
             }
         }
 
-        $this->command->info('Beach types seeded successfully with all translations!');
+        $this->command->info('Beach types seeded successfully with translations in 14 languages!');
     }
 }
 

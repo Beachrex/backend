@@ -27,6 +27,12 @@ class AreaDescriptionSeeder extends Seeder
                     'it' => ['name' => 'Urbano', 'slug' => 'urbano'],
                     'ua' => ['name' => 'Міський', 'slug' => 'miskyi'],
                     'ru' => ['name' => 'Городской', 'slug' => 'gorodskoy'],
+                    'pl' => ['name' => 'Miejski', 'slug' => 'miejski'],
+                    'cs' => ['name' => 'Městský', 'slug' => 'mestsky'],
+                    'hu' => ['name' => 'Városi', 'slug' => 'varosi'],
+                    'bg' => ['name' => 'Градски', 'slug' => 'gradski'],
+                    'sk' => ['name' => 'Mestský', 'slug' => 'mestsky'],
+
                 ],
             ],
             [
@@ -59,6 +65,12 @@ class AreaDescriptionSeeder extends Seeder
                     'it' => ['name' => 'Naturale', 'slug' => 'naturale'],
                     'ua' => ['name' => 'Природний', 'slug' => 'pryrodnyi'],
                     'ru' => ['name' => 'Природный', 'slug' => 'prirodnyy'],
+                    'pl' => ['name' => 'Naturalny', 'slug' => 'naturalny'],
+                    'cs' => ['name' => 'Přírodní', 'slug' => 'prirodni'],
+                    'hu' => ['name' => 'Természetes', 'slug' => 'termeszetes'],
+                    'bg' => ['name' => 'Природен', 'slug' => 'priroden'],
+                    'sk' => ['name' => 'Prírodný', 'slug' => 'prirodny'],
+
                 ],
             ],
         ];
