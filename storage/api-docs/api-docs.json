@@ -1175,6 +1175,159 @@
                 }
             }
         },
+        "/api/v1/location-lengths": {
+            "get": {
+                "tags": [
+                    "Location Lengths"
+                ],
+                "summary": "Get all location lengths",
+                "description": "Retrieve a list of all location lengths with their translations",
+                "operationId": "getLocationLengths",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/LocationLength"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location lengths retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve location lengths"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/location-lengths/{id}": {
+            "get": {
+                "tags": [
+                    "Location Lengths"
+                ],
+                "summary": "Get a specific location length",
+                "description": "Retrieve a single location length by ID with all translations",
+                "operationId": "getLocationLengthById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Location Length ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/LocationLength"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location length retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Location length not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location length not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve location length"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/parking-beach-distances": {
             "get": {
                 "tags": [
@@ -2704,6 +2857,67 @@
                 },
                 "type": "object"
             },
+            "LocationLength": {
+                "title": "Location Length",
+                "description": "Location length model (5m, 10m, 20m, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Location length ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Location length code",
+                        "type": "string",
+                        "example": "5m"
+                    },
+                    "name": {
+                        "description": "Location length name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "5m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "5m"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this location length",
+                        "type": "integer",
+                        "example": 8
+                    },
+                    "translations": {
+                        "description": "All available translations for this location length",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LocationLengthTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "LocationLengthTranslation": {
+                "title": "Location Length Translation",
+                "description": "Translation for a location length",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated location length name",
+                        "type": "string",
+                        "example": "5m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "5m"
+                    }
+                },
+                "type": "object"
+            },
             "LoginRequest": {
                 "required": [
                     "email",
@@ -3210,6 +3424,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Location Lengths",
+            "description": "Location Lengths"
         },
         {
             "name": "Parking Beach Distances",
