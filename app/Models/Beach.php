@@ -28,6 +28,8 @@ class Beach extends Model
         'parking_capacity_id',
         'parking_beach_distance_id',
         'parking_beach_height_id',
+        'location_length_id',
+        'bay_length_id',
     ];
 
     public function translations(): HasMany
@@ -93,5 +95,15 @@ class Beach extends Model
     public function parkingBeachHeight(): BelongsTo
     {
         return $this->belongsTo(ParkingBeachHeight::class);
+    }
+
+    public function locationLength(): BelongsTo
+    {
+        return $this->belongsTo(LocationLength::class);
+    }
+
+    public function bayLength(): BelongsTo
+    {
+        return $this->belongsTo(BayLength::class);
     }
 }

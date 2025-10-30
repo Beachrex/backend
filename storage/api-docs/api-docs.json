@@ -499,6 +499,159 @@
                 ]
             }
         },
+        "/api/v1/bay-lengths": {
+            "get": {
+                "tags": [
+                    "Bay Lengths"
+                ],
+                "summary": "Get all bay lengths",
+                "description": "Retrieve a list of all bay lengths with their translations",
+                "operationId": "getBayLengths",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BayLength"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bay lengths retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve bay lengths"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/bay-lengths/{id}": {
+            "get": {
+                "tags": [
+                    "Bay Lengths"
+                ],
+                "summary": "Get a specific bay length",
+                "description": "Retrieve a single bay length by ID with all translations",
+                "operationId": "getBayLengthById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Bay Length ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/BayLength"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bay length retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bay length not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bay length not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve bay length"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/beaches": {
             "get": {
                 "tags": [
@@ -2673,6 +2826,67 @@
                 },
                 "type": "object"
             },
+            "BayLength": {
+                "title": "Bay Length",
+                "description": "Bay length model (3m, 5m, 10m, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Bay length ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Bay length code",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "name": {
+                        "description": "Bay length name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this bay length",
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "translations": {
+                        "description": "All available translations for this bay length",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BayLengthTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "BayLengthTranslation": {
+                "title": "Bay Length Translation",
+                "description": "Translation for a bay length",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated bay length name",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "3m"
+                    }
+                },
+                "type": "object"
+            },
             "BeachSchema": {
                 "title": "Beach Schema",
                 "description": "Beach API Resource",
@@ -3424,6 +3638,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Bay Lengths",
+            "description": "Bay Lengths"
         },
         {
             "name": "Location Lengths",
