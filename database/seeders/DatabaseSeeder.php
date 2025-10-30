@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
             ContinentSeeder::class,
             CountrySeeder::class,
             DemoUserSeeder::class,
-            BeachSeeder::class,
             WaterbodySeeder::class,
             BeachTypeSeeder::class,
             AreaDescriptionSeeder::class,
@@ -31,6 +30,7 @@ class DatabaseSeeder extends Seeder
             BeachInclinationSeeder::class,
             SwimmingDepthOfOneMSeeder::class,
             OccupancyRateSeeder::class,
+            BeachSeeder::class,
         ]);
     }
 }
