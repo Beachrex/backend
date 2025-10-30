@@ -13,14 +13,25 @@ class SetLocaleFromHeader
      */
     private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru'];
 
+    /**
+     * Locale mappings for frontend compatibility
+     * Maps frontend locale codes to database locale codes
+     */
+    private array $localeMappings = [
+        'si' => 'sl', // Frontend uses 'si' but database uses 'sl' for Slovenian
+    ];
+
     public function handle(Request $request, Closure $next)
     {
         if ($acceptLanguage = $request->header('Accept-Language')) {
             $locale = $this->parseAcceptLanguageHeader($acceptLanguage);
 
+            // Apply locale mapping if needed
+            $mappedLocale = $this->localeMappings[$locale] ?? $locale;
+
             // Only set locale if it's supported
-            if (in_array($locale, $this->supportedLocales)) {
-                App::setLocale($locale);
+            if (in_array($mappedLocale, $this->supportedLocales)) {
+                App::setLocale($mappedLocale);
             }
         }
 

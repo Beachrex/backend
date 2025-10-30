@@ -7,6 +7,13 @@ use Illuminate\Http\Request;
 trait HandlesTranslations
 {
     /**
+     * Locale mappings for frontend compatibility
+     */
+    private array $localeMappings = [
+        'si' => 'sl', // Frontend uses 'si' but database uses 'sl' for Slovenian
+    ];
+
+    /**
      * Get the requested locale from Accept-Language header
      */
     protected function getRequestedLocale(Request $request): string
@@ -29,7 +36,10 @@ trait HandlesTranslations
             $acceptLanguage = explode('-', $acceptLanguage)[0];
         }
 
-        return strtolower($acceptLanguage);
+        $locale = strtolower($acceptLanguage);
+
+        // Apply locale mapping if needed
+        return $this->localeMappings[$locale] ?? $locale;
     }
 
     /**
@@ -51,18 +61,12 @@ trait HandlesTranslations
     }
 
     /**
-     * Get localized translation data
+     * Get the current locale being used
      */
-    protected function getLocalizedTranslation(Request $request, $translations, string $fallbackLocale = 'en'): array
+    protected function getCurrentLocale(Request $request, $translations, string $fallbackLocale = 'en'): string
     {
         $translation = $this->getTranslation($request, $translations, $fallbackLocale);
-        $requestedLocale = $this->getRequestedLocale($request);
-
-        return [
-            'locale' => $translation?->locale ?? $requestedLocale,
-            'name' => $translation?->name ?? null,
-            'slug' => $translation?->slug ?? null,
-        ];
+        return $translation?->locale ?? $fallbackLocale;
     }
 
     /**

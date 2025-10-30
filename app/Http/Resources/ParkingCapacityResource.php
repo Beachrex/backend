@@ -33,10 +33,9 @@ class ParkingCapacityResource extends JsonResource
                 $this->relationLoaded('translations') && $this->shouldIncludeAllTranslations($request),
                 ParkingCapacityTranslationResource::collection($this->translations)
             ),
-            // Include current translation info
-            'translation' => $this->when(
+            'locale' => $this->when(
                 $this->relationLoaded('translations'),
-                $this->getLocalizedTranslation($request, $this->translations)
+                $this->getCurrentLocale($request, $this->translations)
             ),
         ];
     }

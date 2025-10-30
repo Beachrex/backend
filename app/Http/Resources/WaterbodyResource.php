@@ -24,6 +24,10 @@ class WaterbodyResource extends JsonResource
             'code' => $this->code,
             'name' => $translation?->name ?? $this->code,
             'slug' => $translation?->slug ?? $this->code,
+            'locale' => $this->when(
+                $this->relationLoaded('translations'),
+                $this->getCurrentLocale($request, $this->translations)
+            ),
             'show_filter' => $this->show_filter,
             'beaches_count' => $this->when(
                 $this->relationLoaded('beaches') || isset($this->beaches_count),
@@ -33,11 +37,6 @@ class WaterbodyResource extends JsonResource
             'translations' => $this->when(
                 $this->relationLoaded('translations') && $this->shouldIncludeAllTranslations($request),
                 WaterbodyTranslationResource::collection($this->translations)
-            ),
-            // Include current translation info
-            'translation' => $this->when(
-                $this->relationLoaded('translations'),
-                $this->getLocalizedTranslation($request, $this->translations)
             ),
         ];
     }
