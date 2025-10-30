@@ -33,6 +33,12 @@ namespace App\Swagger\Schemas;
  *         example="sea"
  *     ),
  *     @OA\Property(
+ *         property="locale",
+ *         type="string",
+ *         description="Current locale used for name and slug (based on Accept-Language header)",
+ *         example="en"
+ *     ),
+ *     @OA\Property(
  *         property="show_filter",
  *         type="boolean",
  *         description="Whether to show this waterbody in filters",
@@ -47,7 +53,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(
  *         property="translations",
  *         type="array",
- *         description="All available translations for this waterbody",
+ *         description="All available translations for this waterbody (only included when include_translations=true)",
  *         @OA\Items(ref="#/components/schemas/WaterbodyTranslation")
  *     )
  * )

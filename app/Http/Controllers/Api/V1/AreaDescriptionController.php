@@ -17,7 +17,13 @@ class AreaDescriptionController extends Controller
      *     operationId="getAreaDescriptions",
      *     tags={"Area Descriptions"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),     *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
@@ -79,7 +85,13 @@ class AreaDescriptionController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),     *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(

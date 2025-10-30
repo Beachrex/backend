@@ -33,6 +33,12 @@ namespace App\Swagger\Schemas;
  *         example="sand-beaches"
  *     ),
  *     @OA\Property(
+ *         property="locale",
+ *         type="string",
+ *         description="Current locale used for name and slug (based on Accept-Language header)",
+ *         example="en"
+ *     ),
+ *     @OA\Property(
  *         property="show_filter",
  *         type="boolean",
  *         description="Whether to show this beach type in filters",

@@ -30,6 +30,13 @@ class WaterbodyController extends Controller
      *         required=false,
      *         @OA\Schema(type="boolean", example=true)
      *     ),
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of waterbodies retrieved successfully",
@@ -100,6 +107,13 @@ class WaterbodyController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Waterbody retrieved successfully",

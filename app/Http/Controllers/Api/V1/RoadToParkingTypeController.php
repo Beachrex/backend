@@ -19,6 +19,12 @@ class RoadToParkingTypeController extends Controller
      *     tags={"Road to Parking Types"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),     *     @OA\Parameter(
      *         name="filter",
      *         in="query",
      *         description="Filter to show only types visible in filters (show_filter=true)",
@@ -93,7 +99,13 @@ class RoadToParkingTypeController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),     *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(

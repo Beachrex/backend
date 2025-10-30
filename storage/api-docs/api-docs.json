@@ -23,6 +23,16 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -96,6 +106,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -176,6 +196,16 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -249,6 +279,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -630,6 +670,16 @@
                             "type": "boolean",
                             "example": true
                         }
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -703,6 +753,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1126,6 +1186,16 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1199,6 +1269,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1279,6 +1359,16 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1352,6 +1442,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1432,6 +1532,16 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1505,6 +1615,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1912,6 +2032,16 @@
                         "$ref": "#/components/parameters/AcceptLanguage"
                     },
                     {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
+                    },
+                    {
                         "name": "filter",
                         "in": "query",
                         "description": "Filter to show only types visible in filters (show_filter=true)",
@@ -1993,6 +2123,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -2113,6 +2253,16 @@
                             "type": "boolean",
                             "example": true
                         }
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -2186,6 +2336,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "include_translations",
+                        "in": "query",
+                        "description": "Include all available translations in the response (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
                     }
                 ],
                 "responses": {
@@ -2428,6 +2588,11 @@
                         "description": "URL-friendly slug (localized based on Accept-Language header)",
                         "type": "string",
                         "example": "sand-beaches"
+                    },
+                    "locale": {
+                        "description": "Current locale used for name and slug (based on Accept-Language header)",
+                        "type": "string",
+                        "example": "en"
                     },
                     "show_filter": {
                         "description": "Whether to show this beach type in filters",
@@ -2925,6 +3090,11 @@
                         "type": "string",
                         "example": "sea"
                     },
+                    "locale": {
+                        "description": "Current locale used for name and slug (based on Accept-Language header)",
+                        "type": "string",
+                        "example": "en"
+                    },
                     "show_filter": {
                         "description": "Whether to show this waterbody in filters",
                         "type": "boolean",
@@ -2936,7 +3106,7 @@
                         "example": 42
                     },
                     "translations": {
-                        "description": "All available translations for this waterbody",
+                        "description": "All available translations for this waterbody (only included when include_translations=true)",
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/WaterbodyTranslation"

@@ -17,7 +17,13 @@ class ParkingBeachDistanceController extends Controller
      *     operationId="getParkingBeachDistances",
      *     tags={"Parking Beach Distances"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),     *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
@@ -79,7 +85,13 @@ class ParkingBeachDistanceController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(
+     *     @OA\Parameter(
+     *         name="include_translations",
+     *         in="query",
+     *         description="Include all available translations in the response (default: false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),     *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
