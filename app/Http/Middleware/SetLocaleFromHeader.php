@@ -8,12 +8,46 @@ use Illuminate\Support\Facades\App;
 
 class SetLocaleFromHeader
 {
+    /**
+     * Supported locales for the application
+     */
+    private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru'];
+
     public function handle(Request $request, Closure $next)
     {
-        if ($locale = $request->header('Accept-Language')) {
-            App::setLocale($locale);
+        if ($acceptLanguage = $request->header('Accept-Language')) {
+            $locale = $this->parseAcceptLanguageHeader($acceptLanguage);
+
+            // Only set locale if it's supported
+            if (in_array($locale, $this->supportedLocales)) {
+                App::setLocale($locale);
+            }
         }
 
         return $next($request);
+    }
+
+    /**
+     * Parse Accept-Language header to extract the primary locale
+     */
+    private function parseAcceptLanguageHeader(string $acceptLanguage): string
+    {
+        // Handle complex Accept-Language headers like "en-US,en;q=0.9,sl;q=0.8"
+        if (str_contains($acceptLanguage, ',')) {
+            $languages = explode(',', $acceptLanguage);
+            $acceptLanguage = trim($languages[0]);
+        }
+
+        // Remove quality values like ";q=0.9"
+        if (str_contains($acceptLanguage, ';')) {
+            $acceptLanguage = trim(explode(';', $acceptLanguage)[0]);
+        }
+
+        // Handle language-country codes like "en-US" -> "en" or "de-DE" -> "de"
+        if (str_contains($acceptLanguage, '-')) {
+            $acceptLanguage = explode('-', $acceptLanguage)[0];
+        }
+
+        return strtolower($acceptLanguage);
     }
 }
