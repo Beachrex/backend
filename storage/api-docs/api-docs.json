@@ -1634,6 +1634,159 @@
                 }
             }
         },
+        "/api/v1/occupancy-rates": {
+            "get": {
+                "tags": [
+                    "Occupancy Rates"
+                ],
+                "summary": "Get all occupancy rates",
+                "description": "Retrieve a list of all occupancy rates with their translations",
+                "operationId": "getOccupancyRates",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/OccupancyRate"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Occupancy rates retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve occupancy rates"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/occupancy-rates/{id}": {
+            "get": {
+                "tags": [
+                    "Occupancy Rates"
+                ],
+                "summary": "Get a specific occupancy rate",
+                "description": "Retrieve a single occupancy rate by ID with all translations",
+                "operationId": "getOccupancyRateById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Occupancy Rate ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/OccupancyRate"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Occupancy rate retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Occupancy rate not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Occupancy rate not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve occupancy rate"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/parking-beach-distances": {
             "get": {
                 "tags": [
@@ -3530,6 +3683,67 @@
                 },
                 "type": "object"
             },
+            "OccupancyRate": {
+                "title": "Occupancy Rate",
+                "description": "Occupancy rate model (small, middle, big)",
+                "properties": {
+                    "id": {
+                        "description": "Occupancy rate ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Occupancy rate code",
+                        "type": "string",
+                        "example": "small"
+                    },
+                    "name": {
+                        "description": "Occupancy rate name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Small"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "small"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this occupancy rate",
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "translations": {
+                        "description": "All available translations for this occupancy rate",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OccupancyRateTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "OccupancyRateTranslation": {
+                "title": "Occupancy Rate Translation",
+                "description": "Translation for an occupancy rate",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated occupancy rate name",
+                        "type": "string",
+                        "example": "Small"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "small"
+                    }
+                },
+                "type": "object"
+            },
             "ParkingBeachDistance": {
                 "title": "Parking Beach Distance",
                 "description": "Parking beach distance model (10m, 30m, 50m, etc.)",
@@ -4078,6 +4292,10 @@
         {
             "name": "Location Lengths",
             "description": "Location Lengths"
+        },
+        {
+            "name": "Occupancy Rates",
+            "description": "Occupancy Rates"
         },
         {
             "name": "Parking Beach Distances",

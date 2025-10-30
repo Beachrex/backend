@@ -32,6 +32,7 @@ class Beach extends Model
         'bay_length_id',
         'beach_inclination_id',
         'swimming_depth_of_one_m_id',
+        'occupancy_rate_id',
     ];
 
     public function translations(): HasMany
@@ -117,5 +118,10 @@ class Beach extends Model
     public function swimmingDepthOfOneM(): BelongsTo
     {
         return $this->belongsTo(SwimmingDepthOfOneM::class);
+    }
+
+    public function occupancyRate(): BelongsTo
+    {
+        return $this->belongsTo(OccupancyRate::class);
     }
 }

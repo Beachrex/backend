@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\LocationLengthController;
 use App\Http\Controllers\Api\V1\BayLengthController;
 use App\Http\Controllers\Api\V1\BeachInclinationController;
 use App\Http\Controllers\Api\V1\SwimmingDepthOfOneMController;
+use App\Http\Controllers\Api\V1\OccupancyRateController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -90,6 +91,10 @@ Route::prefix('api/v1')
         // Swimming Depth routes
         Route::get('/swimming-depths', [SwimmingDepthOfOneMController::class, 'index']);
         Route::get('/swimming-depths/{id}', [SwimmingDepthOfOneMController::class, 'show']);
+
+        // Occupancy Rate routes
+        Route::get('/occupancy-rates', [OccupancyRateController::class, 'index']);
+        Route::get('/occupancy-rates/{id}', [OccupancyRateController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {
