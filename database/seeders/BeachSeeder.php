@@ -177,6 +177,8 @@ class BeachSeeder extends Seeder
             ]
         ];
 
+        // Assign random values for new fields
+        $beachIndex = 0;
         foreach ($beaches as $beachData) {
             $beach = Beach::create([
                 'user_id' => $userId,
@@ -186,7 +188,23 @@ class BeachSeeder extends Seeder
                 'country_code' => $beachData['country_code'],
                 'continent_code' => $beachData['continent_code'],
                 'status_id' => 1,
+                // Populate new fields with varied test data
+                'waterbody_id' => ($beachIndex % 4) + 1, // 1=river, 2=pool, 3=sea, 4=lake
+                'beach_type_id' => ($beachIndex % 8) + 1, // 1-8 (sand, brown_sand, black_sand, small_stones, big_stones, rock_beach, grass_beach, concrete)
+                'area_description_id' => ($beachIndex % 3) + 1, // 1=urban, 2=part_urban, 3=natural
+                'accessibility_id' => ($beachIndex % 3) + 1, // 1=easy, 2=medium, 3=difficult
+                'road_to_parking_type_id' => ($beachIndex % 5) + 1, // 1-5 (asphalt, concrete_path, dirt, dirt_and_rocks, no_parking)
+                'parking' => ($beachIndex % 2) + 1, // 1=no, 2=yes
+                'parking_capacity_id' => ($beachIndex % 14) + 1, // 1-14 (5, 10, 15, 20, 30, 40, 50, 70, 100, >100, on_yard, roadside, 0, private_parking_only)
+                'parking_beach_distance_id' => ($beachIndex % 17) + 1, // 1-17 (10m-1380m, >1000m, no_parking)
+                'parking_beach_height_id' => ($beachIndex % 18) + 1, // 1-18 (0m-300m, no_parking)
+                'location_length_id' => ($beachIndex % 17) + 1, // 1-17 (5m-1000m, >1km)
+                'bay_length_id' => ($beachIndex % 12) + 1, // 1-12 (3m-100m, >100m)
+                'beach_inclination_id' => ($beachIndex % 5) + 1, // 1-5 (small_slope, normal, increase, sudden_drop, different_mixed)
+                'swimming_depth_of_one_m_id' => ($beachIndex % 18) + 1, // 1-18 (0m, 3m, 5m, etc.)
+                'occupancy_rate_id' => ($beachIndex % 3) + 1, // 1-3 (small, middle, big)
             ]);
+            $beachIndex++;
 
             foreach ($beachData['translations'] as $locale => $translation) {
                 BeachTranslation::create([
