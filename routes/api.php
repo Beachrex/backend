@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\ParkingBeachDistanceController;
 use App\Http\Controllers\Api\V1\ParkingBeachHeightController;
 use App\Http\Controllers\Api\V1\LocationLengthController;
 use App\Http\Controllers\Api\V1\BayLengthController;
+use App\Http\Controllers\Api\V1\BeachInclinationController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -80,6 +81,10 @@ Route::prefix('api/v1')
         // Bay Length routes
         Route::get('/bay-lengths', [BayLengthController::class, 'index']);
         Route::get('/bay-lengths/{id}', [BayLengthController::class, 'show']);
+
+        // Beach Inclination routes
+        Route::get('/beach-inclinations', [BeachInclinationController::class, 'index']);
+        Route::get('/beach-inclinations/{id}', [BeachInclinationController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

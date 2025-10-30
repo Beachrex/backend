@@ -802,6 +802,159 @@
                 }
             }
         },
+        "/api/v1/beach-inclinations": {
+            "get": {
+                "tags": [
+                    "Beach Inclinations"
+                ],
+                "summary": "Get all beach inclinations",
+                "description": "Retrieve a list of all beach inclinations with their translations",
+                "operationId": "getBeachInclinations",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachInclination"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach inclinations retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve beach inclinations"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/beach-inclinations/{id}": {
+            "get": {
+                "tags": [
+                    "Beach Inclinations"
+                ],
+                "summary": "Get a specific beach inclination",
+                "description": "Retrieve a single beach inclination by ID with all translations",
+                "operationId": "getBeachInclinationById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Beach Inclination ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/BeachInclination"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach inclination retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Beach inclination not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach inclination not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve beach inclination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/beach-types": {
             "get": {
                 "tags": [
@@ -2887,6 +3040,67 @@
                 },
                 "type": "object"
             },
+            "BeachInclination": {
+                "title": "Beach Inclination",
+                "description": "Beach inclination model (small_slope, normal, increase, sudden_drop, different_mixed)",
+                "properties": {
+                    "id": {
+                        "description": "Beach inclination ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Beach inclination code",
+                        "type": "string",
+                        "example": "small_slope"
+                    },
+                    "name": {
+                        "description": "Beach inclination name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Small slope"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "small-slope"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this inclination",
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "translations": {
+                        "description": "All available translations for this beach inclination",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachInclinationTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "BeachInclinationTranslation": {
+                "title": "Beach Inclination Translation",
+                "description": "Translation for a beach inclination",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated beach inclination name",
+                        "type": "string",
+                        "example": "Small slope"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "small-slope"
+                    }
+                },
+                "type": "object"
+            },
             "BeachSchema": {
                 "title": "Beach Schema",
                 "description": "Beach API Resource",
@@ -3642,6 +3856,10 @@
         {
             "name": "Bay Lengths",
             "description": "Bay Lengths"
+        },
+        {
+            "name": "Beach Inclinations",
+            "description": "Beach Inclinations"
         },
         {
             "name": "Location Lengths",
