@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             LocationLengthSeeder::class,
             BayLengthSeeder::class,
             BeachInclinationSeeder::class,
+            SwimmingDepthOfOneMSeeder::class,
         ]);
     }
 }

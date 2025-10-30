@@ -2661,6 +2661,159 @@
                 }
             }
         },
+        "/api/v1/swimming-depths": {
+            "get": {
+                "tags": [
+                    "Swimming Depths"
+                ],
+                "summary": "Get all swimming depths of 1m",
+                "description": "Retrieve a list of all swimming depths (distance to reach 1m depth) with their translations",
+                "operationId": "getSwimmingDepths",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SwimmingDepthOfOneM"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Swimming depths retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve swimming depths"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/swimming-depths/{id}": {
+            "get": {
+                "tags": [
+                    "Swimming Depths"
+                ],
+                "summary": "Get a specific swimming depth",
+                "description": "Retrieve a single swimming depth by ID with all translations",
+                "operationId": "getSwimmingDepthById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Swimming Depth ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/SwimmingDepthOfOneM"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Swimming depth retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Swimming depth not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Swimming depth not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve swimming depth"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/user": {
             "get": {
                 "tags": [
@@ -3677,6 +3830,67 @@
                 },
                 "type": "object"
             },
+            "SwimmingDepthOfOneM": {
+                "title": "Swimming Depth of 1m",
+                "description": "Swimming depth model - distance to reach 1m depth (0m, 3m, 5m, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Swimming depth ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Swimming depth code",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "name": {
+                        "description": "Swimming depth name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this swimming depth",
+                        "type": "integer",
+                        "example": 8
+                    },
+                    "translations": {
+                        "description": "All available translations for this swimming depth",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwimmingDepthOfOneMTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "SwimmingDepthOfOneMTranslation": {
+                "title": "Swimming Depth Translation",
+                "description": "Translation for a swimming depth",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated swimming depth name",
+                        "type": "string",
+                        "example": "3m"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "3m"
+                    }
+                },
+                "type": "object"
+            },
             "TokenResponse": {
                 "title": "Token Response",
                 "properties": {
@@ -3880,6 +4094,10 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
+        },
+        {
+            "name": "Swimming Depths",
+            "description": "Swimming Depths"
         },
         {
             "name": "User",
