@@ -139,4 +139,11 @@ class Beach extends Model
             ->withPivot('status_id')
             ->withTimestamps();
     }
+
+    public function locationInfrastructures(): BelongsToMany
+    {
+        return $this->belongsToMany(LocationInfrastructure::class, 'location_infrastructure_beach')
+            ->withPivot('status_id')
+            ->withTimestamps();
+    }
 }

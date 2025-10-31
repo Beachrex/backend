@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             OccupancyRateSeeder::class,
             AccommodationAroundSeeder::class,
             CulinaryOfferSeeder::class,
+            LocationInfrastructureSeeder::class,
             BeachSeeder::class,
         ]);
     }

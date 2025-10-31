@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\SwimmingDepthOfOneMController;
 use App\Http\Controllers\Api\V1\OccupancyRateController;
 use App\Http\Controllers\Api\V1\AccommodationAroundController;
 use App\Http\Controllers\Api\V1\CulinaryOfferController;
+use App\Http\Controllers\Api\V1\LocationInfrastructureController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -105,6 +106,10 @@ Route::prefix('api/v1')
         // Culinary Offer routes
         Route::get('/culinary-offers', [CulinaryOfferController::class, 'index']);
         Route::get('/culinary-offers/{id}', [CulinaryOfferController::class, 'show']);
+
+        // Location Infrastructure routes
+        Route::get('/location-infrastructure', [LocationInfrastructureController::class, 'index']);
+        Route::get('/location-infrastructure/{id}', [LocationInfrastructureController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

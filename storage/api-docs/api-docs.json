@@ -1787,6 +1787,159 @@
                 }
             }
         },
+        "/api/v1/location-infrastructure": {
+            "get": {
+                "tags": [
+                    "Location Infrastructure"
+                ],
+                "summary": "Get all location infrastructure types",
+                "description": "Retrieve a list of all infrastructure types available at beach locations with their translations",
+                "operationId": "getLocationInfrastructure",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/LocationInfrastructure"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location infrastructure retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve location infrastructure"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/location-infrastructure/{id}": {
+            "get": {
+                "tags": [
+                    "Location Infrastructure"
+                ],
+                "summary": "Get a specific location infrastructure type",
+                "description": "Retrieve a single infrastructure type by ID with all translations",
+                "operationId": "getLocationInfrastructureById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Infrastructure ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/LocationInfrastructure"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location infrastructure retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Infrastructure not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location infrastructure not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve location infrastructure"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/location-lengths": {
             "get": {
                 "tags": [
@@ -4019,6 +4172,67 @@
                 },
                 "type": "object"
             },
+            "LocationInfrastructure": {
+                "title": "Location Infrastructure",
+                "description": "Location infrastructure model (WC, shower, parking, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Infrastructure ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Infrastructure code",
+                        "type": "string",
+                        "example": "wc"
+                    },
+                    "name": {
+                        "description": "Infrastructure name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "WC"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "wc"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this infrastructure",
+                        "type": "integer",
+                        "example": 450
+                    },
+                    "translations": {
+                        "description": "All available translations for this infrastructure",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LocationInfrastructureTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "LocationInfrastructureTranslation": {
+                "title": "Location Infrastructure Translation",
+                "description": "Translation for a location infrastructure type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated infrastructure name",
+                        "type": "string",
+                        "example": "WC"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "wc"
+                    }
+                },
+                "type": "object"
+            },
             "LocationLength": {
                 "title": "Location Length",
                 "description": "Location length model (5m, 10m, 20m, etc.)",
@@ -4724,6 +4938,10 @@
         {
             "name": "Culinary Offers",
             "description": "Culinary Offers"
+        },
+        {
+            "name": "Location Infrastructure",
+            "description": "Location Infrastructure"
         },
         {
             "name": "Location Lengths",
