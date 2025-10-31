@@ -3579,6 +3579,159 @@
                 }
             }
         },
+        "/api/v1/sporting-activities": {
+            "get": {
+                "tags": [
+                    "Sporting Activities"
+                ],
+                "summary": "Get all sporting activities",
+                "description": "Retrieve a list of all sporting activities available at beaches with their translations",
+                "operationId": "getSportingActivities",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SportingActivities"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Sporting activities retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve sporting activities"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sporting-activities/{id}": {
+            "get": {
+                "tags": [
+                    "Sporting Activities"
+                ],
+                "summary": "Get a specific sporting activity",
+                "description": "Retrieve a single sporting activity by ID with all translations",
+                "operationId": "getSportingActivityById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Activity ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/SportingActivities"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Sporting activity retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Activity not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Sporting activity not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve sporting activity"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/swimming-depths": {
             "get": {
                 "tags": [
@@ -5114,6 +5267,67 @@
                 },
                 "type": "object"
             },
+            "SportingActivities": {
+                "title": "Sporting Activities",
+                "description": "Sporting activities model (swimming, diving, surfing, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Activity ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Activity code",
+                        "type": "string",
+                        "example": "swimming"
+                    },
+                    "name": {
+                        "description": "Activity name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Swimming"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "swimming"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this activity",
+                        "type": "integer",
+                        "example": 520
+                    },
+                    "translations": {
+                        "description": "All available translations for this activity",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SportingActivitiesTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "SportingActivitiesTranslation": {
+                "title": "Sporting Activities Translation",
+                "description": "Translation for a sporting activity",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated activity name",
+                        "type": "string",
+                        "example": "Swimming"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "swimming"
+                    }
+                },
+                "type": "object"
+            },
             "SwimmingDepthOfOneM": {
                 "title": "Swimming Depth of 1m",
                 "description": "Swimming depth model - distance to reach 1m depth (0m, 3m, 5m, etc.)",
@@ -5402,6 +5616,10 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
+        },
+        {
+            "name": "Sporting Activities",
+            "description": "Sporting Activities"
         },
         {
             "name": "Swimming Depths",

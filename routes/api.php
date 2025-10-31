@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\CulinaryOfferController;
 use App\Http\Controllers\Api\V1\LocationInfrastructureController;
 use App\Http\Controllers\Api\V1\NaturalLocationConditionController;
 use App\Http\Controllers\Api\V1\RecommendedTransportTypeController;
+use App\Http\Controllers\Api\V1\SportingActivitiesController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -120,6 +121,10 @@ Route::prefix('api/v1')
         // Recommended Transport Type routes
         Route::get('/recommended-transport-types', [RecommendedTransportTypeController::class, 'index']);
         Route::get('/recommended-transport-types/{id}', [RecommendedTransportTypeController::class, 'show']);
+
+        // Sporting Activities routes
+        Route::get('/sporting-activities', [SportingActivitiesController::class, 'index']);
+        Route::get('/sporting-activities/{id}', [SportingActivitiesController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

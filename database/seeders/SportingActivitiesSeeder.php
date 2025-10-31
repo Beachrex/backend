@@ -1,0 +1,236 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class SportingActivitiesSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $activities = [
+            ['id' => 1, 'code' => 'swimming'],
+            ['id' => 2, 'code' => 'snorkeling'],
+            ['id' => 3, 'code' => 'jumping_into_water'],
+            ['id' => 4, 'code' => 'diving'],
+            ['id' => 5, 'code' => 'fishing'],
+            ['id' => 6, 'code' => 'windsurfing'],
+            ['id' => 7, 'code' => 'kiteboarding'],
+            ['id' => 8, 'code' => 'surfing'],
+            ['id' => 9, 'code' => 'water_sports'],
+            ['id' => 10, 'code' => 'skilift_wakeboard'],
+            ['id' => 11, 'code' => 'different_sports'],
+        ];
+
+        $translations = [
+            'swimming' => [
+                'en' => ['name' => 'Swimming', 'slug' => 'swimming'],
+                'sl' => ['name' => 'Plavanje', 'slug' => 'plavanje'],
+                'de' => ['name' => 'Schwimmen', 'slug' => 'schwimmen'],
+                'hr' => ['name' => 'Plivanje', 'slug' => 'plivanje'],
+                'fr' => ['name' => 'Natation', 'slug' => 'natation'],
+                'es' => ['name' => 'Natación', 'slug' => 'natacion'],
+                'it' => ['name' => 'Nuoto', 'slug' => 'nuoto'],
+                'ua' => ['name' => 'Плавання', 'slug' => 'plavannia'],
+                'ru' => ['name' => 'Плавание', 'slug' => 'plavanie'],
+                'pl' => ['name' => 'Pływanie', 'slug' => 'plywanie'],
+                'cs' => ['name' => 'Plavání', 'slug' => 'plavani'],
+                'hu' => ['name' => 'Úszás', 'slug' => 'uszas'],
+                'bg' => ['name' => 'Плуване', 'slug' => 'pluvane'],
+                'sk' => ['name' => 'Plávanie', 'slug' => 'plavanie'],
+            ],
+            'snorkeling' => [
+                'en' => ['name' => 'Snorkeling', 'slug' => 'snorkeling'],
+                'sl' => ['name' => 'Potapljanje s Cevko', 'slug' => 'potapljanje-s-cevko'],
+                'de' => ['name' => 'Schnorcheln', 'slug' => 'schnorcheln'],
+                'hr' => ['name' => 'Ronjenje s Dihalicama', 'slug' => 'ronjenje-s-dihalicama'],
+                'fr' => ['name' => 'Plongée avec Tuba', 'slug' => 'plongee-avec-tuba'],
+                'es' => ['name' => 'Snorkel', 'slug' => 'snorkel'],
+                'it' => ['name' => 'Snorkeling', 'slug' => 'snorkeling'],
+                'ua' => ['name' => 'Снорклінг', 'slug' => 'snorkling'],
+                'ru' => ['name' => 'Снорклинг', 'slug' => 'snorkling'],
+                'pl' => ['name' => 'Nurkowanie z Rurką', 'slug' => 'nurkowanie-z-rurka'],
+                'cs' => ['name' => 'Šnorchlování', 'slug' => 'snorchlovani'],
+                'hu' => ['name' => 'Búvárkodás Légzőcsővel', 'slug' => 'buvarkodas-legzocsovel'],
+                'bg' => ['name' => 'Гмуркане с Шнорхел', 'slug' => 'gmurkane-s-shnorhel'],
+                'sk' => ['name' => 'Šnorchlovanie', 'slug' => 'snorchlovanie'],
+            ],
+            'jumping_into_water' => [
+                'en' => ['name' => 'Jumping into Water', 'slug' => 'jumping-into-water'],
+                'sl' => ['name' => 'Skakanje v Vodo', 'slug' => 'skakanje-v-vodo'],
+                'de' => ['name' => 'Ins Wasser Springen', 'slug' => 'ins-wasser-springen'],
+                'hr' => ['name' => 'Skakanje u Vodu', 'slug' => 'skakanje-u-vodu'],
+                'fr' => ['name' => 'Sauter dans l\'Eau', 'slug' => 'sauter-dans-eau'],
+                'es' => ['name' => 'Saltar al Agua', 'slug' => 'saltar-al-agua'],
+                'it' => ['name' => 'Tuffarsi in Acqua', 'slug' => 'tuffarsi-in-acqua'],
+                'ua' => ['name' => 'Стрибки у Воду', 'slug' => 'strybky-u-vodu'],
+                'ru' => ['name' => 'Прыжки в Воду', 'slug' => 'pryzhki-v-vodu'],
+                'pl' => ['name' => 'Skoki do Wody', 'slug' => 'skoki-do-wody'],
+                'cs' => ['name' => 'Skoky do Vody', 'slug' => 'skoky-do-vody'],
+                'hu' => ['name' => 'Vízbe Ugrás', 'slug' => 'vizbe-ugras'],
+                'bg' => ['name' => 'Скокове във Водата', 'slug' => 'skokove-vav-vodata'],
+                'sk' => ['name' => 'Skoky do Vody', 'slug' => 'skoky-do-vody'],
+            ],
+            'diving' => [
+                'en' => ['name' => 'Diving', 'slug' => 'diving'],
+                'sl' => ['name' => 'Potapljanje', 'slug' => 'potapljanje'],
+                'de' => ['name' => 'Tauchen', 'slug' => 'tauchen'],
+                'hr' => ['name' => 'Ronjenje', 'slug' => 'ronjenje'],
+                'fr' => ['name' => 'Plongée', 'slug' => 'plongee'],
+                'es' => ['name' => 'Buceo', 'slug' => 'buceo'],
+                'it' => ['name' => 'Immersioni', 'slug' => 'immersioni'],
+                'ua' => ['name' => 'Дайвінг', 'slug' => 'daivinh'],
+                'ru' => ['name' => 'Дайвинг', 'slug' => 'daiving'],
+                'pl' => ['name' => 'Nurkowanie', 'slug' => 'nurkowanie'],
+                'cs' => ['name' => 'Potápění', 'slug' => 'potapeni'],
+                'hu' => ['name' => 'Búvárkodás', 'slug' => 'buvarkodas'],
+                'bg' => ['name' => 'Гмуркане', 'slug' => 'gmurkane'],
+                'sk' => ['name' => 'Potápanie', 'slug' => 'potapanie'],
+            ],
+            'fishing' => [
+                'en' => ['name' => 'Fishing', 'slug' => 'fishing'],
+                'sl' => ['name' => 'Ribolov', 'slug' => 'ribolov'],
+                'de' => ['name' => 'Angeln', 'slug' => 'angeln'],
+                'hr' => ['name' => 'Ribolov', 'slug' => 'ribolov'],
+                'fr' => ['name' => 'Pêche', 'slug' => 'peche'],
+                'es' => ['name' => 'Pesca', 'slug' => 'pesca'],
+                'it' => ['name' => 'Pesca', 'slug' => 'pesca'],
+                'ua' => ['name' => 'Риболовля', 'slug' => 'rybolovlia'],
+                'ru' => ['name' => 'Рыбалка', 'slug' => 'rybalka'],
+                'pl' => ['name' => 'Wędkarstwo', 'slug' => 'wedkarstwo'],
+                'cs' => ['name' => 'Rybaření', 'slug' => 'rybareni'],
+                'hu' => ['name' => 'Horgászat', 'slug' => 'horgaszat'],
+                'bg' => ['name' => 'Риболов', 'slug' => 'ribolov'],
+                'sk' => ['name' => 'Rybolov', 'slug' => 'rybolov'],
+            ],
+            'windsurfing' => [
+                'en' => ['name' => 'Windsurfing', 'slug' => 'windsurfing'],
+                'sl' => ['name' => 'Jadranje na Deski', 'slug' => 'jadranje-na-deski'],
+                'de' => ['name' => 'Windsurfen', 'slug' => 'windsurfen'],
+                'hr' => ['name' => 'Jedrenje na Dasci', 'slug' => 'jedrenje-na-dasci'],
+                'fr' => ['name' => 'Planche à Voile', 'slug' => 'planche-a-voile'],
+                'es' => ['name' => 'Windsurf', 'slug' => 'windsurf'],
+                'it' => ['name' => 'Windsurf', 'slug' => 'windsurf'],
+                'ua' => ['name' => 'Віндсерфінг', 'slug' => 'vindserfing'],
+                'ru' => ['name' => 'Виндсерфинг', 'slug' => 'vindserfing'],
+                'pl' => ['name' => 'Windsurfing', 'slug' => 'windsurfing'],
+                'cs' => ['name' => 'Windsurfing', 'slug' => 'windsurfing'],
+                'hu' => ['name' => 'Szörfözés', 'slug' => 'szorfozes'],
+                'bg' => ['name' => 'Уиндсърфинг', 'slug' => 'uindsarfing'],
+                'sk' => ['name' => 'Windsurfing', 'slug' => 'windsurfing'],
+            ],
+            'kiteboarding' => [
+                'en' => ['name' => 'Kiteboarding', 'slug' => 'kiteboarding'],
+                'sl' => ['name' => 'Kiteboarding', 'slug' => 'kiteboarding'],
+                'de' => ['name' => 'Kitesurfen', 'slug' => 'kitesurfen'],
+                'hr' => ['name' => 'Kiteboarding', 'slug' => 'kiteboarding'],
+                'fr' => ['name' => 'Kitesurf', 'slug' => 'kitesurf'],
+                'es' => ['name' => 'Kitesurf', 'slug' => 'kitesurf'],
+                'it' => ['name' => 'Kitesurf', 'slug' => 'kitesurf'],
+                'ua' => ['name' => 'Кайтбординг', 'slug' => 'kaitbordynh'],
+                'ru' => ['name' => 'Кайтбординг', 'slug' => 'kaitbording'],
+                'pl' => ['name' => 'Kitesurfing', 'slug' => 'kitesurfing'],
+                'cs' => ['name' => 'Kiteboarding', 'slug' => 'kiteboarding'],
+                'hu' => ['name' => 'Kitesurf', 'slug' => 'kitesurf'],
+                'bg' => ['name' => 'Кайтсърфинг', 'slug' => 'kaitsarfing'],
+                'sk' => ['name' => 'Kiteboarding', 'slug' => 'kiteboarding'],
+            ],
+            'surfing' => [
+                'en' => ['name' => 'Surfing', 'slug' => 'surfing'],
+                'sl' => ['name' => 'Surfanje', 'slug' => 'surfanje'],
+                'de' => ['name' => 'Surfen', 'slug' => 'surfen'],
+                'hr' => ['name' => 'Surfanje', 'slug' => 'surfanje'],
+                'fr' => ['name' => 'Surf', 'slug' => 'surf'],
+                'es' => ['name' => 'Surf', 'slug' => 'surf'],
+                'it' => ['name' => 'Surf', 'slug' => 'surf'],
+                'ua' => ['name' => 'Серфінг', 'slug' => 'serfing'],
+                'ru' => ['name' => 'Серфинг', 'slug' => 'serfing'],
+                'pl' => ['name' => 'Surfing', 'slug' => 'surfing'],
+                'cs' => ['name' => 'Surfování', 'slug' => 'surfovani'],
+                'hu' => ['name' => 'Szörfözés', 'slug' => 'szorfozes'],
+                'bg' => ['name' => 'Сърфинг', 'slug' => 'sarfing'],
+                'sk' => ['name' => 'Surfovanie', 'slug' => 'surfovanie'],
+            ],
+            'water_sports' => [
+                'en' => ['name' => 'Water Sports', 'slug' => 'water-sports'],
+                'sl' => ['name' => 'Vodni Športi', 'slug' => 'vodni-sporti'],
+                'de' => ['name' => 'Wassersport', 'slug' => 'wassersport'],
+                'hr' => ['name' => 'Vodni Sportovi', 'slug' => 'vodni-sportovi'],
+                'fr' => ['name' => 'Sports Nautiques', 'slug' => 'sports-nautiques'],
+                'es' => ['name' => 'Deportes Acuáticos', 'slug' => 'deportes-acuaticos'],
+                'it' => ['name' => 'Sport Acquatici', 'slug' => 'sport-acquatici'],
+                'ua' => ['name' => 'Водні Види Спорту', 'slug' => 'vodni-vydy-sportu'],
+                'ru' => ['name' => 'Водные Виды Спорта', 'slug' => 'vodnye-vidy-sporta'],
+                'pl' => ['name' => 'Sporty Wodne', 'slug' => 'sporty-wodne'],
+                'cs' => ['name' => 'Vodní Sporty', 'slug' => 'vodni-sporty'],
+                'hu' => ['name' => 'Vízi Sportok', 'slug' => 'vizi-sportok'],
+                'bg' => ['name' => 'Водни Спортове', 'slug' => 'vodni-sportove'],
+                'sk' => ['name' => 'Vodné Športy', 'slug' => 'vodne-sporty'],
+            ],
+            'skilift_wakeboard' => [
+                'en' => ['name' => 'Ski Lift / Wakeboard', 'slug' => 'ski-lift-wakeboard'],
+                'sl' => ['name' => 'Smučarski Vlečnica / Wakeboard', 'slug' => 'smucarski-vlecnica-wakeboard'],
+                'de' => ['name' => 'Skilift / Wakeboard', 'slug' => 'skilift-wakeboard'],
+                'hr' => ['name' => 'Ski Lift / Wakeboard', 'slug' => 'ski-lift-wakeboard'],
+                'fr' => ['name' => 'Téléski / Wakeboard', 'slug' => 'teleski-wakeboard'],
+                'es' => ['name' => 'Telesquí / Wakeboard', 'slug' => 'telesqui-wakeboard'],
+                'it' => ['name' => 'Skilift / Wakeboard', 'slug' => 'skilift-wakeboard'],
+                'ua' => ['name' => 'Підйомник / Вейкборд', 'slug' => 'pidiomnik-veikbord'],
+                'ru' => ['name' => 'Подъемник / Вейкборд', 'slug' => 'podiemnik-veikbord'],
+                'pl' => ['name' => 'Wyciąg / Wakeboard', 'slug' => 'wyciag-wakeboard'],
+                'cs' => ['name' => 'Vlek / Wakeboard', 'slug' => 'vlek-wakeboard'],
+                'hu' => ['name' => 'Sífelvonó / Wakeboard', 'slug' => 'sifelvono-wakeboard'],
+                'bg' => ['name' => 'Ски Лифт / Уейкборд', 'slug' => 'ski-lift-ueikbord'],
+                'sk' => ['name' => 'Vlek / Wakeboard', 'slug' => 'vlek-wakeboard'],
+            ],
+            'different_sports' => [
+                'en' => ['name' => 'Different Sports', 'slug' => 'different-sports'],
+                'sl' => ['name' => 'Različni Športi', 'slug' => 'razlicni-sporti'],
+                'de' => ['name' => 'Verschiedene Sportarten', 'slug' => 'verschiedene-sportarten'],
+                'hr' => ['name' => 'Različiti Sportovi', 'slug' => 'razliciti-sportovi'],
+                'fr' => ['name' => 'Différents Sports', 'slug' => 'differents-sports'],
+                'es' => ['name' => 'Diferentes Deportes', 'slug' => 'diferentes-deportes'],
+                'it' => ['name' => 'Sport Diversi', 'slug' => 'sport-diversi'],
+                'ua' => ['name' => 'Різні Види Спорту', 'slug' => 'rizni-vydy-sportu'],
+                'ru' => ['name' => 'Разные Виды Спорта', 'slug' => 'raznye-vidy-sporta'],
+                'pl' => ['name' => 'Różne Sporty', 'slug' => 'rozne-sporty'],
+                'cs' => ['name' => 'Různé Sporty', 'slug' => 'ruzne-sporty'],
+                'hu' => ['name' => 'Különböző Sportok', 'slug' => 'kulonbozo-sportok'],
+                'bg' => ['name' => 'Различни Спортове', 'slug' => 'razlichni-sportove'],
+                'sk' => ['name' => 'Rôzne Športy', 'slug' => 'rozne-sporty'],
+            ],
+        ];
+
+        foreach ($activities as $activityData) {
+            // Insert activity with explicit ID
+            DB::table('sporting_activities')->insert([
+                'id' => $activityData['id'],
+                'code' => $activityData['code'],
+                'status_id' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Insert translations if available
+            if (isset($translations[$activityData['code']])) {
+                foreach ($translations[$activityData['code']] as $locale => $translation) {
+                    DB::table('sporting_activities_translation')->insert([
+                        'sporting_activities_id' => $activityData['id'],
+                        'locale' => $locale,
+                        'name' => $translation['name'],
+                        'slug' => $translation['slug'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        $this->command->info('Sporting activities seeded successfully with translations in 14 languages!');
+    }
+}
+

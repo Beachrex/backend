@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             LocationInfrastructureSeeder::class,
             NaturalLocationConditionSeeder::class,
             RecommendedTransportTypeSeeder::class,
+            SportingActivitiesSeeder::class,
             BeachSeeder::class,
         ]);
     }
