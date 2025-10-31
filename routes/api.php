@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\V1\NaturalLocationConditionController;
 use App\Http\Controllers\Api\V1\RecommendedTransportTypeController;
 use App\Http\Controllers\Api\V1\SportingActivitiesController;
 use App\Http\Controllers\Api\V1\UnderwaterCharacteristicController;
+use App\Http\Controllers\Api\V1\UserTypeController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -130,6 +131,10 @@ Route::prefix('api/v1')
         // Underwater Characteristics routes
         Route::get('/underwater-characteristics', [UnderwaterCharacteristicController::class, 'index']);
         Route::get('/underwater-characteristics/{id}', [UnderwaterCharacteristicController::class, 'show']);
+
+        // User Types routes
+        Route::get('/user-types', [UserTypeController::class, 'index']);
+        Route::get('/user-types/{id}', [UserTypeController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

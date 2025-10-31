@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class UserType extends Model
+{
+    use HasFactory;
+
+    protected $table = 'user_type';
+
+    protected $fillable = [
+        'code',
+        'status_id',
+    ];
+
+    /**
+     * Get all translations for this user type
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(UserTypeTranslation::class);
+    }
+
+    /**
+     * Get the status of this user type
+     */
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(Status::class);
+    }
+
+    /**
+     * Get all beaches with this user type (through pivot table)
+     */
+    public function beaches(): BelongsToMany
+    {
+        return $this->belongsToMany(Beach::class, 'user_type_beach')
+            ->withPivot('status_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Scope to get only active user types
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status_id', 1);
+    }
+
+    /**
+     * Scope to get user type by code
+     */
+    public function scopeByCode($query, string $code)
+    {
+        return $query->where('code', $code);
+    }
+}
+

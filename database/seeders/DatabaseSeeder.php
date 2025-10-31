@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             RecommendedTransportTypeSeeder::class,
             SportingActivitiesSeeder::class,
             UnderwaterCharacteristicSeeder::class,
+            UserTypeSeeder::class,
             BeachSeeder::class,
         ]);
     }

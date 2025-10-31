@@ -1,0 +1,100 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class UserTypeSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $userTypes = [
+            ['id' => 1, 'code' => 'adventurer'],
+            ['id' => 2, 'code' => 'family'],
+            ['id' => 3, 'code' => 'youth'],
+        ];
+
+        $translations = [
+            'adventurer' => [
+                'en' => ['name' => 'Adventurer', 'slug' => 'adventurer'],
+                'sl' => ['name' => 'Pustolov', 'slug' => 'pustolov'],
+                'de' => ['name' => 'Abenteurer', 'slug' => 'abenteurer'],
+                'hr' => ['name' => 'Pustolov', 'slug' => 'pustolov'],
+                'fr' => ['name' => 'Aventurier', 'slug' => 'aventurier'],
+                'es' => ['name' => 'Aventurero', 'slug' => 'aventurero'],
+                'it' => ['name' => 'Avventuriero', 'slug' => 'avventuriero'],
+                'ua' => ['name' => 'Шукач Пригод', 'slug' => 'shukach-pryhod'],
+                'ru' => ['name' => 'Искатель Приключений', 'slug' => 'iskatel-prikliuchenii'],
+                'pl' => ['name' => 'Poszukiwacz Przygód', 'slug' => 'poszukiwacz-przygod'],
+                'cs' => ['name' => 'Dobrodruh', 'slug' => 'dobrodruh'],
+                'hu' => ['name' => 'Kalandor', 'slug' => 'kalandor'],
+                'bg' => ['name' => 'Авантюрист', 'slug' => 'avantiurist'],
+                'sk' => ['name' => 'Dobrodruh', 'slug' => 'dobrodruh'],
+            ],
+            'family' => [
+                'en' => ['name' => 'Family', 'slug' => 'family'],
+                'sl' => ['name' => 'Družina', 'slug' => 'druzina'],
+                'de' => ['name' => 'Familie', 'slug' => 'familie'],
+                'hr' => ['name' => 'Obitelj', 'slug' => 'obitelj'],
+                'fr' => ['name' => 'Famille', 'slug' => 'famille'],
+                'es' => ['name' => 'Familia', 'slug' => 'familia'],
+                'it' => ['name' => 'Famiglia', 'slug' => 'famiglia'],
+                'ua' => ['name' => 'Сім\'я', 'slug' => 'simia'],
+                'ru' => ['name' => 'Семья', 'slug' => 'semia'],
+                'pl' => ['name' => 'Rodzina', 'slug' => 'rodzina'],
+                'cs' => ['name' => 'Rodina', 'slug' => 'rodina'],
+                'hu' => ['name' => 'Család', 'slug' => 'csalad'],
+                'bg' => ['name' => 'Семейство', 'slug' => 'semeistvo'],
+                'sk' => ['name' => 'Rodina', 'slug' => 'rodina'],
+            ],
+            'youth' => [
+                'en' => ['name' => 'Youth', 'slug' => 'youth'],
+                'sl' => ['name' => 'Mladina', 'slug' => 'mladina'],
+                'de' => ['name' => 'Jugend', 'slug' => 'jugend'],
+                'hr' => ['name' => 'Mladi', 'slug' => 'mladi'],
+                'fr' => ['name' => 'Jeunesse', 'slug' => 'jeunesse'],
+                'es' => ['name' => 'Juventud', 'slug' => 'juventud'],
+                'it' => ['name' => 'Gioventù', 'slug' => 'gioventu'],
+                'ua' => ['name' => 'Молодь', 'slug' => 'molod'],
+                'ru' => ['name' => 'Молодежь', 'slug' => 'molodezh'],
+                'pl' => ['name' => 'Młodzież', 'slug' => 'mlodziez'],
+                'cs' => ['name' => 'Mládež', 'slug' => 'mladez'],
+                'hu' => ['name' => 'Fiatalok', 'slug' => 'fiatalok'],
+                'bg' => ['name' => 'Младежи', 'slug' => 'mladezhi'],
+                'sk' => ['name' => 'Mládež', 'slug' => 'mladez'],
+            ],
+        ];
+
+        foreach ($userTypes as $userTypeData) {
+            // Insert user type with explicit ID
+            DB::table('user_type')->insert([
+                'id' => $userTypeData['id'],
+                'code' => $userTypeData['code'],
+                'status_id' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Insert translations if available
+            if (isset($translations[$userTypeData['code']])) {
+                foreach ($translations[$userTypeData['code']] as $locale => $translation) {
+                    DB::table('user_type_translation')->insert([
+                        'user_type_id' => $userTypeData['id'],
+                        'locale' => $locale,
+                        'name' => $translation['name'],
+                        'slug' => $translation['slug'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        $this->command->info('User types seeded successfully with translations in 14 languages!');
+    }
+}
+

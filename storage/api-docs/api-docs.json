@@ -4068,6 +4068,159 @@
                 ]
             }
         },
+        "/api/v1/user-types": {
+            "get": {
+                "tags": [
+                    "User Types"
+                ],
+                "summary": "Get all user types",
+                "description": "Retrieve a list of all user types (adventurer, family, youth) with their translations",
+                "operationId": "getUserTypes",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserType"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User types retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve user types"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user-types/{id}": {
+            "get": {
+                "tags": [
+                    "User Types"
+                ],
+                "summary": "Get a specific user type",
+                "description": "Retrieve a single user type by ID with all translations",
+                "operationId": "getUserTypeById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User type ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserType"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User type retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User type not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User type not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve user type"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/waterbodies": {
             "get": {
                 "tags": [
@@ -5634,6 +5787,67 @@
                 },
                 "type": "object"
             },
+            "UserType": {
+                "title": "User Type",
+                "description": "User type model (adventurer, family, youth)",
+                "properties": {
+                    "id": {
+                        "description": "User type ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "User type code",
+                        "type": "string",
+                        "example": "adventurer"
+                    },
+                    "name": {
+                        "description": "User type name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Adventurer"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "adventurer"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches suitable for this user type",
+                        "type": "integer",
+                        "example": 320
+                    },
+                    "translations": {
+                        "description": "All available translations for this user type",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UserTypeTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "UserTypeTranslation": {
+                "title": "User Type Translation",
+                "description": "Translation for a user type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated user type name",
+                        "type": "string",
+                        "example": "Adventurer"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "adventurer"
+                    }
+                },
+                "type": "object"
+            },
             "Waterbody": {
                 "title": "Waterbody",
                 "description": "Waterbody type model (sea, lake, river, pool)",
@@ -5846,6 +6060,10 @@
         {
             "name": "User",
             "description": "User"
+        },
+        {
+            "name": "User Types",
+            "description": "User Types"
         }
     ]
 }
