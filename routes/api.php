@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\BeachInclinationController;
 use App\Http\Controllers\Api\V1\SwimmingDepthOfOneMController;
 use App\Http\Controllers\Api\V1\OccupancyRateController;
 use App\Http\Controllers\Api\V1\AccommodationAroundController;
+use App\Http\Controllers\Api\V1\CulinaryOfferController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -100,6 +101,10 @@ Route::prefix('api/v1')
         // Accommodation Around routes
         Route::get('/accommodation-around', [AccommodationAroundController::class, 'index']);
         Route::get('/accommodation-around/{id}', [AccommodationAroundController::class, 'show']);
+
+        // Culinary Offer routes
+        Route::get('/culinary-offers', [CulinaryOfferController::class, 'index']);
+        Route::get('/culinary-offers/{id}', [CulinaryOfferController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

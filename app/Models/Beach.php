@@ -132,4 +132,11 @@ class Beach extends Model
             ->withPivot('status_id')
             ->withTimestamps();
     }
+
+    public function culinaryOffers(): BelongsToMany
+    {
+        return $this->belongsToMany(CulinaryOffer::class, 'culinary_offer_beach')
+            ->withPivot('status_id')
+            ->withTimestamps();
+    }
 }
