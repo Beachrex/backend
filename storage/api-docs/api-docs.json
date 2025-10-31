@@ -3885,6 +3885,159 @@
                 }
             }
         },
+        "/api/v1/underwater-characteristics": {
+            "get": {
+                "tags": [
+                    "Underwater Characteristics"
+                ],
+                "summary": "Get all underwater characteristics",
+                "description": "Retrieve a list of all underwater characteristics (sand, stones, rocks, etc.) with their translations",
+                "operationId": "getUnderwaterCharacteristics",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UnderwaterCharacteristic"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Underwater characteristics retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve underwater characteristics"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/underwater-characteristics/{id}": {
+            "get": {
+                "tags": [
+                    "Underwater Characteristics"
+                ],
+                "summary": "Get a specific underwater characteristic",
+                "description": "Retrieve a single underwater characteristic by ID with all translations",
+                "operationId": "getUnderwaterCharacteristicById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Characteristic ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/UnderwaterCharacteristic"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Underwater characteristic retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Characteristic not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Underwater characteristic not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve underwater characteristic"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/user": {
             "get": {
                 "tags": [
@@ -5402,6 +5555,67 @@
                 },
                 "type": "object"
             },
+            "UnderwaterCharacteristic": {
+                "title": "Underwater Characteristic",
+                "description": "Underwater characteristic model (sand ground, stones, rocks, grass, coral)",
+                "properties": {
+                    "id": {
+                        "description": "Characteristic ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Characteristic code",
+                        "type": "string",
+                        "example": "sand_ground"
+                    },
+                    "name": {
+                        "description": "Characteristic name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Sand Ground"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "sand-ground"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this characteristic",
+                        "type": "integer",
+                        "example": 450
+                    },
+                    "translations": {
+                        "description": "All available translations for this characteristic",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UnderwaterCharacteristicTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "UnderwaterCharacteristicTranslation": {
+                "title": "Underwater Characteristic Translation",
+                "description": "Translation for an underwater characteristic",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated characteristic name",
+                        "type": "string",
+                        "example": "Sand Ground"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "sand-ground"
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "title": "User",
                 "properties": {
@@ -5624,6 +5838,10 @@
         {
             "name": "Swimming Depths",
             "description": "Swimming Depths"
+        },
+        {
+            "name": "Underwater Characteristics",
+            "description": "Underwater Characteristics"
         },
         {
             "name": "User",
