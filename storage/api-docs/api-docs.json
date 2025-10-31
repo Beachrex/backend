@@ -185,6 +185,159 @@
                 }
             }
         },
+        "/api/v1/accommodation-around": {
+            "get": {
+                "tags": [
+                    "Accommodation Around"
+                ],
+                "summary": "Get all accommodation types",
+                "description": "Retrieve a list of all accommodation types available around beaches with their translations",
+                "operationId": "getAccommodationTypes",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AccommodationAround"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accommodation types retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve accommodation types"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/accommodation-around/{id}": {
+            "get": {
+                "tags": [
+                    "Accommodation Around"
+                ],
+                "summary": "Get a specific accommodation type",
+                "description": "Retrieve a single accommodation type by ID with all translations",
+                "operationId": "getAccommodationTypeById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Accommodation Type ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AccommodationAround"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accommodation type retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Accommodation type not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accommodation type not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve accommodation type"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/area-descriptions": {
             "get": {
                 "tags": [
@@ -3224,6 +3377,67 @@
                 },
                 "type": "object"
             },
+            "AccommodationAround": {
+                "title": "Accommodation Around",
+                "description": "Accommodation type model (hotel, apartments, camp, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Accommodation type ID",
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "code": {
+                        "description": "Accommodation type code",
+                        "type": "string",
+                        "example": "hotel"
+                    },
+                    "name": {
+                        "description": "Accommodation type name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Hotel"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "hotel"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this accommodation type",
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "translations": {
+                        "description": "All available translations for this accommodation type",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AccommodationAroundTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "AccommodationAroundTranslation": {
+                "title": "Accommodation Around Translation",
+                "description": "Translation for an accommodation type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated accommodation type name",
+                        "type": "string",
+                        "example": "Hotel"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "hotel"
+                    }
+                },
+                "type": "object"
+            },
             "AreaDescription": {
                 "title": "Area Description",
                 "description": "Area description model (urban, partly urban, natural)",
@@ -4272,6 +4486,10 @@
         {
             "name": "Accessibility",
             "description": "Accessibility"
+        },
+        {
+            "name": "Accommodation Around",
+            "description": "Accommodation Around"
         },
         {
             "name": "Area Descriptions",

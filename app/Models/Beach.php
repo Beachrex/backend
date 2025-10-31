@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 
 class Beach extends Model
@@ -123,5 +124,12 @@ class Beach extends Model
     public function occupancyRate(): BelongsTo
     {
         return $this->belongsTo(OccupancyRate::class);
+    }
+
+    public function accommodationArounds(): BelongsToMany
+    {
+        return $this->belongsToMany(AccommodationAround::class, 'accommodation_around_beach')
+            ->withPivot('status_id')
+            ->withTimestamps();
     }
 }
