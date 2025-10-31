@@ -3243,6 +3243,159 @@
                 }
             }
         },
+        "/api/v1/recommended-transport-types": {
+            "get": {
+                "tags": [
+                    "Recommended Transport Types"
+                ],
+                "summary": "Get all recommended transport types",
+                "description": "Retrieve a list of all recommended transport types for reaching beaches with their translations",
+                "operationId": "getRecommendedTransportTypes",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RecommendedTransportType"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Recommended transport types retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve recommended transport types"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/recommended-transport-types/{id}": {
+            "get": {
+                "tags": [
+                    "Recommended Transport Types"
+                ],
+                "summary": "Get a specific recommended transport type",
+                "description": "Retrieve a single transport type by ID with all translations",
+                "operationId": "getRecommendedTransportTypeById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Transport type ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/RecommendedTransportType"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Recommended transport type retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transport type not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Recommended transport type not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve recommended transport type"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/road-to-parking-types": {
             "get": {
                 "tags": [
@@ -4783,6 +4936,67 @@
                 },
                 "type": "object"
             },
+            "RecommendedTransportType": {
+                "title": "Recommended Transport Type",
+                "description": "Recommended transport type model (walk, bike, vehicle, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Transport type ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Transport type code",
+                        "type": "string",
+                        "example": "walk"
+                    },
+                    "name": {
+                        "description": "Transport type name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Walk"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "walk"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this transport type",
+                        "type": "integer",
+                        "example": 280
+                    },
+                    "translations": {
+                        "description": "All available translations for this transport type",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecommendedTransportTypeTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "RecommendedTransportTypeTranslation": {
+                "title": "Recommended Transport Type Translation",
+                "description": "Translation for a recommended transport type",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated transport type name",
+                        "type": "string",
+                        "example": "Walk"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "walk"
+                    }
+                },
+                "type": "object"
+            },
             "RegisterResponse": {
                 "properties": {
                     "user": {
@@ -5180,6 +5394,10 @@
         {
             "name": "Parking Capacities",
             "description": "Parking Capacities"
+        },
+        {
+            "name": "Recommended Transport Types",
+            "description": "Recommended Transport Types"
         },
         {
             "name": "Road to Parking Types",

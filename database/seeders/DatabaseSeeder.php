@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             CulinaryOfferSeeder::class,
             LocationInfrastructureSeeder::class,
             NaturalLocationConditionSeeder::class,
+            RecommendedTransportTypeSeeder::class,
             BeachSeeder::class,
         ]);
     }

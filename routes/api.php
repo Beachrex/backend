@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\AccommodationAroundController;
 use App\Http\Controllers\Api\V1\CulinaryOfferController;
 use App\Http\Controllers\Api\V1\LocationInfrastructureController;
 use App\Http\Controllers\Api\V1\NaturalLocationConditionController;
+use App\Http\Controllers\Api\V1\RecommendedTransportTypeController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -115,6 +116,10 @@ Route::prefix('api/v1')
         // Natural Location Condition routes
         Route::get('/natural-location-conditions', [NaturalLocationConditionController::class, 'index']);
         Route::get('/natural-location-conditions/{id}', [NaturalLocationConditionController::class, 'show']);
+
+        // Recommended Transport Type routes
+        Route::get('/recommended-transport-types', [RecommendedTransportTypeController::class, 'index']);
+        Route::get('/recommended-transport-types/{id}', [RecommendedTransportTypeController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

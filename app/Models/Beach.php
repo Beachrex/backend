@@ -153,4 +153,11 @@ class Beach extends Model
             ->withPivot('status_id')
             ->withTimestamps();
     }
+
+    public function recommendedTransportTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(RecommendedTransportType::class, 'recommended_transport_type_beach')
+            ->withPivot('status_id')
+            ->withTimestamps();
+    }
 }
