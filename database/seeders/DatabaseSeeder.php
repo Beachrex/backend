@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             AccommodationAroundSeeder::class,
             CulinaryOfferSeeder::class,
             LocationInfrastructureSeeder::class,
+            NaturalLocationConditionSeeder::class,
             BeachSeeder::class,
         ]);
     }

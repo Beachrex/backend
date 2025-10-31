@@ -146,4 +146,11 @@ class Beach extends Model
             ->withPivot('status_id')
             ->withTimestamps();
     }
+
+    public function naturalLocationConditions(): BelongsToMany
+    {
+        return $this->belongsToMany(NaturalLocationCondition::class, 'natural_location_condition_beach')
+            ->withPivot('status_id')
+            ->withTimestamps();
+    }
 }

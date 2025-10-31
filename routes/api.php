@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\OccupancyRateController;
 use App\Http\Controllers\Api\V1\AccommodationAroundController;
 use App\Http\Controllers\Api\V1\CulinaryOfferController;
 use App\Http\Controllers\Api\V1\LocationInfrastructureController;
+use App\Http\Controllers\Api\V1\NaturalLocationConditionController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -110,6 +111,10 @@ Route::prefix('api/v1')
         // Location Infrastructure routes
         Route::get('/location-infrastructure', [LocationInfrastructureController::class, 'index']);
         Route::get('/location-infrastructure/{id}', [LocationInfrastructureController::class, 'show']);
+
+        // Natural Location Condition routes
+        Route::get('/natural-location-conditions', [NaturalLocationConditionController::class, 'index']);
+        Route::get('/natural-location-conditions/{id}', [NaturalLocationConditionController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

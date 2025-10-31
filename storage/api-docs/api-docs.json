@@ -2093,6 +2093,159 @@
                 }
             }
         },
+        "/api/v1/natural-location-conditions": {
+            "get": {
+                "tags": [
+                    "Natural Location Conditions"
+                ],
+                "summary": "Get all natural location conditions",
+                "description": "Retrieve a list of all natural conditions at beach locations (sand types, stones, rocks, etc.) with their translations",
+                "operationId": "getNaturalLocationConditions",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NaturalLocationCondition"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Natural location conditions retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve natural location conditions"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/natural-location-conditions/{id}": {
+            "get": {
+                "tags": [
+                    "Natural Location Conditions"
+                ],
+                "summary": "Get a specific natural location condition",
+                "description": "Retrieve a single natural condition by ID with all translations",
+                "operationId": "getNaturalLocationConditionById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Condition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/NaturalLocationCondition"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Natural location condition retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Condition not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Natural location condition not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve natural location condition"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/occupancy-rates": {
             "get": {
                 "tags": [
@@ -4325,6 +4478,67 @@
                 },
                 "type": "object"
             },
+            "NaturalLocationCondition": {
+                "title": "Natural Location Condition",
+                "description": "Natural location condition model (sand types, stones, rocks, etc.)",
+                "properties": {
+                    "id": {
+                        "description": "Condition ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Condition code",
+                        "type": "string",
+                        "example": "white_sand"
+                    },
+                    "name": {
+                        "description": "Condition name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "White Sand"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "white-sand"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches with this condition",
+                        "type": "integer",
+                        "example": 320
+                    },
+                    "translations": {
+                        "description": "All available translations for this condition",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NaturalLocationConditionTranslation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "NaturalLocationConditionTranslation": {
+                "title": "Natural Location Condition Translation",
+                "description": "Translation for a natural location condition",
+                "properties": {
+                    "locale": {
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "description": "Translated condition name",
+                        "type": "string",
+                        "example": "White Sand"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug",
+                        "type": "string",
+                        "example": "white-sand"
+                    }
+                },
+                "type": "object"
+            },
             "OccupancyRate": {
                 "title": "Occupancy Rate",
                 "description": "Occupancy rate model (small, middle, big)",
@@ -4946,6 +5160,10 @@
         {
             "name": "Location Lengths",
             "description": "Location Lengths"
+        },
+        {
+            "name": "Natural Location Conditions",
+            "description": "Natural Location Conditions"
         },
         {
             "name": "Occupancy Rates",
