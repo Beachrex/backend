@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class ParkingCapacityController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/parking-capacities",
@@ -58,7 +58,7 @@ class ParkingCapacityController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "parking_capacities:index:{$locale}:all";
-            
+
             $parkingCapacities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return ParkingCapacity::with('translations')
                     ->withCount('beaches')
@@ -136,14 +136,14 @@ class ParkingCapacityController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "parking_capacitie:show:{$locale}:{$id}";
-            
+
             $parkingCapacitie = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return ParkingCapacity::with('translations')
                     ->withCount('beaches')
                 ->find($id);
             });
 
-            if (!$parkingCapacity) {
+            if (!$parkingCapacitie) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Parking capacity not found'
@@ -152,7 +152,7 @@ class ParkingCapacityController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new ParkingCapacityResource($parkingCapacity),
+                'data' => new ParkingCapacityResource($parkingCapacitie),
                 'message' => 'Parking capacity retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

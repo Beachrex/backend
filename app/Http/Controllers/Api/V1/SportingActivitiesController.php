@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class SportingActivitiesController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/sporting-activities",
@@ -52,7 +52,7 @@ class SportingActivitiesController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "sporting_activities:index:{$locale}:all";
-            
+
             $sportingActivities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return SportingActivities::with('translations')
                     ->withCount('beaches')
@@ -63,7 +63,7 @@ class SportingActivitiesController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => SportingActivitiesResource::collection($activities),
+                'data' => SportingActivitiesResource::collection($sportingActivities),
                 'message' => 'Sporting activities retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
@@ -124,14 +124,14 @@ class SportingActivitiesController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "sporting_activitie:show:{$locale}:{$id}";
-            
+
             $sportingActivitie = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return SportingActivities::with('translations')
                     ->withCount('beaches')
                 ->find($id);
             });
 
-            if (!$activity) {
+            if (!$sportingActivitie) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Sporting activity not found'
@@ -140,7 +140,7 @@ class SportingActivitiesController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new SportingActivitiesResource($activity),
+                'data' => new SportingActivitiesResource($sportingActivitie),
                 'message' => 'Sporting activity retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

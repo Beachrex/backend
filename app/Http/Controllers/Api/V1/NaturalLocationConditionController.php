@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class NaturalLocationConditionController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/natural-location-conditions",
@@ -52,7 +52,7 @@ class NaturalLocationConditionController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "natural_location_conditions:index:{$locale}:all";
-            
+
             $naturalLocationConditions = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return NaturalLocationCondition::with('translations')
                     ->withCount('beaches')
@@ -63,7 +63,7 @@ class NaturalLocationConditionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => NaturalLocationConditionResource::collection($conditions),
+                'data' => NaturalLocationConditionResource::collection($naturalLocationConditions),
                 'message' => 'Natural location conditions retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
@@ -124,14 +124,14 @@ class NaturalLocationConditionController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "natural_location_condition:show:{$locale}:{$id}";
-            
+
             $naturalLocationCondition = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return NaturalLocationCondition::with('translations')
                     ->withCount('beaches')
                 ->find($id);
             });
 
-            if (!$condition) {
+            if (!$naturalLocationCondition) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Natural location condition not found'
@@ -140,7 +140,7 @@ class NaturalLocationConditionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new NaturalLocationConditionResource($condition),
+                'data' => new NaturalLocationConditionResource($naturalLocationCondition),
                 'message' => 'Natural location condition retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

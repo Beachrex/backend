@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class UnderwaterCharacteristicController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/underwater-characteristics",
@@ -63,7 +63,7 @@ class UnderwaterCharacteristicController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => UnderwaterCharacteristicResource::collection($characteristics),
+                'data' => UnderwaterCharacteristicResource::collection($underwaterCharacteristics),
                 'message' => 'Underwater characteristics retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

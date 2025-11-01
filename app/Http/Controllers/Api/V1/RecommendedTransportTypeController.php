@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class RecommendedTransportTypeController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/recommended-transport-types",
@@ -52,7 +52,7 @@ class RecommendedTransportTypeController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "recommended_transport_types:index:{$locale}:all";
-            
+
             $recommendedTransportTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return RecommendedTransportType::with('translations')
                     ->withCount('beaches')
@@ -63,7 +63,7 @@ class RecommendedTransportTypeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => RecommendedTransportTypeResource::collection($transportTypes),
+                'data' => RecommendedTransportTypeResource::collection($recommendedTransportTypes),
                 'message' => 'Recommended transport types retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
@@ -124,14 +124,14 @@ class RecommendedTransportTypeController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "recommended_transport_type:show:{$locale}:{$id}";
-            
+
             $recommendedTransportType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return RecommendedTransportType::with('translations')
                     ->withCount('beaches')
                 ->find($id);
             });
 
-            if (!$transportType) {
+            if (!$recommendedTransportType) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Recommended transport type not found'
@@ -140,7 +140,7 @@ class RecommendedTransportTypeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new RecommendedTransportTypeResource($transportType),
+                'data' => new RecommendedTransportTypeResource($recommendedTransportType),
                 'message' => 'Recommended transport type retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

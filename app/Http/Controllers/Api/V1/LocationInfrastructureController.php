@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class LocationInfrastructureController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/location-infrastructure",
@@ -52,7 +52,7 @@ class LocationInfrastructureController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "location_infrastructures:index:{$locale}:all";
-            
+
             $locationInfrastructures = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return $infrastructure = LocationInfrastructure::with('translations')
                 ->withCount('beaches')
@@ -63,7 +63,7 @@ class LocationInfrastructureController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => LocationInfrastructureResource::collection($infrastructure),
+                'data' => LocationInfrastructureResource::collection($locationInfrastructures),
                 'message' => 'Location infrastructure retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
@@ -124,14 +124,14 @@ class LocationInfrastructureController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "location_infrastructure:show:{$locale}:{$id}";
-            
+
             $locationInfrastructure = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return LocationInfrastructure::with('translations')
                     ->withCount('beaches')
                 ->find($id);
             });
 
-            if (!$infrastructure) {
+            if (!$locationInfrastructure) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Location infrastructure not found'
@@ -140,7 +140,7 @@ class LocationInfrastructureController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new LocationInfrastructureResource($infrastructure),
+                'data' => new LocationInfrastructureResource($locationInfrastructure),
                 'message' => 'Location infrastructure retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

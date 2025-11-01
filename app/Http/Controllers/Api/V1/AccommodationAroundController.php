@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class AccommodationAroundController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/accommodation-around",
@@ -52,7 +52,7 @@ class AccommodationAroundController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "accommodation_arounds:index:{$locale}:all";
-            
+
             $accommodationArounds = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return AccommodationAround::with('translations')
                     ->withCount('beaches')
@@ -63,7 +63,7 @@ class AccommodationAroundController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => AccommodationAroundResource::collection($accommodationTypes),
+                'data' => AccommodationAroundResource::collection($accommodationArounds),
                 'message' => 'Accommodation types retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
@@ -124,14 +124,14 @@ class AccommodationAroundController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "accommodation_around:show:{$locale}:{$id}";
-            
+
             $accommodationAround = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return AccommodationAround::with('translations')
                     ->withCount('beaches')
                 ->find($id);
             });
 
-            if (!$accommodationType) {
+            if (!$accommodationAround) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Accommodation type not found'
@@ -140,7 +140,7 @@ class AccommodationAroundController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new AccommodationAroundResource($accommodationType),
+                'data' => new AccommodationAroundResource($accommodationAround),
                 'message' => 'Accommodation type retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
