@@ -31,7 +31,37 @@ class BeachController extends Controller
      */
     public function index()
     {
-        $beaches = Beach::with(['translations', 'status', 'user'])->get();
+        $beaches = Beach::with([
+            'translations',
+            'status',
+            'user',
+            // Eager load all feature relationships with their translations
+            'waterbody.translations',
+            'beachType.translations',
+            'areaDescription.translations',
+            'accessibility.translations',
+            'roadToParkingType.translations',
+            'parkingCapacity.translations',
+            'parkingBeachDistance.translations',
+            'parkingBeachHeight.translations',
+            'locationLength.translations',
+            'bayLength.translations',
+            'beachInclination.translations',
+            'swimmingDepthOfOneM.translations',
+            'occupancyRate.translations',
+            // Eager load many-to-many relationships with their translations
+            'accommodationArounds.translations',
+            'culinaryOffers.translations',
+            'locationInfrastructures.translations',
+            'naturalLocationConditions.translations',
+            'recommendedTransportTypes.translations',
+            'sportingActivities.translations',
+            'underwaterCharacteristics.translations',
+            'userTypes.translations',
+            // Eager load location relationships with translations
+            'continent.translations',
+            'country.translations',
+        ])->get();
         return BeachResource::collection($beaches);
     }
 
@@ -101,7 +131,37 @@ class BeachController extends Controller
             ]);
         }
 
-        return new BeachResource($beach->load(['translations', 'status', 'user']));
+        return new BeachResource($beach->load([
+            'translations',
+            'status',
+            'user',
+            // Eager load all feature relationships with their translations
+            'waterbody.translations',
+            'beachType.translations',
+            'areaDescription.translations',
+            'accessibility.translations',
+            'roadToParkingType.translations',
+            'parkingCapacity.translations',
+            'parkingBeachDistance.translations',
+            'parkingBeachHeight.translations',
+            'locationLength.translations',
+            'bayLength.translations',
+            'beachInclination.translations',
+            'swimmingDepthOfOneM.translations',
+            'occupancyRate.translations',
+            // Eager load many-to-many relationships with their translations
+            'accommodationArounds.translations',
+            'culinaryOffers.translations',
+            'locationInfrastructures.translations',
+            'naturalLocationConditions.translations',
+            'recommendedTransportTypes.translations',
+            'sportingActivities.translations',
+            'underwaterCharacteristics.translations',
+            'userTypes.translations',
+            // Eager load location relationships with translations
+            'continent.translations',
+            'country.translations',
+        ]));
     }
 
     /**
@@ -131,7 +191,37 @@ class BeachController extends Controller
      */
     public function show($id)
     {
-        $beach = Beach::with(['translations', 'status', 'user'])->findOrFail($id);
+        $beach = Beach::with([
+            'translations',
+            'status',
+            'user',
+            // Eager load all feature relationships with their translations
+            'waterbody.translations',
+            'beachType.translations',
+            'areaDescription.translations',
+            'accessibility.translations',
+            'roadToParkingType.translations',
+            'parkingCapacity.translations',
+            'parkingBeachDistance.translations',
+            'parkingBeachHeight.translations',
+            'locationLength.translations',
+            'bayLength.translations',
+            'beachInclination.translations',
+            'swimmingDepthOfOneM.translations',
+            'occupancyRate.translations',
+            // Eager load many-to-many relationships with their translations
+            'accommodationArounds.translations',
+            'culinaryOffers.translations',
+            'locationInfrastructures.translations',
+            'naturalLocationConditions.translations',
+            'recommendedTransportTypes.translations',
+            'sportingActivities.translations',
+            'underwaterCharacteristics.translations',
+            'userTypes.translations',
+            // Eager load location relationships with translations
+            'continent.translations',
+            'country.translations',
+        ])->findOrFail($id);
 
         return new BeachResource($beach);
     }

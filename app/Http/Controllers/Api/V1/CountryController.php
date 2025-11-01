@@ -74,7 +74,8 @@ class CountryController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Country::withBeaches()
+            $query = Country::with('continent')
+                ->withBeaches()
                 ->withCount('beaches')
                 ->orderBy('name');
 
@@ -84,10 +85,10 @@ class CountryController extends Controller
             }
 
             $countries = $query->get([
-                'code', 
-                'name', 
-                'full_name', 
-                'iso3', 
+                'code',
+                'name',
+                'full_name',
+                'iso3',
                 'continent_code'
             ]);
 
@@ -163,10 +164,10 @@ class CountryController extends Controller
                 ->withCount('beaches')
                 ->where('code', strtoupper($code))
                 ->first([
-                    'code', 
-                    'name', 
-                    'full_name', 
-                    'iso3', 
+                    'code',
+                    'name',
+                    'full_name',
+                    'iso3',
                     'continent_code'
                 ]);
 
