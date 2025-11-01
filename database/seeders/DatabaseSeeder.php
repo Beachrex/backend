@@ -40,6 +40,9 @@ class DatabaseSeeder extends Seeder
             UserTypeSeeder::class,
             MediaTypeSeeder::class,
             MediaCollectionSeeder::class,
+            BeachLocationTypeSeeder::class,
+            WaterBodyTypeSeeder::class,
+            IslandSeeder::class,
             BeachSeeder::class,
         ]);
     }

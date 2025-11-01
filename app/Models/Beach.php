@@ -39,6 +39,62 @@ class Beach extends Model
         'beach_inclination_id',
         'swimming_depth_of_one_m_id',
         'occupancy_rate_id',
+        'water_body_type_id',
+        'island_id',
+        'indoor_pools_count',
+        'outdoor_pools_count',
+        'indoor_area_m2',
+        'outdoor_area_m2',
+        'has_swimming_pool',
+        'has_indoor_swimming_lanes',
+        'has_outdoor_swimming_lanes',
+        'has_indoor_children_pool',
+        'has_outdoor_children_pool',
+        'has_indoor_diving_board',
+        'has_outdoor_diving_board',
+        'indoor_water_slides_count',
+        'outdoor_water_slides_count',
+        'has_thermal_pool',
+        'has_indoor_climbing_wall',
+        'has_outdoor_climbing_wall',
+        'has_indoor_lazy_river',
+        'has_outdoor_lazy_river',
+        'has_indoor_wave_pool',
+        'has_outdoor_wave_pool',
+        'has_indoor_whirlpool',
+        'has_outdoor_whirlpool',
+        'has_indoor_surfing',
+        'has_outdoor_surfing',
+        'has_sauna',
+        'has_wellness',
+    ];
+
+    protected $casts = [
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'parking' => 'boolean',
+        'indoor_area_m2' => 'decimal:2',
+        'outdoor_area_m2' => 'decimal:2',
+        'has_swimming_pool' => 'boolean',
+        'has_indoor_swimming_lanes' => 'boolean',
+        'has_outdoor_swimming_lanes' => 'boolean',
+        'has_indoor_children_pool' => 'boolean',
+        'has_outdoor_children_pool' => 'boolean',
+        'has_indoor_diving_board' => 'boolean',
+        'has_outdoor_diving_board' => 'boolean',
+        'has_thermal_pool' => 'boolean',
+        'has_indoor_climbing_wall' => 'boolean',
+        'has_outdoor_climbing_wall' => 'boolean',
+        'has_indoor_lazy_river' => 'boolean',
+        'has_outdoor_lazy_river' => 'boolean',
+        'has_indoor_wave_pool' => 'boolean',
+        'has_outdoor_wave_pool' => 'boolean',
+        'has_indoor_whirlpool' => 'boolean',
+        'has_outdoor_whirlpool' => 'boolean',
+        'has_indoor_surfing' => 'boolean',
+        'has_outdoor_surfing' => 'boolean',
+        'has_sauna' => 'boolean',
+        'has_wellness' => 'boolean',
     ];
 
     public function translations(): HasMany
@@ -129,6 +185,21 @@ class Beach extends Model
     public function occupancyRate(): BelongsTo
     {
         return $this->belongsTo(OccupancyRate::class);
+    }
+
+    public function beachLocationTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(BeachLocationType::class, 'beach_beach_location_type');
+    }
+
+    public function waterBodyType(): BelongsTo
+    {
+        return $this->belongsTo(WaterBodyType::class);
+    }
+
+    public function island(): BelongsTo
+    {
+        return $this->belongsTo(Island::class);
     }
 
     public function accommodationArounds(): BelongsToMany
