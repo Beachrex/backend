@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class LocationLengthController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/location-lengths",
@@ -52,7 +52,7 @@ class LocationLengthController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "location_lengths:index:{$locale}:all";
-            
+
             $locationLengths = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return LocationLength::with('translations')
                     ->withCount('beaches')
@@ -124,7 +124,7 @@ class LocationLengthController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "location_length:show:{$locale}:{$id}";
-            
+
             $locationLength = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return LocationLength::with('translations')
                     ->withCount('beaches')
