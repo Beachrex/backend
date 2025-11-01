@@ -6,10 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\RoadToParkingType;
 use App\Http\Resources\RoadToParkingTypeResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
+use App\Traits\CacheAware;
 
 class RoadToParkingTypeController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/road-to-parking-types",
@@ -59,17 +64,23 @@ class RoadToParkingTypeController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = RoadToParkingType::with('translations')
+            $locale = app()->getLocale();
+            $showFilter = request()->has('filter') && request()->get('filter') === 'true';
+            $cacheKey = "road_to_parking_types:index:{$locale}:" . ($showFilter ? 'filtered' : 'all');
+            
+            $roadToParkingTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($showFilter) {
+                $query = RoadToParkingType::with('translations')
                 ->withCount('beaches')
-                ->active()
-                ->orderBy('id');
+                    ->active()
+                    ->orderBy('id');
 
             // Apply filter if requested
             if ($request->query('filter') === 'true') {
                 $query->showInFilter();
             }
 
-            $roadToParkingTypes = $query->get();
+            return $roadToParkingTypes = $query->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -138,9 +149,14 @@ class RoadToParkingTypeController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $roadToParkingType = RoadToParkingType::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "road_to_parking_type:show:{$locale}:{$id}";
+            
+            $roadToParkingType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return RoadToParkingType::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$roadToParkingType) {
                 return response()->json([

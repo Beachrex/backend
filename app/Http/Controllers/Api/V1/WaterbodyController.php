@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WaterbodyResource;
 use App\Models\Waterbody;
+use App\Services\CacheService;
+use App\Traits\CacheAware;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @OA\Tag(
@@ -15,6 +18,14 @@ use Illuminate\Http\JsonResponse;
  */
 class WaterbodyController extends Controller
 {
+    use CacheAware;
+
+    protected CacheService $cacheService;
+
+    public function __construct(CacheService $cacheService)
+    {
+        $this->cacheService = $cacheService;
+    }
     /**
      * @OA\Get(
      *     path="/api/v1/waterbodies",
@@ -49,7 +60,11 @@ class WaterbodyController extends Controller
      *                 @OA\Items(ref="#/components/schemas/Waterbody")
      *             ),
      *             @OA\Property(property="message", type="string", example="Waterbodies retrieved successfully")
-     *         )
+     *         ),
+     *         @OA\Header(header="X-Cache-Status", ref="#/components/responses/CacheHeaders/headers/X-Cache-Status"),
+     *         @OA\Header(header="X-Cache-Key", ref="#/components/responses/CacheHeaders/headers/X-Cache-Key"),
+     *         @OA\Header(header="X-Response-Time", ref="#/components/responses/CacheHeaders/headers/X-Response-Time"),
+     *         @OA\Header(header="X-Locale", ref="#/components/responses/CacheHeaders/headers/X-Locale")
      *     ),
      *     @OA\Response(
      *         response=500,
@@ -65,17 +80,25 @@ class WaterbodyController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $query = Waterbody::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id');
+            $locale = app()->getLocale();
+            $showFilter = request()->has('filter') && request()->get('filter') === 'true';
 
-            // Filter by show_filter if requested
-            if (request()->has('filter') && request()->get('filter') === 'true') {
-                $query->showInFilter();
-            }
+            // Cache key based on locale and filter parameter
+            $cacheKey = "waterbodies:index:{$locale}:" . ($showFilter ? 'filtered' : 'all');
 
-            $waterbodies = $query->get();
+            $waterbodies = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($showFilter) {
+                $query = Waterbody::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id');
+
+                // Filter by show_filter if requested
+                if ($showFilter) {
+                    $query->showInFilter();
+                }
+
+                return $query->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -122,7 +145,11 @@ class WaterbodyController extends Controller
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", ref="#/components/schemas/Waterbody"),
      *             @OA\Property(property="message", type="string", example="Waterbody retrieved successfully")
-     *         )
+     *         ),
+     *         @OA\Header(header="X-Cache-Status", ref="#/components/responses/CacheHeaders/headers/X-Cache-Status"),
+     *         @OA\Header(header="X-Cache-Key", ref="#/components/responses/CacheHeaders/headers/X-Cache-Key"),
+     *         @OA\Header(header="X-Response-Time", ref="#/components/responses/CacheHeaders/headers/X-Response-Time"),
+     *         @OA\Header(header="X-Locale", ref="#/components/responses/CacheHeaders/headers/X-Locale")
      *     ),
      *     @OA\Response(
      *         response=404,
@@ -138,9 +165,14 @@ class WaterbodyController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $waterbody = Waterbody::with('translations')
-                ->withCount('beaches')
-                ->find($id);
+            $locale = app()->getLocale();
+            $cacheKey = "waterbody:show:{$locale}:{$id}";
+
+            $waterbody = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return Waterbody::with('translations')
+                    ->withCount('beaches')
+                    ->find($id);
+            });
 
             if (!$waterbody) {
                 return response()->json([

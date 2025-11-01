@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AreaDescription;
 use App\Http\Resources\AreaDescriptionResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class AreaDescriptionController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/area-descriptions",
@@ -51,11 +56,16 @@ class AreaDescriptionController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $areaDescriptions = AreaDescription::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "area_descriptions:index:{$locale}:all";
+
+            $areaDescriptions = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return AreaDescription::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -124,9 +134,14 @@ class AreaDescriptionController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $areaDescription = AreaDescription::with('translations')
-                ->withCount('beaches')
-                ->find($id);
+            $locale = app()->getLocale();
+            $cacheKey = "area_description:show:{$locale}:{$id}";
+
+            $areaDescription = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return AreaDescription::with('translations')
+                    ->withCount('beaches')
+                    ->find($id);
+            });
 
             if (!$areaDescription) {
                 return response()->json([

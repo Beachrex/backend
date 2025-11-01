@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class Waterbody extends Model
 {
+    use Cacheable;
+
     protected $table = 'waterbody';
 
     protected $fillable = [
@@ -66,6 +70,23 @@ class Waterbody extends Model
     public function scopeByCode($query, string $code)
     {
         return $query->where('code', $code);
+    }
+
+    /**
+     * Clear waterbody-specific caches
+     */
+    public function clearModelCache(): void
+    {
+        // Clear reference data cache for this model
+        $this->cacheService()->clearReferenceCache('Waterbody');
+
+        // Clear specific waterbody caches
+        Cache::forget("waterbody:show:{$this->id}");
+        Cache::forget('waterbodies:index:all');
+        Cache::forget('waterbodies:index:filtered');
+
+        // Clear beach count cache
+        $this->cacheService()->clearBeachCountCache();
     }
 }
 

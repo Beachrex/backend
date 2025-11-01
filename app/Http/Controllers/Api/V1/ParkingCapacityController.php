@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ParkingCapacity;
 use App\Http\Resources\ParkingCapacityResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class ParkingCapacityController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/parking-capacities",
@@ -51,11 +56,16 @@ class ParkingCapacityController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $parkingCapacities = ParkingCapacity::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "parking_capacities:index:{$locale}:all";
+            
+            $parkingCapacities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return ParkingCapacity::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -124,9 +134,14 @@ class ParkingCapacityController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $parkingCapacity = ParkingCapacity::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "parking_capacitie:show:{$locale}:{$id}";
+            
+            $parkingCapacitie = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return ParkingCapacity::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$parkingCapacity) {
                 return response()->json([

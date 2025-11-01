@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Cache;
 
 
 class Beach extends Model
 {
+    use Cacheable;
     protected $table = 'beach';
 
     protected $fillable = [
@@ -180,5 +183,41 @@ class Beach extends Model
         return $this->belongsToMany(UserType::class, 'user_type_beach')
             ->withPivot('status_id')
             ->withTimestamps();
+    }
+
+    /**
+     * Clear beach-specific caches
+     * When a beach is created/updated/deleted, clear all related caches
+     */
+    public function clearModelCache(): void
+    {
+        // Clear reference data cache for this model
+        $this->cacheService()->clearReferenceCache('Beach');
+
+        // Clear continent caches
+        if ($this->continent_code) {
+            Cache::forget("continent:show:{$this->continent_code}");
+        }
+        Cache::forget('continents:index');
+
+        // Clear country caches
+        if ($this->country_code) {
+            Cache::forget("country:show:{$this->country_code}");
+        }
+        Cache::forget('countries:index:all');
+
+        // Clear waterbody caches
+        if ($this->waterbody_id) {
+            Cache::forget("waterbody:show:{$this->waterbody_id}");
+        }
+        Cache::forget('waterbodies:index:all');
+        Cache::forget('waterbodies:index:filtered');
+
+        // Clear all beach type caches
+        Cache::forget('beach_types:index:all');
+        Cache::forget('beach_types:index:filtered');
+
+        // Clear beach count caches
+        $this->cacheService()->clearBeachCountCache();
     }
 }

@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ContinentResource;
 use App\Models\Continent;
+use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 /**
  * @OA\Tag(
@@ -15,6 +18,8 @@ use Illuminate\Http\JsonResponse;
  */
 class ContinentController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/continents",
@@ -64,11 +69,16 @@ class ContinentController extends Controller
     public function index(): JsonResponse
     {
         try {
+            $locale = app()->getLocale();
+            $cacheKey = 'continents:index';
+
             // Get only continents that have beaches, with beaches count
-            $continents = Continent::withBeaches()
-                ->withCount('beaches')
-                ->orderBy('name')
-                ->get(['code', 'name']);
+            $continents = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return Continent::withBeaches()
+                    ->withCount('beaches')
+                    ->orderBy('name')
+                    ->get(['code', 'name']);
+            });
 
             return response()->json([
                 'success' => true,
@@ -130,9 +140,15 @@ class ContinentController extends Controller
     public function show(string $code): JsonResponse
     {
         try {
-            $continent = Continent::withCount('beaches')
-                ->where('code', strtoupper($code))
-                ->first(['code', 'name']);
+            $code = strtoupper($code);
+            $locale = app()->getLocale();
+            $cacheKey = "continent:show:{$locale}:{$code}";
+
+            $continent = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
+                return Continent::withCount('beaches')
+                    ->where('code', $code)
+                    ->first(['code', 'name']);
+            });
 
             if (!$continent) {
                 return response()->json([

@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->group('api', [
             \App\Http\Middleware\SetLocaleFromHeader::class,
             \App\Http\Middleware\ForceJsonMiddleware::class,
+            \App\Http\Middleware\AddCacheHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\LocationInfrastructure;
 use App\Http\Resources\LocationInfrastructureResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class LocationInfrastructureController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/location-infrastructure",
@@ -45,11 +50,16 @@ class LocationInfrastructureController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $infrastructure = LocationInfrastructure::with('translations')
+            $locale = app()->getLocale();
+            $cacheKey = "location_infrastructures:index:{$locale}:all";
+            
+            $locationInfrastructures = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return $infrastructure = LocationInfrastructure::with('translations')
                 ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -112,9 +122,14 @@ class LocationInfrastructureController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $infrastructure = LocationInfrastructure::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "location_infrastructure:show:{$locale}:{$id}";
+            
+            $locationInfrastructure = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return LocationInfrastructure::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$infrastructure) {
                 return response()->json([

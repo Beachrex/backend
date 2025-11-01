@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\OccupancyRate;
 use App\Http\Resources\OccupancyRateResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class OccupancyRateController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/occupancy-rates",
@@ -45,11 +50,16 @@ class OccupancyRateController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $occupancyRates = OccupancyRate::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "occupancy_rates:index:{$locale}:all";
+            
+            $occupancyRates = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return OccupancyRate::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -112,9 +122,14 @@ class OccupancyRateController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $occupancyRate = OccupancyRate::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "occupancy_rate:show:{$locale}:{$id}";
+            
+            $occupancyRate = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return OccupancyRate::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$occupancyRate) {
                 return response()->json([

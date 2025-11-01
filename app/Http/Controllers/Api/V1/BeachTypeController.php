@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachTypeResource;
 use App\Models\BeachType;
+use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 /**
  * @OA\Tag(
@@ -15,6 +18,8 @@ use Illuminate\Http\JsonResponse;
  */
 class BeachTypeController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/beach-types",
@@ -65,17 +70,23 @@ class BeachTypeController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $query = BeachType::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id');
+            $locale = app()->getLocale();
+            $showFilter = request()->has('filter') && request()->get('filter') === 'true';
+            $cacheKey = "beach_types:index:{$locale}:" . ($showFilter ? 'filtered' : 'all');
 
-            // Filter by show_filter if requested
-            if (request()->has('filter') && request()->get('filter') === 'true') {
-                $query->showInFilter();
-            }
+            $beachTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($showFilter) {
+                $query = BeachType::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id');
 
-            $beachTypes = $query->get();
+                // Filter by show_filter if requested
+                if ($showFilter) {
+                    $query->showInFilter();
+                }
+
+                return $query->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -138,9 +149,14 @@ class BeachTypeController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $beachType = BeachType::with('translations')
-                ->withCount('beaches')
-                ->find($id);
+            $locale = app()->getLocale();
+            $cacheKey = "beach_type:show:{$locale}:{$id}";
+
+            $beachType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return BeachType::with('translations')
+                    ->withCount('beaches')
+                    ->find($id);
+            });
 
             if (!$beachType) {
                 return response()->json([

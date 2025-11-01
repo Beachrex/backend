@@ -45,5 +45,30 @@ You can get your token via the `/api/v1/login` endpoint.
  *         example="en"
  *     )
  * )
+ *
+ * @OA\Response(
+ *     response="CacheHeaders",
+ *     description="Cache-related response headers",
+ *     @OA\Header(
+ *         header="X-Cache-Status",
+ *         description="Cache status: HIT (from cache), MISS (from database), or BYPASS (not cached)",
+ *         @OA\Schema(type="string", enum={"HIT", "MISS", "BYPASS"}, example="HIT")
+ *     ),
+ *     @OA\Header(
+ *         header="X-Cache-Key",
+ *         description="The cache key used for this request (locale-aware)",
+ *         @OA\Schema(type="string", example="waterbodies:index:en:all")
+ *     ),
+ *     @OA\Header(
+ *         header="X-Response-Time",
+ *         description="Response time in milliseconds",
+ *         @OA\Schema(type="string", example="11.35ms")
+ *     ),
+ *     @OA\Header(
+ *         header="X-Locale",
+ *         description="The locale used for this response",
+ *         @OA\Schema(type="string", example="en")
+ *     )
+ * )
  */
 class Swagger {}

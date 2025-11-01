@@ -144,5 +144,94 @@ class WaterbodyApiTest extends TestCase
                     ]
                 ]);
     }
+
+    public function test_cache_headers_are_present_on_first_request()
+    {
+        // Clear cache to ensure MISS
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $waterbody = Waterbody::create(['code' => 'SEA', 'status_id' => 1, 'show_filter' => true]);
+        WaterbodyTranslation::create(['waterbody_id' => $waterbody->id, 'locale' => 'en', 'name' => 'Sea']);
+
+        $response = $this->getJson('/api/v1/waterbodies', ['Accept-Language' => 'en']);
+
+        $response->assertStatus(200)
+                ->assertHeader('X-Cache-Status', 'MISS')
+                ->assertHeader('X-Cache-Key', 'waterbodies:index:en:all')
+                ->assertHeader('X-Locale', 'en');
+
+        // Verify X-Response-Time header exists and is in correct format
+        $this->assertTrue($response->headers->has('X-Response-Time'));
+        $this->assertMatchesRegularExpression('/^\d+(\.\d+)?ms$/', $response->headers->get('X-Response-Time'));
+    }
+
+    public function test_cache_headers_show_hit_on_second_request()
+    {
+        // Clear cache first
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $waterbody = Waterbody::create(['code' => 'SEA', 'status_id' => 1, 'show_filter' => true]);
+        WaterbodyTranslation::create(['waterbody_id' => $waterbody->id, 'locale' => 'en', 'name' => 'Sea']);
+
+        // First request - should be MISS
+        $this->getJson('/api/v1/waterbodies', ['Accept-Language' => 'en']);
+
+        // Second request - should be HIT
+        $response = $this->getJson('/api/v1/waterbodies', ['Accept-Language' => 'en']);
+
+        $response->assertStatus(200)
+                ->assertHeader('X-Cache-Status', 'HIT')
+                ->assertHeader('X-Cache-Key', 'waterbodies:index:en:all')
+                ->assertHeader('X-Locale', 'en');
+    }
+
+    public function test_cache_keys_are_locale_aware()
+    {
+        // Clear cache first
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $waterbody = Waterbody::create(['code' => 'SEA', 'status_id' => 1, 'show_filter' => true]);
+        WaterbodyTranslation::create(['waterbody_id' => $waterbody->id, 'locale' => 'en', 'name' => 'Sea']);
+        WaterbodyTranslation::create(['waterbody_id' => $waterbody->id, 'locale' => 'sl', 'name' => 'Morje']);
+
+        // Request in English
+        $responseEn = $this->getJson('/api/v1/waterbodies', ['Accept-Language' => 'en']);
+        $responseEn->assertHeader('X-Cache-Status', 'MISS')
+                   ->assertHeader('X-Cache-Key', 'waterbodies:index:en:all')
+                   ->assertHeader('X-Locale', 'en');
+
+        // Request in Slovenian - should also be MISS (different cache key)
+        $responseSl = $this->getJson('/api/v1/waterbodies', ['Accept-Language' => 'sl']);
+        $responseSl->assertHeader('X-Cache-Status', 'MISS')
+                   ->assertHeader('X-Cache-Key', 'waterbodies:index:sl:all')
+                   ->assertHeader('X-Locale', 'sl');
+
+        // Second request in English - should be HIT
+        $responseEn2 = $this->getJson('/api/v1/waterbodies', ['Accept-Language' => 'en']);
+        $responseEn2->assertHeader('X-Cache-Status', 'HIT')
+                    ->assertHeader('X-Cache-Key', 'waterbodies:index:en:all');
+    }
+
+    public function test_show_endpoint_has_cache_headers()
+    {
+        // Clear cache first
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $waterbody = Waterbody::create(['code' => 'SEA', 'status_id' => 1, 'show_filter' => true]);
+        WaterbodyTranslation::create(['waterbody_id' => $waterbody->id, 'locale' => 'en', 'name' => 'Sea']);
+
+        // First request - MISS
+        $response1 = $this->getJson("/api/v1/waterbodies/{$waterbody->id}", ['Accept-Language' => 'en']);
+        $response1->assertStatus(200)
+                  ->assertHeader('X-Cache-Status', 'MISS')
+                  ->assertHeader('X-Cache-Key', "waterbody:show:en:{$waterbody->id}")
+                  ->assertHeader('X-Locale', 'en');
+
+        // Second request - HIT
+        $response2 = $this->getJson("/api/v1/waterbodies/{$waterbody->id}", ['Accept-Language' => 'en']);
+        $response2->assertStatus(200)
+                  ->assertHeader('X-Cache-Status', 'HIT')
+                  ->assertHeader('X-Cache-Key', "waterbody:show:en:{$waterbody->id}");
+    }
 }
 

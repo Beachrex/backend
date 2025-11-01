@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\UnderwaterCharacteristic;
 use App\Http\Resources\UnderwaterCharacteristicResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class UnderwaterCharacteristicController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/underwater-characteristics",
@@ -45,11 +50,16 @@ class UnderwaterCharacteristicController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $characteristics = UnderwaterCharacteristic::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "underwater_characteristics:index:{$locale}:all";
+
+            $underwaterCharacteristics = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return UnderwaterCharacteristic::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -112,11 +122,16 @@ class UnderwaterCharacteristicController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $characteristic = UnderwaterCharacteristic::with('translations')
-                ->withCount('beaches')
-                ->find($id);
+            $locale = app()->getLocale();
+            $cacheKey = "underwater_characteristic:show:{$locale}:{$id}";
 
-            if (!$characteristic) {
+            $underwaterCharacteristic = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return UnderwaterCharacteristic::with('translations')
+                    ->withCount('beaches')
+                    ->find($id);
+            });
+
+            if (!$underwaterCharacteristic) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Underwater characteristic not found'
@@ -125,7 +140,7 @@ class UnderwaterCharacteristicController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new UnderwaterCharacteristicResource($characteristic),
+                'data' => new UnderwaterCharacteristicResource($underwaterCharacteristic),
                 'message' => 'Underwater characteristic retrieved successfully'
             ], 200);
         } catch (\Exception $e) {

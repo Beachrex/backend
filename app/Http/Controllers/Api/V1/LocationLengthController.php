@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\LocationLength;
 use App\Http\Resources\LocationLengthResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class LocationLengthController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/location-lengths",
@@ -45,11 +50,16 @@ class LocationLengthController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $locationLengths = LocationLength::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "location_lengths:index:{$locale}:all";
+            
+            $locationLengths = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return LocationLength::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -112,9 +122,14 @@ class LocationLengthController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $locationLength = LocationLength::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "location_length:show:{$locale}:{$id}";
+            
+            $locationLength = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return LocationLength::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$locationLength) {
                 return response()->json([

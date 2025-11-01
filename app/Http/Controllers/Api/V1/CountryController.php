@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CountryResource;
 use App\Models\Country;
+use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 /**
  * @OA\Tag(
@@ -16,6 +19,8 @@ use Illuminate\Http\Request;
  */
 class CountryController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/countries",
@@ -74,23 +79,29 @@ class CountryController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Country::with('continent')
-                ->withBeaches()
-                ->withCount('beaches')
-                ->orderBy('name');
+            $locale = app()->getLocale();
+            $continentFilter = $request->get('continent');
+            $cacheKey = "countries:index:{$locale}:" . ($continentFilter ? "continent:{$continentFilter}" : "all");
 
-            // Filter by continent if provided
-            if ($request->has('continent')) {
-                $query->byContinent($request->get('continent'));
-            }
+            $countries = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($continentFilter) {
+                $query = Country::with('continent')
+                    ->withBeaches()
+                    ->withCount('beaches')
+                    ->orderBy('name');
 
-            $countries = $query->get([
-                'code',
-                'name',
-                'full_name',
-                'iso3',
-                'continent_code'
-            ]);
+                // Filter by continent if provided
+                if ($continentFilter) {
+                    $query->byContinent($continentFilter);
+                }
+
+                return $query->get([
+                    'code',
+                    'name',
+                    'full_name',
+                    'iso3',
+                    'continent_code'
+                ]);
+            });
 
             return response()->json([
                 'success' => true,
@@ -160,16 +171,22 @@ class CountryController extends Controller
     public function show(string $code): JsonResponse
     {
         try {
-            $country = Country::with('continent')
-                ->withCount('beaches')
-                ->where('code', strtoupper($code))
-                ->first([
-                    'code',
-                    'name',
-                    'full_name',
-                    'iso3',
-                    'continent_code'
-                ]);
+            $code = strtoupper($code);
+            $locale = app()->getLocale();
+            $cacheKey = "country:show:{$locale}:{$code}";
+
+            $country = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
+                return Country::with('continent')
+                    ->withCount('beaches')
+                    ->where('code', $code)
+                    ->first([
+                        'code',
+                        'name',
+                        'full_name',
+                        'iso3',
+                        'continent_code'
+                    ]);
+            });
 
             if (!$country) {
                 return response()->json([

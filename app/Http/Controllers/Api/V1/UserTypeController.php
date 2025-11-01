@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\UserType;
 use App\Http\Resources\UserTypeResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class UserTypeController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/user-types",
@@ -45,11 +50,16 @@ class UserTypeController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $userTypes = UserType::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "user_types:index:{$locale}:all";
+            
+            $userTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return UserType::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -112,9 +122,14 @@ class UserTypeController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $userType = UserType::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "user_type:show:{$locale}:{$id}";
+            
+            $userType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return UserType::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$userType) {
                 return response()->json([

@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\NaturalLocationCondition;
 use App\Http\Resources\NaturalLocationConditionResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class NaturalLocationConditionController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/natural-location-conditions",
@@ -45,11 +50,16 @@ class NaturalLocationConditionController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $conditions = NaturalLocationCondition::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "natural_location_conditions:index:{$locale}:all";
+            
+            $naturalLocationConditions = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return NaturalLocationCondition::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -112,9 +122,14 @@ class NaturalLocationConditionController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $condition = NaturalLocationCondition::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "natural_location_condition:show:{$locale}:{$id}";
+            
+            $naturalLocationCondition = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return NaturalLocationCondition::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$condition) {
                 return response()->json([

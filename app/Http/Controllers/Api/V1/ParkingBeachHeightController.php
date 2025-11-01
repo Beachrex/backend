@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ParkingBeachHeight;
 use App\Http\Resources\ParkingBeachHeightResource;
 use Illuminate\Http\JsonResponse;
+use App\Services\CacheService;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\CacheAware;
 
 class ParkingBeachHeightController extends Controller
 {
+    use CacheAware;
+    
     /**
      * @OA\Get(
      *     path="/api/v1/parking-beach-heights",
@@ -51,11 +56,16 @@ class ParkingBeachHeightController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $parkingBeachHeights = ParkingBeachHeight::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "parking_beach_heights:index:{$locale}:all";
+            
+            $parkingBeachHeights = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return ParkingBeachHeight::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -124,9 +134,14 @@ class ParkingBeachHeightController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $parkingBeachHeight = ParkingBeachHeight::with('translations')
-                ->withCount('beaches')
+            $locale = app()->getLocale();
+            $cacheKey = "parking_beach_height:show:{$locale}:{$id}";
+            
+            $parkingBeachHeight = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return ParkingBeachHeight::with('translations')
+                    ->withCount('beaches')
                 ->find($id);
+            });
 
             if (!$parkingBeachHeight) {
                 return response()->json([

@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Accessibility;
 use App\Http\Resources\AccessibilityResource;
+use App\Services\CacheService;
+use App\Traits\CacheAware;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class AccessibilityController extends Controller
 {
+    use CacheAware;
+
     /**
      * @OA\Get(
      *     path="/api/v1/accessibilities",
@@ -52,11 +57,16 @@ class AccessibilityController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $accessibilities = Accessibility::with('translations')
-                ->withCount('beaches')
-                ->active()
-                ->orderBy('id')
-                ->get();
+            $locale = app()->getLocale();
+            $cacheKey = "accessibilities:index:{$locale}:all";
+
+            $accessibilities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+                return Accessibility::with('translations')
+                    ->withCount('beaches')
+                    ->active()
+                    ->orderBy('id')
+                    ->get();
+            });
 
             return response()->json([
                 'success' => true,
@@ -126,9 +136,14 @@ class AccessibilityController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $accessibility = Accessibility::with('translations')
-                ->withCount('beaches')
-                ->find($id);
+            $locale = app()->getLocale();
+            $cacheKey = "accessibility:show:{$locale}:{$id}";
+
+            $accessibility = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
+                return Accessibility::with('translations')
+                    ->withCount('beaches')
+                    ->find($id);
+            });
 
             if (!$accessibility) {
                 return response()->json([
