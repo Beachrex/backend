@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo "Running tests before commit..."
+
+# Run tests using Sail
+./vendor/bin/sail artisan test
+
+# Capture the exit code
+TEST_EXIT_CODE=$?
+
+# If tests failed, prevent the commit
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "❌ Tests failed! Commit aborted."
+    echo "Fix the failing tests before committing."
+    echo ""
+    echo "To skip this check (not recommended), use: git commit --no-verify"
+    exit 1
+fi
+
+echo ""
+echo "✅ All tests passed! Proceeding with commit..."
+exit 0
+

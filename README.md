@@ -44,6 +44,25 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 - **[Redberry](https://redberry.international/laravel-development)**
 - **[Active Logic](https://activelogic.com)**
 
+## Development Setup
+
+### Git Hooks
+
+This project uses Git hooks to ensure code quality. To install the hooks:
+
+```bash
+./hooks/install.sh
+```
+
+The pre-commit hook will automatically run all tests before allowing a commit. If any tests fail, the commit will be aborted.
+
+To run tests manually:
+```bash
+./vendor/bin/sail artisan test
+```
+
+See [hooks/README.md](hooks/README.md) for more details.
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
