@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasMedia;
 use App\Traits\Cacheable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 
 class Beach extends Model
 {
-    use Cacheable;
+    use HasFactory, Cacheable, HasMedia;
     protected $table = 'beach';
 
     protected $fillable = [

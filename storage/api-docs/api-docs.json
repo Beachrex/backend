@@ -2093,6 +2093,311 @@
                 }
             }
         },
+        "/api/v1/media/upload": {
+            "post": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload media file",
+                "operationId": "7ff50fb7baeca2626aeb337957ff2001",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file",
+                                    "mediable_type",
+                                    "mediable_id",
+                                    "media_type_code"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "File to upload",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "mediable_type": {
+                                        "description": "Model type (Beach, Region, City, etc.)",
+                                        "type": "string",
+                                        "example": "Beach"
+                                    },
+                                    "mediable_id": {
+                                        "description": "Model ID",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "media_type_code": {
+                                        "description": "Media type code",
+                                        "type": "string",
+                                        "example": "image"
+                                    },
+                                    "collection_code": {
+                                        "description": "Collection code (optional)",
+                                        "type": "string",
+                                        "example": "beach_gallery"
+                                    },
+                                    "is_primary": {
+                                        "description": "Set as primary media",
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "order": {
+                                        "description": "Display order",
+                                        "type": "integer",
+                                        "example": 0
+                                    },
+                                    "alt_text": {
+                                        "description": "Alt text for images",
+                                        "type": "string"
+                                    },
+                                    "caption": {
+                                        "description": "Caption/description",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Media uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Media"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Media uploaded successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/media/{id}": {
+            "get": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get media by ID",
+                "operationId": "920aa759989c685509bf36ff8153a83f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Media details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Media"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Media not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Update media metadata",
+                "operationId": "03594d5f3076785b02f519f50dbec06c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "alt_text": {
+                                        "type": "string"
+                                    },
+                                    "caption": {
+                                        "type": "string"
+                                    },
+                                    "is_primary": {
+                                        "type": "boolean"
+                                    },
+                                    "order": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Media updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Media"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Delete media",
+                "operationId": "9a772fcf0b465f9cbba29f104d89a465",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Media deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/media/reorder": {
+            "post": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Reorder media items",
+                "operationId": "4b0722f9026fe14d1f2be5ffa1a33e9a",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "media_ids"
+                                ],
+                                "properties": {
+                                    "media_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            3,
+                                            1,
+                                            2
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Media reordered successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/natural-location-conditions": {
             "get": {
                 "tags": [
@@ -5118,6 +5423,136 @@
                 },
                 "type": "object"
             },
+            "Media": {
+                "title": "Media",
+                "description": "Media file (image, video, 360 sphere, etc.)",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "media_type": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "code": {
+                                "type": "string",
+                                "example": "image"
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Image"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "media_collection": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "code": {
+                                "type": "string",
+                                "example": "beach_gallery"
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Beach Gallery"
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "example": "beach-sunset.jpg"
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://beachrex.fra1.digitaloceanspaces.com/Beach/1/beach_gallery/beach-sunset_1234567890_abc123.jpg"
+                    },
+                    "thumbnail_url": {
+                        "type": "string",
+                        "example": "https://beachrex.fra1.digitaloceanspaces.com/Beach/1/beach_gallery/thumbs/beach-sunset_1234567890_abc123.jpg",
+                        "nullable": true
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "size": {
+                        "description": "File size in bytes",
+                        "type": "integer",
+                        "example": 2048576
+                    },
+                    "human_readable_size": {
+                        "type": "string",
+                        "example": "2 MB"
+                    },
+                    "width": {
+                        "type": "integer",
+                        "example": 1920,
+                        "nullable": true
+                    },
+                    "height": {
+                        "type": "integer",
+                        "example": 1080,
+                        "nullable": true
+                    },
+                    "duration": {
+                        "description": "Duration in seconds for videos",
+                        "type": "integer",
+                        "example": 120,
+                        "nullable": true
+                    },
+                    "is_primary": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "order": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "alt_text": {
+                        "type": "string",
+                        "example": "Beautiful sunset at the beach",
+                        "nullable": true
+                    },
+                    "caption": {
+                        "type": "string",
+                        "example": "Sunset view from the main beach area",
+                        "nullable": true
+                    },
+                    "uploaded_by": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "John Doe"
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-11-01T20:00:00.000000Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-11-01T20:00:00.000000Z"
+                    }
+                },
+                "type": "object"
+            },
             "NaturalLocationCondition": {
                 "title": "Natural Location Condition",
                 "description": "Natural location condition model (sand types, stones, rocks, etc.)",
@@ -6040,6 +6475,10 @@
         {
             "name": "Countries",
             "description": "API Endpoints for countries"
+        },
+        {
+            "name": "Media",
+            "description": "Media management endpoints"
         },
         {
             "name": "Spatial",

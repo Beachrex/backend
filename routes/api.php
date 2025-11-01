@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\RecommendedTransportTypeController;
 use App\Http\Controllers\Api\V1\SportingActivitiesController;
 use App\Http\Controllers\Api\V1\UnderwaterCharacteristicController;
 use App\Http\Controllers\Api\V1\UserTypeController;
+use App\Http\Controllers\Api\V1\MediaController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -38,7 +39,16 @@ Route::prefix('api/v1')
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/user', [UserController::class, 'show']);
+
+            // Media routes (authenticated)
+            Route::post('/media/upload', [MediaController::class, 'upload']);
+            Route::put('/media/{id}', [MediaController::class, 'update']);
+            Route::delete('/media/{id}', [MediaController::class, 'destroy']);
+            Route::post('/media/reorder', [MediaController::class, 'reorder']);
         });
+
+        // Public media routes
+        Route::get('/media/{id}', [MediaController::class, 'show']);
 
         Route::get('/beaches', [BeachController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);

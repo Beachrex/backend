@@ -38,6 +38,8 @@ class DatabaseSeeder extends Seeder
             SportingActivitiesSeeder::class,
             UnderwaterCharacteristicSeeder::class,
             UserTypeSeeder::class,
+            MediaTypeSeeder::class,
+            MediaCollectionSeeder::class,
             BeachSeeder::class,
         ]);
     }
