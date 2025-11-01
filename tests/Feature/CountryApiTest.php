@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Beach;
 use App\Models\Continent;
 use App\Models\Country;
+use App\Models\Status;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +16,13 @@ class CountryApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
+        // Seed statuses
+        Status::insert([
+            ['id' => 1, 'name' => 'active'],
+            ['id' => 2, 'name' => 'inactive'],
+        ]);
+
         // Seed continents
         Continent::insert([
             ['code' => 'EU', 'name' => 'Europe'],

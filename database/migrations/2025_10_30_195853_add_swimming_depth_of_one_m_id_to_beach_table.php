@@ -24,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('beach', function (Blueprint $table) {
-            $table->dropForeign(['beach_swimming_depth_fk']);
+            $table->dropForeign('beach_swimming_depth_fk');
             $table->dropIndex(['swimming_depth_of_one_m_id']);
             $table->dropColumn('swimming_depth_of_one_m_id');
         });
