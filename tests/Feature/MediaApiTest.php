@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class MediaApiTest extends TestCase
@@ -46,7 +47,7 @@ class MediaApiTest extends TestCase
         Storage::fake(config('filesystems.default'));
     }
 
-    /** @test */
+    #[Test]
     public function can_upload_media()
     {
         $file = UploadedFile::fake()->image('beach.jpg', 1920, 1080)->size(2048);
@@ -98,7 +99,7 @@ class MediaApiTest extends TestCase
         Storage::disk($media->disk)->assertExists($media->file_path);
     }
 
-    /** @test */
+    #[Test]
     public function cannot_upload_media_without_authentication()
     {
         $file = UploadedFile::fake()->image('beach.jpg');
@@ -113,7 +114,7 @@ class MediaApiTest extends TestCase
         $response->assertStatus(401);
     }
 
-    /** @test */
+    #[Test]
     public function validates_required_fields_on_upload()
     {
         $response = $this->actingAs($this->user, 'sanctum')
@@ -123,7 +124,7 @@ class MediaApiTest extends TestCase
             ->assertJsonValidationErrors(['file', 'mediable_type', 'mediable_id', 'media_type_code']);
     }
 
-    /** @test */
+    #[Test]
     public function rejects_invalid_file_type()
     {
         // Try to upload a video as an image type
@@ -144,7 +145,7 @@ class MediaApiTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function rejects_file_exceeding_size_limit()
     {
         // Create a file larger than 10MB (image limit)
@@ -161,7 +162,7 @@ class MediaApiTest extends TestCase
         $response->assertStatus(400);
     }
 
-    /** @test */
+    #[Test]
     public function can_get_media_by_id()
     {
         $media = Media::factory()->create([
@@ -182,7 +183,7 @@ class MediaApiTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function returns_404_for_nonexistent_media()
     {
         $response = $this->getJson('/api/v1/media/999999');
@@ -190,7 +191,7 @@ class MediaApiTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function can_update_media_metadata()
     {
         $media = Media::factory()->create([
@@ -218,7 +219,7 @@ class MediaApiTest extends TestCase
         $this->assertEquals(5, $media->order);
     }
 
-    /** @test */
+    #[Test]
     public function can_set_media_as_primary()
     {
         // Create two media items
@@ -253,7 +254,7 @@ class MediaApiTest extends TestCase
         $this->assertTrue($media2->is_primary);
     }
 
-    /** @test */
+    #[Test]
     public function can_delete_media()
     {
         $media = Media::factory()->create([
@@ -274,7 +275,7 @@ class MediaApiTest extends TestCase
         $this->assertSoftDeleted('media', ['id' => $media->id]);
     }
 
-    /** @test */
+    #[Test]
     public function can_reorder_media()
     {
         $media1 = Media::factory()->create(['order' => 0]);
@@ -298,7 +299,7 @@ class MediaApiTest extends TestCase
         $this->assertEquals(2, $media2->fresh()->order);
     }
 
-    /** @test */
+    #[Test]
     public function beach_has_media_relationship()
     {
         $media = Media::factory()->create([
