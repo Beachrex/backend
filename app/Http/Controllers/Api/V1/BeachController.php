@@ -60,7 +60,8 @@ class BeachController extends Controller
             'userTypes.translations',
             // Eager load location relationships with translations
             'continent.translations',
-            'country.translations',
+            'country',
+            'island.translations',
         ])->get();
         return BeachResource::collection($beaches);
     }
@@ -160,7 +161,8 @@ class BeachController extends Controller
             'userTypes.translations',
             // Eager load location relationships with translations
             'continent.translations',
-            'country.translations',
+            'country',
+            'island.translations',
         ]));
     }
 
@@ -220,7 +222,8 @@ class BeachController extends Controller
             'userTypes.translations',
             // Eager load location relationships with translations
             'continent.translations',
-            'country.translations',
+            'country',
+            'island.translations',
         ])->findOrFail($id);
 
         return new BeachResource($beach);

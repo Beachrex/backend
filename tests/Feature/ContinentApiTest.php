@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Beach;
 use App\Models\Continent;
+use App\Models\ContinentTranslation;
 use App\Models\Status;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,9 +25,22 @@ class ContinentApiTest extends TestCase
 
         // Seed continents
         Continent::insert([
-            ['code' => 'EU', 'name' => 'Europe'],
-            ['code' => 'AS', 'name' => 'Asia'],
-            ['code' => 'NA', 'name' => 'North America'],
+            ['code' => 'EU'],
+            ['code' => 'AS'],
+            ['code' => 'NA'],
+        ]);
+
+        // Seed continent translations
+        ContinentTranslation::insert([
+            // Europe
+            ['continent_code' => 'EU', 'locale' => 'en', 'name' => 'Europe', 'slug' => 'europe'],
+            ['continent_code' => 'EU', 'locale' => 'sl', 'name' => 'Evropa', 'slug' => 'evropa'],
+            // Asia
+            ['continent_code' => 'AS', 'locale' => 'en', 'name' => 'Asia', 'slug' => 'asia'],
+            ['continent_code' => 'AS', 'locale' => 'sl', 'name' => 'Azija', 'slug' => 'azija'],
+            // North America
+            ['continent_code' => 'NA', 'locale' => 'en', 'name' => 'North America', 'slug' => 'north-america'],
+            ['continent_code' => 'NA', 'locale' => 'sl', 'name' => 'Severna Amerika', 'slug' => 'severna-amerika'],
         ]);
     }
 

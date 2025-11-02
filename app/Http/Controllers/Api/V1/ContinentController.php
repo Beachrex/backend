@@ -19,7 +19,7 @@ use App\Traits\CacheAware;
 class ContinentController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/continents",
@@ -75,9 +75,9 @@ class ContinentController extends Controller
             // Get only continents that have beaches, with beaches count
             $continents = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return Continent::withBeaches()
+                    ->with('translations')
                     ->withCount('beaches')
-                    ->orderBy('name')
-                    ->get(['code', 'name']);
+                    ->get(['code']);
             });
 
             return response()->json([
@@ -145,9 +145,10 @@ class ContinentController extends Controller
             $cacheKey = "continent:show:{$locale}:{$code}";
 
             $continent = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
-                return Continent::withCount('beaches')
+                return Continent::with('translations')
+                    ->withCount('beaches')
                     ->where('code', $code)
-                    ->first(['code', 'name']);
+                    ->first(['code']);
             });
 
             if (!$continent) {

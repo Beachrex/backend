@@ -14,8 +14,7 @@ class Island extends Model
     protected $table = 'island';
 
     protected $fillable = [
-        'name',
-        'slug',
+        'code',
         'status_id',
     ];
 
@@ -25,6 +24,14 @@ class Island extends Model
     public function status(): BelongsTo
     {
         return $this->belongsTo(Status::class);
+    }
+
+    /**
+     * Get all translations for this island
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(IslandTranslation::class);
     }
 
     /**

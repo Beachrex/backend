@@ -14,9 +14,17 @@ class ContinentResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        // Get the translation for the current locale, fallback to English
+        $translation = $this->translations
+            ->firstWhere('locale', $locale)
+            ?? $this->translations->firstWhere('locale', 'en');
+
         return [
             'code' => $this->code,
-            'name' => $this->name,
+            'name' => $translation?->name ?? 'Unknown',
+            'slug' => $translation?->slug ?? 'unknown',
             'beaches_count' => $this->when(
                 $this->relationLoaded('beaches') || isset($this->beaches_count),
                 $this->beaches_count ?? $this->beaches->count()

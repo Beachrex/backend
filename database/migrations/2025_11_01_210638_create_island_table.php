@@ -13,15 +13,14 @@ return new class extends Migration
     {
         Schema::create('island', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->comment('Island name (proper noun, no translation needed)');
-            $table->string('slug')->unique()->comment('URL-friendly slug');
+            $table->string('code')->unique()->comment('Island code (e.g., sardegna, brac, krk)');
             $table->unsignedTinyInteger('status_id')->default(1);
             $table->foreign('status_id')->references('id')->on('status');
             $table->timestamps();
 
             // Indexes
             $table->index('status_id');
-            $table->index('slug');
+            $table->index('code');
         });
     }
 

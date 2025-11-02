@@ -26,8 +26,15 @@ class Continent extends Model
 
     protected $fillable = [
         'code',
-        'name',
     ];
+
+    /**
+     * Get all translations for this continent
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ContinentTranslation::class, 'continent_code', 'code');
+    }
 
     /**
      * Get all beaches for this continent
