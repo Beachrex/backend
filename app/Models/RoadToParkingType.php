@@ -23,6 +23,17 @@ class RoadToParkingType extends Model
         'show_filter' => 'boolean',
     ];
 
+    protected $appends = ['name'];
+
+    /**
+     * Get the English name from translations
+     */
+    public function getNameAttribute(): string
+    {
+        $translation = $this->translations()->where('locale', 'en')->first();
+        return $translation?->name ?? $this->code;
+    }
+
     /**
      * Get all translations for this road to parking type
      */

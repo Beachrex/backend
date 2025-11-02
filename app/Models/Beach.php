@@ -72,7 +72,7 @@ class Beach extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
-        'parking' => 'boolean',
+        'parking' => 'integer',
         'indoor_area_m2' => 'decimal:2',
         'outdoor_area_m2' => 'decimal:2',
         'has_swimming_pool' => 'boolean',

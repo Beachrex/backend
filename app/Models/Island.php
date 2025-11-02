@@ -18,6 +18,17 @@ class Island extends Model
         'status_id',
     ];
 
+    protected $appends = ['name'];
+
+    /**
+     * Get the English name from translations
+     */
+    public function getNameAttribute(): string
+    {
+        $translation = $this->translations()->where('locale', 'en')->first();
+        return $translation?->name ?? $this->code;
+    }
+
     /**
      * Get the status of this island
      */

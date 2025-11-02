@@ -18,6 +18,17 @@ class WaterBodyType extends Model
         'status_id',
     ];
 
+    protected $appends = ['name'];
+
+    /**
+     * Get the English name from translations
+     */
+    public function getNameAttribute(): string
+    {
+        $translation = $this->translations()->where('locale', 'en')->first();
+        return $translation?->name ?? $this->code;
+    }
+
     /**
      * Get all translations for this water body type
      */
