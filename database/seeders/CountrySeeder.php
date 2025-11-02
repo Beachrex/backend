@@ -128,30 +128,20 @@ class CountrySeeder extends Seeder
     }
 
     /**
-     * Get specific translations for countries that have different names in different languages
-     * Returns only countries with actual translations - others will use English names
+     * Get specific translations for ALL countries in all supported languages
+     * This method will be replaced with a call to load translations from a JSON file
      */
     private function getSpecificTranslations(): array
     {
-        return [
-            // Slovenia - Slovenija
-            'SI' => [
-                'sl' => ['name' => 'Slovenija', 'full_name' => 'Republika Slovenija'],
-                'de' => ['name' => 'Slowenien', 'full_name' => 'Republik Slowenien'],
-                'hr' => ['name' => 'Slovenija', 'full_name' => 'Republika Slovenija'],
-                'fr' => ['name' => 'Slovénie', 'full_name' => 'République de Slovénie'],
-                'es' => ['name' => 'Eslovenia', 'full_name' => 'República de Eslovenia'],
-                'it' => ['name' => 'Slovenia', 'full_name' => 'Repubblica di Slovenia'],
-                'ua' => ['name' => 'Словенія', 'full_name' => 'Республіка Словенія'],
-                'ru' => ['name' => 'Словения', 'full_name' => 'Республика Словения'],
-                'pl' => ['name' => 'Słowenia', 'full_name' => 'Republika Słowenii'],
-                'cs' => ['name' => 'Slovinsko', 'full_name' => 'Slovinská republika'],
-                'hu' => ['name' => 'Szlovénia', 'full_name' => 'Szlovén Köztársaság'],
-                'bg' => ['name' => 'Словения', 'full_name' => 'Република Словения'],
-                'sk' => ['name' => 'Slovinsko', 'full_name' => 'Slovinská republika'],
-            ],
-            // Add more countries with specific translations as needed
-            // For now, this demonstrates the pattern - we can add more later
-        ];
+        // Load translations from JSON file
+        $jsonPath = database_path('seeders/data/country_translations.json');
+
+        if (file_exists($jsonPath)) {
+            $json = file_get_contents($jsonPath);
+            return json_decode($json, true);
+        }
+
+        // Fallback to empty array if file doesn't exist
+        return [];
     }
 }
