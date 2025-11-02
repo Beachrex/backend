@@ -18,19 +18,36 @@ class PostGISService
      */
     public function getBeachesWithinRadius(float $latitude, float $longitude, float $radiusKm, int $limit = 50)
     {
+        $locale = app()->getLocale();
+
         $results = DB::select("
             SELECT
                 b.id,
-                b.name,
+                b.folder_name,
                 b.latitude,
                 b.longitude,
                 b.country_code,
                 b.continent_code,
+                COALESCE(bt.name, bt_en.name) as name,
+                COALESCE(bt.description, bt_en.description) as description,
+                COALESCE(bt.slug, bt_en.slug) as slug,
+                ct.name as country_name,
+                m.file_path as main_image_path,
+                m.disk as main_image_disk,
                 ST_Distance(
                     ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
                     ST_Transform(b.location, 3857)
                 ) / 1000.0 as distance_km
             FROM beach b
+            LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
+            LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN media m ON b.id = m.mediable_id
+                AND m.mediable_type = 'App\\Models\\Beach'
+                AND m.media_collection_id = 1
+                AND m.is_primary IS TRUE
+                AND m.status_id = 1
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -42,9 +59,9 @@ class PostGISService
                   )
             ORDER BY distance_km
             LIMIT ?
-        ", [$longitude, $latitude, $longitude, $latitude, $radiusKm * 1000, $limit]);
+        ", [$longitude, $latitude, $locale, $locale, $longitude, $latitude, $radiusKm * 1000, $limit]);
 
-        return collect($results);
+        return $this->formatBeachResults($results);
     }
 
     /**
@@ -57,19 +74,36 @@ class PostGISService
      */
     public function getNearestBeaches(float $latitude, float $longitude, int $limit = 10)
     {
+        $locale = app()->getLocale();
+
         $results = DB::select("
             SELECT
                 b.id,
-                b.name,
+                b.folder_name,
                 b.latitude,
                 b.longitude,
                 b.country_code,
                 b.continent_code,
+                COALESCE(bt.name, bt_en.name) as name,
+                COALESCE(bt.description, bt_en.description) as description,
+                COALESCE(bt.slug, bt_en.slug) as slug,
+                ct.name as country_name,
+                m.file_path as main_image_path,
+                m.disk as main_image_disk,
                 ST_Distance(
                     ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
                     ST_Transform(b.location, 3857)
                 ) / 1000.0 as distance_km
             FROM beach b
+            LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
+            LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN media m ON b.id = m.mediable_id
+                AND m.mediable_type = 'App\\Models\\Beach'
+                AND m.media_collection_id = 1
+                AND m.is_primary IS TRUE
+                AND m.status_id = 1
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -79,9 +113,9 @@ class PostGISService
                 ST_Transform(b.location, 3857)
             )
             LIMIT ?
-        ", [$longitude, $latitude, $longitude, $latitude, $limit]);
+        ", [$longitude, $latitude, $locale, $locale, $longitude, $latitude, $limit]);
 
-        return collect($results);
+        return $this->formatBeachResults($results);
     }
 
     /**
@@ -116,24 +150,41 @@ class PostGISService
      */
     public function getBeachesInBoundingBox(float $minLat, float $minLon, float $maxLat, float $maxLon)
     {
+        $locale = app()->getLocale();
+
         $results = DB::select("
             SELECT
                 b.id,
-                b.name,
+                b.folder_name,
                 b.latitude,
                 b.longitude,
                 b.country_code,
-                b.continent_code
+                b.continent_code,
+                COALESCE(bt.name, bt_en.name) as name,
+                COALESCE(bt.description, bt_en.description) as description,
+                COALESCE(bt.slug, bt_en.slug) as slug,
+                ct.name as country_name,
+                m.file_path as main_image_path,
+                m.disk as main_image_disk
             FROM beach b
+            LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
+            LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN media m ON b.id = m.mediable_id
+                AND m.mediable_type = 'App\\Models\\Beach'
+                AND m.media_collection_id = 1
+                AND m.is_primary IS TRUE
+                AND m.status_id = 1
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
               AND b.latitude BETWEEN ? AND ?
               AND b.longitude BETWEEN ? AND ?
-            ORDER BY b.name
-        ", [$minLat, $maxLat, $minLon, $maxLon]);
+            ORDER BY COALESCE(bt.name, bt_en.name)
+        ", [$locale, $locale, $minLat, $maxLat, $minLon, $maxLon]);
 
-        return collect($results);
+        return $this->formatBeachResults($results);
     }
 
     /**
@@ -223,5 +274,30 @@ class PostGISService
                 'max_longitude' => (float) $stats->max_longitude
             ]
         ];
+    }
+
+    /**
+     * Format beach results with proper image URLs
+     *
+     * @param array $results
+     * @return \Illuminate\Support\Collection
+     */
+    private function formatBeachResults(array $results)
+    {
+        return collect($results)->map(function ($beach) {
+            return [
+                'id' => $beach->id,
+                'name' => $beach->name,
+                'slug' => $beach->slug,
+                'description' => $beach->description,
+                'latitude' => $beach->latitude,
+                'longitude' => $beach->longitude,
+                'country_code' => $beach->country_code,
+                'country_name' => $beach->country_name,
+                'continent_code' => $beach->continent_code,
+                'main_image' => $beach->main_image_path,
+                'distance_km' => $beach->distance_km ?? null,
+            ];
+        });
     }
 }
