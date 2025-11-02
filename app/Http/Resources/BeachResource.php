@@ -8,16 +8,39 @@ class BeachResource extends JsonResource
 {
     public function toArray($request)
     {
+        $locale = app()->getLocale();
+
+        // Get translation for current locale, fallback to English
+        $translation = $this->translations->firstWhere('locale', $locale);
+        $translationEn = $this->translations->firstWhere('locale', 'en');
+
+        // Get country name translation
+        $countryName = null;
+        if ($this->country) {
+            $countryTranslation = $this->country->translations->firstWhere('locale', $locale);
+            $countryName = $countryTranslation->name ?? null;
+        }
+
+        // Get primary image from beach gallery (collection_id = 1)
+        $mainImage = null;
+        if ($this->media && $this->media->isNotEmpty()) {
+            $primaryMedia = $this->media->first();
+            if ($primaryMedia && $primaryMedia->file_path) {
+                $mainImage = '/' . ltrim($primaryMedia->file_path, '/');
+            }
+        }
+
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
-            'status' => $this->status->name ?? null,
-            'name' => $this->translations->firstWhere('locale', app()->getLocale())->name ?? $this->name,
-            'description' => $this->translations->firstWhere('locale', app()->getLocale())->description ?? null,
+            'name' => $translation->name ?? $translationEn->name ?? $this->name,
+            'slug' => $translation->slug ?? $translationEn->slug ?? null,
+            'description' => $translation->description ?? $translationEn->description ?? null,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'country_code' => $this->country_code,
+            'country_name' => $countryName,
+            'continent_code' => $this->continent_code,
+            'main_image' => $mainImage,
         ];
     }
 }

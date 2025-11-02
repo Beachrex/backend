@@ -22,15 +22,31 @@ class BeachController extends Controller
      *     summary="List all beaches",
      *     tags={"Beaches"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Maximum number of beaches to return (default: 50)",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=50, default=50)
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of beaches",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/BeachSchema"))
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/BeachSchema")
+     *             )
+     *         )
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
+        $limit = $request->input('limit', 50);
+
         $beaches = Beach::with([
             'translations',
             'status',
@@ -60,9 +76,15 @@ class BeachController extends Controller
             'userTypes.translations',
             // Eager load location relationships with translations
             'continent.translations',
-            'country',
+            'country.translations',
             'island.translations',
-        ])->get();
+            // Eager load media
+            'media' => function ($query) {
+                $query->where('media_collection_id', 1)
+                      ->where('is_primary', true)
+                      ->where('status_id', 1);
+            }
+        ])->limit($limit)->get();
         return BeachResource::collection($beaches);
     }
 
@@ -183,7 +205,13 @@ class BeachController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Beach found",
-     *         @OA\JsonContent(ref="#/components/schemas/BeachSchema")
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 ref="#/components/schemas/BeachSchema"
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
@@ -224,6 +252,12 @@ class BeachController extends Controller
             'continent.translations',
             'country.translations',
             'island.translations',
+            // Eager load media
+            'media' => function ($query) {
+                $query->where('media_collection_id', 1)
+                      ->where('is_primary', true)
+                      ->where('status_id', 1);
+            }
         ])->findOrFail($id);
 
         return new BeachResource($beach);

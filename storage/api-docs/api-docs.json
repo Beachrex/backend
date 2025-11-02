@@ -815,6 +815,17 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of beaches to return (default: 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 50,
+                            "example": 50
+                        }
                     }
                 ],
                 "responses": {
@@ -823,10 +834,15 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/BeachSchema"
-                                    }
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachSchema"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -944,7 +960,12 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/BeachSchema"
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BeachSchema"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -5030,42 +5051,56 @@
                 "description": "Beach API Resource",
                 "properties": {
                     "id": {
+                        "description": "Beach ID",
                         "type": "integer",
-                        "example": 1
-                    },
-                    "user_id": {
-                        "type": "integer",
-                        "example": 5
-                    },
-                    "status": {
-                        "type": "string",
-                        "example": "Active"
+                        "example": 793
                     },
                     "name": {
+                        "description": "Beach name (with English fallback if translation missing)",
                         "type": "string",
-                        "example": "Plaža Dječji raj"
+                        "example": "Beach Bucanj"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (with English fallback if translation missing)",
+                        "type": "string",
+                        "example": "beach-bucanj"
                     },
                     "description": {
+                        "description": "Beach description (with English fallback if translation missing)",
                         "type": "string",
-                        "example": "Family-friendly beach"
+                        "example": "Beautiful beach with crystal clear water",
+                        "nullable": true
                     },
                     "latitude": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 45.1234567
+                        "description": "Beach latitude",
+                        "type": "string",
+                        "example": "42.5996000"
                     },
                     "longitude": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 14.9876543
-                    },
-                    "created_at": {
+                        "description": "Beach longitude",
                         "type": "string",
-                        "format": "date-time"
+                        "example": "18.2302000"
                     },
-                    "updated_at": {
+                    "country_code": {
+                        "description": "ISO country code",
                         "type": "string",
-                        "format": "date-time"
+                        "example": "HR"
+                    },
+                    "country_name": {
+                        "description": "Country name (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Croatia"
+                    },
+                    "continent_code": {
+                        "description": "Continent code",
+                        "type": "string",
+                        "example": "EU"
+                    },
+                    "main_image": {
+                        "description": "Primary beach image path (prepend CDN URL on frontend)",
+                        "type": "string",
+                        "example": "/img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
+                        "nullable": true
                     }
                 },
                 "type": "object"
