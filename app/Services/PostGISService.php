@@ -285,6 +285,12 @@ class PostGISService
     private function formatBeachResults(array $results)
     {
         return collect($results)->map(function ($beach) {
+            // Ensure main_image starts with a forward slash
+            $mainImage = null;
+            if ($beach->main_image_path) {
+                $mainImage = '/' . ltrim($beach->main_image_path, '/');
+            }
+
             return [
                 'id' => $beach->id,
                 'name' => $beach->name,
@@ -295,7 +301,7 @@ class PostGISService
                 'country_code' => $beach->country_code,
                 'country_name' => $beach->country_name,
                 'continent_code' => $beach->continent_code,
-                'main_image' => $beach->main_image_path,
+                'main_image' => $mainImage,
                 'distance_km' => $beach->distance_km ?? null,
             ];
         });
