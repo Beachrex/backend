@@ -22,26 +22,38 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthenticationException $e, $request) {
-            return response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401);
+            // Only return JSON for API requests
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
         });
         // Validation failed
         $exceptions->render(function (ValidationException $e, $request) {
-            return response()->json([
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
+            // Only return JSON for API requests
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Validation failed.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
         });
         $exceptions->render(function (NotFoundHttpException $e, $request) {
-            return response()->json([
-                'message' => 'Not found.',
-            ], 404);
+            // Only return JSON for API requests
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Not found.',
+                ], 404);
+            }
         });
         $exceptions->render(function (Throwable $e, $request) {
-            return response()->json([
-                'message' => 'Server error.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
-            ], 500);
+            // Only return JSON for API requests
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Server error.',
+                    'error' => config('app.debug') ? $e->getMessage() : null,
+                ], 500);
+            }
         });
     })->create();
