@@ -6,6 +6,7 @@ use App\Models\Beach;
 use App\Models\Continent;
 use App\Models\ContinentTranslation;
 use App\Models\Country;
+use App\Models\CountryTranslation;
 use App\Models\Status;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -46,27 +47,22 @@ class CountryApiTest extends TestCase
 
         // Seed countries
         Country::insert([
-            [
-                'code' => 'SI',
-                'name' => 'Slovenia',
-                'full_name' => 'Republic of Slovenia',
-                'iso3' => 'SVN',
-                'continent_code' => 'EU'
-            ],
-            [
-                'code' => 'US',
-                'name' => 'United States of America',
-                'full_name' => 'United States of America',
-                'iso3' => 'USA',
-                'continent_code' => 'NA'
-            ],
-            [
-                'code' => 'DE',
-                'name' => 'Germany',
-                'full_name' => 'Federal Republic of Germany',
-                'iso3' => 'DEU',
-                'continent_code' => 'EU'
-            ],
+            ['code' => 'SI', 'iso3' => 'SVN', 'continent_code' => 'EU'],
+            ['code' => 'US', 'iso3' => 'USA', 'continent_code' => 'NA'],
+            ['code' => 'DE', 'iso3' => 'DEU', 'continent_code' => 'EU'],
+        ]);
+
+        // Seed country translations
+        CountryTranslation::insert([
+            // Slovenia
+            ['country_code' => 'SI', 'locale' => 'en', 'name' => 'Slovenia', 'full_name' => 'Republic of Slovenia', 'slug' => 'slovenia'],
+            ['country_code' => 'SI', 'locale' => 'sl', 'name' => 'Slovenija', 'full_name' => 'Republika Slovenija', 'slug' => 'slovenija'],
+            // United States
+            ['country_code' => 'US', 'locale' => 'en', 'name' => 'United States', 'full_name' => 'United States of America', 'slug' => 'united-states'],
+            ['country_code' => 'US', 'locale' => 'sl', 'name' => 'Združene države Amerike', 'full_name' => 'Združene države Amerike', 'slug' => 'zdruzene-drzave-amerike'],
+            // Germany
+            ['country_code' => 'DE', 'locale' => 'en', 'name' => 'Germany', 'full_name' => 'Federal Republic of Germany', 'slug' => 'germany'],
+            ['country_code' => 'DE', 'locale' => 'sl', 'name' => 'Nemčija', 'full_name' => 'Zvezna republika Nemčija', 'slug' => 'nemcija'],
         ]);
     }
 

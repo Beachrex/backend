@@ -20,7 +20,7 @@ use App\Traits\CacheAware;
 class CountryController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/countries",
@@ -84,10 +84,9 @@ class CountryController extends Controller
             $cacheKey = "countries:index:{$locale}:" . ($continentFilter ? "continent:{$continentFilter}" : "all");
 
             $countries = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($continentFilter) {
-                $query = Country::with('continent')
+                $query = Country::with(['continent.translations', 'translations'])
                     ->withBeaches()
-                    ->withCount('beaches')
-                    ->orderBy('name');
+                    ->withCount('beaches');
 
                 // Filter by continent if provided
                 if ($continentFilter) {
@@ -96,8 +95,6 @@ class CountryController extends Controller
 
                 return $query->get([
                     'code',
-                    'name',
-                    'full_name',
                     'iso3',
                     'continent_code'
                 ]);
@@ -176,13 +173,11 @@ class CountryController extends Controller
             $cacheKey = "country:show:{$locale}:{$code}";
 
             $country = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
-                return Country::with('continent')
+                return Country::with(['continent.translations', 'translations'])
                     ->withCount('beaches')
                     ->where('code', $code)
                     ->first([
                         'code',
-                        'name',
-                        'full_name',
                         'iso3',
                         'continent_code'
                     ]);

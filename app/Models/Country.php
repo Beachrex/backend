@@ -9,27 +9,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Country extends Model
 {
     protected $table = 'countries';
-    
-    // Primary key is 'code' instead of 'id'
-    protected $primaryKey = 'code';
-    
-    // Primary key is not auto-incrementing
-    public $incrementing = false;
-    
-    // Primary key is a string
-    protected $keyType = 'string';
-    
+
     // No timestamps in countries table
     public $timestamps = false;
 
     protected $fillable = [
         'code',
-        'name',
-        'full_name',
         'iso3',
         'number',
         'continent_code',
     ];
+
+    /**
+     * Get all translations for this country
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(CountryTranslation::class, 'country_code', 'code');
+    }
 
     /**
      * Get all beaches for this country

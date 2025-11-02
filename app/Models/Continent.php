@@ -12,15 +12,6 @@ class Continent extends Model
     use Cacheable;
     protected $table = 'continents';
 
-    // Primary key is 'code' instead of 'id'
-    protected $primaryKey = 'code';
-
-    // Primary key is not auto-incrementing
-    public $incrementing = false;
-
-    // Primary key is a string
-    protected $keyType = 'string';
-
     // No timestamps in continents table
     public $timestamps = false;
 

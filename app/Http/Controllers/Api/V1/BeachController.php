@@ -161,7 +161,7 @@ class BeachController extends Controller
             'userTypes.translations',
             // Eager load location relationships with translations
             'continent.translations',
-            'country',
+            'country.translations',
             'island.translations',
         ]));
     }
@@ -222,7 +222,7 @@ class BeachController extends Controller
             'userTypes.translations',
             // Eager load location relationships with translations
             'continent.translations',
-            'country',
+            'country.translations',
             'island.translations',
         ])->findOrFail($id);
 

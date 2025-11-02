@@ -14,10 +14,18 @@ class CountryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        // Get the translation for the current locale, fallback to English
+        $translation = $this->translations
+            ->firstWhere('locale', $locale)
+            ?? $this->translations->firstWhere('locale', 'en');
+
         return [
             'code' => $this->code,
-            'name' => $this->name,
-            'full_name' => $this->full_name,
+            'name' => $translation?->name ?? 'Unknown',
+            'full_name' => $translation?->full_name ?? null,
+            'slug' => $translation?->slug ?? 'unknown',
             'iso3' => $this->iso3,
             'continent_code' => $this->continent_code,
             'continent' => $this->when(
