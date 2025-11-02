@@ -17,6 +17,9 @@ class BeachType extends Model
         'code',
         'status_id',
         'show_filter',
+        'icon',
+        'filter_order',
+        'input_type',
     ];
 
     protected $casts = [
@@ -51,15 +54,15 @@ class BeachType extends Model
     }
 
     /**
-     * Get all beaches with this beach type
+     * Scope to get only active beach types
      */
-    public function beaches(): HasMany
+    public function scopeActive($query)
     {
-        return $this->hasMany(Beach::class);
+        return $query->where('status_id', 1);
     }
 
     /**
-     * Scope to get only beach types shown in filters
+     * Scope to get only beach types that should be shown in filters
      */
     public function scopeShowInFilter($query)
     {
@@ -67,11 +70,11 @@ class BeachType extends Model
     }
 
     /**
-     * Scope to get only active beach types
+     * Get all beaches with this beach type
      */
-    public function scopeActive($query)
+    public function beaches(): HasMany
     {
-        return $query->where('status_id', 1);
+        return $this->hasMany(Beach::class);
     }
 
     /**

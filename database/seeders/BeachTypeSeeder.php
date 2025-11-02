@@ -13,6 +13,24 @@ class BeachTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        // Filter titles for all locales
+        $filterTitles = [
+            'en' => 'Beach Type',
+            'sl' => 'Tip plaže',
+            'de' => 'Strandtyp',
+            'hr' => 'Tip plaže',
+            'fr' => 'Type de plage',
+            'es' => 'Tipo de playa',
+            'it' => 'Tipo di spiaggia',
+            'ua' => 'Тип пляжу',
+            'ru' => 'Тип пляжа',
+            'pl' => 'Typ plaży',
+            'cs' => 'Typ pláže',
+            'hu' => 'Strand típusa',
+            'bg' => 'Тип плаж',
+            'sk' => 'Typ pláže',
+        ];
+
         // Order and IDs must match old database for migration compatibility:
         // 1 = sand, 2 = brown_sand, 3 = black_sand, 4 = small_stones,
         // 5 = big_stones, 6 = rock_beach, 7 = grass_beach, 8 = concrete
@@ -21,7 +39,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 1,
                 'code' => 'sand',
                 'status_id' => 1,
-                'show_filter' => true, // show_filter = 1 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 1,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Sand', 'slug' => 'sand-beaches'],
                     'sl' => ['name' => 'Pesek', 'slug' => 'peskene-plaze'],
@@ -44,7 +65,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 2,
                 'code' => 'brown_sand',
                 'status_id' => 1,
-                'show_filter' => false, // show_filter = 0 in old DB
+                'show_filter' => false,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 2,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Brown Sand', 'slug' => 'sand-beaches'],
                     'sl' => ['name' => 'Rjav Pesek', 'slug' => 'peskene-plaze'],
@@ -67,7 +91,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 3,
                 'code' => 'black_sand',
                 'status_id' => 1,
-                'show_filter' => false, // show_filter = 0 in old DB
+                'show_filter' => false,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 3,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Black Sand', 'slug' => 'sand-beaches'],
                     'sl' => ['name' => 'Črn Pesek', 'slug' => 'peskene-plaze'],
@@ -90,7 +117,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 4,
                 'code' => 'small_stones',
                 'status_id' => 1,
-                'show_filter' => true, // show_filter = 1 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 4,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Small Stones', 'slug' => 'gravel-beaches'],
                     'sl' => ['name' => 'Drobno Kamenje', 'slug' => 'prodne-plaze'],
@@ -113,7 +143,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 5,
                 'code' => 'big_stones',
                 'status_id' => 1,
-                'show_filter' => true, // show_filter = 1 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 5,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Big Stones', 'slug' => 'pebbles-beaches'],
                     'sl' => ['name' => 'Veliko Kamenje', 'slug' => 'kamnite-plaze'],
@@ -136,7 +169,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 6,
                 'code' => 'rock_beach',
                 'status_id' => 1,
-                'show_filter' => true, // show_filter = 1 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 6,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Rock Beach', 'slug' => 'rocks-beaches'],
                     'sl' => ['name' => 'Skalnata Plaža', 'slug' => 'skalnate-plaze'],
@@ -159,7 +195,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 7,
                 'code' => 'grass_beach',
                 'status_id' => 1,
-                'show_filter' => true, // show_filter = 1 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 7,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Grass Beach', 'slug' => 'grass-beaches'],
                     'sl' => ['name' => 'Travnata Plaža', 'slug' => 'travnate-plaze'],
@@ -182,7 +221,10 @@ class BeachTypeSeeder extends Seeder
                 'id' => 8,
                 'code' => 'concrete',
                 'status_id' => 1,
-                'show_filter' => true, // show_filter = 1 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/beach_type.svg',
+                'filter_order' => 8,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Concrete', 'slug' => 'concrete-beaches'],
                     'sl' => ['name' => 'Beton', 'slug' => 'betonske-plaze'],
@@ -204,22 +246,32 @@ class BeachTypeSeeder extends Seeder
         ];
 
         foreach ($beachTypes as $beachTypeData) {
-            // Create the beach type with explicit ID
-            $beachType = BeachType::create([
-                'id' => $beachTypeData['id'],
-                'code' => $beachTypeData['code'],
-                'status_id' => $beachTypeData['status_id'],
-                'show_filter' => $beachTypeData['show_filter'],
-            ]);
+            // Create or update the beach type with explicit ID
+            $beachType = BeachType::updateOrCreate(
+                ['id' => $beachTypeData['id']],
+                [
+                    'code' => $beachTypeData['code'],
+                    'status_id' => $beachTypeData['status_id'],
+                    'show_filter' => $beachTypeData['show_filter'],
+                    'icon' => $beachTypeData['icon'],
+                    'filter_order' => $beachTypeData['filter_order'],
+                    'input_type' => $beachTypeData['input_type'],
+                ]
+            );
 
-            // Create translations for all supported languages
+            // Create or update translations for all supported languages
             foreach ($beachTypeData['translations'] as $locale => $translation) {
-                BeachTypeTranslation::create([
-                    'beach_type_id' => $beachType->id,
-                    'locale' => $locale,
-                    'name' => $translation['name'],
-                    'slug' => $translation['slug'],
-                ]);
+                BeachTypeTranslation::updateOrCreate(
+                    [
+                        'beach_type_id' => $beachType->id,
+                        'locale' => $locale,
+                    ],
+                    [
+                        'name' => $translation['name'],
+                        'slug' => $translation['slug'],
+                        'filter_title' => $filterTitles[$locale] ?? $filterTitles['en'],
+                    ]
+                );
             }
         }
 

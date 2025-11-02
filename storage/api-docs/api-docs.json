@@ -1808,6 +1808,175 @@
                 }
             }
         },
+        "/api/v1/beaches/filters": {
+            "get": {
+                "tags": [
+                    "Filters"
+                ],
+                "summary": "Get all beach filter options",
+                "description": "Returns all available filter options for beaches including waterbody types, user types, etc. All data is translated based on Accept-Language header with English fallback.",
+                "operationId": "getBeachFilters",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Filter options retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "waterbody": {
+                                                    "properties": {
+                                                        "title": {
+                                                            "description": "Localized filter title",
+                                                            "type": "string",
+                                                            "example": "Water Body"
+                                                        },
+                                                        "icon": {
+                                                            "description": "Icon file path (SVG/PNG)",
+                                                            "type": "string",
+                                                            "example": "icons/filters/waterbody.svg"
+                                                        },
+                                                        "input_type": {
+                                                            "description": "Input type: checkbox, radio, select, single, multiple",
+                                                            "type": "string",
+                                                            "example": "checkbox"
+                                                        },
+                                                        "options": {
+                                                            "description": "Water body types (sea, lake, river, pool, etc.)",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "code": {
+                                                                        "type": "string",
+                                                                        "example": "sea"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Sea"
+                                                                    },
+                                                                    "slug": {
+                                                                        "type": "string",
+                                                                        "example": "sea"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "user_type": {
+                                                    "properties": {
+                                                        "title": {
+                                                            "description": "Localized filter title",
+                                                            "type": "string",
+                                                            "example": "User Type"
+                                                        },
+                                                        "icon": {
+                                                            "description": "Icon file path (SVG/PNG)",
+                                                            "type": "string",
+                                                            "example": "icons/filters/user_type.svg"
+                                                        },
+                                                        "input_type": {
+                                                            "description": "Input type: checkbox, radio, select, single, multiple",
+                                                            "type": "string",
+                                                            "example": "checkbox"
+                                                        },
+                                                        "options": {
+                                                            "description": "User types (adventurer, family, youth, etc.)",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "code": {
+                                                                        "type": "string",
+                                                                        "example": "family"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Family"
+                                                                    },
+                                                                    "slug": {
+                                                                        "type": "string",
+                                                                        "example": "family"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "beach_type": {
+                                                    "properties": {
+                                                        "title": {
+                                                            "description": "Localized filter title",
+                                                            "type": "string",
+                                                            "example": "Beach Type"
+                                                        },
+                                                        "icon": {
+                                                            "description": "Icon file path (SVG/PNG)",
+                                                            "type": "string",
+                                                            "example": "icons/filters/beach_type.svg"
+                                                        },
+                                                        "input_type": {
+                                                            "description": "Input type: checkbox, radio, select, single, multiple",
+                                                            "type": "string",
+                                                            "example": "checkbox"
+                                                        },
+                                                        "options": {
+                                                            "description": "Beach types (sand, small_stones, big_stones, rock_beach, grass_beach, concrete, etc.)",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "code": {
+                                                                        "type": "string",
+                                                                        "example": "sand"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Sand"
+                                                                    },
+                                                                    "slug": {
+                                                                        "type": "string",
+                                                                        "example": "sand-beaches"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/location-infrastructure": {
             "get": {
                 "tags": [
@@ -6510,6 +6679,10 @@
         {
             "name": "Countries",
             "description": "API Endpoints for countries"
+        },
+        {
+            "name": "Filters",
+            "description": "API Endpoints for beach filter options"
         },
         {
             "name": "Media",

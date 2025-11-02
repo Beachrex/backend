@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\UserType;
+use App\Models\UserTypeTranslation;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class UserTypeSeeder extends Seeder
 {
@@ -12,10 +13,49 @@ class UserTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        // Filter titles for all locales
+        $filterTitles = [
+            'en' => 'User Type',
+            'sl' => 'Tip uporabnika',
+            'de' => 'Benutzertyp',
+            'hr' => 'Tip korisnika',
+            'fr' => 'Type d\'utilisateur',
+            'es' => 'Tipo de usuario',
+            'it' => 'Tipo di utente',
+            'ua' => 'Тип користувача',
+            'ru' => 'Тип пользователя',
+            'pl' => 'Typ użytkownika',
+            'cs' => 'Typ uživatele',
+            'hu' => 'Felhasználó típusa',
+            'bg' => 'Тип потребител',
+            'sk' => 'Typ používateľa',
+        ];
+
         $userTypes = [
-            ['id' => 1, 'code' => 'adventurer'],
-            ['id' => 2, 'code' => 'family'],
-            ['id' => 3, 'code' => 'youth'],
+            [
+                'id' => 1,
+                'code' => 'adventurer',
+                'show_filter' => true,
+                'icon' => 'icons/filters/user_type.svg',
+                'filter_order' => 1,
+                'input_type' => 'checkbox',
+            ],
+            [
+                'id' => 2,
+                'code' => 'family',
+                'show_filter' => true,
+                'icon' => 'icons/filters/user_type.svg',
+                'filter_order' => 2,
+                'input_type' => 'checkbox',
+            ],
+            [
+                'id' => 3,
+                'code' => 'youth',
+                'show_filter' => true,
+                'icon' => 'icons/filters/user_type.svg',
+                'filter_order' => 3,
+                'input_type' => 'checkbox',
+            ],
         ];
 
         $translations = [
@@ -70,26 +110,33 @@ class UserTypeSeeder extends Seeder
         ];
 
         foreach ($userTypes as $userTypeData) {
-            // Insert user type with explicit ID
-            DB::table('user_type')->insert([
-                'id' => $userTypeData['id'],
-                'code' => $userTypeData['code'],
-                'status_id' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Create or update user type with explicit ID
+            $userType = UserType::updateOrCreate(
+                ['id' => $userTypeData['id']],
+                [
+                    'code' => $userTypeData['code'],
+                    'status_id' => 1,
+                    'show_filter' => $userTypeData['show_filter'],
+                    'icon' => $userTypeData['icon'],
+                    'filter_order' => $userTypeData['filter_order'],
+                    'input_type' => $userTypeData['input_type'],
+                ]
+            );
 
-            // Insert translations if available
+            // Create or update translations
             if (isset($translations[$userTypeData['code']])) {
                 foreach ($translations[$userTypeData['code']] as $locale => $translation) {
-                    DB::table('user_type_translation')->insert([
-                        'user_type_id' => $userTypeData['id'],
-                        'locale' => $locale,
-                        'name' => $translation['name'],
-                        'slug' => $translation['slug'],
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    UserTypeTranslation::updateOrCreate(
+                        [
+                            'user_type_id' => $userType->id,
+                            'locale' => $locale,
+                        ],
+                        [
+                            'name' => $translation['name'],
+                            'slug' => $translation['slug'],
+                            'filter_title' => $filterTitles[$locale] ?? $filterTitles['en'],
+                        ]
+                    );
                 }
             }
         }

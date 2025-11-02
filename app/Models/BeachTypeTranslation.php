@@ -17,6 +17,7 @@ class BeachTypeTranslation extends Model
         'locale',
         'name',
         'slug',
+        'filter_title',
     ];
 
     /**

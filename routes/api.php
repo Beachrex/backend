@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\SportingActivitiesController;
 use App\Http\Controllers\Api\V1\UnderwaterCharacteristicController;
 use App\Http\Controllers\Api\V1\UserTypeController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\FilterController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -50,7 +51,9 @@ Route::prefix('api/v1')
         // Public media routes
         Route::get('/media/{id}', [MediaController::class, 'show']);
 
+        // Beach routes - filters must come before {id} route
         Route::get('/beaches', [BeachController::class, 'index']);
+        Route::get('/beaches/filters', [FilterController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
 
@@ -138,11 +141,11 @@ Route::prefix('api/v1')
         Route::get('/sporting-activities', [SportingActivitiesController::class, 'index']);
         Route::get('/sporting-activities/{id}', [SportingActivitiesController::class, 'show']);
 
-        // Underwater Characteristics routes
+        // Underwater Characteristic routes
         Route::get('/underwater-characteristics', [UnderwaterCharacteristicController::class, 'index']);
         Route::get('/underwater-characteristics/{id}', [UnderwaterCharacteristicController::class, 'show']);
 
-        // User Types routes
+        // User Type routes
         Route::get('/user-types', [UserTypeController::class, 'index']);
         Route::get('/user-types/{id}', [UserTypeController::class, 'show']);
 

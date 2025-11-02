@@ -13,6 +13,24 @@ class WaterbodySeeder extends Seeder
      */
     public function run(): void
     {
+        // Filter titles for all locales
+        $filterTitles = [
+            'en' => 'Water Body',
+            'sl' => 'Vodna površina',
+            'de' => 'Gewässer',
+            'hr' => 'Vodeno tijelo',
+            'fr' => 'Plan d\'eau',
+            'es' => 'Cuerpo de agua',
+            'it' => 'Corpo idrico',
+            'ua' => 'Водойма',
+            'ru' => 'Водоём',
+            'pl' => 'Zbiornik wodny',
+            'cs' => 'Vodní plocha',
+            'hu' => 'Víztest',
+            'bg' => 'Воден обект',
+            'sk' => 'Vodná plocha',
+        ];
+
         // Order and IDs must match old database for migration compatibility:
         // 1 = river, 2 = pool, 3 = sea, 4 = lake
         $waterbodies = [
@@ -20,7 +38,10 @@ class WaterbodySeeder extends Seeder
                 'id' => 1,
                 'code' => 'river',
                 'status_id' => 1,
-                'show_filter' => false, // show_filter = 0 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/waterbody.svg',
+                'filter_order' => 3,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'River', 'slug' => 'river'],
                     'sl' => ['name' => 'Reka', 'slug' => 'reka'],
@@ -42,7 +63,10 @@ class WaterbodySeeder extends Seeder
                 'id' => 2,
                 'code' => 'pool',
                 'status_id' => 1,
-                'show_filter' => false, // show_filter = 0 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/waterbody.svg',
+                'filter_order' => 4,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Pool', 'slug' => 'pool'],
                     'sl' => ['name' => 'Bazen', 'slug' => 'bazen'],
@@ -64,7 +88,10 @@ class WaterbodySeeder extends Seeder
                 'id' => 3,
                 'code' => 'sea',
                 'status_id' => 1,
-                'show_filter' => false, // show_filter = 0 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/waterbody.svg',
+                'filter_order' => 1,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Sea', 'slug' => 'sea'],
                     'sl' => ['name' => 'Morje', 'slug' => 'morje'],
@@ -86,7 +113,10 @@ class WaterbodySeeder extends Seeder
                 'id' => 4,
                 'code' => 'lake',
                 'status_id' => 1,
-                'show_filter' => false, // show_filter = 0 in old DB
+                'show_filter' => true,
+                'icon' => 'icons/filters/waterbody.svg',
+                'filter_order' => 2,
+                'input_type' => 'checkbox',
                 'translations' => [
                     'en' => ['name' => 'Lake', 'slug' => 'lake'],
                     'sl' => ['name' => 'Jezero', 'slug' => 'jezero'],
@@ -107,22 +137,32 @@ class WaterbodySeeder extends Seeder
         ];
 
         foreach ($waterbodies as $waterbodyData) {
-            // Create the waterbody with explicit ID
-            $waterbody = Waterbody::create([
-                'id' => $waterbodyData['id'],
-                'code' => $waterbodyData['code'],
-                'status_id' => $waterbodyData['status_id'],
-                'show_filter' => $waterbodyData['show_filter'],
-            ]);
+            // Create or update the waterbody with explicit ID
+            $waterbody = Waterbody::updateOrCreate(
+                ['id' => $waterbodyData['id']],
+                [
+                    'code' => $waterbodyData['code'],
+                    'status_id' => $waterbodyData['status_id'],
+                    'show_filter' => $waterbodyData['show_filter'],
+                    'icon' => $waterbodyData['icon'],
+                    'filter_order' => $waterbodyData['filter_order'],
+                    'input_type' => $waterbodyData['input_type'],
+                ]
+            );
 
-            // Create translations
+            // Create or update translations
             foreach ($waterbodyData['translations'] as $locale => $translation) {
-                WaterbodyTranslation::create([
-                    'waterbody_id' => $waterbody->id,
-                    'locale' => $locale,
-                    'name' => $translation['name'],
-                    'slug' => $translation['slug'],
-                ]);
+                WaterbodyTranslation::updateOrCreate(
+                    [
+                        'waterbody_id' => $waterbody->id,
+                        'locale' => $locale,
+                    ],
+                    [
+                        'name' => $translation['name'],
+                        'slug' => $translation['slug'],
+                        'filter_title' => $filterTitles[$locale] ?? $filterTitles['en'],
+                    ]
+                );
             }
         }
 

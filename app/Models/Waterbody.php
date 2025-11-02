@@ -18,6 +18,9 @@ class Waterbody extends Model
         'code',
         'status_id',
         'show_filter',
+        'icon',
+        'filter_order',
+        'input_type',
     ];
 
     protected $casts = [

@@ -17,6 +17,7 @@ class UserTypeTranslation extends Model
         'locale',
         'name',
         'slug',
+        'filter_title',
     ];
 
     /**
