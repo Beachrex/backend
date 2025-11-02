@@ -39,7 +39,7 @@ class WaterbodySeeder extends Seeder
                 'code' => 'river',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/waterbody.svg',
+                'icon' => '/icons/filters/waterbody.svg',
                 'filter_order' => 3,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -64,7 +64,7 @@ class WaterbodySeeder extends Seeder
                 'code' => 'pool',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/waterbody.svg',
+                'icon' => '/icons/filters/waterbody.svg',
                 'filter_order' => 4,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -89,7 +89,7 @@ class WaterbodySeeder extends Seeder
                 'code' => 'sea',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/waterbody.svg',
+                'icon' => '/icons/filters/waterbody.svg',
                 'filter_order' => 1,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -114,7 +114,7 @@ class WaterbodySeeder extends Seeder
                 'code' => 'lake',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/waterbody.svg',
+                'icon' => '/icons/filters/waterbody.svg',
                 'filter_order' => 2,
                 'input_type' => 'checkbox',
                 'translations' => [

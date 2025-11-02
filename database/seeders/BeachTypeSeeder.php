@@ -40,7 +40,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'sand',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 1,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -66,7 +66,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'brown_sand',
                 'status_id' => 1,
                 'show_filter' => false,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 2,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -92,7 +92,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'black_sand',
                 'status_id' => 1,
                 'show_filter' => false,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 3,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -118,7 +118,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'small_stones',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 4,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -144,7 +144,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'big_stones',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 5,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -170,7 +170,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'rock_beach',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 6,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -196,7 +196,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'grass_beach',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 7,
                 'input_type' => 'checkbox',
                 'translations' => [
@@ -222,7 +222,7 @@ class BeachTypeSeeder extends Seeder
                 'code' => 'concrete',
                 'status_id' => 1,
                 'show_filter' => true,
-                'icon' => 'icons/filters/beach_type.svg',
+                'icon' => '/icons/filters/beach_type.svg',
                 'filter_order' => 8,
                 'input_type' => 'checkbox',
                 'translations' => [
