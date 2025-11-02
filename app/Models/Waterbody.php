@@ -24,12 +24,23 @@ class Waterbody extends Model
         'show_filter' => 'boolean',
     ];
 
+    protected $appends = ['name'];
+
     /**
      * Get all translations for this waterbody
      */
     public function translations(): HasMany
     {
         return $this->hasMany(WaterbodyTranslation::class);
+    }
+
+    /**
+     * Get the name attribute (English translation for admin display)
+     */
+    public function getNameAttribute(): string
+    {
+        $translation = $this->translations()->where('locale', 'en')->first();
+        return $translation?->name ?? $this->code;
     }
 
     /**
