@@ -46,7 +46,31 @@ class MediaCollectionSeeder extends Seeder
                 'max_items' => 10,
                 'status_id' => 1,
             ],
-            
+            [
+                'code' => 'beach_spot_images',
+                'name' => 'Beach Spot Images',
+                'description' => 'Photos of specific spots or areas on the beach',
+                'allowed_media_types' => json_encode(['image']),
+                'max_items' => null,
+                'status_id' => 1,
+            ],
+            [
+                'code' => 'infrastructure_images',
+                'name' => 'Infrastructure Images',
+                'description' => 'Photos of beach facilities and infrastructure',
+                'allowed_media_types' => json_encode(['image']),
+                'max_items' => null,
+                'status_id' => 1,
+            ],
+            [
+                'code' => 'info_images',
+                'name' => 'Info Images',
+                'description' => 'Informational images and signage',
+                'allowed_media_types' => json_encode(['image']),
+                'max_items' => null,
+                'status_id' => 1,
+            ],
+
             // Region/Location collections
             [
                 'code' => 'region_hero',
@@ -80,7 +104,7 @@ class MediaCollectionSeeder extends Seeder
                 'max_items' => 1,
                 'status_id' => 1,
             ],
-            
+
             // Promotional/Marketing
             [
                 'code' => 'promotional_banner',
@@ -90,7 +114,7 @@ class MediaCollectionSeeder extends Seeder
                 'max_items' => null,
                 'status_id' => 1,
             ],
-            
+
             // Icons and assets
             [
                 'code' => 'feature_icons',
@@ -100,7 +124,7 @@ class MediaCollectionSeeder extends Seeder
                 'max_items' => null,
                 'status_id' => 1,
             ],
-            
+
             // Documentation
             [
                 'code' => 'beach_documents',

@@ -20,6 +20,8 @@ class Beach extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'folder_name',
+        'mobile_upload',
         'latitude',
         'longitude',
         'status_id',
@@ -41,6 +43,15 @@ class Beach extends Model
         'occupancy_rate_id',
         'water_body_type_id',
         'island_id',
+        'river_id',
+        'lake_id',
+        'video_url',
+        'webcam',
+        'path_to_beach_map_url',
+        'beach_weather',
+        'water_temperature',
+        'boat_only',
+        'beach_views',
         'indoor_pools_count',
         'outdoor_pools_count',
         'indoor_area_m2',
@@ -73,6 +84,9 @@ class Beach extends Model
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'parking' => 'integer',
+        'mobile_upload' => 'boolean',
+        'boat_only' => 'boolean',
+        'beach_views' => 'integer',
         'indoor_area_m2' => 'decimal:2',
         'outdoor_area_m2' => 'decimal:2',
         'has_swimming_pool' => 'boolean',
@@ -200,6 +214,16 @@ class Beach extends Model
     public function island(): BelongsTo
     {
         return $this->belongsTo(Island::class);
+    }
+
+    public function river(): BelongsTo
+    {
+        return $this->belongsTo(River::class);
+    }
+
+    public function lake(): BelongsTo
+    {
+        return $this->belongsTo(Lake::class);
     }
 
     public function accommodationArounds(): BelongsToMany
