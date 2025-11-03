@@ -177,11 +177,11 @@ class Media extends Model
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
         $bytes = $this->size;
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, 2) . ' ' . $units[$i];
     }
 
@@ -208,9 +208,33 @@ class Media extends Model
     {
         parent::boot();
 
+        // Delete file from storage when media is deleted (both soft delete and force delete)
         static::deleting(function ($media) {
-            if ($media->isForceDeleting()) {
-                Storage::disk($media->disk)->delete($media->file_path);
+            try {
+                // For DigitalOcean Spaces, we need to add 'public/' prefix to the path
+                $filePath = $media->file_path;
+
+                // If using spaces disk and path doesn't start with 'public/', add it
+                if ($media->disk === 'spaces' && !str_starts_with($filePath, 'public/')) {
+                    $filePath = 'public/' . $filePath;
+                }
+
+                // Delete the file from storage
+                if (Storage::disk($media->disk)->exists($filePath)) {
+                    Storage::disk($media->disk)->delete($filePath);
+                    \Log::info('Deleted media file from storage', [
+                        'disk' => $media->disk,
+                        'path' => $filePath,
+                        'media_id' => $media->id
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to delete media file from storage', [
+                    'error' => $e->getMessage(),
+                    'media_id' => $media->id,
+                    'file_path' => $media->file_path,
+                    'disk' => $media->disk
+                ]);
             }
         });
     }

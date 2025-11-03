@@ -27,6 +27,12 @@ class BeachResource extends Resource
                     ->label('Beach Name')
                     ->content(fn ($record) => $record ? ($record->translations()->where('locale', 'en')->first()?->name ?? $record->translations()->first()?->name ?? 'No name set') : 'New Beach')
                     ->helperText('To edit the beach name, use the "Translations" tab below'),
+                Forms\Components\TextInput::make('folder_name')
+                    ->label('Folder Name')
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText('Used for organizing beach images. Format: country-id-region-city (e.g., hr-69-o-pag)')
+                    ->placeholder('e.g., hr-69-o-pag'),
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name'),
                 Forms\Components\TextInput::make('latitude')

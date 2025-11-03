@@ -29,35 +29,36 @@ class MediaRelationManager extends RelationManager
                         '1:1',
                     ])
                     ->maxSize(10240) // 10MB
-                    ->disk('public')
-                    ->directory('beach-uploads')
+                    ->disk('spaces')
+                    ->directory(function ($livewire) {
+                        $beach = $livewire->getOwnerRecord();
+                        $folderName = $beach->folder_name ?? 'beach-' . $beach->id;
+                        return 'public/img/beaches/' . $folderName;
+                    })
                     ->visibility('public')
                     ->downloadable()
                     ->openable()
                     ->previewable()
                     ->columnSpanFull()
-                    ->helperText('Upload an image file (max 10MB). Supported formats: JPG, PNG, GIF, WebP')
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        if ($state) {
-                            // Auto-fill file_name from uploaded file
-                            $set('file_name', $state->getClientOriginalName());
-                        }
+                    ->helperText(function ($livewire) {
+                        $beach = $livewire->getOwnerRecord();
+                        $folderName = $beach->folder_name ?? 'beach-' . $beach->id;
+                        return 'Upload an image file (max 10MB). Will be saved to: public/img/beaches/' . $folderName . '/';
                     })
-                    ->live()
                     ->hiddenOn('edit'),
 
                 Forms\Components\Section::make('File Information')
                     ->schema([
                         Forms\Components\TextInput::make('file_name')
                             ->label('File Name')
-                            ->required()
                             ->maxLength(255)
+                            ->helperText('Automatically set from upload')
                             ->columnSpan(1),
                         Forms\Components\TextInput::make('file_path')
                             ->label('File Path')
-                            ->required()
                             ->maxLength(500)
-                            ->helperText('Path to the file in storage (e.g., img/beaches/beach-name/image.jpg)')
+                            ->helperText('Automatically set from upload, or enter manually for existing images')
+                            ->required(fn ($get) => empty($get('file_upload')))
                             ->columnSpan(1),
                     ])
                     ->columns(2)
@@ -180,39 +181,52 @@ class MediaRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
+                    ->mutateFormDataUsing(function (array $data, $livewire): array {
                         // If a file was uploaded, process it
                         if (isset($data['file_upload']) && $data['file_upload']) {
-                            $uploadedFile = $data['file_upload'];
+                            $uploadedFilePath = $data['file_upload'];
 
-                            // Get file information
-                            $fileName = basename($uploadedFile);
-                            $filePath = 'beach-uploads/' . $fileName;
+                            // The uploaded file path includes 'public/' prefix (e.g., public/img/beaches/hr-69-o-pag/filename.jpg)
+                            // But we store it in the database without the 'public/' prefix (e.g., img/beaches/hr-69-o-pag/filename.jpg)
+                            // This matches the existing media records
+                            $data['file_path'] = str_replace('public/', '', $uploadedFilePath);
 
-                            // Get image dimensions if it's an image
-                            $fullPath = storage_path('app/public/' . $uploadedFile);
-                            if (file_exists($fullPath) && @getimagesize($fullPath)) {
-                                $imageInfo = getimagesize($fullPath);
-                                $data['width'] = $imageInfo[0] ?? null;
-                                $data['height'] = $imageInfo[1] ?? null;
-                                $data['mime_type'] = $imageInfo['mime'] ?? null;
-                            }
-
-                            // Get file size
-                            if (file_exists($fullPath)) {
-                                $data['size'] = filesize($fullPath);
-                            }
-
-                            // Set file_path to the uploaded file path
-                            $data['file_path'] = $uploadedFile;
+                            // Get file name from the path
+                            $fileName = basename($uploadedFilePath);
 
                             // Set file_name if not already set
                             if (empty($data['file_name'])) {
                                 $data['file_name'] = $fileName;
                             }
 
-                            // Set disk to public since we uploaded to public disk
-                            $data['disk'] = 'public';
+                            // Try to get image dimensions and metadata from DigitalOcean Spaces
+                            try {
+                                $disk = \Storage::disk('spaces');
+
+                                // Get file size (use the full path with 'public/' prefix)
+                                if ($disk->exists($uploadedFilePath)) {
+                                    $data['size'] = $disk->size($uploadedFilePath);
+
+                                    // Try to get image dimensions
+                                    $tempFile = tempnam(sys_get_temp_dir(), 'beach_img_');
+                                    file_put_contents($tempFile, $disk->get($uploadedFilePath));
+
+                                    if (@getimagesize($tempFile)) {
+                                        $imageInfo = getimagesize($tempFile);
+                                        $data['width'] = $imageInfo[0] ?? null;
+                                        $data['height'] = $imageInfo[1] ?? null;
+                                        $data['mime_type'] = $imageInfo['mime'] ?? null;
+                                    }
+
+                                    unlink($tempFile);
+                                }
+                            } catch (\Exception $e) {
+                                // If we can't get metadata, continue without it
+                                \Log::warning('Could not extract image metadata: ' . $e->getMessage());
+                            }
+
+                            // Set disk to spaces since we uploaded to DigitalOcean Spaces
+                            $data['disk'] = 'spaces';
                         }
 
                         // Remove the file_upload field as it's not in the database
