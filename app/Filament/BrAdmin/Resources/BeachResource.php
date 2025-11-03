@@ -48,6 +48,20 @@ class BeachResource extends Resource
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
                     ->searchable()
                     ->preload(),
+                Forms\Components\Select::make('region_id')
+                    ->label('Region')
+                    ->options(function () {
+                        return \App\Models\Region::with('translations', 'country')
+                            ->get()
+                            ->mapWithKeys(function ($region) {
+                                $name = $region->translations->where('locale', 'en')->first()?->name ?? $region->code;
+                                $countryCode = $region->country_code ?? '';
+                                return [$region->id => $name . ' (' . $countryCode . ')'];
+                            })
+                            ->sort();
+                    })
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\Select::make('continent_code')
                     ->relationship('continent', 'code')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
@@ -192,6 +206,12 @@ class BeachResource extends Resource
                     ->getStateUsing(fn ($record) => $record->country?->translations()->where('locale', 'en')->first()?->name ?? $record->country?->code ?? 'N/A')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('region.name')
+                    ->label('Region')
+                    ->getStateUsing(fn ($record) => $record->region?->translations()->where('locale', 'en')->first()?->name ?? $record->region?->code ?? 'N/A')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('continent.name')
                     ->label('Continent')
                     ->getStateUsing(fn ($record) => $record->continent?->translations()->where('locale', 'en')->first()?->name ?? $record->continent?->code ?? 'N/A')
@@ -228,6 +248,7 @@ class BeachResource extends Resource
             ->with([
                 'translations',
                 'country.translations',
+                'region.translations',
                 'continent.translations',
                 'waterbody.translations',
                 'beachType.translations',
