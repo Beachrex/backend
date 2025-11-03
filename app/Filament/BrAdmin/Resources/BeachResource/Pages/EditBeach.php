@@ -3,6 +3,7 @@
 namespace App\Filament\BrAdmin\Resources\BeachResource\Pages;
 
 use App\Filament\BrAdmin\Resources\BeachResource;
+use App\Filament\BrAdmin\Resources\BeachResource\Widgets\BeachMapWidget;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -25,5 +26,12 @@ class EditBeach extends EditRecord
             ?? 'Beach #' . $beach->id;
 
         return 'Edit Beach: ' . $beachName;
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            BeachMapWidget::class,
+        ];
     }
 }
