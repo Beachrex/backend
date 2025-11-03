@@ -10,6 +10,8 @@ use App\Models\River;
 use App\Models\RiverTranslation;
 use App\Models\Lake;
 use App\Models\LakeTranslation;
+use App\Models\Region;
+use App\Models\RegionTranslation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -52,11 +54,12 @@ class MigrateBeachesFromOldDb extends Command
     private int $skippedCount = 0;
 
     /**
-     * Cache for islands, rivers, lakes to avoid duplicate lookups
+     * Cache for islands, rivers, lakes, regions to avoid duplicate lookups
      */
     private array $islandCache = [];
     private array $riverCache = [];
     private array $lakeCache = [];
+    private array $regionCache = [];
 
     // Cached data from SQL file (parsed once)
     private array $allBeaches = [];
@@ -610,10 +613,11 @@ class MigrateBeachesFromOldDb extends Command
     private function createBeachRecord(array $oldData): Beach
     {
 
-        // Handle island/river/lake
+        // Handle island/river/lake/region
         $islandId = null;
         $riverId = null;
         $lakeId = null;
+        $regionId = null;
 
         if (!empty($oldData['island_name'])) {
             $islandId = $this->getOrCreateIsland($oldData['island_name'], $oldData['island_name_nice_url']);
@@ -625,6 +629,15 @@ class MigrateBeachesFromOldDb extends Command
 
         if (!empty($oldData['lake_name'])) {
             $lakeId = $this->getOrCreateLake($oldData['lake_name'], $oldData['lake_name_nice_url']);
+        }
+
+        if (!empty($oldData['region'])) {
+            $regionId = $this->getOrCreateRegion(
+                $oldData['region'],
+                $oldData['region_nice_url'] ?? null,
+                $oldData['region_full_name_nice_url'] ?? null,
+                $oldData['country_code']
+            );
         }
 
         // Map old swimming_depth_of_one_m (direct value) to swimming_depth_of_one_m_id (foreign key)
@@ -656,6 +669,7 @@ class MigrateBeachesFromOldDb extends Command
         $beach->island_id = $islandId;
         $beach->river_id = $riverId;
         $beach->lake_id = $lakeId;
+        $beach->region_id = $regionId;
         $beach->folder_name = $oldData['folder_name'];
         $beach->mobile_upload = !empty($oldData['mobile_upload']) ? (bool)$oldData['mobile_upload'] : false;
         $beach->video_url = $oldData['video_url'];
@@ -812,6 +826,60 @@ class MigrateBeachesFromOldDb extends Command
 
         $this->lakeCache[$cacheKey] = $lake->id;
         return $lake->id;
+    }
+
+    /**
+     * Get or create region by name
+     *
+     * @param string $name Region name (e.g., "Dalmatia - Dubrovnik")
+     * @param string|null $shortSlug Short slug (e.g., "dalmatia")
+     * @param string|null $fullSlug Full slug (e.g., "dalmatia-dubrovnik")
+     * @param string $countryCode Country code (e.g., "HR")
+     * @return int Region ID
+     */
+    private function getOrCreateRegion(string $name, ?string $shortSlug, ?string $fullSlug, string $countryCode): int
+    {
+        // Use full slug as cache key, fallback to name
+        $cacheKey = strtolower($fullSlug ?? $name);
+
+        if (isset($this->regionCache[$cacheKey])) {
+            return $this->regionCache[$cacheKey];
+        }
+
+        // Try to find existing region by code (full slug) or by English translation
+        $code = $fullSlug ?? Str::slug($name);
+
+        $region = Region::where('code', $code)->first();
+
+        if (!$region) {
+            // Try to find by English translation
+            $region = Region::whereHas('translations', function ($query) use ($name) {
+                $query->where('locale', 'en')->where('name', $name);
+            })->first();
+        }
+
+        if (!$region) {
+            // Create new region using firstOrCreate to avoid duplicate key errors
+            $region = Region::firstOrCreate(
+                ['code' => $code],
+                [
+                    'country_code' => strtoupper($countryCode),
+                    'status_id' => 1, // Active
+                ]
+            );
+
+            // Create English translation if it doesn't exist
+            RegionTranslation::firstOrCreate(
+                ['region_id' => $region->id, 'locale' => 'en'],
+                [
+                    'name' => $name,
+                    'slug' => $code,
+                ]
+            );
+        }
+
+        $this->regionCache[$cacheKey] = $region->id;
+        return $region->id;
     }
 
     /**
