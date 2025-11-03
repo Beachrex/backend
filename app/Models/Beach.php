@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Facades\Cache;
 
 
@@ -280,6 +281,18 @@ class Beach extends Model
         return $this->belongsToMany(UserType::class, 'user_type_beach')
             ->withPivot('status_id')
             ->withTimestamps();
+    }
+
+    /**
+     * Get primary media as a relationship (for eager loading)
+     */
+    public function primaryMediaRelation(): MorphOne
+    {
+        return $this->morphOne(Media::class, 'mediable')
+            ->where('status_id', 1)
+            ->where('is_primary', true)
+            ->orderBy('order')
+            ->orderBy('created_at');
     }
 
     /**

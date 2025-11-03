@@ -170,6 +170,10 @@ class BeachResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('primaryMediaRelation.url')
+                    ->label('Image')
+                    ->size(60)
+                    ->defaultImageUrl('/images/placeholder-beach.jpg'),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Beach Name')
                     ->searchable()
@@ -214,6 +218,7 @@ class BeachResource extends Resource
                 'waterbody.translations',
                 'beachType.translations',
                 'status',
+                'primaryMediaRelation',
             ]);
     }
 
@@ -221,6 +226,7 @@ class BeachResource extends Resource
     {
         return [
             RelationManagers\TranslationsRelationManager::class,
+            RelationManagers\MediaRelationManager::class,
         ];
     }
 
