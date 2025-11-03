@@ -55,6 +55,18 @@ class BadgeResource extends Resource
                     ->label('Icon')
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('translations_count')
+                    ->label('Translations')
+                    ->counts('translations')
+                    ->badge()
+                    ->color(fn (int $state): string => match (true) {
+                        $state === 14 => 'success',
+                        $state >= 10 => 'warning',
+                        default => 'danger',
+                    })
+                    ->formatStateUsing(fn (int $state): string => $state . '/14')
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('status.name')
                     ->label('Status')
                     ->badge()
@@ -76,6 +88,16 @@ class BadgeResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->relationship('status', 'name'),
+                Tables\Filters\TernaryFilter::make('missing_translations')
+                    ->label('Translations')
+                    ->placeholder('All badges')
+                    ->trueLabel('Complete (all 14 languages)')
+                    ->falseLabel('Missing translations')
+                    ->queries(
+                        true: fn (Builder $query) => $query->has('translations', '=', 14),
+                        false: fn (Builder $query) => $query->has('translations', '<', 14),
+                        blank: fn (Builder $query) => $query,
+                    ),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
