@@ -208,6 +208,21 @@ class Media extends Model
     {
         parent::boot();
 
+        // Set status to deleted (3) when soft deleting
+        static::deleting(function ($media) {
+            // Only set status_id if this is a soft delete (not force delete)
+            if (!$media->isForceDeleting()) {
+                $media->status_id = 3; // Deleted status
+                // Save without triggering events to avoid infinite loop
+                $media->saveQuietly();
+            }
+        });
+
+        // Set status back to active (1) when restoring
+        static::restoring(function ($media) {
+            $media->status_id = 1; // Active status
+        });
+
         // Delete file from storage when media is deleted (both soft delete and force delete)
         static::deleting(function ($media) {
             try {

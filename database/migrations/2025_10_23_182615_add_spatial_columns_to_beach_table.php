@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Enable PostGIS extension if not already enabled
+        DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
+
         // Check if location column already exists
         $hasLocationColumn = DB::select("
             SELECT EXISTS(
