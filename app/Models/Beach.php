@@ -29,6 +29,7 @@ class Beach extends Model
         'continent_code',
         'country_code',
         'region_id',
+        'city_id',
         'waterbody_id',
         'beach_type_id',
         'area_description_id',
@@ -141,6 +142,11 @@ class Beach extends Model
     public function region(): BelongsTo
     {
         return $this->belongsTo(Region::class);
+    }
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
     }
 
     public function waterbody(): BelongsTo

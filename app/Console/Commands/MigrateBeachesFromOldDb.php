@@ -12,6 +12,8 @@ use App\Models\Lake;
 use App\Models\LakeTranslation;
 use App\Models\Region;
 use App\Models\RegionTranslation;
+use App\Models\City;
+use App\Models\CityTranslation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -54,12 +56,13 @@ class MigrateBeachesFromOldDb extends Command
     private int $skippedCount = 0;
 
     /**
-     * Cache for islands, rivers, lakes, regions to avoid duplicate lookups
+     * Cache for islands, rivers, lakes, regions, cities to avoid duplicate lookups
      */
     private array $islandCache = [];
     private array $riverCache = [];
     private array $lakeCache = [];
     private array $regionCache = [];
+    private array $cityCache = [];
 
     // Cached data from SQL file (parsed once)
     private array $allBeaches = [];
@@ -613,11 +616,12 @@ class MigrateBeachesFromOldDb extends Command
     private function createBeachRecord(array $oldData): Beach
     {
 
-        // Handle island/river/lake/region
+        // Handle island/river/lake/region/city
         $islandId = null;
         $riverId = null;
         $lakeId = null;
         $regionId = null;
+        $cityId = null;
 
         if (!empty($oldData['island_name'])) {
             $islandId = $this->getOrCreateIsland($oldData['island_name'], $oldData['island_name_nice_url']);
@@ -637,6 +641,15 @@ class MigrateBeachesFromOldDb extends Command
                 $oldData['region_nice_url'] ?? null,
                 $oldData['region_full_name_nice_url'] ?? null,
                 $oldData['country_code']
+            );
+        }
+
+        if (!empty($oldData['city'])) {
+            $cityId = $this->getOrCreateCity(
+                $oldData['city'],
+                $oldData['city_nice_url'] ?? null,
+                $oldData['country_code'],
+                $regionId
             );
         }
 
@@ -670,6 +683,7 @@ class MigrateBeachesFromOldDb extends Command
         $beach->river_id = $riverId;
         $beach->lake_id = $lakeId;
         $beach->region_id = $regionId;
+        $beach->city_id = $cityId;
         $beach->folder_name = $oldData['folder_name'];
         $beach->mobile_upload = !empty($oldData['mobile_upload']) ? (bool)$oldData['mobile_upload'] : false;
         $beach->video_url = $oldData['video_url'];
@@ -880,6 +894,61 @@ class MigrateBeachesFromOldDb extends Command
 
         $this->regionCache[$cacheKey] = $region->id;
         return $region->id;
+    }
+
+    /**
+     * Get or create city by name
+     *
+     * @param string $name City name (e.g., "Rijeka")
+     * @param string|null $slug City slug (e.g., "rijeka")
+     * @param string $countryCode Country code (e.g., "HR")
+     * @param int|null $regionId Region ID
+     * @return int City ID
+     */
+    private function getOrCreateCity(string $name, ?string $slug, string $countryCode, ?int $regionId): int
+    {
+        // Use slug as cache key, fallback to name
+        $cacheKey = strtolower($slug ?? $name);
+
+        if (isset($this->cityCache[$cacheKey])) {
+            return $this->cityCache[$cacheKey];
+        }
+
+        // Try to find existing city by code (slug) or by English translation
+        $code = $slug ?? Str::slug($name);
+
+        $city = City::where('code', $code)->first();
+
+        if (!$city) {
+            // Try to find by English translation
+            $city = City::whereHas('translations', function ($query) use ($name) {
+                $query->where('locale', 'en')->where('name', $name);
+            })->first();
+        }
+
+        if (!$city) {
+            // Create new city using firstOrCreate to avoid duplicate key errors
+            $city = City::firstOrCreate(
+                ['code' => $code],
+                [
+                    'country_code' => strtoupper($countryCode),
+                    'region_id' => $regionId,
+                    'status_id' => 1, // Active
+                ]
+            );
+
+            // Create English translation if it doesn't exist
+            CityTranslation::firstOrCreate(
+                ['city_id' => $city->id, 'locale' => 'en'],
+                [
+                    'name' => $name,
+                    'slug' => $code,
+                ]
+            );
+        }
+
+        $this->cityCache[$cacheKey] = $city->id;
+        return $city->id;
     }
 
     /**
