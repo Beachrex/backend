@@ -77,6 +77,8 @@ class CountryResource extends Resource
     {
         return [
             RelationManagers\TranslationsRelationManager::class,
+            RelationManagers\BadgesRelationManager::class,
+            RelationManagers\ArticlesRelationManager::class,
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Country extends Model
 {
@@ -61,6 +62,22 @@ class Country extends Model
     public function continent(): BelongsTo
     {
         return $this->belongsTo(Continent::class, 'continent_code', 'code');
+    }
+
+    /**
+     * Get all badges for this country
+     */
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'badge_country', 'country_code', 'badge_id', 'code');
+    }
+
+    /**
+     * Get all articles for this country
+     */
+    public function articles(): BelongsToMany
+    {
+        return $this->belongsToMany(Article::class, 'article_country', 'country_code', 'article_id', 'code');
     }
 
     /**

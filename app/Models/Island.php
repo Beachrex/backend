@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Island extends Model
 {
@@ -51,6 +52,22 @@ class Island extends Model
     public function beaches(): HasMany
     {
         return $this->hasMany(Beach::class);
+    }
+
+    /**
+     * Get all badges for this island
+     */
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'badge_island');
+    }
+
+    /**
+     * Get all articles for this island
+     */
+    public function articles(): BelongsToMany
+    {
+        return $this->belongsToMany(Article::class, 'article_island');
     }
 
     /**

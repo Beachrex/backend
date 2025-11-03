@@ -36,6 +36,14 @@ class CountryResource extends JsonResource
                 $this->relationLoaded('beaches') || isset($this->beaches_count),
                 $this->beaches_count ?? $this->beaches->count()
             ),
+            'badges' => $this->when(
+                $this->relationLoaded('badges'),
+                BadgeResource::collection($this->badges)
+            ),
+            'articles' => $this->when(
+                $this->relationLoaded('articles'),
+                ArticleResource::collection($this->articles)
+            ),
         ];
     }
 }

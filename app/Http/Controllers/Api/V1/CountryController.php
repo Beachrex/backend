@@ -173,7 +173,14 @@ class CountryController extends Controller
             $cacheKey = "country:show:{$locale}:{$code}";
 
             $country = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
-                return Country::with(['continent.translations', 'translations'])
+                return Country::with([
+                        'continent.translations',
+                        'translations',
+                        'badges.translations',
+                        'badges.status',
+                        'articles.translations',
+                        'articles.status'
+                    ])
                     ->withCount('beaches')
                     ->where('code', $code)
                     ->first([

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Region extends Model
@@ -60,6 +61,22 @@ class Region extends Model
     public function beaches(): HasMany
     {
         return $this->hasMany(Beach::class);
+    }
+
+    /**
+     * Get all badges for this region
+     */
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'badge_region');
+    }
+
+    /**
+     * Get all articles for this region
+     */
+    public function articles(): BelongsToMany
+    {
+        return $this->belongsToMany(Article::class, 'article_region');
     }
 
     /**
