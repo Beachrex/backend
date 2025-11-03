@@ -23,10 +23,12 @@ class BeachResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Placeholder::make('beach_name_display')
+                    ->label('Beach Name')
+                    ->content(fn ($record) => $record ? ($record->translations()->where('locale', 'en')->first()?->name ?? $record->translations()->first()?->name ?? 'No name set') : 'New Beach')
+                    ->helperText('To edit the beach name, use the "Translations" tab below'),
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name'),
-                Forms\Components\TextInput::make('name')
-                    ->maxLength(255),
                 Forms\Components\TextInput::make('latitude')
                     ->numeric(),
                 Forms\Components\TextInput::make('longitude')
@@ -174,23 +176,28 @@ class BeachResource extends Resource
                     ->label('Image')
                     ->size(60)
                     ->defaultImageUrl('/images/placeholder-beach.jpg'),
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('translations.name')
                     ->label('Beach Name')
+                    ->getStateUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->translations()->first()?->name ?? 'N/A')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('country.name')
                     ->label('Country')
+                    ->getStateUsing(fn ($record) => $record->country?->translations()->where('locale', 'en')->first()?->name ?? $record->country?->code ?? 'N/A')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('continent.name')
                     ->label('Continent')
+                    ->getStateUsing(fn ($record) => $record->continent?->translations()->where('locale', 'en')->first()?->name ?? $record->continent?->code ?? 'N/A')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('waterbody.name')
                     ->label('Waterbody')
+                    ->getStateUsing(fn ($record) => $record->waterbody?->translations()->where('locale', 'en')->first()?->name ?? $record->waterbody?->code ?? 'N/A')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('beachType.name')
                     ->label('Beach Type')
+                    ->getStateUsing(fn ($record) => $record->beachType?->translations()->where('locale', 'en')->first()?->name ?? $record->beachType?->code ?? 'N/A')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status.name')
                     ->label('Status')
@@ -213,6 +220,7 @@ class BeachResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with([
+                'translations',
                 'country.translations',
                 'continent.translations',
                 'waterbody.translations',

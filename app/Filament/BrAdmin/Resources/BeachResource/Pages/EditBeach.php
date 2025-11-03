@@ -16,4 +16,14 @@ class EditBeach extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    public function getTitle(): string
+    {
+        $beach = $this->getRecord();
+        $beachName = $beach->translations()->where('locale', 'en')->first()?->name
+            ?? $beach->translations()->first()?->name
+            ?? 'Beach #' . $beach->id;
+
+        return 'Edit Beach: ' . $beachName;
+    }
 }
