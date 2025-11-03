@@ -119,6 +119,28 @@ class BadgeResource extends Resource
             ]);
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'translations.name'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        return $record->translations()->where('locale', 'en')->first()?->name ?? $record->code;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        return [
+            'Code' => $record->code,
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations']);
+    }
+
     public static function getRelations(): array
     {
         return [

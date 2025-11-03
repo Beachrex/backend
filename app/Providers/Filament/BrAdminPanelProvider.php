@@ -31,6 +31,9 @@ class BrAdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->brandName('Beachrex Admin')
+            ->globalSearch(true)
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            ->globalSearchFieldKeyBindingSuffix()
             ->discoverResources(in: app_path('Filament/BrAdmin/Resources'), for: 'App\\Filament\\BrAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/BrAdmin/Pages'), for: 'App\\Filament\\BrAdmin\\Pages')
             ->pages([

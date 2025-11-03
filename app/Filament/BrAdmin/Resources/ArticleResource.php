@@ -148,6 +148,37 @@ class ArticleResource extends Resource
             ]);
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'translations.title', 'translations.excerpt', 'category'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        return $record->translations()->where('locale', 'en')->first()?->title ?? $record->code;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        $details = [];
+
+        if ($record->category) {
+            $details['Category'] = $record->category;
+        }
+
+        $excerpt = $record->translations()->where('locale', 'en')->first()?->excerpt;
+        if ($excerpt) {
+            $details['Excerpt'] = \Illuminate\Support\Str::limit($excerpt, 60);
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations']);
+    }
+
     public static function getRelations(): array
     {
         return [

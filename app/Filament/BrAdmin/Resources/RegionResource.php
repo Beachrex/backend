@@ -128,6 +128,37 @@ class RegionResource extends Resource
             ->withCount('beaches');
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'translations.name', 'country.translations.name'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        return $record->translations()->where('locale', 'en')->first()?->name ?? $record->code;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        $details = ['Code' => $record->code];
+
+        if ($record->country) {
+            $countryName = $record->country->translations()->where('locale', 'en')->first()?->name ?? $record->country->code;
+            $details['Country'] = $countryName;
+        }
+
+        if ($record->beaches_count > 0) {
+            $details['Beaches'] = $record->beaches_count;
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations', 'country.translations'])->withCount('beaches');
+    }
+
     public static function getRelations(): array
     {
         return [

@@ -344,6 +344,42 @@ class BeachResource extends Resource
             ]);
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['translations.name', 'folder_name', 'country.translations.name', 'region.translations.name'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        $beachName = $record->translations()->where('locale', 'en')->first()?->name
+            ?? $record->translations()->first()?->name
+            ?? 'Beach #' . $record->id;
+
+        return $beachName;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        $details = [];
+
+        if ($record->country) {
+            $countryName = $record->country->translations()->where('locale', 'en')->first()?->name ?? $record->country->code;
+            $details['Country'] = $countryName;
+        }
+
+        if ($record->region) {
+            $regionName = $record->region->translations()->where('locale', 'en')->first()?->name ?? $record->region->code;
+            $details['Region'] = $regionName;
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations', 'country.translations', 'region.translations']);
+    }
+
     public static function getRelations(): array
     {
         return [

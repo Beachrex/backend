@@ -73,6 +73,42 @@ class CountryResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['translations', 'continent.translations']);
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'iso3', 'translations.name'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        return $record->translations()->where('locale', 'en')->first()?->name ?? $record->code;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        $details = ['Code' => $record->code];
+
+        if ($record->iso3) {
+            $details['ISO3'] = $record->iso3;
+        }
+
+        if ($record->continent) {
+            $continentName = $record->continent->translations()->where('locale', 'en')->first()?->name ?? $record->continent->code;
+            $details['Continent'] = $continentName;
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations', 'continent.translations']);
+    }
+
     public static function getRelations(): array
     {
         return [

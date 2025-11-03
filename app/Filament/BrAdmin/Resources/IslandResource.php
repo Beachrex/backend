@@ -17,9 +17,9 @@ class IslandResource extends Resource
     protected static ?string $model = Island::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-map';
-    
+
     protected static ?string $navigationGroup = 'Geography';
-    
+
     protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
@@ -96,6 +96,32 @@ class IslandResource extends Resource
                 'status',
             ])
             ->withCount('beaches');
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'translations.name'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        return $record->translations()->where('locale', 'en')->first()?->name ?? $record->code;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        $details = ['Code' => $record->code];
+
+        if ($record->beaches_count > 0) {
+            $details['Beaches'] = $record->beaches_count;
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations'])->withCount('beaches');
     }
 
     public static function getRelations(): array

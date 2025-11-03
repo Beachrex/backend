@@ -17,9 +17,9 @@ class CityResource extends Resource
     protected static ?string $model = City::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
-    
+
     protected static ?string $navigationGroup = 'Geography';
-    
+
     protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
@@ -158,6 +158,38 @@ class CityResource extends Resource
                 'status',
             ])
             ->withCount('beaches');
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'translations.name', 'country.translations.name', 'region.translations.name'];
+    }
+
+    public static function getGlobalSearchResultTitle($record): string
+    {
+        return $record->translations()->where('locale', 'en')->first()?->name ?? $record->code;
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        $details = ['Code' => $record->code];
+
+        if ($record->country) {
+            $countryName = $record->country->translations()->where('locale', 'en')->first()?->name ?? $record->country->code;
+            $details['Country'] = $countryName;
+        }
+
+        if ($record->region) {
+            $regionName = $record->region->translations()->where('locale', 'en')->first()?->name ?? $record->region->code;
+            $details['Region'] = $regionName;
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['translations', 'country.translations', 'region.translations'])->withCount('beaches');
     }
 
     public static function getRelations(): array
