@@ -324,6 +324,135 @@ class BeachResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    // Status Management
+                    Tables\Actions\BulkAction::make('changeStatus')
+                        ->label('Change Status')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('status_id')
+                                ->label('New Status')
+                                ->relationship('status', 'name')
+                                ->required()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['status_id' => $data['status_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Status Updated')
+                                ->body(count($records) . ' beach(es) status updated successfully.')
+                        ),
+
+                    // Beach Type Management
+                    Tables\Actions\BulkAction::make('changeBeachType')
+                        ->label('Change Beach Type')
+                        ->icon('heroicon-o-map-pin')
+                        ->color('info')
+                        ->form([
+                            Forms\Components\Select::make('beach_type_id')
+                                ->label('New Beach Type')
+                                ->relationship('beachType', 'code')
+                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['beach_type_id' => $data['beach_type_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Beach Type Updated')
+                                ->body(count($records) . ' beach(es) type updated successfully.')
+                        ),
+
+                    // Accessibility Management
+                    Tables\Actions\BulkAction::make('changeAccessibility')
+                        ->label('Change Accessibility')
+                        ->icon('heroicon-o-user-group')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\Select::make('accessibility_id')
+                                ->label('New Accessibility')
+                                ->relationship('accessibility', 'code')
+                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['accessibility_id' => $data['accessibility_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Accessibility Updated')
+                                ->body(count($records) . ' beach(es) accessibility updated successfully.')
+                        ),
+
+                    // Occupancy Rate Management
+                    Tables\Actions\BulkAction::make('changeOccupancyRate')
+                        ->label('Change Occupancy Rate')
+                        ->icon('heroicon-o-users')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('occupancy_rate_id')
+                                ->label('New Occupancy Rate')
+                                ->relationship('occupancyRate', 'code')
+                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['occupancy_rate_id' => $data['occupancy_rate_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Occupancy Rate Updated')
+                                ->body(count($records) . ' beach(es) occupancy rate updated successfully.')
+                        ),
+
+                    // Waterbody Management
+                    Tables\Actions\BulkAction::make('changeWaterbody')
+                        ->label('Change Waterbody')
+                        ->icon('heroicon-o-globe-alt')
+                        ->color('info')
+                        ->form([
+                            Forms\Components\Select::make('waterbody_id')
+                                ->label('New Waterbody')
+                                ->relationship('waterbody', 'code')
+                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['waterbody_id' => $data['waterbody_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Waterbody Updated')
+                                ->body(count($records) . ' beach(es) waterbody updated successfully.')
+                        ),
+
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

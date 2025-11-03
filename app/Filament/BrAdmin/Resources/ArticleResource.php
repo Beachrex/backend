@@ -133,6 +133,54 @@ class ArticleResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    // Status Management
+                    Tables\Actions\BulkAction::make('changeStatus')
+                        ->label('Change Status')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('status_id')
+                                ->label('New Status')
+                                ->relationship('status', 'name')
+                                ->required()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['status_id' => $data['status_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Status Updated')
+                                ->body(count($records) . ' article(s) status updated successfully.')
+                        ),
+
+                    // Category Management
+                    Tables\Actions\BulkAction::make('changeCategory')
+                        ->label('Change Category')
+                        ->icon('heroicon-o-tag')
+                        ->color('info')
+                        ->form([
+                            Forms\Components\TextInput::make('category')
+                                ->label('New Category')
+                                ->maxLength(255),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['category' => $data['category']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            fn ($records) => \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Category Updated')
+                                ->body(count($records) . ' article(s) category updated successfully.')
+                        ),
+
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
