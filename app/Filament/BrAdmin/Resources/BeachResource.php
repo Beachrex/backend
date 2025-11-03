@@ -224,13 +224,77 @@ class BeachResource extends Resource
                 Tables\Columns\TextColumn::make('beachType.name')
                     ->label('Beach Type')
                     ->getStateUsing(fn ($record) => $record->beachType?->translations()->where('locale', 'en')->first()?->name ?? $record->beachType?->code ?? 'N/A')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\IconColumn::make('location')
+                    ->label('GPS')
+                    ->boolean()
+                    ->getStateUsing(fn ($record) => $record->location !== null)
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\IconColumn::make('has_media')
+                    ->label('Media')
+                    ->boolean()
+                    ->getStateUsing(fn ($record) => $record->media()->exists())
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('status.name')
                     ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Active' => 'success',
+                        'Inactive' => 'warning',
+                        'Deleted' => 'danger',
+                        default => 'gray',
+                    })
                     ->sortable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                    ->relationship('status', 'name')
+                    ->label('Status'),
+
+                Tables\Filters\TernaryFilter::make('has_location')
+                    ->label('GPS Location')
+                    ->placeholder('All beaches')
+                    ->trueLabel('Has GPS coordinates')
+                    ->falseLabel('Missing GPS coordinates')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('location'),
+                        false: fn (Builder $query) => $query->whereNull('location'),
+                        blank: fn (Builder $query) => $query,
+                    ),
+
+                Tables\Filters\TernaryFilter::make('has_media')
+                    ->label('Media')
+                    ->placeholder('All beaches')
+                    ->trueLabel('Has photos/videos')
+                    ->falseLabel('Missing photos/videos')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereHas('media'),
+                        false: fn (Builder $query) => $query->whereDoesntHave('media'),
+                        blank: fn (Builder $query) => $query,
+                    ),
+
+                Tables\Filters\SelectFilter::make('country_code')
+                    ->relationship('country', 'code')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                    ->searchable()
+                    ->preload()
+                    ->label('Country'),
+
+                Tables\Filters\SelectFilter::make('region_id')
+                    ->relationship('region', 'id')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                    ->searchable()
+                    ->preload()
+                    ->label('Region'),
+
+                Tables\Filters\SelectFilter::make('continent_code')
+                    ->relationship('continent', 'code')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
+                    ->searchable()
+                    ->preload()
+                    ->label('Continent'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

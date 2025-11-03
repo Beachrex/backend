@@ -2,6 +2,11 @@
 
 namespace App\Filament\BrAdmin\Widgets;
 
+use App\Filament\BrAdmin\Resources\ContinentResource;
+use App\Filament\BrAdmin\Resources\CountryResource;
+use App\Filament\BrAdmin\Resources\RegionResource;
+use App\Filament\BrAdmin\Resources\CityResource;
+use App\Filament\BrAdmin\Resources\IslandResource;
 use App\Models\Continent;
 use App\Models\Country;
 use App\Models\Region;
@@ -24,24 +29,28 @@ class GeographyStatsWidget extends BaseWidget
 
         return [
             Stat::make('Continents', number_format($continents))
-                ->description('Geographic coverage')
+                ->description('Click to view geographic coverage')
                 ->descriptionIcon('heroicon-m-globe-alt')
-                ->color('primary'),
-            
+                ->color('primary')
+                ->url(ContinentResource::getUrl('index')),
+
             Stat::make('Countries', number_format($countries))
-                ->description('With beach locations')
+                ->description('Click to view all countries')
                 ->descriptionIcon('heroicon-m-flag')
-                ->color('success'),
-            
+                ->color('success')
+                ->url(CountryResource::getUrl('index')),
+
             Stat::make('Regions', number_format($regions))
-                ->description('Administrative areas')
+                ->description('Click to view administrative areas')
                 ->descriptionIcon('heroicon-m-map')
-                ->color('info'),
-            
+                ->color('info')
+                ->url(RegionResource::getUrl('index')),
+
             Stat::make('Cities & Islands', number_format($cities + $islands))
-                ->description(number_format($cities) . ' cities, ' . number_format($islands) . ' islands')
+                ->description(number_format($cities) . ' cities, ' . number_format($islands) . ' islands - Click for cities')
                 ->descriptionIcon('heroicon-m-building-office-2')
-                ->color('warning'),
+                ->color('warning')
+                ->url(CityResource::getUrl('index')),
         ];
     }
 }
