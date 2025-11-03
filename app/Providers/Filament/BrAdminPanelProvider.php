@@ -38,8 +38,7 @@ class BrAdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/BrAdmin/Widgets'), for: 'App\\Filament\\BrAdmin\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Custom widgets are auto-discovered from app/Filament/BrAdmin/Widgets
             ])
             ->middleware([
                 EncryptCookies::class,
