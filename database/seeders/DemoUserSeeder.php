@@ -14,24 +14,16 @@ class DemoUserSeeder extends Seeder
         // Create demo users
         $users = [
             [
-                'name' => 'Demo User',
-                'email' => 'demo@example.com',
-                'password' => Hash::make('password'),
-            ],
-            [
                 'name' => 'Beach Explorer',
                 'email' => 'explorer@beachrex.com',
                 'password' => Hash::make('password'),
-            ],
-            [
-                'name' => 'Travel Guide',
-                'email' => 'guide@beachrex.com',
-                'password' => Hash::make('password'),
+                'is_admin' => false,
             ],
             [
                 'name' => 'Admin User',
                 'email' => 'admin@beachrex.com',
                 'password' => Hash::make('admin123'),
+                'is_admin' => true,
             ]
         ];
 
@@ -41,6 +33,7 @@ class DemoUserSeeder extends Seeder
                 [
                     'name' => $userData['name'],
                     'password' => $userData['password'],
+                    'is_admin' => $userData['is_admin'],
                 ]
             );
         }

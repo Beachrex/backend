@@ -31,9 +31,13 @@ class UserResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\DateTimePicker::make('email_verified_at'),
+                Forms\Components\Toggle::make('is_admin')
+                    ->label('Admin Access')
+                    ->helperText('Allow this user to access the admin panel'),
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->required()
+                    ->required(fn (string $operation): bool => $operation === 'create')
+                    ->dehydrated(fn ($state) => filled($state))
                     ->maxLength(255),
             ]);
     }
@@ -46,9 +50,14 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+                Tables\Columns\IconColumn::make('is_admin')
+                    ->boolean()
+                    ->label('Admin')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -59,7 +68,11 @@ class UserResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TernaryFilter::make('is_admin')
+                    ->label('Admin Users')
+                    ->placeholder('All users')
+                    ->trueLabel('Only admins')
+                    ->falseLabel('Only non-admins'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
