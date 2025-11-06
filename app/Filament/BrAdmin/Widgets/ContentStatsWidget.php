@@ -46,7 +46,7 @@ class ContentStatsWidget extends BaseWidget
                 ->url(MediaResource::getUrl('index')),
 
             Stat::make('Users', number_format($totalUsers))
-                ->description('Click to manage admin users')
+                ->description('Click to manage users')
                 ->descriptionIcon('heroicon-m-users')
                 ->color('info')
                 ->url(UserResource::getUrl('index')),
