@@ -44,7 +44,8 @@ class DatabaseSeeder extends Seeder
             WaterBodyTypeSeeder::class,
             IslandSeeder::class,
             ArticleSeeder::class,
-            BadgeSeeder::class
+            BadgeSeeder::class,
+            GenderSeeder::class
 //            BeachSeeder::class, // do not run since we have old DB migration
         ]);
     }
