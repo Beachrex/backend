@@ -26,6 +26,15 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'is_admin',
+        'username',
+        'firstname',
+        'lastname',
+        'date_of_birth',
+        'gender_id',
+        'mobile',
+        'country_code',
+        'status_id',
+        'register_type',
     ];
 
     /**
@@ -49,7 +58,40 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'date_of_birth' => 'date',
         ];
+    }
+
+    /**
+     * Get the gender of this user
+     */
+    public function gender(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Gender::class);
+    }
+
+    /**
+     * Get the country of this user
+     */
+    public function country(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'country_code', 'code');
+    }
+
+    /**
+     * Get the status of this user
+     */
+    public function status(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Status::class);
+    }
+
+    /**
+     * Get all beaches created by this user
+     */
+    public function beaches(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Beach::class);
     }
 
     /**

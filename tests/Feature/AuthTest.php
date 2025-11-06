@@ -6,10 +6,22 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Status;
 
 class AuthTest extends TestCase
 {
     use DatabaseMigrations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Create status
+        Status::insert([
+            ['id' => 1, 'name' => 'active'],
+            ['id' => 2, 'name' => 'inactive'],
+        ]);
+    }
 
     #[\PHPUnit\Framework\Attributes\Test]
 
