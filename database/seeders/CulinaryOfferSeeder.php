@@ -12,6 +12,15 @@ class CulinaryOfferSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('culinary_offer')->count() > 0) {
+                $this->command->info('culinary_offer table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $culinaryOffers = [
             ['id' => 1, 'code' => 'no_service'],
             ['id' => 2, 'code' => 'restaurant'],

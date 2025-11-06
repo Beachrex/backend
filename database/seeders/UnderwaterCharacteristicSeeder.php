@@ -12,6 +12,15 @@ class UnderwaterCharacteristicSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('underwater_characteristic')->count() > 0) {
+                $this->command->info('underwater_characteristic table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $characteristics = [
             ['id' => 1, 'code' => 'sand_ground'],
             ['id' => 2, 'code' => 'stones'],

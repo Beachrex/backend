@@ -12,6 +12,15 @@ class BayLengthSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('bay_length')->count() > 0) {
+                $this->command->info('bay_length table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $bayLengths = [
             ['id' => 1, 'code' => '3m'],
             ['id' => 2, 'code' => '5m'],

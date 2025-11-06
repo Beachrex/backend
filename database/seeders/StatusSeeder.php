@@ -9,9 +9,13 @@ class StatusSeeder extends Seeder
 {
     public function run(): void
     {
-        if (DB::table('status')->count() > 0) {
-            $this->command->info('Status table already seeded. Skipping.');
-            return;
+        try {
+            if (DB::table('status')->count() > 0) {
+                $this->command->info('Status table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
         }
 
         DB::table('status')->insert([

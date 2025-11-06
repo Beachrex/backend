@@ -12,6 +12,15 @@ class ParkingBeachHeightSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('parking_beach_height')->count() > 0) {
+                $this->command->info('parking_beach_height table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $parkingBeachHeights = [
             ['id' => 1, 'code' => '0m'],
             ['id' => 2, 'code' => '5m'],

@@ -10,6 +10,15 @@ class ContinentSeeder extends Seeder
 {
     public function run(): void
     {
+        try {
+            if (DB::table('continents')->count() > 0) {
+                $this->command->info('Continents table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         // Insert continents (just codes, names are in translations)
         $continents = [
             ['code' => 'AF'],

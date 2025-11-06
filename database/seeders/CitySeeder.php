@@ -14,6 +14,11 @@ class CitySeeder extends Seeder
      */
     public function run(): void
     {
+        if (City::count() > 0) {
+            $this->command->info('City table already seeded. Skipping.');
+            return;
+        }
+
         // Get first 4 regions to assign cities to
         $regions = Region::limit(4)->get();
 

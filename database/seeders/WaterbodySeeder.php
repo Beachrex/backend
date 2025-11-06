@@ -13,6 +13,11 @@ class WaterbodySeeder extends Seeder
      */
     public function run(): void
     {
+        if (Waterbody::count() > 0) {
+            $this->command->info('Waterbody table already seeded. Skipping.');
+            return;
+        }
+
         // Filter titles for all locales
         $filterTitles = [
             'en' => 'Water Body',

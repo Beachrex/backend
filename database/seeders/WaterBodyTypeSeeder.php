@@ -12,6 +12,15 @@ class WaterBodyTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('water_body_type')->count() > 0) {
+                $this->command->info('Water body type table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $waterBodyTypes = [
             [
                 'id' => 1,

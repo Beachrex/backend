@@ -12,6 +12,15 @@ class BeachLocationTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('beach_location_type')->count() > 0) {
+                $this->command->info('beach_location_type table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $beachLocationTypes = [
             [
                 'id' => 1,

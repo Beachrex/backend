@@ -12,6 +12,15 @@ class SwimmingDepthOfOneMSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('swimming_depth_of_one_m')->count() > 0) {
+                $this->command->info('swimming_depth_of_one_m table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $swimmingDepths = [
             ['id' => 1, 'code' => '0m'],
             ['id' => 2, 'code' => '3m'],

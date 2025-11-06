@@ -13,6 +13,15 @@ class IslandSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('island')->count() > 0) {
+                $this->command->info('Island table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $islands = [
             [
                 'id' => 1,

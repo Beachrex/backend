@@ -12,6 +12,15 @@ class AreaDescriptionSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('area_description')->count() > 0) {
+                $this->command->info('Area description table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $areaDescriptions = [
             [
                 'id' => 1,

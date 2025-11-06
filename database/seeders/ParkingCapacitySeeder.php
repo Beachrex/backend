@@ -12,6 +12,15 @@ class ParkingCapacitySeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('parking_capacity')->count() > 0) {
+                $this->command->info('parking_capacity table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $parkingCapacities = [
             [
                 'id' => 1,

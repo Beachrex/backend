@@ -12,6 +12,15 @@ class BeachInclinationSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('beach_inclination')->count() > 0) {
+                $this->command->info('beach_inclination table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $beachInclinations = [
             ['id' => 1, 'code' => 'small_slope'],
             ['id' => 2, 'code' => 'normal'],

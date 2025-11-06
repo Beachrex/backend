@@ -12,9 +12,13 @@ class CountrySeeder extends Seeder
     public function run(): void
     {
         // Check if already populated
-        if (DB::table('countries')->count() > 0) {
-            $this->command->info('Countries already seeded. Skipping.');
-            return;
+        try {
+            if (DB::table('countries')->count() > 0) {
+                $this->command->info('Countries already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
         }
 
         // Parse the SQL file to extract country data

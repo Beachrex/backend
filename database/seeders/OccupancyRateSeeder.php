@@ -12,6 +12,15 @@ class OccupancyRateSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('occupancy_rate')->count() > 0) {
+                $this->command->info('occupancy_rate table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $occupancyRates = [
             ['id' => 1, 'code' => 'small'],
             ['id' => 2, 'code' => 'middle'],

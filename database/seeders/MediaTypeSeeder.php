@@ -12,6 +12,15 @@ class MediaTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('media_types')->count() > 0) {
+                $this->command->info('Media types table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $mediaTypes = [
             [
                 'code' => 'image',

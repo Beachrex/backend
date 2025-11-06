@@ -12,6 +12,15 @@ class RoadToParkingTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('road_to_parking_type')->count() > 0) {
+                $this->command->info('road_to_parking_type table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $roadToParkingTypes = [
             [
                 'id' => 1,

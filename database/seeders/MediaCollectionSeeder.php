@@ -12,6 +12,15 @@ class MediaCollectionSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('media_collections')->count() > 0) {
+                $this->command->info('Media collections table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $collections = [
             // Beach-related collections
             [

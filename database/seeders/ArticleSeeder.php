@@ -15,6 +15,11 @@ class ArticleSeeder extends Seeder
      */
     public function run(): void
     {
+        if (Article::count() > 0) {
+            $this->command->info('Article table already seeded. Skipping.');
+            return;
+        }
+
         // Create 16 articles total (4 for each entity type: country, region, island, city)
         $articles = [
             // Country articles (4)

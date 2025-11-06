@@ -10,6 +10,11 @@ class DemoBeachSeeder extends Seeder
 {
     public function run(): void
     {
+        if (Beach::count() > 0) {
+            $this->command->info('Beach table already seeded. Skipping.');
+            return;
+        }
+
         $beaches = [
             // Europe
             [
@@ -49,7 +54,7 @@ class DemoBeachSeeder extends Seeder
                     ]
                 ]
             ],
-            
+
             // North America
             [
                 'user_id' => 1,
@@ -83,7 +88,7 @@ class DemoBeachSeeder extends Seeder
                     ]
                 ]
             ],
-            
+
             // Asia
             [
                 'user_id' => 1,
@@ -101,7 +106,7 @@ class DemoBeachSeeder extends Seeder
                     ]
                 ]
             ],
-            
+
             // South America
             [
                 'user_id' => 1,
@@ -119,7 +124,7 @@ class DemoBeachSeeder extends Seeder
                     ]
                 ]
             ],
-            
+
             // Oceania
             [
                 'user_id' => 1,
@@ -142,9 +147,9 @@ class DemoBeachSeeder extends Seeder
         foreach ($beaches as $beachData) {
             $translations = $beachData['translations'];
             unset($beachData['translations']);
-            
+
             $beach = Beach::create($beachData);
-            
+
             foreach ($translations as $locale => $translation) {
                 BeachTranslation::create([
                     'beach_id' => $beach->id,
@@ -155,7 +160,7 @@ class DemoBeachSeeder extends Seeder
                 ]);
             }
         }
-        
+
         $this->command->info('Created ' . count($beaches) . ' demo beaches across different continents and countries.');
     }
 }

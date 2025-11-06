@@ -12,6 +12,15 @@ class LocationInfrastructureSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('location_infrastructure')->count() > 0) {
+                $this->command->info('location_infrastructure table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $infrastructures = [
             ['id' => 1, 'code' => 'wc'],
             ['id' => 2, 'code' => 'shower'],

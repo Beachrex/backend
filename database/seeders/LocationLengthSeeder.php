@@ -12,6 +12,15 @@ class LocationLengthSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('location_length')->count() > 0) {
+                $this->command->info('location_length table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $locationLengths = [
             ['id' => 1, 'code' => '5m'],
             ['id' => 2, 'code' => '10m'],

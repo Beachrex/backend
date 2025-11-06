@@ -12,6 +12,15 @@ class GenderSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('gender')->count() > 0) {
+                $this->command->info('Gender table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $genders = [
             [
                 'id' => 1,

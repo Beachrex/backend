@@ -13,6 +13,11 @@ class UserTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        if (UserType::count() > 0) {
+            $this->command->info('User type table already seeded. Skipping.');
+            return;
+        }
+
         // Filter titles for all locales
         $filterTitles = [
             'en' => 'User Type',

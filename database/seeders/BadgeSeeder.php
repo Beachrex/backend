@@ -15,6 +15,11 @@ class BadgeSeeder extends Seeder
      */
     public function run(): void
     {
+        if (Badge::count() > 0) {
+            $this->command->info('Badge table already seeded. Skipping.');
+            return;
+        }
+
         // Create 24 badges total (6 for each entity type)
         $badges = [
             // Country badges (6)

@@ -12,6 +12,15 @@ class ParkingBeachDistanceSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('parking_beach_distance')->count() > 0) {
+                $this->command->info('parking_beach_distance table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $parkingBeachDistances = [
             ['id' => 1, 'code' => '10m'],
             ['id' => 2, 'code' => '30m'],

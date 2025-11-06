@@ -12,6 +12,15 @@ class RecommendedTransportTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('recommended_transport_type')->count() > 0) {
+                $this->command->info('recommended_transport_type table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $transportTypes = [
             ['id' => 1, 'code' => 'walk'],
             ['id' => 2, 'code' => 'bike'],

@@ -12,6 +12,15 @@ class SportingActivitiesSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('sporting_activities')->count() > 0) {
+                $this->command->info('sporting_activities table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $activities = [
             ['id' => 1, 'code' => 'swimming'],
             ['id' => 2, 'code' => 'snorkeling'],

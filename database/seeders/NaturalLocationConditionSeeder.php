@@ -12,6 +12,15 @@ class NaturalLocationConditionSeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('natural_location_condition')->count() > 0) {
+                $this->command->info('natural_location_condition table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $conditions = [
             ['id' => 1, 'code' => 'white_sand'],
             ['id' => 2, 'code' => 'brown_sand'],

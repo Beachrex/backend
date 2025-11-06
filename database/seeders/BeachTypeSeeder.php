@@ -13,6 +13,11 @@ class BeachTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        if (BeachType::count() > 0) {
+            $this->command->info('Beach type table already seeded. Skipping.');
+            return;
+        }
+
         // Filter titles for all locales
         $filterTitles = [
             'en' => 'Beach Type',

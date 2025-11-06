@@ -12,6 +12,15 @@ class AccessibilitySeeder extends Seeder
      */
     public function run(): void
     {
+        try {
+            if (DB::table('accessibility')->count() > 0) {
+                $this->command->info('accessibility table already seeded. Skipping.');
+                return;
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet, continue with seeding
+        }
+
         $accessibilities = [
             [
                 'id' => 1,
