@@ -16,7 +16,7 @@ class CoverageGapsWidget extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading('Coverage Gaps - Beaches Needing Attention')
+            ->heading('Beaches Needing Attention')
             ->description('Beaches with missing critical data (no GPS, no media, or incomplete translations)')
             ->query(
                 Beach::query()
@@ -35,16 +35,16 @@ class CoverageGapsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('name')
                     ->label('Beach Name')
                     ->getStateUsing(function ($record) {
-                        return $record->translations()->where('locale', 'en')->first()?->name 
-                            ?? $record->translations()->first()?->name 
+                        return $record->translations()->where('locale', 'en')->first()?->name
+                            ?? $record->translations()->first()?->name
                             ?? 'Beach #' . $record->id;
                     })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('country.name')
                     ->label('Country')
                     ->getStateUsing(function ($record) {
-                        return $record->country?->translations()->where('locale', 'en')->first()?->name 
-                            ?? $record->country?->code 
+                        return $record->country?->translations()->where('locale', 'en')->first()?->name
+                            ?? $record->country?->code
                             ?? '';
                     }),
                 Tables\Columns\IconColumn::make('has_gps')
