@@ -1840,7 +1840,7 @@
                                                         "icon": {
                                                             "description": "Icon file path (SVG/PNG)",
                                                             "type": "string",
-                                                            "example": null
+                                                            "nullable": true
                                                         },
                                                         "input_type": {
                                                             "description": "Input type: checkbox, radio, select, single, multiple",
@@ -1885,7 +1885,7 @@
                                                         "icon": {
                                                             "description": "Icon file path (SVG/PNG)",
                                                             "type": "string",
-                                                            "example": null
+                                                            "nullable": true
                                                         },
                                                         "input_type": {
                                                             "description": "Input type: checkbox, radio, select, single, multiple",
@@ -1930,7 +1930,7 @@
                                                         "icon": {
                                                             "description": "Icon file path (SVG/PNG)",
                                                             "type": "string",
-                                                            "example": null
+                                                            "nullable": true
                                                         },
                                                         "input_type": {
                                                             "description": "Input type: checkbox, radio, select, single, multiple",

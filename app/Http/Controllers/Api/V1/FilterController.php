@@ -40,7 +40,7 @@ class FilterController extends Controller
      *                     property="country",
      *                     type="object",
      *                     @OA\Property(property="title", type="string", example="Country", description="Localized filter title"),
-     *                     @OA\Property(property="icon", type="string", example=null, description="Icon file path (SVG/PNG)"),
+     *                     @OA\Property(property="icon", type="string", nullable=true, description="Icon file path (SVG/PNG)"),
      *                     @OA\Property(property="input_type", type="string", example="select", description="Input type: checkbox, radio, select, single, multiple"),
      *                     @OA\Property(
      *                         property="options",
@@ -59,7 +59,7 @@ class FilterController extends Controller
      *                     property="region",
      *                     type="object",
      *                     @OA\Property(property="title", type="string", example="Region", description="Localized filter title"),
-     *                     @OA\Property(property="icon", type="string", example=null, description="Icon file path (SVG/PNG)"),
+     *                     @OA\Property(property="icon", type="string", nullable=true, description="Icon file path (SVG/PNG)"),
      *                     @OA\Property(property="input_type", type="string", example="select", description="Input type: checkbox, radio, select, single, multiple"),
      *                     @OA\Property(
      *                         property="options",
@@ -78,7 +78,7 @@ class FilterController extends Controller
      *                     property="island",
      *                     type="object",
      *                     @OA\Property(property="title", type="string", example="Island", description="Localized filter title"),
-     *                     @OA\Property(property="icon", type="string", example=null, description="Icon file path (SVG/PNG)"),
+     *                     @OA\Property(property="icon", type="string", nullable=true, description="Icon file path (SVG/PNG)"),
      *                     @OA\Property(property="input_type", type="string", example="select", description="Input type: checkbox, radio, select, single, multiple"),
      *                     @OA\Property(
      *                         property="options",
