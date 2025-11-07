@@ -46,7 +46,8 @@ class DatabaseSeeder extends Seeder
             ArticleSeeder::class,
             BadgeSeeder::class,
             GenderSeeder::class,
-            CountryFilterTitleSeeder::class
+            CountryFilterTitleSeeder::class,
+            RegionFilterTitleSeeder::class,
 //            BeachSeeder::class, // do not run since we have old DB migration
         ]);
     }
