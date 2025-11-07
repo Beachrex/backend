@@ -5547,6 +5547,12 @@
                         "maxLength": 2,
                         "example": "EU"
                     },
+                    "image_path": {
+                        "description": "Path to the country image",
+                        "type": "string",
+                        "example": "/storage/countries/slovenia.jpg",
+                        "nullable": true
+                    },
                     "beaches_count": {
                         "description": "Number of beaches in this country",
                         "type": "integer",
