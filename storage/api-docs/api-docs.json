@@ -1508,6 +1508,11 @@
                                                         "type": "string",
                                                         "example": "EU"
                                                     },
+                                                    "image_path": {
+                                                        "type": "string",
+                                                        "example": "/images/countries/slovenia.jpg",
+                                                        "nullable": true
+                                                    },
                                                     "beaches_count": {
                                                         "type": "integer",
                                                         "example": 5
@@ -1601,6 +1606,11 @@
                                                 "continent_code": {
                                                     "type": "string",
                                                     "example": "EU"
+                                                },
+                                                "image_path": {
+                                                    "type": "string",
+                                                    "example": "/images/countries/slovenia.jpg",
+                                                    "nullable": true
                                                 },
                                                 "beaches_count": {
                                                     "type": "integer",

@@ -55,6 +55,7 @@ class CountryController extends Controller
      *                     @OA\Property(property="full_name", type="string", example="Republic of Slovenia"),
      *                     @OA\Property(property="iso3", type="string", example="SVN"),
      *                     @OA\Property(property="continent_code", type="string", example="EU"),
+     *                     @OA\Property(property="image_path", type="string", nullable=true, example="/images/countries/slovenia.jpg"),
      *                     @OA\Property(property="beaches_count", type="integer", example=5)
      *                 )
      *             ),
@@ -96,7 +97,8 @@ class CountryController extends Controller
                 return $query->get([
                     'code',
                     'iso3',
-                    'continent_code'
+                    'continent_code',
+                    'image_path'
                 ]);
             });
 
@@ -143,6 +145,7 @@ class CountryController extends Controller
      *                 @OA\Property(property="full_name", type="string", example="Republic of Slovenia"),
      *                 @OA\Property(property="iso3", type="string", example="SVN"),
      *                 @OA\Property(property="continent_code", type="string", example="EU"),
+     *                 @OA\Property(property="image_path", type="string", nullable=true, example="/images/countries/slovenia.jpg"),
      *                 @OA\Property(property="beaches_count", type="integer", example=5),
      *                 @OA\Property(
      *                     property="continent",
@@ -186,7 +189,8 @@ class CountryController extends Controller
                     ->first([
                         'code',
                         'iso3',
-                        'continent_code'
+                        'continent_code',
+                        'image_path'
                     ]);
             });
 

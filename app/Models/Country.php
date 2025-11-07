@@ -19,6 +19,7 @@ class Country extends Model
         'iso3',
         'number',
         'continent_code',
+        'image_path',
     ];
 
     protected $appends = ['name'];
