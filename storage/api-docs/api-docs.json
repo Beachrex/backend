@@ -1964,6 +1964,51 @@
                                                         }
                                                     },
                                                     "type": "object"
+                                                },
+                                                "country": {
+                                                    "properties": {
+                                                        "title": {
+                                                            "description": "Localized filter title",
+                                                            "type": "string",
+                                                            "example": "Country"
+                                                        },
+                                                        "icon": {
+                                                            "description": "Icon file path (SVG/PNG)",
+                                                            "type": "string",
+                                                            "example": null
+                                                        },
+                                                        "input_type": {
+                                                            "description": "Input type: checkbox, radio, select, single, multiple",
+                                                            "type": "string",
+                                                            "example": "select"
+                                                        },
+                                                        "options": {
+                                                            "description": "Countries with more than 1 beach",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "code": {
+                                                                        "type": "string",
+                                                                        "example": "SI"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Slovenia"
+                                                                    },
+                                                                    "slug": {
+                                                                        "type": "string",
+                                                                        "example": "slovenia"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
