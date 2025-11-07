@@ -319,25 +319,6 @@ class FilterController extends Controller
      */
     private function getCountryFilterData(string $locale): ?array
     {
-        $countries = $this->getCountryFilters($locale);
-
-        if (empty($countries)) {
-            return null;
-        }
-
-        return [
-            'title' => 'Country', // Static title, can be translated later if needed
-            'icon' => null,
-            'input_type' => 'select',
-            'options' => $countries,
-        ];
-    }
-
-    /**
-     * Get country filter options (only countries with more than 1 beach)
-     */
-    private function getCountryFilters(string $locale): array
-    {
         // Get countries that have more than 1 beach
         $countries = Country::with('translations')
             ->select('countries.id', 'countries.code')
@@ -348,6 +329,28 @@ class FilterController extends Controller
             ->orderBy('countries.code')
             ->get();
 
+        if ($countries->isEmpty()) {
+            return null;
+        }
+
+        // Get the first country to extract filter metadata
+        $firstCountry = $countries->first();
+        $translation = $firstCountry->translations->firstWhere('locale', $locale);
+        $translationEn = $firstCountry->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Country',
+            'icon' => null,
+            'input_type' => 'select',
+            'options' => $this->getCountryFilters($locale, $countries),
+        ];
+    }
+
+    /**
+     * Get country filter options (only countries with more than 1 beach)
+     */
+    private function getCountryFilters(string $locale, $countries): array
+    {
         return $countries->map(function ($country) use ($locale) {
             $translation = $country->translations->firstWhere('locale', $locale);
             $translationEn = $country->translations->firstWhere('locale', 'en');

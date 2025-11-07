@@ -15,6 +15,7 @@ class CountryTranslation extends Model
         'name',
         'full_name',
         'slug',
+        'filter_title',
     ];
 
     /**
