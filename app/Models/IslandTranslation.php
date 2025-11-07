@@ -14,6 +14,7 @@ class IslandTranslation extends Model
         'locale',
         'name',
         'slug',
+        'filter_title',
     ];
 
     /**

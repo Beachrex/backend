@@ -8,6 +8,7 @@ use App\Models\UserType;
 use App\Models\BeachType;
 use App\Models\Country;
 use App\Models\Region;
+use App\Models\Island;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -70,6 +71,25 @@ class FilterController extends Controller
      *                             @OA\Property(property="code", type="string", example="obalno-kraska"),
      *                             @OA\Property(property="name", type="string", example="Obalno-kraška"),
      *                             @OA\Property(property="slug", type="string", example="obalno-kraska")
+     *                         )
+     *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="island",
+     *                     type="object",
+     *                     @OA\Property(property="title", type="string", example="Island", description="Localized filter title"),
+     *                     @OA\Property(property="icon", type="string", example=null, description="Icon file path (SVG/PNG)"),
+     *                     @OA\Property(property="input_type", type="string", example="select", description="Input type: checkbox, radio, select, single, multiple"),
+     *                     @OA\Property(
+     *                         property="options",
+     *                         type="array",
+     *                         description="Islands with more than 1 beach",
+     *                         @OA\Items(
+     *                             type="object",
+     *                             @OA\Property(property="id", type="integer", example=1),
+     *                             @OA\Property(property="code", type="string", example="krk"),
+     *                             @OA\Property(property="name", type="string", example="Krk"),
+     *                             @OA\Property(property="slug", type="string", example="krk")
      *                         )
      *                     )
      *                 ),
@@ -152,6 +172,12 @@ class FilterController extends Controller
         $regionData = $this->getRegionFilterData($locale);
         if ($regionData) {
             $filters['region'] = $regionData;
+        }
+
+        // Build island filter from database
+        $islandData = $this->getIslandFilterData($locale);
+        if ($islandData) {
+            $filters['island'] = $islandData;
         }
 
         // Build waterbody filter from database
@@ -436,6 +462,57 @@ class FilterController extends Controller
                 'id' => $region->id,
                 'code' => $region->code,
                 'name' => $translation->name ?? $translationEn->name ?? $region->code,
+                'slug' => $translation->slug ?? $translationEn->slug ?? null,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get island filter data with metadata
+     */
+    private function getIslandFilterData(string $locale): ?array
+    {
+        // Get islands that have more than 1 beach
+        $islands = Island::with('translations')
+            ->select('island.id', 'island.code')
+            ->join('beach', 'beach.island_id', '=', 'island.id')
+            ->where('beach.status_id', 1)
+            ->where('island.status_id', 1)
+            ->groupBy('island.id', 'island.code')
+            ->havingRaw('COUNT(beach.id) > 1')
+            ->orderBy('island.code')
+            ->get();
+
+        if ($islands->isEmpty()) {
+            return null;
+        }
+
+        // Get the first island to extract filter metadata
+        $firstIsland = $islands->first();
+        $translation = $firstIsland->translations->firstWhere('locale', $locale);
+        $translationEn = $firstIsland->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Island',
+            'icon' => null,
+            'input_type' => 'select',
+            'options' => $this->getIslandFilters($locale, $islands),
+        ];
+    }
+
+    /**
+     * Get island filter options (only islands with more than 1 beach)
+     */
+    private function getIslandFilters(string $locale, $islands): array
+    {
+        return $islands->map(function ($island) use ($locale) {
+            $translation = $island->translations->firstWhere('locale', $locale);
+            $translationEn = $island->translations->firstWhere('locale', 'en');
+
+            return [
+                'id' => $island->id,
+                'code' => $island->code,
+                'name' => $translation->name ?? $translationEn->name ?? $island->code,
                 'slug' => $translation->slug ?? $translationEn->slug ?? null,
             ];
         })->toArray();
