@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Waterbody;
 use App\Models\UserType;
 use App\Models\BeachType;
+use App\Models\Country;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -88,6 +90,25 @@ class FilterController extends Controller
      *                             @OA\Property(property="slug", type="string", example="sand-beaches")
      *                         )
      *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="country",
+     *                     type="object",
+     *                     @OA\Property(property="title", type="string", example="Country", description="Localized filter title"),
+     *                     @OA\Property(property="icon", type="string", example=null, description="Icon file path (SVG/PNG)"),
+     *                     @OA\Property(property="input_type", type="string", example="select", description="Input type: checkbox, radio, select, single, multiple"),
+     *                     @OA\Property(
+     *                         property="options",
+     *                         type="array",
+     *                         description="Countries with more than 1 beach",
+     *                         @OA\Items(
+     *                             type="object",
+     *                             @OA\Property(property="id", type="integer", example=1),
+     *                             @OA\Property(property="code", type="string", example="SI"),
+     *                             @OA\Property(property="name", type="string", example="Slovenia"),
+     *                             @OA\Property(property="slug", type="string", example="slovenia")
+     *                         )
+     *                     )
      *                 )
      *             )
      *         )
@@ -100,6 +121,12 @@ class FilterController extends Controller
         $locale = app()->getLocale();
 
         $filters = [];
+
+        // Build country filter from database
+        $countryData = $this->getCountryFilterData($locale);
+        if ($countryData) {
+            $filters['country'] = $countryData;
+        }
 
         // Build waterbody filter from database
         $waterbodyData = $this->getWaterbodyFilterData($locale);
@@ -118,6 +145,8 @@ class FilterController extends Controller
         if ($beachTypeData) {
             $filters['beach_type'] = $beachTypeData;
         }
+
+
 
         return response()->json([
             'data' => $filters
@@ -280,6 +309,53 @@ class FilterController extends Controller
                 'id' => $beachType->id,
                 'code' => $beachType->code,
                 'name' => $translation->name ?? $translationEn->name ?? $beachType->code,
+                'slug' => $translation->slug ?? $translationEn->slug ?? null,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get country filter data with metadata
+     */
+    private function getCountryFilterData(string $locale): ?array
+    {
+        $countries = $this->getCountryFilters($locale);
+
+        if (empty($countries)) {
+            return null;
+        }
+
+        return [
+            'title' => 'Country', // Static title, can be translated later if needed
+            'icon' => null,
+            'input_type' => 'select',
+            'options' => $countries,
+        ];
+    }
+
+    /**
+     * Get country filter options (only countries with more than 1 beach)
+     */
+    private function getCountryFilters(string $locale): array
+    {
+        // Get countries that have more than 1 beach
+        $countries = Country::with('translations')
+            ->select('countries.id', 'countries.code')
+            ->join('beach', 'beach.country_code', '=', 'countries.code')
+            ->where('beach.status_id', 1)
+            ->groupBy('countries.id', 'countries.code')
+            ->havingRaw('COUNT(beach.id) > 1')
+            ->orderBy('countries.code')
+            ->get();
+
+        return $countries->map(function ($country) use ($locale) {
+            $translation = $country->translations->firstWhere('locale', $locale);
+            $translationEn = $country->translations->firstWhere('locale', 'en');
+
+            return [
+                'id' => $country->id,
+                'code' => $country->code,
+                'name' => $translation->name ?? $translationEn->name ?? $country->code,
                 'slug' => $translation->slug ?? $translationEn->slug ?? null,
             ];
         })->toArray();
