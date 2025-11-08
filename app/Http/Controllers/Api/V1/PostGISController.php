@@ -67,14 +67,14 @@ class PostGISController extends Controller
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'radius' => 'required|numeric|min:0.1|max:20000',
-            'limit' => 'sometimes|integer|min:1|max:100'
+            'limit' => 'sometimes|integer|min:1|max:10000'
         ]);
 
         $beaches = $this->postGISService->getBeachesWithinRadius(
             $request->latitude,
             $request->longitude,
             $request->radius,
-            $request->get('limit', 50)
+            $request->get('limit', 5000)
         );
 
         return response()->json([
