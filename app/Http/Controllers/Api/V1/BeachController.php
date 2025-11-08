@@ -45,7 +45,7 @@ class BeachController extends Controller
      */
     public function index(Request $request)
     {
-        $limit = $request->input('limit', 50);
+        $limit = $request->input('limit', 5000);
 
         $beaches = Beach::with([
             'translations',
