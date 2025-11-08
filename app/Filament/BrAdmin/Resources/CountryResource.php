@@ -32,6 +32,14 @@ class CountryResource extends Resource
                     ->maxLength(3),
                 Forms\Components\TextInput::make('continent_code')
                     ->maxLength(2),
+                Forms\Components\FileUpload::make('image_path')
+                    ->label('Country Image')
+                    ->image()
+                    ->imageEditor()
+                    ->directory('countries')
+                    ->visibility('public')
+                    ->maxSize(5120)
+                    ->helperText('Upload a representative image for this country (max 5MB)'),
             ]);
     }
 
@@ -39,6 +47,11 @@ class CountryResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('image_path')
+                    ->label('Image')
+                    ->circular()
+                    ->defaultImageUrl(url('/images/placeholder-country.png'))
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('code')
                     ->label('Code')
                     ->searchable()

@@ -17,6 +17,7 @@ class RegionTranslation extends Model
         'locale',
         'name',
         'slug',
+        'filter_title',
     ];
 
     /**

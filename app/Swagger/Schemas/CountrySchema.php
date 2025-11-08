@@ -44,6 +44,13 @@ namespace App\Swagger\Schemas;
  *         example="EU"
  *     ),
  *     @OA\Property(
+ *         property="image_path",
+ *         type="string",
+ *         nullable=true,
+ *         description="Path to the country image",
+ *         example="/storage/countries/slovenia.jpg"
+ *     ),
+ *     @OA\Property(
  *         property="beaches_count",
  *         type="integer",
  *         description="Number of beaches in this country",

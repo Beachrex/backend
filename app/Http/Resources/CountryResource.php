@@ -28,6 +28,7 @@ class CountryResource extends JsonResource
             'slug' => $translation?->slug ?? 'unknown',
             'iso3' => $this->iso3,
             'continent_code' => $this->continent_code,
+            'image_path' => $this->image_path,
             'continent' => $this->when(
                 $this->relationLoaded('continent'),
                 new ContinentResource($this->continent)
