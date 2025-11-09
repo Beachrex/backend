@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachResource;
 use App\Models\Beach;
+use App\Services\BeachFilterService;
 use Illuminate\Http\Request;
 
 /**
@@ -15,19 +16,82 @@ use Illuminate\Http\Request;
  */
 class BeachController extends Controller
 {
+    protected BeachFilterService $filterService;
+
+    public function __construct(BeachFilterService $filterService)
+    {
+        $this->filterService = $filterService;
+    }
+
     /**
      * @OA\Get(
      *     path="/api/v1/beaches",
      *     operationId="getBeaches",
-     *     summary="List all beaches",
+     *     summary="List all beaches with optional filters",
      *     tags={"Beaches"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
      *         name="limit",
      *         in="query",
-     *         description="Maximum number of beaches to return (default: 50)",
+     *         description="Maximum number of beaches to return (default: 5000)",
      *         required=false,
-     *         @OA\Schema(type="integer", example=50, default=50)
+     *         @OA\Schema(type="integer", example=50, default=5000)
+     *     ),
+     *     @OA\Parameter(
+     *         name="country",
+     *         in="query",
+     *         description="Filter by country code(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region",
+     *         in="query",
+     *         description="Filter by region ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="island",
+     *         in="query",
+     *         description="Filter by island ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="waterbody",
+     *         in="query",
+     *         description="Filter by waterbody ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="beach_type",
+     *         in="query",
+     *         description="Filter by beach type ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="user_type",
+     *         in="query",
+     *         description="Filter by user type ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="parking",
+     *         in="query",
+     *         description="Filter by parking availability (true/false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Parameter(
+     *         name="has_swimming_pool",
+     *         in="query",
+     *         description="Filter by swimming pool availability (true/false)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -47,7 +111,7 @@ class BeachController extends Controller
     {
         $limit = $request->input('limit', 5000);
 
-        $beaches = Beach::with([
+        $query = Beach::with([
             'translations',
             'status',
             'user',
@@ -84,7 +148,13 @@ class BeachController extends Controller
                       ->where('is_primary', true)
                       ->where('status_id', 1);
             }
-        ])->limit($limit)->get();
+        ]);
+
+        // Apply filters
+        $query = $this->filterService->applyFilters($query, $request);
+
+        $beaches = $query->limit($limit)->get();
+
         return BeachResource::collection($beaches);
     }
 

@@ -26,8 +26,8 @@ class PostGISController extends Controller
      * @OA\Get(
      *     path="/api/v1/spatial/beaches/within-radius",
      *     operationId="getBeachesWithinRadius",
-     *     summary="Find beaches within radius",
-     *     description="Find all beaches within a specified radius from a given point",
+     *     summary="Find beaches within radius with optional filters",
+     *     description="Find all beaches within a specified radius from a given point. Supports all filter parameters from /beaches endpoint",
      *     tags={"Spatial"},
      *     @OA\Parameter(
      *         name="latitude",
@@ -54,8 +54,36 @@ class PostGISController extends Controller
      *         name="limit",
      *         in="query",
      *         required=false,
-     *         description="Maximum number of beaches to return (1 to 100, default: 50)",
-     *         @OA\Schema(type="integer", minimum=1, maximum=100, example=20)
+     *         description="Maximum number of beaches to return (1 to 10000, default: 5000)",
+     *         @OA\Schema(type="integer", minimum=1, maximum=10000, example=20)
+     *     ),
+     *     @OA\Parameter(
+     *         name="country",
+     *         in="query",
+     *         description="Filter by country code(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="waterbody",
+     *         in="query",
+     *         description="Filter by waterbody ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="beach_type",
+     *         in="query",
+     *         description="Filter by beach type ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="user_type",
+     *         in="query",
+     *         description="Filter by user type ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(response=200, description="Beaches found within radius")
@@ -74,7 +102,8 @@ class PostGISController extends Controller
             $request->latitude,
             $request->longitude,
             $request->radius,
-            $request->get('limit', 5000)
+            $request->get('limit', 5000),
+            $request  // Pass the request for filtering
         );
 
         return response()->json([

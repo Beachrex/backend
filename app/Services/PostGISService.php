@@ -3,10 +3,18 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use App\Models\Beach;
 
 class PostGISService
 {
+    protected BeachFilterService $filterService;
+
+    public function __construct(BeachFilterService $filterService)
+    {
+        $this->filterService = $filterService;
+    }
+
     /**
      * Find beaches within a given radius from a point
      *
@@ -14,11 +22,17 @@ class PostGISService
      * @param float $longitude
      * @param float $radiusKm
      * @param int $limit
+     * @param Request|null $request
      * @return \Illuminate\Support\Collection
      */
-    public function getBeachesWithinRadius(float $latitude, float $longitude, float $radiusKm, int $limit = 50)
+    public function getBeachesWithinRadius(float $latitude, float $longitude, float $radiusKm, int $limit = 50, ?Request $request = null)
     {
         $locale = app()->getLocale();
+
+        // Get filter conditions if request is provided
+        $filterData = $request ? $this->filterService->buildRawFilters($request) : ['sql' => '', 'bindings' => []];
+        $filterSql = $filterData['sql'];
+        $filterBindings = $filterData['bindings'];
 
         $results = DB::select("
             SELECT
@@ -57,9 +71,14 @@ class PostGISService
                     ST_Transform(b.location, 3857),
                     ?
                   )
+              {$filterSql}
             ORDER BY distance_km
             LIMIT ?
-        ", [$longitude, $latitude, $locale, $locale, $longitude, $latitude, $radiusKm * 1000, $limit]);
+        ", array_merge(
+            [$longitude, $latitude, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
+            $filterBindings,
+            [$limit]
+        ));
 
         return $this->formatBeachResults($results);
     }
