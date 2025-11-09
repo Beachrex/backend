@@ -40,14 +40,9 @@ class BeachController extends Controller
      *     @OA\Parameter(
      *         name="country",
      *         in="query",
-     *         description="Filter by country code(s) or ID(s). Can be single value or array. Supports both codes (e.g., 'HR') and IDs (e.g., 1)",
+     *         description="Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(
-     *             oneOf={
-     *                 @OA\Schema(type="string", example="HR"),
-     *                 @OA\Schema(type="integer", example=1)
-     *             }
-     *         )
+     *         @OA\Schema(type="string", example="HR,SI,IT")
      *     ),
      *     @OA\Parameter(
      *         name="region",
@@ -73,9 +68,9 @@ class BeachController extends Controller
      *     @OA\Parameter(
      *         name="beach_type",
      *         in="query",
-     *         description="Filter by beach type ID(s). Can be single value or array",
+     *         description="Filter by beach type ID(s). Supports: single value (beach_type=1), comma-separated (beach_type=1,2,3), or array (beach_type[]=1&beach_type[]=2)",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="1,2,3")
      *     ),
      *     @OA\Parameter(
      *         name="user_type",

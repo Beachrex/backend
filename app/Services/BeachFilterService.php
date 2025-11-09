@@ -18,7 +18,7 @@ class BeachFilterService
     {
         // Country filter (single or multiple) - supports both code and ID
         if ($request->has('country')) {
-            $countries = is_array($request->country) ? $request->country : [$request->country];
+            $countries = $this->parseFilterValue($request->country);
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
@@ -52,31 +52,31 @@ class BeachFilterService
 
         // Region filter (single or multiple)
         if ($request->has('region')) {
-            $regions = is_array($request->region) ? $request->region : [$request->region];
+            $regions = $this->parseFilterValue($request->region);
             $query->whereIn('region_id', $regions);
         }
 
         // Island filter (single or multiple)
         if ($request->has('island')) {
-            $islands = is_array($request->island) ? $request->island : [$request->island];
+            $islands = $this->parseFilterValue($request->island);
             $query->whereIn('island_id', $islands);
         }
 
         // Waterbody filter (single or multiple)
         if ($request->has('waterbody')) {
-            $waterbodies = is_array($request->waterbody) ? $request->waterbody : [$request->waterbody];
+            $waterbodies = $this->parseFilterValue($request->waterbody);
             $query->whereIn('waterbody_id', $waterbodies);
         }
 
         // Beach type filter (single or multiple)
         if ($request->has('beach_type')) {
-            $beachTypes = is_array($request->beach_type) ? $request->beach_type : [$request->beach_type];
+            $beachTypes = $this->parseFilterValue($request->beach_type);
             $query->whereIn('beach_type_id', $beachTypes);
         }
 
         // User type filter (many-to-many relationship)
         if ($request->has('user_type')) {
-            $userTypes = is_array($request->user_type) ? $request->user_type : [$request->user_type];
+            $userTypes = $this->parseFilterValue($request->user_type);
             $query->whereHas('userTypes', function ($q) use ($userTypes) {
                 $q->whereIn('user_type.id', $userTypes);
             });
@@ -84,7 +84,7 @@ class BeachFilterService
 
         // Accommodation around filter (many-to-many)
         if ($request->has('accommodation_around')) {
-            $accommodations = is_array($request->accommodation_around) ? $request->accommodation_around : [$request->accommodation_around];
+            $accommodations = $this->parseFilterValue($request->accommodation_around);
             $query->whereHas('accommodationArounds', function ($q) use ($accommodations) {
                 $q->whereIn('accommodation_around.id', $accommodations);
             });
@@ -92,7 +92,7 @@ class BeachFilterService
 
         // Culinary offer filter (many-to-many)
         if ($request->has('culinary_offer')) {
-            $culinaryOffers = is_array($request->culinary_offer) ? $request->culinary_offer : [$request->culinary_offer];
+            $culinaryOffers = $this->parseFilterValue($request->culinary_offer);
             $query->whereHas('culinaryOffers', function ($q) use ($culinaryOffers) {
                 $q->whereIn('culinary_offer.id', $culinaryOffers);
             });
@@ -100,7 +100,7 @@ class BeachFilterService
 
         // Location infrastructure filter (many-to-many)
         if ($request->has('location_infrastructure')) {
-            $infrastructures = is_array($request->location_infrastructure) ? $request->location_infrastructure : [$request->location_infrastructure];
+            $infrastructures = $this->parseFilterValue($request->location_infrastructure);
             $query->whereHas('locationInfrastructures', function ($q) use ($infrastructures) {
                 $q->whereIn('location_infrastructure.id', $infrastructures);
             });
@@ -108,7 +108,7 @@ class BeachFilterService
 
         // Natural location condition filter (many-to-many)
         if ($request->has('natural_location_condition')) {
-            $conditions = is_array($request->natural_location_condition) ? $request->natural_location_condition : [$request->natural_location_condition];
+            $conditions = $this->parseFilterValue($request->natural_location_condition);
             $query->whereHas('naturalLocationConditions', function ($q) use ($conditions) {
                 $q->whereIn('natural_location_condition.id', $conditions);
             });
@@ -116,7 +116,7 @@ class BeachFilterService
 
         // Sporting activities filter (many-to-many)
         if ($request->has('sporting_activity')) {
-            $activities = is_array($request->sporting_activity) ? $request->sporting_activity : [$request->sporting_activity];
+            $activities = $this->parseFilterValue($request->sporting_activity);
             $query->whereHas('sportingActivities', function ($q) use ($activities) {
                 $q->whereIn('sporting_activities.id', $activities);
             });
@@ -124,7 +124,7 @@ class BeachFilterService
 
         // Underwater characteristics filter (many-to-many)
         if ($request->has('underwater_characteristic')) {
-            $characteristics = is_array($request->underwater_characteristic) ? $request->underwater_characteristic : [$request->underwater_characteristic];
+            $characteristics = $this->parseFilterValue($request->underwater_characteristic);
             $query->whereHas('underwaterCharacteristics', function ($q) use ($characteristics) {
                 $q->whereIn('underwater_characteristic.id', $characteristics);
             });
@@ -132,13 +132,13 @@ class BeachFilterService
 
         // Accessibility filter
         if ($request->has('accessibility')) {
-            $accessibilities = is_array($request->accessibility) ? $request->accessibility : [$request->accessibility];
+            $accessibilities = $this->parseFilterValue($request->accessibility);
             $query->whereIn('accessibility_id', $accessibilities);
         }
 
         // Area description filter
         if ($request->has('area_description')) {
-            $areaDescriptions = is_array($request->area_description) ? $request->area_description : [$request->area_description];
+            $areaDescriptions = $this->parseFilterValue($request->area_description);
             $query->whereIn('area_description_id', $areaDescriptions);
         }
 
@@ -149,25 +149,25 @@ class BeachFilterService
 
         // Parking capacity filter
         if ($request->has('parking_capacity')) {
-            $parkingCapacities = is_array($request->parking_capacity) ? $request->parking_capacity : [$request->parking_capacity];
+            $parkingCapacities = $this->parseFilterValue($request->parking_capacity);
             $query->whereIn('parking_capacity_id', $parkingCapacities);
         }
 
         // Beach inclination filter
         if ($request->has('beach_inclination')) {
-            $inclinations = is_array($request->beach_inclination) ? $request->beach_inclination : [$request->beach_inclination];
+            $inclinations = $this->parseFilterValue($request->beach_inclination);
             $query->whereIn('beach_inclination_id', $inclinations);
         }
 
         // Swimming depth filter
         if ($request->has('swimming_depth')) {
-            $depths = is_array($request->swimming_depth) ? $request->swimming_depth : [$request->swimming_depth];
+            $depths = $this->parseFilterValue($request->swimming_depth);
             $query->whereIn('swimming_depth_of_one_m_id', $depths);
         }
 
         // Occupancy rate filter
         if ($request->has('occupancy_rate')) {
-            $occupancyRates = is_array($request->occupancy_rate) ? $request->occupancy_rate : [$request->occupancy_rate];
+            $occupancyRates = $this->parseFilterValue($request->occupancy_rate);
             $query->whereIn('occupancy_rate_id', $occupancyRates);
         }
 
@@ -197,7 +197,7 @@ class BeachFilterService
 
         // Country filter - supports both code and ID
         if ($request->has('country')) {
-            $countries = is_array($request->country) ? $request->country : [$request->country];
+            $countries = $this->parseFilterValue($request->country);
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
@@ -235,7 +235,7 @@ class BeachFilterService
 
         // Region filter
         if ($request->has('region')) {
-            $regions = is_array($request->region) ? $request->region : [$request->region];
+            $regions = $this->parseFilterValue($request->region);
             $placeholders = implode(',', array_fill(0, count($regions), '?'));
             $conditions[] = "b.region_id IN ($placeholders)";
             $bindings = array_merge($bindings, $regions);
@@ -243,7 +243,7 @@ class BeachFilterService
 
         // Island filter
         if ($request->has('island')) {
-            $islands = is_array($request->island) ? $request->island : [$request->island];
+            $islands = $this->parseFilterValue($request->island);
             $placeholders = implode(',', array_fill(0, count($islands), '?'));
             $conditions[] = "b.island_id IN ($placeholders)";
             $bindings = array_merge($bindings, $islands);
@@ -251,7 +251,7 @@ class BeachFilterService
 
         // Waterbody filter
         if ($request->has('waterbody')) {
-            $waterbodies = is_array($request->waterbody) ? $request->waterbody : [$request->waterbody];
+            $waterbodies = $this->parseFilterValue($request->waterbody);
             $placeholders = implode(',', array_fill(0, count($waterbodies), '?'));
             $conditions[] = "b.waterbody_id IN ($placeholders)";
             $bindings = array_merge($bindings, $waterbodies);
@@ -259,7 +259,7 @@ class BeachFilterService
 
         // Beach type filter
         if ($request->has('beach_type')) {
-            $beachTypes = is_array($request->beach_type) ? $request->beach_type : [$request->beach_type];
+            $beachTypes = $this->parseFilterValue($request->beach_type);
             $placeholders = implode(',', array_fill(0, count($beachTypes), '?'));
             $conditions[] = "b.beach_type_id IN ($placeholders)";
             $bindings = array_merge($bindings, $beachTypes);
@@ -267,7 +267,7 @@ class BeachFilterService
 
         // User type filter (requires JOIN)
         if ($request->has('user_type')) {
-            $userTypes = is_array($request->user_type) ? $request->user_type : [$request->user_type];
+            $userTypes = $this->parseFilterValue($request->user_type);
             $placeholders = implode(',', array_fill(0, count($userTypes), '?'));
             $conditions[] = "EXISTS (
                 SELECT 1 FROM beach_user_type
@@ -279,7 +279,7 @@ class BeachFilterService
 
         // Accessibility filter
         if ($request->has('accessibility')) {
-            $accessibilities = is_array($request->accessibility) ? $request->accessibility : [$request->accessibility];
+            $accessibilities = $this->parseFilterValue($request->accessibility);
             $placeholders = implode(',', array_fill(0, count($accessibilities), '?'));
             $conditions[] = "b.accessibility_id IN ($placeholders)";
             $bindings = array_merge($bindings, $accessibilities);
@@ -309,6 +309,25 @@ class BeachFilterService
             'sql' => $sql,
             'bindings' => $bindings
         ];
+    }
+
+    /**
+     * Parse filter value - supports comma-separated strings, arrays, or single values
+     *
+     * @param mixed $value
+     * @return array
+     */
+    private function parseFilterValue($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && str_contains($value, ',')) {
+            return array_map('trim', explode(',', $value));
+        }
+
+        return [$value];
     }
 }
 
