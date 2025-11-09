@@ -16,10 +16,38 @@ class BeachFilterService
      */
     public function applyFilters(Builder $query, Request $request): Builder
     {
-        // Country filter (single or multiple)
+        // Country filter (single or multiple) - supports both code and ID
         if ($request->has('country')) {
             $countries = is_array($request->country) ? $request->country : [$request->country];
-            $query->whereIn('country_code', $countries);
+
+            // Check if values are numeric (IDs) or strings (codes)
+            $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($countries)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed: use whereIn with subquery for IDs and direct codes
+                $query->where(function($q) use ($countries) {
+                    $codes = collect($countries)->filter(fn($val) => !is_numeric($val))->values()->all();
+                    $ids = collect($countries)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                    if (!empty($codes)) {
+                        $q->orWhereIn('country_code', $codes);
+                    }
+                    if (!empty($ids)) {
+                        $q->orWhereHas('country', function($subQ) use ($ids) {
+                            $subQ->whereIn('id', $ids);
+                        });
+                    }
+                });
+            } elseif ($hasNumeric) {
+                // All numeric: filter by country ID
+                $query->whereHas('country', function($q) use ($countries) {
+                    $q->whereIn('id', $countries);
+                });
+            } else {
+                // All strings: filter by country code
+                $query->whereIn('country_code', $countries);
+            }
         }
 
         // Region filter (single or multiple)
@@ -167,12 +195,42 @@ class BeachFilterService
         $conditions = [];
         $bindings = [];
 
-        // Country filter
+        // Country filter - supports both code and ID
         if ($request->has('country')) {
             $countries = is_array($request->country) ? $request->country : [$request->country];
-            $placeholders = implode(',', array_fill(0, count($countries), '?'));
-            $conditions[] = "b.country_code IN ($placeholders)";
-            $bindings = array_merge($bindings, $countries);
+
+            // Check if values are numeric (IDs) or strings (codes)
+            $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($countries)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed: use OR condition for both IDs and codes
+                $codes = collect($countries)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($countries)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $subConditions = [];
+                if (!empty($codes)) {
+                    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+                    $subConditions[] = "b.country_code IN ($placeholders)";
+                    $bindings = array_merge($bindings, $codes);
+                }
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $subConditions[] = "c.id IN ($placeholders)";
+                    $bindings = array_merge($bindings, $ids);
+                }
+                $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+            } elseif ($hasNumeric) {
+                // All numeric: filter by country ID
+                $placeholders = implode(',', array_fill(0, count($countries), '?'));
+                $conditions[] = "c.id IN ($placeholders)";
+                $bindings = array_merge($bindings, $countries);
+            } else {
+                // All strings: filter by country code
+                $placeholders = implode(',', array_fill(0, count($countries), '?'));
+                $conditions[] = "b.country_code IN ($placeholders)";
+                $bindings = array_merge($bindings, $countries);
+            }
         }
 
         // Region filter
