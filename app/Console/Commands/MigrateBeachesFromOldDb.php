@@ -601,7 +601,8 @@ class MigrateBeachesFromOldDb extends Command
             $this->migratePivotRelationships($beach->id);
 
             // Migrate media/images
-            $this->migrateBeachMedia($beach->id, $oldData['folder_name']);
+            $isMobileUpload = !empty($oldData['mobile_upload']) ? (bool)$oldData['mobile_upload'] : false;
+            $this->migrateBeachMedia($beach->id, $oldData['folder_name'], $isMobileUpload);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -1094,7 +1095,7 @@ class MigrateBeachesFromOldDb extends Command
     /**
      * Migrate media/images for a beach from cached data
      */
-    private function migrateBeachMedia(int $beachId, ?string $folderName): void
+    private function migrateBeachMedia(int $beachId, ?string $folderName, bool $isMobileUpload = false): void
     {
         if (empty($folderName)) {
             return;
@@ -1176,8 +1177,11 @@ class MigrateBeachesFromOldDb extends Command
                     break;
             }
 
-            // Build file path: img/beaches/{folder_name}/{filename}
-            $filePath = "img/beaches/{$folderName}/{$fileName}";
+            // Build file path based on mobile_upload flag
+            // Mobile uploads: img/beaches_mobile/{folder_name}/{filename}
+            // Regular uploads: img/beaches/{folder_name}/{filename}
+            $baseFolder = $isMobileUpload ? 'beaches_mobile' : 'beaches';
+            $filePath = "img/{$baseFolder}/{$folderName}/{$fileName}";
 
             // Insert media record
             DB::table('media')->insert([
