@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Guava\FilamentIconPicker\Forms\IconPicker;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -28,10 +29,11 @@ class BadgeResource extends Resource
                     ->required()
                     ->maxLength(100)
                     ->helperText('Unique identifier for the badge (e.g., krk-lamb, zlahtina-wine)'),
-                Forms\Components\TextInput::make('icon')
+                IconPicker::make('icon')
                     ->label('Icon')
-                    ->maxLength(255)
-                    ->helperText('Icon filename or path for the badge'),
+                    ->sets(['fontawesome-solid', 'fontawesome-regular', 'fontawesome-brands'])
+                    ->columns(3)
+                    ->helperText('Select an icon for the badge'),
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
@@ -51,7 +53,7 @@ class BadgeResource extends Resource
                     ->label('Badge Name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('icon')
+                Tables\Columns\IconColumn::make('icon')
                     ->label('Icon')
                     ->searchable()
                     ->toggleable(),
