@@ -141,6 +141,7 @@ class BeachController extends Controller
             // Eager load location relationships with translations
             'continent.translations',
             'country.translations',
+            'region.translations',
             'island.translations',
             // Eager load media
             'media' => function ($query) {
