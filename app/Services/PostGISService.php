@@ -55,6 +55,7 @@ class PostGISService
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
             LEFT JOIN media m ON b.id = m.mediable_id
@@ -116,6 +117,7 @@ class PostGISService
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
             LEFT JOIN media m ON b.id = m.mediable_id
@@ -188,6 +190,7 @@ class PostGISService
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
             LEFT JOIN media m ON b.id = m.mediable_id

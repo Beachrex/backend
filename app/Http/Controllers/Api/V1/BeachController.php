@@ -38,6 +38,13 @@ class BeachController extends Controller
      *         @OA\Schema(type="integer", example=50, default=5000)
      *     ),
      *     @OA\Parameter(
+     *         name="continent_code",
+     *         in="query",
+     *         description="Filter by continent code(s) or ID(s). Supports: single value (continent_code=EU), comma-separated (continent_code=EU,AS), or array (continent_code[]=EU&continent_code[]=AS). Can mix codes and IDs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="EU,AS")
+     *     ),
+     *     @OA\Parameter(
      *         name="country",
      *         in="query",
      *         description="Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",

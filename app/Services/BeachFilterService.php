@@ -16,6 +16,41 @@ class BeachFilterService
      */
     public function applyFilters(Builder $query, Request $request): Builder
     {
+        // Continent filter - supports both code and ID
+        if ($request->has('continent_code')) {
+            $continents = $this->parseFilterValue($request->continent_code);
+
+            // Check if values are numeric (IDs) or strings (codes)
+            $hasNumeric = collect($continents)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($continents)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed: use whereIn with subquery for IDs and direct codes
+                $query->where(function($q) use ($continents) {
+                    $codes = collect($continents)->filter(fn($val) => !is_numeric($val))->map(fn($val) => strtoupper($val))->values()->all();
+                    $ids = collect($continents)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                    if (!empty($codes)) {
+                        $q->orWhereIn('continent_code', $codes);
+                    }
+                    if (!empty($ids)) {
+                        $q->orWhereHas('continent', function($subQ) use ($ids) {
+                            $subQ->whereIn('id', $ids);
+                        });
+                    }
+                });
+            } elseif ($hasNumeric) {
+                // All numeric: filter by continent ID
+                $query->whereHas('continent', function($q) use ($continents) {
+                    $q->whereIn('id', $continents);
+                });
+            } else {
+                // All strings: filter by continent code (convert to uppercase)
+                $continents = array_map('strtoupper', $continents);
+                $query->whereIn('continent_code', $continents);
+            }
+        }
+
         // Country filter (single or multiple) - supports both code and ID
         if ($request->has('country')) {
             $countries = $this->parseFilterValue($request->country);
@@ -27,7 +62,7 @@ class BeachFilterService
             if ($hasNumeric && $hasString) {
                 // Mixed: use whereIn with subquery for IDs and direct codes
                 $query->where(function($q) use ($countries) {
-                    $codes = collect($countries)->filter(fn($val) => !is_numeric($val))->values()->all();
+                    $codes = collect($countries)->filter(fn($val) => !is_numeric($val))->map(fn($val) => strtoupper($val))->values()->all();
                     $ids = collect($countries)->filter(fn($val) => is_numeric($val))->values()->all();
 
                     if (!empty($codes)) {
@@ -45,7 +80,8 @@ class BeachFilterService
                     $q->whereIn('id', $countries);
                 });
             } else {
-                // All strings: filter by country code
+                // All strings: filter by country code (convert to uppercase)
+                $countries = array_map('strtoupper', $countries);
                 $query->whereIn('country_code', $countries);
             }
         }
@@ -195,6 +231,45 @@ class BeachFilterService
         $conditions = [];
         $bindings = [];
 
+        // Continent filter - supports both code and ID
+        if ($request->has('continent_code')) {
+            $continents = $this->parseFilterValue($request->continent_code);
+
+            // Check if values are numeric (IDs) or strings (codes)
+            $hasNumeric = collect($continents)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($continents)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed: use OR condition for both IDs and codes
+                $codes = collect($continents)->filter(fn($val) => !is_numeric($val))->map(fn($val) => strtoupper($val))->values()->all();
+                $ids = collect($continents)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $subConditions = [];
+                if (!empty($codes)) {
+                    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+                    $subConditions[] = "b.continent_code IN ($placeholders)";
+                    $bindings = array_merge($bindings, $codes);
+                }
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $subConditions[] = "cont.id IN ($placeholders)";
+                    $bindings = array_merge($bindings, $ids);
+                }
+                $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+            } elseif ($hasNumeric) {
+                // All numeric: filter by continent ID
+                $placeholders = implode(',', array_fill(0, count($continents), '?'));
+                $conditions[] = "cont.id IN ($placeholders)";
+                $bindings = array_merge($bindings, $continents);
+            } else {
+                // All strings: filter by continent code (convert to uppercase)
+                $continents = array_map('strtoupper', $continents);
+                $placeholders = implode(',', array_fill(0, count($continents), '?'));
+                $conditions[] = "b.continent_code IN ($placeholders)";
+                $bindings = array_merge($bindings, $continents);
+            }
+        }
+
         // Country filter - supports both code and ID
         if ($request->has('country')) {
             $countries = $this->parseFilterValue($request->country);
@@ -205,7 +280,7 @@ class BeachFilterService
 
             if ($hasNumeric && $hasString) {
                 // Mixed: use OR condition for both IDs and codes
-                $codes = collect($countries)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $codes = collect($countries)->filter(fn($val) => !is_numeric($val))->map(fn($val) => strtoupper($val))->values()->all();
                 $ids = collect($countries)->filter(fn($val) => is_numeric($val))->values()->all();
 
                 $subConditions = [];
@@ -226,7 +301,8 @@ class BeachFilterService
                 $conditions[] = "c.id IN ($placeholders)";
                 $bindings = array_merge($bindings, $countries);
             } else {
-                // All strings: filter by country code
+                // All strings: filter by country code (convert to uppercase)
+                $countries = array_map('strtoupper', $countries);
                 $placeholders = implode(',', array_fill(0, count($countries), '?'));
                 $conditions[] = "b.country_code IN ($placeholders)";
                 $bindings = array_merge($bindings, $countries);
