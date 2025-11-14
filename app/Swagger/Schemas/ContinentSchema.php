@@ -22,6 +22,12 @@ namespace App\Swagger\Schemas;
  *         example="Europe"
  *     ),
  *     @OA\Property(
+ *         property="slug",
+ *         type="string",
+ *         description="Localized URL-friendly slug",
+ *         example="europe"
+ *     ),
+ *     @OA\Property(
  *         property="beaches_count",
  *         type="integer",
  *         description="Number of beaches in this continent",

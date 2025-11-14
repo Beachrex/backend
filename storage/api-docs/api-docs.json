@@ -5653,6 +5653,11 @@
                         "type": "string",
                         "example": "Europe"
                     },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "europe"
+                    },
                     "beaches_count": {
                         "description": "Number of beaches in this continent",
                         "type": "integer",
