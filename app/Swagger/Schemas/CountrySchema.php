@@ -30,6 +30,12 @@ namespace App\Swagger\Schemas;
  *         example="Republic of Slovenia"
  *     ),
  *     @OA\Property(
+ *         property="slug",
+ *         type="string",
+ *         description="Localized URL-friendly slug",
+ *         example="slovenia"
+ *     ),
+ *     @OA\Property(
  *         property="iso3",
  *         type="string",
  *         maxLength=3,

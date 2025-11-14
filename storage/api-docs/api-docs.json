@@ -5688,6 +5688,11 @@
                         "maxLength": 255,
                         "example": "Republic of Slovenia"
                     },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "slovenia"
+                    },
                     "iso3": {
                         "description": "Three-letter country code (ISO 3166-1 alpha-3)",
                         "type": "string",
