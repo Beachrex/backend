@@ -32,6 +32,7 @@ class FirstPageContentResource extends JsonResource
                         'url' => $mediaItem->url,
                         'file_name' => $mediaItem->file_name,
                         'is_primary' => $mediaItem->is_primary,
+                        'collection' => $mediaItem->mediaCollection->code ?? null,
                     ];
                 });
             }

@@ -71,7 +71,9 @@ class FirstPageContentController extends Controller
                     'translations',
                     'items.translations',
                     'media.mediaType',
+                    'media.mediaCollection',
                     'items.media.mediaType',
+                    'items.media.mediaCollection',
                 ])
                     ->active()
                     ->ordered()
@@ -143,7 +145,9 @@ class FirstPageContentController extends Controller
                     'translations',
                     'items.translations',
                     'media.mediaType',
+                    'media.mediaCollection',
                     'items.media.mediaType',
+                    'items.media.mediaCollection',
                 ])
                     ->where('code', $code)
                     ->active()
