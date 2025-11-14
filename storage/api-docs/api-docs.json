@@ -810,7 +810,7 @@
                 "tags": [
                     "Beaches"
                 ],
-                "summary": "List all beaches",
+                "summary": "List all beaches with optional filters",
                 "operationId": "getBeaches",
                 "parameters": [
                     {
@@ -819,12 +819,102 @@
                     {
                         "name": "limit",
                         "in": "query",
-                        "description": "Maximum number of beaches to return (default: 50)",
+                        "description": "Maximum number of beaches to return (default: 5000)",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": 50,
+                            "default": 5000,
                             "example": 50
+                        }
+                    },
+                    {
+                        "name": "continent_code",
+                        "in": "query",
+                        "description": "Filter by continent code(s) or ID(s). Supports: single value (continent_code=EU), comma-separated (continent_code=EU,AS), or array (continent_code[]=EU&continent_code[]=AS). Can mix codes and IDs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "EU,AS"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "in": "query",
+                        "description": "Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR,SI,IT"
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "description": "Filter by region ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "island",
+                        "in": "query",
+                        "description": "Filter by island ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "waterbody",
+                        "in": "query",
+                        "description": "Filter by waterbody ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "beach_type",
+                        "in": "query",
+                        "description": "Filter by beach type ID(s). Supports: single value (beach_type=1), comma-separated (beach_type=1,2,3), or array (beach_type[]=1&beach_type[]=2)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "1,2,3"
+                        }
+                    },
+                    {
+                        "name": "user_type",
+                        "in": "query",
+                        "description": "Filter by user type ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "parking",
+                        "in": "query",
+                        "description": "Filter by parking availability (true/false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    },
+                    {
+                        "name": "has_swimming_pool",
+                        "in": "query",
+                        "description": "Filter by swimming pool availability (true/false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
                         }
                     }
                 ],
@@ -1328,6 +1418,10 @@
                                                         "type": "string",
                                                         "example": "Europe"
                                                     },
+                                                    "slug": {
+                                                        "type": "string",
+                                                        "example": "europe"
+                                                    },
                                                     "beaches_count": {
                                                         "type": "integer",
                                                         "example": 15
@@ -1412,6 +1506,10 @@
                                                 "name": {
                                                     "type": "string",
                                                     "example": "Europe"
+                                                },
+                                                "slug": {
+                                                    "type": "string",
+                                                    "example": "europe"
                                                 },
                                                 "beaches_count": {
                                                     "type": "integer",
@@ -3563,8 +3661,8 @@
                 "tags": [
                     "Spatial"
                 ],
-                "summary": "Find beaches within radius",
-                "description": "Find all beaches within a specified radius from a given point",
+                "summary": "Find beaches within radius with optional filters",
+                "description": "Find all beaches within a specified radius from a given point. Supports all filter parameters from /beaches endpoint",
                 "operationId": "getBeachesWithinRadius",
                 "parameters": [
                     {
@@ -3609,13 +3707,63 @@
                     {
                         "name": "limit",
                         "in": "query",
-                        "description": "Maximum number of beaches to return (1 to 100, default: 50)",
+                        "description": "Maximum number of beaches to return (1 to 10000, default: 5000)",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "maximum": 100,
+                            "maximum": 10000,
                             "minimum": 1,
                             "example": 20
+                        }
+                    },
+                    {
+                        "name": "continent_code",
+                        "in": "query",
+                        "description": "Filter by continent code(s) or ID(s). Supports: single value (continent_code=EU), comma-separated (continent_code=EU,AS), or array (continent_code[]=EU&continent_code[]=AS). Can mix codes and IDs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "EU,AS"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "in": "query",
+                        "description": "Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR,SI,IT"
+                        }
+                    },
+                    {
+                        "name": "waterbody",
+                        "in": "query",
+                        "description": "Filter by waterbody ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "beach_type",
+                        "in": "query",
+                        "description": "Filter by beach type ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "user_type",
+                        "in": "query",
+                        "description": "Filter by user type ID(s). Can be single value or array",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
                         }
                     },
                     {
