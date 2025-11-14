@@ -45,6 +45,7 @@ class ContinentController extends Controller
      *                     type="object",
      *                     @OA\Property(property="code", type="string", example="EU"),
      *                     @OA\Property(property="name", type="string", example="Europe"),
+     *                     @OA\Property(property="slug", type="string", example="europe"),
      *                     @OA\Property(property="beaches_count", type="integer", example=15)
      *                 )
      *             ),
@@ -121,6 +122,7 @@ class ContinentController extends Controller
      *                 type="object",
      *                 @OA\Property(property="code", type="string", example="EU"),
      *                 @OA\Property(property="name", type="string", example="Europe"),
+     *                 @OA\Property(property="slug", type="string", example="europe"),
      *                 @OA\Property(property="beaches_count", type="integer", example=15)
      *             ),
      *             @OA\Property(property="message", type="string", example="Continent retrieved successfully")
