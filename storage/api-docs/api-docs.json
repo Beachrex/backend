@@ -6943,10 +6943,18 @@
                     "enum": [
                         "en",
                         "si",
-                        "hr",
                         "de",
+                        "hr",
+                        "fr",
+                        "es",
                         "it",
-                        "fr"
+                        "ua",
+                        "ru",
+                        "pl",
+                        "cs",
+                        "hu",
+                        "bg",
+                        "sk"
                     ],
                     "example": "en"
                 }

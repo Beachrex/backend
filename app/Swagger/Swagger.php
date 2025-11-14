@@ -40,7 +40,7 @@ You can get your token via the `/api/v1/login` endpoint.
  *     description="Language preference for the response (ISO 639-1 language codes)",
  *     @OA\Schema(
  *         type="string",
- *         enum={"en", "si", "hr", "de", "it", "fr"},
+ *         enum={"en", "si", "de", "hr", "fr", "es", "it", "ua", "ru", "pl", "cs", "hu", "bg", "sk"},
  *         default="en",
  *         example="en"
  *     )
