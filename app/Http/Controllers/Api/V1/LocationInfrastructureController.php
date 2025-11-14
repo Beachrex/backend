@@ -55,7 +55,9 @@ class LocationInfrastructureController extends Controller
 
             $locationInfrastructures = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return $infrastructure = LocationInfrastructure::with('translations')
-                ->withCount('beaches')
+                ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class LocationInfrastructureController extends Controller
 
             $locationInfrastructure = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return LocationInfrastructure::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                 ->find($id);
             });
 

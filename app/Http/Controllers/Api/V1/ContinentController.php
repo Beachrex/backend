@@ -77,7 +77,9 @@ class ContinentController extends Controller
             $continents = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return Continent::withBeaches()
                     ->with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->get(['code']);
             });
 
@@ -148,7 +150,9 @@ class ContinentController extends Controller
 
             $continent = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
                 return Continent::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->where('code', $code)
                     ->first(['code']);
             });

@@ -55,7 +55,9 @@ class RecommendedTransportTypeController extends Controller
 
             $recommendedTransportTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return RecommendedTransportType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class RecommendedTransportTypeController extends Controller
 
             $recommendedTransportType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return RecommendedTransportType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                 ->find($id);
             });
 

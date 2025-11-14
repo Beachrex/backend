@@ -55,7 +55,9 @@ class UserTypeController extends Controller
             
             $userTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return UserType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class UserTypeController extends Controller
             
             $userType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return UserType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                 ->find($id);
             });
 

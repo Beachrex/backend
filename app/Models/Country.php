@@ -58,6 +58,15 @@ class Country extends Model
     }
 
     /**
+     * Get only active beaches for this country (status_id = 1)
+     */
+    public function activeBeaches(): HasMany
+    {
+        return $this->hasMany(Beach::class, 'country_code', 'code')
+            ->where('status_id', 1);
+    }
+
+    /**
      * Get the continent this country belongs to
      */
     public function continent(): BelongsTo
@@ -82,11 +91,13 @@ class Country extends Model
     }
 
     /**
-     * Scope to get only countries that have beaches
+     * Scope to get only countries that have active beaches (status_id = 1)
      */
     public function scopeWithBeaches($query)
     {
-        return $query->whereHas('beaches');
+        return $query->whereHas('beaches', function ($q) {
+            $q->where('status_id', 1);
+        });
     }
 
     /**

@@ -87,7 +87,9 @@ class CountryController extends Controller
             $countries = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($continentFilter) {
                 $query = Country::with(['continent.translations', 'translations'])
                     ->withBeaches()
-                    ->withCount('beaches');
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }]);
 
                 // Filter by continent if provided
                 if ($continentFilter) {
@@ -184,7 +186,9 @@ class CountryController extends Controller
                         'articles.translations',
                         'articles.status'
                     ])
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->where('code', $code)
                     ->first([
                         'code',

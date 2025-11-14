@@ -61,7 +61,9 @@ class ParkingCapacityController extends Controller
 
             $parkingCapacities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return ParkingCapacity::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -139,7 +141,9 @@ class ParkingCapacityController extends Controller
 
             $parkingCapacitie = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return ParkingCapacity::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                 ->find($id);
             });
 

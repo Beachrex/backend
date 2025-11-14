@@ -55,7 +55,9 @@ class OccupancyRateController extends Controller
             
             $occupancyRates = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return OccupancyRate::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class OccupancyRateController extends Controller
             
             $occupancyRate = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return OccupancyRate::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                 ->find($id);
             });
 

@@ -47,11 +47,22 @@ class Continent extends Model
     }
 
     /**
-     * Scope to get only continents that have beaches
+     * Get only active beaches for this continent (status_id = 1)
+     */
+    public function activeBeaches(): HasMany
+    {
+        return $this->hasMany(Beach::class, 'continent_code', 'code')
+            ->where('status_id', 1);
+    }
+
+    /**
+     * Scope to get only continents that have active beaches (status_id = 1)
      */
     public function scopeWithBeaches($query)
     {
-        return $query->whereHas('beaches');
+        return $query->whereHas('beaches', function ($q) {
+            $q->where('status_id', 1);
+        });
     }
 
     /**

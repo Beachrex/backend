@@ -55,7 +55,9 @@ class BayLengthController extends Controller
             
             $bayLengths = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return BayLength::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class BayLengthController extends Controller
             
             $bayLength = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return BayLength::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                 ->find($id);
             });
 

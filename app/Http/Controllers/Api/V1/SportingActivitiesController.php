@@ -55,7 +55,9 @@ class SportingActivitiesController extends Controller
 
             $sportingActivities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return SportingActivities::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class SportingActivitiesController extends Controller
 
             $sportingActivitie = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return SportingActivities::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                 ->find($id);
             });
 

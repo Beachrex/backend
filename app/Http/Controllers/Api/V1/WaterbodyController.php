@@ -88,7 +88,9 @@ class WaterbodyController extends Controller
 
             $waterbodies = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($showFilter) {
                 $query = Waterbody::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id');
 
@@ -170,7 +172,9 @@ class WaterbodyController extends Controller
 
             $waterbody = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return Waterbody::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->find($id);
             });
 

@@ -62,7 +62,9 @@ class AccessibilityController extends Controller
 
             $accessibilities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return Accessibility::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -141,7 +143,9 @@ class AccessibilityController extends Controller
 
             $accessibility = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return Accessibility::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->find($id);
             });
 

@@ -19,7 +19,7 @@ use App\Traits\CacheAware;
 class BeachTypeController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/beach-types",
@@ -76,7 +76,9 @@ class BeachTypeController extends Controller
 
             $beachTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($showFilter) {
                 $query = BeachType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id');
 
@@ -154,7 +156,9 @@ class BeachTypeController extends Controller
 
             $beachType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return BeachType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->find($id);
             });
 

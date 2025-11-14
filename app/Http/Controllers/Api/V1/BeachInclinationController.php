@@ -55,7 +55,9 @@ class BeachInclinationController extends Controller
             
             $beachInclinations = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return BeachInclination::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -127,7 +129,9 @@ class BeachInclinationController extends Controller
             
             $beachInclination = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return BeachInclination::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                 ->find($id);
             });
 

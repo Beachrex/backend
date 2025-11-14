@@ -70,7 +70,9 @@ class RoadToParkingTypeController extends Controller
 
             $roadToParkingTypes = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($showFilter) {
                 $query = RoadToParkingType::with('translations')
-                ->withCount('beaches')
+                ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id');
 
@@ -154,7 +156,9 @@ class RoadToParkingTypeController extends Controller
 
             $roadToParkingType = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return RoadToParkingType::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                 ->find($id);
             });
 

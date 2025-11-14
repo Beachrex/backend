@@ -61,7 +61,9 @@ class AreaDescriptionController extends Controller
 
             $areaDescriptions = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return AreaDescription::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -139,7 +141,9 @@ class AreaDescriptionController extends Controller
 
             $areaDescription = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return AreaDescription::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('status_id', 1);
+                    }])
                     ->find($id);
             });
 

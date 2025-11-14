@@ -13,7 +13,7 @@ use App\Traits\CacheAware;
 class CulinaryOfferController extends Controller
 {
     use CacheAware;
-    
+
     /**
      * @OA\Get(
      *     path="/api/v1/culinary-offers",
@@ -52,10 +52,12 @@ class CulinaryOfferController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "culinary_offers:index:{$locale}:all";
-            
+
             $culinaryOffers = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
                 return CulinaryOffer::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                     ->active()
                     ->orderBy('id')
                     ->get();
@@ -124,10 +126,12 @@ class CulinaryOfferController extends Controller
         try {
             $locale = app()->getLocale();
             $cacheKey = "culinary_offer:show:{$locale}:{$id}";
-            
+
             $culinaryOffer = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($id) {
                 return CulinaryOffer::with('translations')
-                    ->withCount('beaches')
+                    ->withCount(['beaches' => function ($q) {
+                        $q->where('beach.status_id', 1);
+                    }])
                 ->find($id);
             });
 
