@@ -49,6 +49,7 @@ class DatabaseSeeder extends Seeder
             CountryFilterTitleSeeder::class,
             RegionFilterTitleSeeder::class,
             IslandFilterTitleSeeder::class,
+            FirstPageContentSeeder::class,
 //            BeachSeeder::class, // do not run since we have old DB migration
         ]);
     }

@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\UnderwaterCharacteristicController;
 use App\Http\Controllers\Api\V1\UserTypeController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\FilterController;
+use App\Http\Controllers\Api\V1\FirstPageContentController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -148,6 +149,10 @@ Route::prefix('api/v1')
         // User Type routes
         Route::get('/user-types', [UserTypeController::class, 'index']);
         Route::get('/user-types/{id}', [UserTypeController::class, 'show']);
+
+        // First Page Content routes
+        Route::get('/first-page-content', [FirstPageContentController::class, 'index']);
+        Route::get('/first-page-content/{code}', [FirstPageContentController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

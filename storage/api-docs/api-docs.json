@@ -2220,6 +2220,122 @@
                 }
             }
         },
+        "/api/v1/first-page-content": {
+            "get": {
+                "tags": [
+                    "First Page Content"
+                ],
+                "summary": "Get all first page content sections",
+                "description": "Returns all active first page content sections with translations, items, and media",
+                "operationId": "getFirstPageContent",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language code (en, sl, de, hr, etc.)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "en"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FirstPageContent"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "First page content retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/v1/first-page-content/{code}": {
+            "get": {
+                "tags": [
+                    "First Page Content"
+                ],
+                "summary": "Get specific first page content section by code",
+                "description": "Returns a specific first page content section with translations, items, and media",
+                "operationId": "getFirstPageContentByCode",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "path",
+                        "description": "Content section code",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "hero_banner"
+                        }
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language code (en, sl, de, hr, etc.)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "en"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/FirstPageContent"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "First page content retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Content not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
         "/api/v1/location-infrastructure": {
             "get": {
                 "tags": [
@@ -5783,6 +5899,146 @@
                 },
                 "type": "object"
             },
+            "FirstPageContentItem": {
+                "title": "First Page Content Item",
+                "description": "Item within a repeater section",
+                "properties": {
+                    "id": {
+                        "description": "Item ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "order": {
+                        "description": "Display order within the section",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "description": "Item title (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Gallery",
+                        "nullable": true
+                    },
+                    "description": {
+                        "description": "Item description (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Browse through beautiful beach photos",
+                        "nullable": true
+                    },
+                    "media": {
+                        "description": "Media files associated with this item",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FirstPageContentMedia"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "FirstPageContentMedia": {
+                "title": "First Page Content Media",
+                "description": "Media file for first page content",
+                "properties": {
+                    "id": {
+                        "description": "Media ID",
+                        "type": "integer",
+                        "example": 42338
+                    },
+                    "type": {
+                        "description": "Media type code",
+                        "type": "string",
+                        "example": "image"
+                    },
+                    "url": {
+                        "description": "Full CDN URL to the media file",
+                        "type": "string",
+                        "example": "https://beachrex.fra1.digitaloceanspaces.com/public/img/first-page/hero-bg.jpg"
+                    },
+                    "file_name": {
+                        "description": "File name",
+                        "type": "string",
+                        "example": "hero-bg.jpg"
+                    },
+                    "is_primary": {
+                        "description": "Whether this is the primary media file",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "collection": {
+                        "description": "Media collection code (e.g., icon, main_image)",
+                        "type": "string",
+                        "example": "icon",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "FirstPageContent": {
+                "title": "First Page Content",
+                "description": "First page/homepage content section model",
+                "properties": {
+                    "id": {
+                        "description": "Content section ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Unique section code identifier",
+                        "type": "string",
+                        "example": "hero_banner"
+                    },
+                    "section_type": {
+                        "description": "Type of content section",
+                        "type": "string",
+                        "enum": [
+                            "banner",
+                            "text_image",
+                            "repeater",
+                            "text_only"
+                        ],
+                        "example": "banner"
+                    },
+                    "order": {
+                        "description": "Display order on the page",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "description": "Section title (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "All worries are smaller on the beach!",
+                        "nullable": true
+                    },
+                    "description": {
+                        "description": "Section description (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Discover the most beautiful beaches around the world",
+                        "nullable": true
+                    },
+                    "config": {
+                        "description": "Additional configuration data (JSON)",
+                        "type": "object",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "media": {
+                        "description": "Media files associated with this section",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FirstPageContentMedia"
+                        }
+                    },
+                    "items": {
+                        "description": "Items for repeater sections (null for non-repeater sections)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FirstPageContentItem"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "LocationInfrastructure": {
                 "title": "Location Infrastructure",
                 "description": "Location infrastructure model (WC, shower, parking, etc.)",
@@ -7000,6 +7256,10 @@
         {
             "name": "Filters",
             "description": "API Endpoints for beach filter options"
+        },
+        {
+            "name": "First Page Content",
+            "description": "API Endpoints for first page/homepage content sections"
         },
         {
             "name": "Media",
