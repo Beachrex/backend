@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\V1\UserTypeController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\FilterController;
 use App\Http\Controllers\Api\V1\FirstPageContentController;
+use App\Http\Controllers\Api\V1\BeachDetailsController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -57,6 +58,9 @@ Route::prefix('api/v1')
         Route::get('/beaches/filters', [FilterController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
+
+        // Beach Details routes - comprehensive beach information for detail pages
+        Route::get('/beach-details/{identifier}', [BeachDetailsController::class, 'show']);
 
         // Continent routes
         Route::get('/continents', [ContinentController::class, 'index']);

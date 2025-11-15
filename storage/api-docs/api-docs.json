@@ -1066,6 +1066,59 @@
                 }
             }
         },
+        "/api/v1/beach-details/{identifier}": {
+            "get": {
+                "tags": [
+                    "Beach Details"
+                ],
+                "summary": "Get comprehensive beach details by slug or ID",
+                "description": "Returns all beach information including media galleries, characteristics, facilities, and related data. Accepts either beach ID (numeric) or slug (string) in any language.",
+                "operationId": "getBeachDetails",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "description": "Beach ID (numeric) or slug (string in any language)",
+                        "required": true,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "type": "integer",
+                                    "example": 123
+                                },
+                                {
+                                    "type": "string",
+                                    "example": "paradise-beach"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Beach details found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BeachDetailsSchema"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Beach not found"
+                    }
+                }
+            }
+        },
         "/api/v1/beach-inclinations": {
             "get": {
                 "tags": [
@@ -5563,6 +5616,569 @@
                 },
                 "type": "object"
             },
+            "BeachDetailsSchema": {
+                "title": "Beach Details Schema",
+                "description": "Comprehensive beach details for detail pages",
+                "properties": {
+                    "basic_info": {
+                        "description": "Basic beach information",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 123
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Paradise Beach"
+                            },
+                            "slug": {
+                                "type": "string",
+                                "example": "paradise-beach"
+                            },
+                            "description": {
+                                "type": "string",
+                                "example": "Beautiful sandy beach",
+                                "nullable": true
+                            },
+                            "latitude": {
+                                "type": "string",
+                                "example": "42.5996000"
+                            },
+                            "longitude": {
+                                "type": "string",
+                                "example": "18.2302000"
+                            },
+                            "folder_name": {
+                                "type": "string",
+                                "example": "paradise-beach-123",
+                                "nullable": true
+                            },
+                            "mobile_upload": {
+                                "type": "boolean",
+                                "example": false
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "location": {
+                        "description": "Location information",
+                        "properties": {
+                            "continent": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "EU"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Europe"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "country": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "HR"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Croatia"
+                                    },
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "Republic of Croatia",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "region": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Dalmatia"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "dalmatia",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "city": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Split"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "split",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "island": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Hvar"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "hvar",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "river": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Danube"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "lake": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Lake Bled"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "characteristics": {
+                        "description": "Beach characteristics",
+                        "properties": {
+                            "beach_type": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "sand"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Sand"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "waterbody": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "sea"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Sea"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "water_body_type": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "adriatic"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Adriatic Sea"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "area_description": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "urban"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Urban"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "location_types": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "code": {
+                                            "type": "string",
+                                            "example": "bay"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Bay"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "boat_only": {
+                                "type": "boolean",
+                                "example": false
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "accessibility": {
+                        "description": "Accessibility and parking information",
+                        "type": "object"
+                    },
+                    "dimensions": {
+                        "description": "Beach dimensions and measurements",
+                        "type": "object"
+                    },
+                    "facilities": {
+                        "description": "Facilities and amenities",
+                        "properties": {
+                            "accommodation_around": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "culinary_offers": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "location_infrastructure": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "activities": {
+                        "description": "Activities and user types",
+                        "properties": {
+                            "sporting_activities": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "user_types": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "natural_conditions": {
+                        "description": "Natural conditions and underwater characteristics",
+                        "type": "object"
+                    },
+                    "media": {
+                        "description": "Media collections (galleries, videos, 360 spheres, etc.)",
+                        "properties": {
+                            "gallery": {
+                                "description": "Main beach photo gallery",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            },
+                            "videos": {
+                                "description": "Beach videos",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            },
+                            "spheres_360": {
+                                "description": "360-degree panoramic images",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            },
+                            "parking_images": {
+                                "description": "Parking area photos",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            },
+                            "spot_images": {
+                                "description": "Specific beach spot photos",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            },
+                            "infrastructure_images": {
+                                "description": "Infrastructure and facilities photos",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            },
+                            "info_images": {
+                                "description": "Informational images and signage",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MediaItem"
+                                }
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "embeds": {
+                        "description": "Embedded content (videos, webcams, maps, widgets)",
+                        "properties": {
+                            "video_url": {
+                                "type": "string",
+                                "example": "https://youtube.com/watch?v=...",
+                                "nullable": true
+                            },
+                            "webcam": {
+                                "type": "string",
+                                "example": "<iframe>...</iframe>",
+                                "nullable": true
+                            },
+                            "map_url": {
+                                "type": "string",
+                                "example": "https://maps.google.com/...",
+                                "nullable": true
+                            },
+                            "weather": {
+                                "type": "string",
+                                "example": "<div>...</div>",
+                                "nullable": true
+                            },
+                            "water_temperature": {
+                                "type": "string",
+                                "example": "<div>...</div>",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "swimming_pool_features": {
+                        "description": "Swimming pool features (if applicable)",
+                        "type": "object"
+                    },
+                    "meta": {
+                        "description": "Metadata",
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "example": "Active",
+                                "nullable": true
+                            },
+                            "views": {
+                                "type": "integer",
+                                "example": 1234
+                            },
+                            "created_by": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2024-01-15T10:30:00Z"
+                            },
+                            "updated_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2024-01-20T14:45:00Z"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "MediaItem": {
+                "title": "Media Item",
+                "description": "Individual media item (image, video, etc.)",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 456
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "example": "beach-photo.jpg"
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://cdn.example.com/img/beaches/beach-123/photo.jpg"
+                    },
+                    "thumbnail_url": {
+                        "type": "string",
+                        "example": "https://cdn.example.com/img/beaches/beach-123/thumb_photo.jpg",
+                        "nullable": true
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "width": {
+                        "type": "integer",
+                        "example": 1920,
+                        "nullable": true
+                    },
+                    "height": {
+                        "type": "integer",
+                        "example": 1080,
+                        "nullable": true
+                    },
+                    "duration": {
+                        "description": "Duration in seconds for videos",
+                        "type": "integer",
+                        "example": 120,
+                        "nullable": true
+                    },
+                    "is_primary": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "order": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "type": "object"
+            },
             "BeachInclination": {
                 "title": "Beach Inclination",
                 "description": "Beach inclination model (small_slope, normal, increase, sudden_drop, different_mixed)",
@@ -7240,6 +7856,10 @@
         {
             "name": "Beaches",
             "description": "API Endpoints for managing beaches"
+        },
+        {
+            "name": "Beach Details",
+            "description": "API Endpoints for beach detail pages"
         },
         {
             "name": "Beach Types",
