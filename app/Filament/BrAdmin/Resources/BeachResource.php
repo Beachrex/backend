@@ -34,7 +34,9 @@ class BeachResource extends Resource
                     ->helperText('Used for organizing beach images. Format: country-id-region-city (e.g., hr-69-o-pag)')
                     ->placeholder('e.g., hr-69-o-pag'),
                 Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name'),
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\TextInput::make('latitude')
                     ->numeric(),
                 Forms\Components\TextInput::make('longitude')
@@ -42,7 +44,8 @@ class BeachResource extends Resource
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
-                    ->default(1),
+                    ->default(1)
+                    ->searchable(),
                 Forms\Components\Select::make('country_code')
                     ->relationship('country', 'code')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)
@@ -102,7 +105,8 @@ class BeachResource extends Resource
                         1 => 'No',
                         2 => 'Yes',
                     ])
-                    ->placeholder('Select parking availability'),
+                    ->placeholder('Select parking availability')
+                    ->searchable(),
                 Forms\Components\Select::make('parking_capacity_id')
                     ->relationship('parkingCapacity', 'code')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations()->where('locale', 'en')->first()?->name ?? $record->code)

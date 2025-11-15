@@ -17,9 +17,9 @@ class AreaDescriptionResource extends Resource
     protected static ?string $model = AreaDescription::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
-    
+
     protected static ?string $navigationGroup = 'Beach Characteristics';
-    
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -34,7 +34,8 @@ class AreaDescriptionResource extends Resource
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
-                    ->default(1),
+                    ->default(1)
+                    ->searchable(),
             ]);
     }
 

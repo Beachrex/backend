@@ -43,6 +43,7 @@ class CityResource extends Resource
                             ->sort();
                     })
                     ->searchable()
+                    ->preload()
                     ->required()
                     ->reactive()
                     ->helperText('Select the country this city belongs to'),
@@ -67,7 +68,8 @@ class CityResource extends Resource
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
-                    ->default(1),
+                    ->default(1)
+                    ->searchable(),
             ]);
     }
 

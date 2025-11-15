@@ -34,7 +34,8 @@ class IslandResource extends Resource
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
-                    ->default(1),
+                    ->default(1)
+                    ->searchable(),
             ]);
     }
 

@@ -17,9 +17,9 @@ class AccessibilityResource extends Resource
     protected static ?string $model = Accessibility::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
-    
+
     protected static ?string $navigationGroup = 'Beach Characteristics';
-    
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -34,7 +34,8 @@ class AccessibilityResource extends Resource
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
-                    ->default(1),
+                    ->default(1)
+                    ->searchable(),
             ]);
     }
 

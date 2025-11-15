@@ -36,19 +36,19 @@ class BeachStatsWidget extends BaseWidget
                 ->description(number_format($inactiveBeaches) . ' inactive - Click to view inactive')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success')
-                ->url(BeachResource::getUrl('index', ['tableFilters' => ['status' => ['values' => [2]]]])),
+                ->url(BeachResource::getUrl('index', ['tableFilters' => ['status' => ['values' => [2, 4, 5, 6, 11]]]])),
 
             Stat::make('GPS Location', number_format($beachesWithoutLocation) . ' / ' . number_format($totalBeaches))
                 ->description(number_format($beachesWithoutLocation) . ' missing GPS location (' . round(($beachesWithLocation / max($totalBeaches, 1)) * 100, 1) . '% complete) - Click to view missing')
                 ->descriptionIcon('heroicon-m-map')
                 ->color($beachesWithoutLocation > 0 ? 'danger' : 'success')
-                ->url(BeachResource::getUrl('index', ['tableFilters' => ['has_location' => ['value' => false]]])),
+                ->url(BeachResource::getUrl('index', ['tableFilters' => ['has_location' => ['value' => 0]]])),
 
             Stat::make('Media Files', number_format($beachesWithoutMedia) . ' / ' . number_format($totalBeaches))
                 ->description(number_format($beachesWithoutMedia) . ' missing media files (' . round(($beachesWithMedia / max($totalBeaches, 1)) * 100, 1) . '% complete) - Click to view missing')
                 ->descriptionIcon('heroicon-m-photo')
                 ->color($beachesWithoutMedia > 0 ? 'warning' : 'success')
-                ->url(BeachResource::getUrl('index', ['tableFilters' => ['has_media' => ['value' => false]]])),
+                ->url(BeachResource::getUrl('index', ['tableFilters' => ['has_media' => ['value' => 0]]])),
         ];
     }
 }

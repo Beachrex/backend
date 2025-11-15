@@ -23,7 +23,7 @@ class CulinaryOfferResource extends Resource
     {
         return $form->schema([
             Forms\Components\TextInput::make('code')->required()->maxLength(100),
-            Forms\Components\Select::make('status_id')->relationship('status', 'name')->required()->default(1),
+            Forms\Components\Select::make('status_id')->relationship('status', 'name')->required()->default(1)->searchable(),
         ]);
     }
 

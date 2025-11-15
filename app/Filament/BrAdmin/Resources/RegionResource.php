@@ -40,12 +40,14 @@ class RegionResource extends Resource
                             ->sort();
                     })
                     ->searchable()
+                    ->preload()
                     ->required()
                     ->helperText('Select the country this region belongs to'),
                 Forms\Components\Select::make('status_id')
                     ->relationship('status', 'name')
                     ->required()
-                    ->default(1),
+                    ->default(1)
+                    ->searchable(),
             ]);
     }
 
