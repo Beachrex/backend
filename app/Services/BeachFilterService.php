@@ -418,9 +418,9 @@ class BeachFilterService
             $userTypes = $this->parseFilterValue($request->user_type);
             $placeholders = implode(',', array_fill(0, count($userTypes), '?'));
             $conditions[] = "EXISTS (
-                SELECT 1 FROM beach_user_type
-                WHERE beach_user_type.beach_id = b.id
-                AND beach_user_type.user_type_id IN ($placeholders)
+                SELECT 1 FROM user_type_beach
+                WHERE user_type_beach.beach_id = b.id
+                AND user_type_beach.user_type_id IN ($placeholders)
             )";
             $bindings = array_merge($bindings, $userTypes);
         }
@@ -449,6 +449,118 @@ class BeachFilterService
         if ($request->has('boat_only')) {
             $conditions[] = "b.boat_only = ?";
             $bindings[] = $request->boolean('boat_only') ? 1 : 0;
+        }
+
+        // Area description filter
+        if ($request->has('area_description')) {
+            $areaDescriptions = $this->parseFilterValue($request->area_description);
+            $placeholders = implode(',', array_fill(0, count($areaDescriptions), '?'));
+            $conditions[] = "b.area_description_id IN ($placeholders)";
+            $bindings = array_merge($bindings, $areaDescriptions);
+        }
+
+        // Parking capacity filter
+        if ($request->has('parking_capacity')) {
+            $parkingCapacities = $this->parseFilterValue($request->parking_capacity);
+            $placeholders = implode(',', array_fill(0, count($parkingCapacities), '?'));
+            $conditions[] = "b.parking_capacity_id IN ($placeholders)";
+            $bindings = array_merge($bindings, $parkingCapacities);
+        }
+
+        // Beach inclination filter
+        if ($request->has('beach_inclination')) {
+            $inclinations = $this->parseFilterValue($request->beach_inclination);
+            $placeholders = implode(',', array_fill(0, count($inclinations), '?'));
+            $conditions[] = "b.beach_inclination_id IN ($placeholders)";
+            $bindings = array_merge($bindings, $inclinations);
+        }
+
+        // Swimming depth filter
+        if ($request->has('swimming_depth')) {
+            $depths = $this->parseFilterValue($request->swimming_depth);
+            $placeholders = implode(',', array_fill(0, count($depths), '?'));
+            $conditions[] = "b.swimming_depth_of_one_m_id IN ($placeholders)";
+            $bindings = array_merge($bindings, $depths);
+        }
+
+        // Occupancy rate filter
+        if ($request->has('occupancy_rate')) {
+            $occupancyRates = $this->parseFilterValue($request->occupancy_rate);
+            $placeholders = implode(',', array_fill(0, count($occupancyRates), '?'));
+            $conditions[] = "b.occupancy_rate_id IN ($placeholders)";
+            $bindings = array_merge($bindings, $occupancyRates);
+        }
+
+        // Accommodation around filter (many-to-many)
+        if ($request->has('accommodation_around')) {
+            $accommodations = $this->parseFilterValue($request->accommodation_around);
+            $placeholders = implode(',', array_fill(0, count($accommodations), '?'));
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM accommodation_around_beach
+                WHERE accommodation_around_beach.beach_id = b.id
+                AND accommodation_around_beach.accommodation_around_id IN ($placeholders)
+            )";
+            $bindings = array_merge($bindings, $accommodations);
+        }
+
+        // Culinary offer filter (many-to-many)
+        if ($request->has('culinary_offer')) {
+            $culinaryOffers = $this->parseFilterValue($request->culinary_offer);
+            $placeholders = implode(',', array_fill(0, count($culinaryOffers), '?'));
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM culinary_offer_beach
+                WHERE culinary_offer_beach.beach_id = b.id
+                AND culinary_offer_beach.culinary_offer_id IN ($placeholders)
+            )";
+            $bindings = array_merge($bindings, $culinaryOffers);
+        }
+
+        // Location infrastructure filter (many-to-many)
+        if ($request->has('location_infrastructure')) {
+            $infrastructures = $this->parseFilterValue($request->location_infrastructure);
+            $placeholders = implode(',', array_fill(0, count($infrastructures), '?'));
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM location_infrastructure_beach
+                WHERE location_infrastructure_beach.beach_id = b.id
+                AND location_infrastructure_beach.location_infrastructure_id IN ($placeholders)
+            )";
+            $bindings = array_merge($bindings, $infrastructures);
+        }
+
+        // Natural location condition filter (many-to-many)
+        if ($request->has('natural_location_condition')) {
+            $conditions_filter = $this->parseFilterValue($request->natural_location_condition);
+            $placeholders = implode(',', array_fill(0, count($conditions_filter), '?'));
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM natural_location_condition_beach
+                WHERE natural_location_condition_beach.beach_id = b.id
+                AND natural_location_condition_beach.natural_location_condition_id IN ($placeholders)
+            )";
+            $bindings = array_merge($bindings, $conditions_filter);
+        }
+
+        // Sporting activities filter (many-to-many)
+        if ($request->has('sporting_activity')) {
+            $activities = $this->parseFilterValue($request->sporting_activity);
+            $placeholders = implode(',', array_fill(0, count($activities), '?'));
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM sporting_activities_beach
+                WHERE sporting_activities_beach.beach_id = b.id
+                AND sporting_activities_beach.sporting_activities_id IN ($placeholders)
+            )";
+            $bindings = array_merge($bindings, $activities);
+        }
+
+        // Underwater characteristics filter (many-to-many)
+        if ($request->has('underwater_characteristic')) {
+            $characteristics = $this->parseFilterValue($request->underwater_characteristic);
+            $placeholders = implode(',', array_fill(0, count($characteristics), '?'));
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM underwater_characteristic_beach
+                WHERE underwater_characteristic_beach.beach_id = b.id
+                AND underwater_characteristic_beach.underwater_characteristic_id IN ($placeholders)
+            )";
+            $bindings = array_merge($bindings, $characteristics);
         }
 
         $sql = !empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '';

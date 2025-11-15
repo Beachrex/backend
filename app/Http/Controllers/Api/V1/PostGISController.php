@@ -92,6 +92,132 @@ class PostGISController extends Controller
      *         required=false,
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *     @OA\Parameter(
+     *         name="region",
+     *         in="query",
+     *         description="Filter by region ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="island",
+     *         in="query",
+     *         description="Filter by island ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="city",
+     *         in="query",
+     *         description="Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="sukosan")
+     *     ),
+     *     @OA\Parameter(
+     *         name="accessibility",
+     *         in="query",
+     *         description="Filter by accessibility ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="parking",
+     *         in="query",
+     *         description="Filter by parking availability (boolean)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Parameter(
+     *         name="parking_capacity",
+     *         in="query",
+     *         description="Filter by parking capacity ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="beach_inclination",
+     *         in="query",
+     *         description="Filter by beach inclination ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="swimming_depth",
+     *         in="query",
+     *         description="Filter by swimming depth ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="occupancy_rate",
+     *         in="query",
+     *         description="Filter by occupancy rate ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="area_description",
+     *         in="query",
+     *         description="Filter by area description ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="has_swimming_pool",
+     *         in="query",
+     *         description="Filter by swimming pool availability (boolean)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Parameter(
+     *         name="boat_only",
+     *         in="query",
+     *         description="Filter beaches accessible only by boat (boolean)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),
+     *     @OA\Parameter(
+     *         name="accommodation_around",
+     *         in="query",
+     *         description="Filter by accommodation around ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="culinary_offer",
+     *         in="query",
+     *         description="Filter by culinary offer ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="location_infrastructure",
+     *         in="query",
+     *         description="Filter by location infrastructure ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="natural_location_condition",
+     *         in="query",
+     *         description="Filter by natural location condition ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="sporting_activity",
+     *         in="query",
+     *         description="Filter by sporting activity ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="underwater_characteristic",
+     *         in="query",
+     *         description="Filter by underwater characteristic ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
@@ -323,6 +449,167 @@ class PostGISController extends Controller
      *         required=true,
      *         description="Maximum longitude of the bounding box (-180 to 180)",
      *         @OA\Schema(type="number", format="float", minimum=-180, maximum=180, example=16.0)
+     *     ),
+     *     @OA\Parameter(
+     *         name="continent_code",
+     *         in="query",
+     *         description="Filter by continent code(s) or ID(s). Supports: single value (continent_code=EU), comma-separated (continent_code=EU,AS), or array (continent_code[]=EU&continent_code[]=AS). Can mix codes and IDs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="EU,AS")
+     *     ),
+     *     @OA\Parameter(
+     *         name="country",
+     *         in="query",
+     *         description="Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR,SI,IT")
+     *     ),
+     *     @OA\Parameter(
+     *         name="waterbody",
+     *         in="query",
+     *         description="Filter by waterbody ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="beach_type",
+     *         in="query",
+     *         description="Filter by beach type ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="user_type",
+     *         in="query",
+     *         description="Filter by user type ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="region",
+     *         in="query",
+     *         description="Filter by region ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="island",
+     *         in="query",
+     *         description="Filter by island ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="city",
+     *         in="query",
+     *         description="Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="sukosan")
+     *     ),
+     *     @OA\Parameter(
+     *         name="accessibility",
+     *         in="query",
+     *         description="Filter by accessibility ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="parking",
+     *         in="query",
+     *         description="Filter by parking availability (boolean)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Parameter(
+     *         name="parking_capacity",
+     *         in="query",
+     *         description="Filter by parking capacity ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="beach_inclination",
+     *         in="query",
+     *         description="Filter by beach inclination ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="swimming_depth",
+     *         in="query",
+     *         description="Filter by swimming depth ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="occupancy_rate",
+     *         in="query",
+     *         description="Filter by occupancy rate ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="area_description",
+     *         in="query",
+     *         description="Filter by area description ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="has_swimming_pool",
+     *         in="query",
+     *         description="Filter by swimming pool availability (boolean)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Parameter(
+     *         name="boat_only",
+     *         in="query",
+     *         description="Filter beaches accessible only by boat (boolean)",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),
+     *     @OA\Parameter(
+     *         name="accommodation_around",
+     *         in="query",
+     *         description="Filter by accommodation around ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="culinary_offer",
+     *         in="query",
+     *         description="Filter by culinary offer ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="location_infrastructure",
+     *         in="query",
+     *         description="Filter by location infrastructure ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="natural_location_condition",
+     *         in="query",
+     *         description="Filter by natural location condition ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="sporting_activity",
+     *         in="query",
+     *         description="Filter by sporting activity ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="underwater_characteristic",
+     *         in="query",
+     *         description="Filter by underwater characteristic ID(s). Can be single value or array",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
