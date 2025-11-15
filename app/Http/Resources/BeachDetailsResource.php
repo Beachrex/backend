@@ -64,40 +64,45 @@ class BeachDetailsResource extends JsonResource
             }),
             'region' => $this->when($this->region, function () use ($locale) {
                 $trans = $this->region->translations->firstWhere('locale', $locale);
+                $transEn = $this->region->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->region->id,
-                    'name' => $trans?->name ?? null,
-                    'slug' => $trans?->slug ?? null,
+                    'name' => $trans?->name ?? $transEn?->name ?? null,
+                    'slug' => $trans?->slug ?? $transEn?->slug ?? null,
                 ];
             }),
             'city' => $this->when($this->city, function () use ($locale) {
                 $trans = $this->city->translations->firstWhere('locale', $locale);
+                $transEn = $this->city->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->city->id,
-                    'name' => $trans?->name ?? null,
-                    'slug' => $trans?->slug ?? null,
+                    'name' => $trans?->name ?? $transEn?->name ?? null,
+                    'slug' => $trans?->slug ?? $transEn?->slug ?? null,
                 ];
             }),
             'island' => $this->when($this->island, function () use ($locale) {
                 $trans = $this->island->translations->firstWhere('locale', $locale);
+                $transEn = $this->island->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->island->id,
-                    'name' => $trans?->name ?? null,
-                    'slug' => $trans?->slug ?? null,
+                    'name' => $trans?->name ?? $transEn?->name ?? null,
+                    'slug' => $trans?->slug ?? $transEn?->slug ?? null,
                 ];
             }),
             'river' => $this->when($this->river, function () use ($locale) {
                 $trans = $this->river->translations->firstWhere('locale', $locale);
+                $transEn = $this->river->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->river->id,
-                    'name' => $trans?->name ?? null,
+                    'name' => $trans?->name ?? $transEn?->name ?? null,
                 ];
             }),
             'lake' => $this->when($this->lake, function () use ($locale) {
                 $trans = $this->lake->translations->firstWhere('locale', $locale);
+                $transEn = $this->lake->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->lake->id,
-                    'name' => $trans?->name ?? null,
+                    'name' => $trans?->name ?? $transEn?->name ?? null,
                 ];
             }),
         ];
