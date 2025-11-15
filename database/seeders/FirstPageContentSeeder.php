@@ -21,60 +21,14 @@ class FirstPageContentSeeder extends Seeder
     {
         $this->command->info('Seeding first page content...');
 
-        // Check if there's existing data (including soft deleted)
-        $existingCount = FirstPageContent::withTrashed()->count();
+        // Check if data already exists
+        $existingCount = FirstPageContent::count();
 
         if ($existingCount > 0) {
-            $this->command->info("Found {$existingCount} existing sections (including soft deleted).");
-
-            // Only ask for confirmation if not running with --force flag
-            $force = $this->command->option('force') ?? false;
-
-            if (!$force && !$this->command->confirm('Delete all existing data and reseed?', true)) {
-                $this->command->info('Seeding cancelled.');
-                return;
-            }
-
-            $this->command->info('Permanently deleting existing first page content...');
-
-            // First, get all records including soft deleted
-            $sections = FirstPageContent::withTrashed()->get();
-
-            // Delete related media first
-            foreach ($sections as $section) {
-                Media::where('mediable_type', FirstPageContent::class)
-                    ->where('mediable_id', $section->id)
-                    ->delete();
-
-                // Delete items and their media
-                $items = FirstPageContentItem::withTrashed()
-                    ->where('first_page_content_id', $section->id)
-                    ->get();
-
-                foreach ($items as $item) {
-                    Media::where('mediable_type', FirstPageContentItem::class)
-                        ->where('mediable_id', $item->id)
-                        ->delete();
-                }
-
-                // Force delete items
-                FirstPageContentItem::withTrashed()
-                    ->where('first_page_content_id', $section->id)
-                    ->forceDelete();
-
-                // Delete translations
-                FirstPageContentTranslation::where('first_page_content_id', $section->id)
-                    ->delete();
-
-                FirstPageContentItemTranslation::whereIn('first_page_content_item_id',
-                    $items->pluck('id'))
-                    ->delete();
-            }
-
-            // Force delete all first page content
-            FirstPageContent::withTrashed()->forceDelete();
-
-            $this->command->info('Existing data permanently deleted.');
+            $this->command->warn("First page content already exists ({$existingCount} sections found).");
+            $this->command->info('Skipping seeding to protect existing data.');
+            $this->command->info('To reseed, manually delete the data first from the admin panel or database.');
+            return;
         }
 
         // Get media type and collection IDs
