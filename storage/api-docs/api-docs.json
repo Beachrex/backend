@@ -850,21 +850,21 @@
                     {
                         "name": "region",
                         "in": "query",
-                        "description": "Filter by region ID(s). Can be single value or array",
+                        "description": "Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "algarve"
                         }
                     },
                     {
                         "name": "island",
                         "in": "query",
-                        "description": "Filter by island ID(s). Can be single value or array",
+                        "description": "Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "madeira"
                         }
                     },
                     {
@@ -934,43 +934,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/BeachSchema"
-                                            }
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "center": {
-                                                    "description": "Geographic center (centroid) of all filtered beaches, calculated using PostGIS ST_Centroid",
-                                                    "properties": {
-                                                        "latitude": {
-                                                            "description": "Center latitude",
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 43.947149705303886
-                                                        },
-                                                        "longitude": {
-                                                            "description": "Center longitude",
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 9.871903842707175
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
-                                                "total_beaches": {
-                                                    "description": "Total number of beaches returned (respects limit parameter)",
-                                                    "type": "integer",
-                                                    "example": 150
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/BeachListResponseSchema"
                                 }
                             }
                         }
@@ -3976,21 +3940,21 @@
                     {
                         "name": "region",
                         "in": "query",
-                        "description": "Filter by region ID(s). Can be single value or array",
+                        "description": "Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "algarve"
                         }
                     },
                     {
                         "name": "island",
                         "in": "query",
-                        "description": "Filter by island ID(s). Can be single value or array",
+                        "description": "Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "madeira"
                         }
                     },
                     {
@@ -4163,63 +4127,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/BeachSchema"
-                                            }
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "search_center": {
-                                                    "description": "The center point of the search radius (user-provided)",
-                                                    "properties": {
-                                                        "latitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 46.0569
-                                                        },
-                                                        "longitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 14.5058
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
-                                                "results_center": {
-                                                    "description": "Geographic center (centroid) of all beaches found within the radius, calculated using PostGIS ST_Centroid",
-                                                    "properties": {
-                                                        "latitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 46.1234
-                                                        },
-                                                        "longitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 14.6789
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
-                                                "radius_km": {
-                                                    "description": "Search radius in kilometers",
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 50
-                                                },
-                                                "count": {
-                                                    "description": "Number of beaches found",
-                                                    "type": "integer",
-                                                    "example": 25
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/BeachRadiusResponseSchema"
                                 }
                             }
                         }
@@ -4471,21 +4379,21 @@
                     {
                         "name": "region",
                         "in": "query",
-                        "description": "Filter by region ID(s). Can be single value or array",
+                        "description": "Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "algarve"
                         }
                     },
                     {
                         "name": "island",
                         "in": "query",
-                        "description": "Filter by island ID(s). Can be single value or array",
+                        "description": "Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "madeira"
                         }
                     },
                     {
@@ -4658,67 +4566,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/BeachSchema"
-                                            }
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "bounding_box": {
-                                                    "description": "The bounding box coordinates (user-provided)",
-                                                    "properties": {
-                                                        "min_latitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 45
-                                                        },
-                                                        "min_longitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 13
-                                                        },
-                                                        "max_latitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 47
-                                                        },
-                                                        "max_longitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 16
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
-                                                "center": {
-                                                    "description": "Geographic center (centroid) of all beaches found within the bounding box, calculated using PostGIS ST_Centroid",
-                                                    "properties": {
-                                                        "latitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 46
-                                                        },
-                                                        "longitude": {
-                                                            "type": "number",
-                                                            "format": "float",
-                                                            "example": 14.5
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
-                                                "count": {
-                                                    "description": "Number of beaches found",
-                                                    "type": "integer",
-                                                    "example": 150
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/BeachBoundingBoxResponseSchema"
                                 }
                             }
                         }
@@ -6194,6 +6042,81 @@
                 },
                 "type": "object"
             },
+            "BeachBoundingBoxResponseSchema": {
+                "title": "Beach Bounding Box Response Schema",
+                "description": "Response schema for beaches in bounding box endpoint",
+                "properties": {
+                    "data": {
+                        "description": "Array of beaches",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachSchema"
+                        }
+                    },
+                    "meta": {
+                        "description": "Metadata about the response",
+                        "properties": {
+                            "bounding_box": {
+                                "description": "The bounding box coordinates (user-provided)",
+                                "properties": {
+                                    "min_latitude": {
+                                        "description": "Minimum latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 45.5
+                                    },
+                                    "min_longitude": {
+                                        "description": "Minimum longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 13.5
+                                    },
+                                    "max_latitude": {
+                                        "description": "Maximum latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 46.5
+                                    },
+                                    "max_longitude": {
+                                        "description": "Maximum longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 16.5
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "center": {
+                                "description": "Geographic center (centroid) of all beaches found in the bounding box, calculated using PostGIS ST_Centroid",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Center latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 46,
+                                        "nullable": true
+                                    },
+                                    "longitude": {
+                                        "description": "Center longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 15,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "count": {
+                                "description": "Number of beaches found",
+                                "type": "integer",
+                                "example": 42
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
             "BeachDetailsSchema": {
                 "title": "Beach Details Schema",
                 "description": "Comprehensive beach details for detail pages",
@@ -6898,6 +6821,120 @@
                         "description": "URL-friendly slug",
                         "type": "string",
                         "example": "small-slope"
+                    }
+                },
+                "type": "object"
+            },
+            "BeachListResponseSchema": {
+                "title": "Beach List Response Schema",
+                "description": "Response schema for beach list endpoints",
+                "properties": {
+                    "data": {
+                        "description": "Array of beaches",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachSchema"
+                        }
+                    },
+                    "meta": {
+                        "description": "Metadata about the response",
+                        "properties": {
+                            "center": {
+                                "description": "Geographic center (centroid) of all filtered beaches, calculated using PostGIS ST_Centroid",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Center latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 43.947149705303886,
+                                        "nullable": true
+                                    },
+                                    "longitude": {
+                                        "description": "Center longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 9.871903842707175,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "total_beaches": {
+                                "description": "Total number of beaches returned (respects limit parameter)",
+                                "type": "integer",
+                                "example": 150
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "BeachRadiusResponseSchema": {
+                "title": "Beach Radius Response Schema",
+                "description": "Response schema for beaches within radius endpoint",
+                "properties": {
+                    "data": {
+                        "description": "Array of beaches",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachSchema"
+                        }
+                    },
+                    "meta": {
+                        "description": "Metadata about the response",
+                        "properties": {
+                            "search_center": {
+                                "description": "The center point of the search radius (user-provided)",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Search center latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 46.0569
+                                    },
+                                    "longitude": {
+                                        "description": "Search center longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 14.5058
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "results_center": {
+                                "description": "Geographic center (centroid) of all beaches found within the radius, calculated using PostGIS ST_Centroid",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Results center latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 46.1234,
+                                        "nullable": true
+                                    },
+                                    "longitude": {
+                                        "description": "Results center longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 14.6789,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "radius_km": {
+                                "description": "Search radius in kilometers",
+                                "type": "number",
+                                "format": "float",
+                                "example": 50
+                            },
+                            "count": {
+                                "description": "Number of beaches found",
+                                "type": "integer",
+                                "example": 25
+                            }
+                        },
+                        "type": "object"
                     }
                 },
                 "type": "object"

@@ -58,6 +58,8 @@ class PostGISService
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN region reg ON b.region_id = reg.id
+            LEFT JOIN island isl ON b.island_id = isl.id
             LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN waterbody wb ON b.waterbody_id = wb.id
             LEFT JOIN beach_type btype ON b.beach_type_id = btype.id
@@ -209,6 +211,8 @@ class PostGISService
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN region reg ON b.region_id = reg.id
+            LEFT JOIN island isl ON b.island_id = isl.id
             LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN waterbody wb ON b.waterbody_id = wb.id
             LEFT JOIN beach_type btype ON b.beach_type_id = btype.id
@@ -350,6 +354,8 @@ class PostGISService
             FROM beach b
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN region reg ON b.region_id = reg.id
+            LEFT JOIN island isl ON b.island_id = isl.id
             LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN waterbody wb ON b.waterbody_id = wb.id
             LEFT JOIN beach_type btype ON b.beach_type_id = btype.id
@@ -401,6 +407,8 @@ class PostGISService
             FROM beach b
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN region reg ON b.region_id = reg.id
+            LEFT JOIN island isl ON b.island_id = isl.id
             LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN waterbody wb ON b.waterbody_id = wb.id
             LEFT JOIN beach_type btype ON b.beach_type_id = btype.id

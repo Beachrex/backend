@@ -86,16 +86,70 @@ class BeachFilterService
             }
         }
 
-        // Region filter (single or multiple)
+        // Region filter (single or multiple) - supports both codes and IDs
         if ($request->has('region')) {
             $regions = $this->parseFilterValue($request->region);
-            $query->whereIn('region_id', $regions);
+
+            $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed codes and IDs
+                $codes = collect($regions)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($regions)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $query->where(function ($q) use ($codes, $ids) {
+                    if (!empty($codes)) {
+                        $q->orWhereHas('region', function ($subQuery) use ($codes) {
+                            $subQuery->whereIn('code', $codes);
+                        });
+                    }
+                    if (!empty($ids)) {
+                        $q->orWhereIn('region_id', $ids);
+                    }
+                });
+            } elseif ($hasNumeric) {
+                // ID-based filtering
+                $query->whereIn('region_id', $regions);
+            } else {
+                // Code-based filtering
+                $query->whereHas('region', function ($subQuery) use ($regions) {
+                    $subQuery->whereIn('code', $regions);
+                });
+            }
         }
 
-        // Island filter (single or multiple)
+        // Island filter (single or multiple) - supports both codes and IDs
         if ($request->has('island')) {
             $islands = $this->parseFilterValue($request->island);
-            $query->whereIn('island_id', $islands);
+
+            $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed codes and IDs
+                $codes = collect($islands)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($islands)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $query->where(function ($q) use ($codes, $ids) {
+                    if (!empty($codes)) {
+                        $q->orWhereHas('island', function ($subQuery) use ($codes) {
+                            $subQuery->whereIn('code', $codes);
+                        });
+                    }
+                    if (!empty($ids)) {
+                        $q->orWhereIn('island_id', $ids);
+                    }
+                });
+            } elseif ($hasNumeric) {
+                // ID-based filtering
+                $query->whereIn('island_id', $islands);
+            } else {
+                // Code-based filtering
+                $query->whereHas('island', function ($subQuery) use ($islands) {
+                    $subQuery->whereIn('code', $islands);
+                });
+            }
         }
 
         // City filter (single or multiple) - supports both code and ID
@@ -707,20 +761,78 @@ class BeachFilterService
             }
         }
 
-        // Region filter
+        // Region filter - supports both codes and IDs
         if ($request->has('region')) {
             $regions = $this->parseFilterValue($request->region);
-            $placeholders = implode(',', array_fill(0, count($regions), '?'));
-            $conditions[] = "b.region_id IN ($placeholders)";
-            $bindings = array_merge($bindings, $regions);
+
+            $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed codes and IDs
+                $codes = collect($regions)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($regions)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $subConditions = [];
+                if (!empty($codes)) {
+                    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+                    $subConditions[] = "reg.code IN ($placeholders)";
+                    $bindings = array_merge($bindings, $codes);
+                }
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $subConditions[] = "b.region_id IN ($placeholders)";
+                    $bindings = array_merge($bindings, $ids);
+                }
+                $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+            } elseif ($hasNumeric) {
+                // ID-based filtering
+                $placeholders = implode(',', array_fill(0, count($regions), '?'));
+                $conditions[] = "b.region_id IN ($placeholders)";
+                $bindings = array_merge($bindings, $regions);
+            } else {
+                // Code-based filtering
+                $placeholders = implode(',', array_fill(0, count($regions), '?'));
+                $conditions[] = "reg.code IN ($placeholders)";
+                $bindings = array_merge($bindings, $regions);
+            }
         }
 
-        // Island filter
+        // Island filter - supports both codes and IDs
         if ($request->has('island')) {
             $islands = $this->parseFilterValue($request->island);
-            $placeholders = implode(',', array_fill(0, count($islands), '?'));
-            $conditions[] = "b.island_id IN ($placeholders)";
-            $bindings = array_merge($bindings, $islands);
+
+            $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed codes and IDs
+                $codes = collect($islands)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($islands)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $subConditions = [];
+                if (!empty($codes)) {
+                    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+                    $subConditions[] = "isl.code IN ($placeholders)";
+                    $bindings = array_merge($bindings, $codes);
+                }
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $subConditions[] = "b.island_id IN ($placeholders)";
+                    $bindings = array_merge($bindings, $ids);
+                }
+                $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+            } elseif ($hasNumeric) {
+                // ID-based filtering
+                $placeholders = implode(',', array_fill(0, count($islands), '?'));
+                $conditions[] = "b.island_id IN ($placeholders)";
+                $bindings = array_merge($bindings, $islands);
+            } else {
+                // Code-based filtering
+                $placeholders = implode(',', array_fill(0, count($islands), '?'));
+                $conditions[] = "isl.code IN ($placeholders)";
+                $bindings = array_merge($bindings, $islands);
+            }
         }
 
         // City filter - supports both code and ID

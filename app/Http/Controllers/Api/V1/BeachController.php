@@ -54,16 +54,16 @@ class BeachController extends Controller
      *     @OA\Parameter(
      *         name="region",
      *         in="query",
-     *         description="Filter by region ID(s). Can be single value or array",
+     *         description="Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="algarve")
      *     ),
      *     @OA\Parameter(
      *         name="island",
      *         in="query",
-     *         description="Filter by island ID(s). Can be single value or array",
+     *         description="Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="madeira")
      *     ),
      *     @OA\Parameter(
      *         name="city",
@@ -110,26 +110,7 @@ class BeachController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="List of beaches with map center coordinates",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="array",
-     *                 @OA\Items(ref="#/components/schemas/BeachSchema")
-     *             ),
-     *             @OA\Property(
-     *                 property="meta",
-     *                 type="object",
-     *                 @OA\Property(
-     *                     property="center",
-     *                     type="object",
-     *                     description="Geographic center (centroid) of all filtered beaches, calculated using PostGIS ST_Centroid",
-     *                     @OA\Property(property="latitude", type="number", format="float", example=43.947149705303886, description="Center latitude"),
-     *                     @OA\Property(property="longitude", type="number", format="float", example=9.871903842707175, description="Center longitude")
-     *                 ),
-     *                 @OA\Property(property="total_beaches", type="integer", example=150, description="Total number of beaches returned (respects limit parameter)")
-     *             )
-     *         )
+     *         @OA\JsonContent(ref="#/components/schemas/BeachListResponseSchema")
      *     )
      * )
      */

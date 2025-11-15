@@ -95,16 +95,16 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="region",
      *         in="query",
-     *         description="Filter by region ID(s). Can be single value or array",
+     *         description="Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="algarve")
      *     ),
      *     @OA\Parameter(
      *         name="island",
      *         in="query",
-     *         description="Filter by island ID(s). Can be single value or array",
+     *         description="Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="madeira")
      *     ),
      *     @OA\Parameter(
      *         name="city",
@@ -222,34 +222,7 @@ class PostGISController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Beaches found within radius with center coordinates",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="array",
-     *                 @OA\Items(ref="#/components/schemas/BeachSchema")
-     *             ),
-     *             @OA\Property(
-     *                 property="meta",
-     *                 type="object",
-     *                 @OA\Property(
-     *                     property="search_center",
-     *                     type="object",
-     *                     description="The center point of the search radius (user-provided)",
-     *                     @OA\Property(property="latitude", type="number", format="float", example=46.0569),
-     *                     @OA\Property(property="longitude", type="number", format="float", example=14.5058)
-     *                 ),
-     *                 @OA\Property(
-     *                     property="results_center",
-     *                     type="object",
-     *                     description="Geographic center (centroid) of all beaches found within the radius, calculated using PostGIS ST_Centroid",
-     *                     @OA\Property(property="latitude", type="number", format="float", example=46.1234),
-     *                     @OA\Property(property="longitude", type="number", format="float", example=14.6789)
-     *                 ),
-     *                 @OA\Property(property="radius_km", type="number", format="float", example=50, description="Search radius in kilometers"),
-     *                 @OA\Property(property="count", type="integer", example=25, description="Number of beaches found")
-     *             )
-     *         )
+     *         @OA\JsonContent(ref="#/components/schemas/BeachRadiusResponseSchema")
      *     )
      * )
      */
@@ -488,16 +461,16 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="region",
      *         in="query",
-     *         description="Filter by region ID(s). Can be single value or array",
+     *         description="Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="algarve")
      *     ),
      *     @OA\Parameter(
      *         name="island",
      *         in="query",
-     *         description="Filter by island ID(s). Can be single value or array",
+     *         description="Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="madeira")
      *     ),
      *     @OA\Parameter(
      *         name="city",
@@ -615,35 +588,7 @@ class PostGISController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Beaches found within bounding box with center coordinates",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="array",
-     *                 @OA\Items(ref="#/components/schemas/BeachSchema")
-     *             ),
-     *             @OA\Property(
-     *                 property="meta",
-     *                 type="object",
-     *                 @OA\Property(
-     *                     property="bounding_box",
-     *                     type="object",
-     *                     description="The bounding box coordinates (user-provided)",
-     *                     @OA\Property(property="min_latitude", type="number", format="float", example=45.0),
-     *                     @OA\Property(property="min_longitude", type="number", format="float", example=13.0),
-     *                     @OA\Property(property="max_latitude", type="number", format="float", example=47.0),
-     *                     @OA\Property(property="max_longitude", type="number", format="float", example=16.0)
-     *                 ),
-     *                 @OA\Property(
-     *                     property="center",
-     *                     type="object",
-     *                     description="Geographic center (centroid) of all beaches found within the bounding box, calculated using PostGIS ST_Centroid",
-     *                     @OA\Property(property="latitude", type="number", format="float", example=46.0),
-     *                     @OA\Property(property="longitude", type="number", format="float", example=14.5)
-     *                 ),
-     *                 @OA\Property(property="count", type="integer", example=150, description="Number of beaches found")
-     *             )
-     *         )
+     *         @OA\JsonContent(ref="#/components/schemas/BeachBoundingBoxResponseSchema")
      *     )
      * )
      */
