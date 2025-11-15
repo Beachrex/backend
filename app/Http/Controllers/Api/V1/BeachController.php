@@ -66,6 +66,13 @@ class BeachController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
+     *         name="city",
+     *         in="query",
+     *         description="Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="sukosan")
+     *     ),
+     *     @OA\Parameter(
      *         name="waterbody",
      *         in="query",
      *         description="Filter by waterbody ID(s). Can be single value or array",

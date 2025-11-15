@@ -868,6 +868,16 @@
                         }
                     },
                     {
+                        "name": "city",
+                        "in": "query",
+                        "description": "Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "sukosan"
+                        }
+                    },
+                    {
                         "name": "waterbody",
                         "in": "query",
                         "description": "Filter by waterbody ID(s). Can be single value or array",
@@ -920,7 +930,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of beaches",
+                        "description": "List of beaches with map center coordinates",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -930,6 +940,34 @@
                                             "items": {
                                                 "$ref": "#/components/schemas/BeachSchema"
                                             }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "center": {
+                                                    "description": "Geographic center (centroid) of all filtered beaches, calculated using PostGIS ST_Centroid",
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "description": "Center latitude",
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 43.947149705303886
+                                                        },
+                                                        "longitude": {
+                                                            "description": "Center longitude",
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.871903842707175
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "total_beaches": {
+                                                    "description": "Total number of beaches returned (respects limit parameter)",
+                                                    "type": "integer",
+                                                    "example": 150
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"

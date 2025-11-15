@@ -98,6 +98,40 @@ class BeachFilterService
             $query->whereIn('island_id', $islands);
         }
 
+        // City filter (single or multiple) - supports both code and ID
+        if ($request->has('city')) {
+            $cities = $this->parseFilterValue($request->city);
+
+            // Check if values are numeric (IDs) or strings (codes)
+            $hasNumeric = collect($cities)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($cities)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed: use whereIn with subquery for IDs and direct codes
+                $query->where(function($q) use ($cities) {
+                    $codes = collect($cities)->filter(fn($val) => !is_numeric($val))->values()->all();
+                    $ids = collect($cities)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                    if (!empty($codes)) {
+                        $q->orWhereHas('city', function($subQ) use ($codes) {
+                            $subQ->whereIn('code', $codes);
+                        });
+                    }
+                    if (!empty($ids)) {
+                        $q->orWhereIn('city_id', $ids);
+                    }
+                });
+            } elseif ($hasNumeric) {
+                // All numeric: filter by city ID
+                $query->whereIn('city_id', $cities);
+            } else {
+                // All strings: filter by city code
+                $query->whereHas('city', function($q) use ($cities) {
+                    $q->whereIn('code', $cities);
+                });
+            }
+        }
+
         // Waterbody filter (single or multiple)
         if ($request->has('waterbody')) {
             $waterbodies = $this->parseFilterValue($request->waterbody);
@@ -323,6 +357,44 @@ class BeachFilterService
             $placeholders = implode(',', array_fill(0, count($islands), '?'));
             $conditions[] = "b.island_id IN ($placeholders)";
             $bindings = array_merge($bindings, $islands);
+        }
+
+        // City filter - supports both code and ID
+        if ($request->has('city')) {
+            $cities = $this->parseFilterValue($request->city);
+
+            // Check if values are numeric (IDs) or strings (codes)
+            $hasNumeric = collect($cities)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($cities)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                // Mixed: use OR condition for both IDs and codes
+                $codes = collect($cities)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($cities)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $subConditions = [];
+                if (!empty($codes)) {
+                    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+                    $subConditions[] = "city.code IN ($placeholders)";
+                    $bindings = array_merge($bindings, $codes);
+                }
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $subConditions[] = "b.city_id IN ($placeholders)";
+                    $bindings = array_merge($bindings, $ids);
+                }
+                $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+            } elseif ($hasNumeric) {
+                // All numeric: filter by city ID
+                $placeholders = implode(',', array_fill(0, count($cities), '?'));
+                $conditions[] = "b.city_id IN ($placeholders)";
+                $bindings = array_merge($bindings, $cities);
+            } else {
+                // All strings: filter by city code
+                $placeholders = implode(',', array_fill(0, count($cities), '?'));
+                $conditions[] = "city.code IN ($placeholders)";
+                $bindings = array_merge($bindings, $cities);
+            }
         }
 
         // Waterbody filter

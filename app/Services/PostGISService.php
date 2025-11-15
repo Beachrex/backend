@@ -58,6 +58,7 @@ class PostGISService
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN media m ON b.id = m.mediable_id
                 AND m.mediable_type = 'App\\Models\\Beach'
                 AND m.media_collection_id = 1
@@ -120,6 +121,7 @@ class PostGISService
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN media m ON b.id = m.mediable_id
                 AND m.mediable_type = 'App\\Models\\Beach'
                 AND m.media_collection_id = 1
@@ -193,6 +195,7 @@ class PostGISService
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN city ON b.city_id = city.id
             LEFT JOIN media m ON b.id = m.mediable_id
                 AND m.mediable_type = 'App\\Models\\Beach'
                 AND m.media_collection_id = 1
