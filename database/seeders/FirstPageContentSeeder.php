@@ -411,6 +411,22 @@ class FirstPageContentSeeder extends Seeder
                 'description' => $data['description'],
             ]);
         }
+
+        // Add accommodation images
+        $accommodationImages = [
+            ['path' => 'img/first-page/accommodation-1.png', 'name' => 'accommodation-1.png'],
+            ['path' => 'img/first-page/accommodation-2.png', 'name' => 'accommodation-2.png'],
+            ['path' => 'img/first-page/accommodation-3.png', 'name' => 'accommodation-3.png'],
+            ['path' => 'img/first-page/accommodation-4.png', 'name' => 'accommodation-4.png'],
+            ['path' => 'img/first-page/accommodation-5.png', 'name' => 'accommodation-5.png'],
+            ['path' => 'img/first-page/accommodation-6.png', 'name' => 'accommodation-6.png'],
+            ['path' => 'img/first-page/accommodation-7.png', 'name' => 'accommodation-7.png'],
+            ['path' => 'img/first-page/accommodation-8.png', 'name' => 'accommodation-8.png'],
+        ];
+
+        foreach ($accommodationImages as $index => $image) {
+            $this->createMediaRecordWithOrder($section, 'image', $image['path'], $image['name'], null, $index === 0, $index);
+        }
     }
 
     private function createSection5(): void
@@ -598,6 +614,14 @@ class FirstPageContentSeeder extends Seeder
      */
     private function createMediaRecord($model, string $typeCode, string $filePath, string $fileName, string $collectionCode = null): void
     {
+        $this->createMediaRecordWithOrder($model, $typeCode, $filePath, $fileName, $collectionCode, true, 0);
+    }
+
+    /**
+     * Create a media record with custom order and is_primary
+     */
+    private function createMediaRecordWithOrder($model, string $typeCode, string $filePath, string $fileName, string $collectionCode = null, bool $isPrimary = true, int $order = 0): void
+    {
         $mediaType = MediaType::where('code', $typeCode)->first();
 
         if (!$mediaType) {
@@ -623,8 +647,8 @@ class FirstPageContentSeeder extends Seeder
             'size' => 0, // Size unknown for external files
             'width' => null,
             'height' => null,
-            'is_primary' => true,
-            'order' => 0,
+            'is_primary' => $isPrimary,
+            'order' => $order,
             'status_id' => 1,
         ]);
     }
