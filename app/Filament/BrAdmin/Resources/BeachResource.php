@@ -453,6 +453,56 @@ class BeachResource extends Resource
                                 ->body(count($records) . ' beach(es) waterbody updated successfully.')
                         ),
 
+                    // AI Translation
+                    Tables\Actions\BulkAction::make('translateBeaches')
+                        ->label('Translate to All Languages')
+                        ->icon('heroicon-o-language')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Translate Selected Beaches')
+                        ->modalDescription(fn ($records) => 'This will translate ' . count($records) . ' beach(es) to all missing languages using AI. This may take a few minutes.')
+                        ->modalSubmitActionLabel('Start Translation')
+                        ->action(function ($records) {
+                            $totalTranslated = 0;
+                            $beachesProcessed = 0;
+
+                            foreach ($records as $beach) {
+                                try {
+                                    $beforeCount = $beach->translations()->count();
+
+                                    \Illuminate\Support\Facades\Artisan::call('beaches:translate', [
+                                        '--beach-id' => $beach->id,
+                                    ]);
+
+                                    $afterCount = $beach->fresh()->translations()->count();
+                                    $translated = $afterCount - $beforeCount;
+
+                                    if ($translated > 0) {
+                                        $totalTranslated += $translated;
+                                        $beachesProcessed++;
+                                    }
+                                } catch (\Exception $e) {
+                                    // Continue with next beach if one fails
+                                    continue;
+                                }
+                            }
+
+                            if ($totalTranslated > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->success()
+                                    ->title('Translation Completed!')
+                                    ->body("Successfully translated {$beachesProcessed} beach(es) with {$totalTranslated} new translation(s).")
+                                    ->send();
+                            } else {
+                                \Filament\Notifications\Notification::make()
+                                    ->info()
+                                    ->title('No Translation Needed')
+                                    ->body('All selected beaches already have complete translations.')
+                                    ->send();
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
