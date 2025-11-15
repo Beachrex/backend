@@ -326,13 +326,18 @@ const response = await fetch(
 - Single database query with all relationships
 - Optimized for performance
 
-### ✅ Spatial Navigation (PostGIS)
-- Automatically includes `previous` and `next` beaches based on **spatial proximity**
-- Uses PostGIS `ST_Distance` for accurate geographic calculations
-- Returns the 2 nearest beaches (excluding current beach)
-- **NOT based on ID** - based on actual geographic distance
-- Perfect for "Explore Nearby Beaches" pagination
-- Includes distance in kilometers for each navigation beach
+### ✅ Region-Based ID Navigation
+- Automatically includes `previous` and `next` beaches based on **region and ID order**
+- **Previous**: Beach with highest ID that is **lower** than current beach ID in the same region
+- **Next**: Beach with lowest ID that is **higher** than current beach ID in the same region
+- **First beach in region**: `previous = null` (no beach before it)
+- **Last beach in region**: `next = null` (no beach after it)
+- **100% consistent bidirectional navigation** - clicking "next" then "previous" always returns you to the original beach
+- Keeps all beaches within the same region together (e.g., all Split-Dalmatia beaches stay together)
+- Prevents showing beaches from other regions
+- No infinite loops - clear start and end of each region's beach list
+- Includes actual distance in kilometers calculated using PostGIS for display purposes
+- Only returns active beaches (status_id = 1)
 
 ## When to Add Specialized Endpoints
 

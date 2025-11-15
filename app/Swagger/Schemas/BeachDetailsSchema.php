@@ -283,12 +283,12 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(
  *         property="navigation",
  *         type="object",
- *         description="Previous and next beaches based on spatial proximity (PostGIS)",
+ *         description="Previous and next beaches based on region and ID order. Provides consistent bidirectional navigation within the same region.",
  *         @OA\Property(
  *             property="previous",
  *             type="object",
  *             nullable=true,
- *             description="Nearest beach (spatially closest)",
+ *             description="Beach with highest ID lower than current beach in same region (null if first beach in region)",
  *             @OA\Property(property="id", type="integer", example=122),
  *             @OA\Property(property="name", type="string", example="Nearby Beach 1"),
  *             @OA\Property(property="slug", type="string", example="nearby-beach-1"),
@@ -301,7 +301,7 @@ namespace App\Swagger\Schemas;
  *             property="next",
  *             type="object",
  *             nullable=true,
- *             description="Second nearest beach (spatially)",
+ *             description="Beach with lowest ID higher than current beach in same region (null if last beach in region)",
  *             @OA\Property(property="id", type="integer", example=124),
  *             @OA\Property(property="name", type="string", example="Nearby Beach 2"),
  *             @OA\Property(property="slug", type="string", example="nearby-beach-2"),

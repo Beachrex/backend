@@ -6125,10 +6125,10 @@
                         "type": "object"
                     },
                     "navigation": {
-                        "description": "Previous and next beaches based on spatial proximity (PostGIS)",
+                        "description": "Previous and next beaches based on region and ID order. Provides consistent bidirectional navigation within the same region.",
                         "properties": {
                             "previous": {
-                                "description": "Nearest beach (spatially closest)",
+                                "description": "Beach with highest ID lower than current beach in same region (null if first beach in region)",
                                 "properties": {
                                     "id": {
                                         "type": "integer",
@@ -6167,7 +6167,7 @@
                                 "nullable": true
                             },
                             "next": {
-                                "description": "Second nearest beach (spatially)",
+                                "description": "Beach with lowest ID higher than current beach in same region (null if last beach in region)",
                                 "properties": {
                                     "id": {
                                         "type": "integer",
