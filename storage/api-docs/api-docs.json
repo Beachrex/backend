@@ -6155,6 +6155,12 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 1.25
+                                    },
+                                    "main_image": {
+                                        "description": "Main beach image path (prepend CDN URL)",
+                                        "type": "string",
+                                        "example": "img/beaches/beach-folder/image.jpg",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object",
@@ -6188,6 +6194,12 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 2.5
+                                    },
+                                    "main_image": {
+                                        "description": "Main beach image path (prepend CDN URL)",
+                                        "type": "string",
+                                        "example": "img/beaches/beach-folder/image.jpg",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object",

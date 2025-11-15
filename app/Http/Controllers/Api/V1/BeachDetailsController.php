@@ -187,10 +187,36 @@ class BeachDetailsController extends Controller
         $nearestBeaches = DB::select("
             SELECT
                 b.id,
+                b.folder_name,
+                b.mobile_upload,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.slug, bt_en.slug) as slug,
                 b.latitude,
                 b.longitude,
+                COALESCE(
+                    (SELECT m.file_name
+                     FROM media m
+                     INNER JOIN media_types mt ON m.media_type_id = mt.id
+                     INNER JOIN media_collections mc ON m.media_collection_id = mc.id
+                     WHERE m.mediable_id = b.id
+                       AND m.mediable_type = 'App\\Models\\Beach'
+                       AND mt.code = 'image'
+                       AND mc.code = 'beach_gallery'
+                       AND m.status_id = 1
+                       AND m.is_primary = TRUE
+                     LIMIT 1),
+                    (SELECT m.file_name
+                     FROM media m
+                     INNER JOIN media_types mt ON m.media_type_id = mt.id
+                     INNER JOIN media_collections mc ON m.media_collection_id = mc.id
+                     WHERE m.mediable_id = b.id
+                       AND m.mediable_type = 'App\\Models\\Beach'
+                       AND mt.code = 'image'
+                       AND mc.code = 'beach_gallery'
+                       AND m.status_id = 1
+                     ORDER BY m.order, m.created_at
+                     LIMIT 1)
+                ) as main_image,
                 ST_Distance(
                     ST_Transform(b.location, 3857),
                     ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
@@ -225,6 +251,7 @@ class BeachDetailsController extends Controller
             'latitude' => $nearestBeaches[0]->latitude,
             'longitude' => $nearestBeaches[0]->longitude,
             'distance_km' => round($nearestBeaches[0]->distance_km, 2),
+            'main_image' => $this->formatMainImage($nearestBeaches[0]),
         ] : null;
 
         $next = isset($nearestBeaches[1]) ? [
@@ -234,12 +261,28 @@ class BeachDetailsController extends Controller
             'latitude' => $nearestBeaches[1]->latitude,
             'longitude' => $nearestBeaches[1]->longitude,
             'distance_km' => round($nearestBeaches[1]->distance_km, 2),
+            'main_image' => $this->formatMainImage($nearestBeaches[1]),
         ] : null;
 
         return [
             'previous' => $previous,
             'next' => $next,
         ];
+    }
+
+    /**
+     * Format main image path for navigation beaches
+     */
+    private function formatMainImage($beach): ?string
+    {
+        if (!$beach->main_image || !$beach->folder_name) {
+            return null;
+        }
+
+        // Determine the path based on mobile_upload flag
+        $path = $beach->mobile_upload ? 'img/beaches_mobile/' : 'img/beaches/';
+
+        return $path . $beach->folder_name . '/' . $beach->main_image;
     }
 }
 

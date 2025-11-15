@@ -294,7 +294,8 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="slug", type="string", example="nearby-beach-1"),
  *             @OA\Property(property="latitude", type="string", example="42.5900000"),
  *             @OA\Property(property="longitude", type="string", example="18.2200000"),
- *             @OA\Property(property="distance_km", type="number", format="float", example=1.25, description="Distance in kilometers")
+ *             @OA\Property(property="distance_km", type="number", format="float", example=1.25, description="Distance in kilometers"),
+ *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)")
  *         ),
  *         @OA\Property(
  *             property="next",
@@ -306,7 +307,8 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="slug", type="string", example="nearby-beach-2"),
  *             @OA\Property(property="latitude", type="string", example="42.6000000"),
  *             @OA\Property(property="longitude", type="string", example="18.2400000"),
- *             @OA\Property(property="distance_km", type="number", format="float", example=2.50, description="Distance in kilometers")
+ *             @OA\Property(property="distance_km", type="number", format="float", example=2.50, description="Distance in kilometers"),
+ *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)")
  *         )
  *     )
  * )

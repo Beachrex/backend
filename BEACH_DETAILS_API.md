@@ -233,7 +233,8 @@ The response is organized into logical sections for easy frontend consumption:
         "slug": "nearby-beach-1",
         "latitude": "42.5900000",
         "longitude": "18.2200000",
-        "distance_km": 1.25
+        "distance_km": 1.25,
+        "main_image": "img/beaches/nearby-beach-1/photo.jpg"
       },
       "next": {
         "id": 124,
@@ -241,7 +242,8 @@ The response is organized into logical sections for easy frontend consumption:
         "slug": "nearby-beach-2",
         "latitude": "42.6000000",
         "longitude": "18.2400000",
-        "distance_km": 2.50
+        "distance_km": 2.50,
+        "main_image": "img/beaches/nearby-beach-2/photo.jpg"
       }
     }
   }
@@ -275,11 +277,13 @@ console.log(data.facilities.culinary_offers); // Array of restaurants, bars, etc
 if (data.navigation.previous) {
   console.log(`Previous beach: ${data.navigation.previous.name} (${data.navigation.previous.distance_km} km away)`);
   // Link to: /beaches/${data.navigation.previous.slug}
+  // Image: ${CDN_URL}/${data.navigation.previous.main_image}
 }
 
 if (data.navigation.next) {
   console.log(`Next beach: ${data.navigation.next.name} (${data.navigation.next.distance_km} km away)`);
   // Link to: /beaches/${data.navigation.next.slug}
+  // Image: ${CDN_URL}/${data.navigation.next.main_image}
 }
 ```
 
@@ -357,6 +361,50 @@ GET /api/v1/beach-details/{id}/activities   # Activities + user types
 - Harder to keep data consistent
 - More API endpoints to maintain
 - Actually transfers MORE data (HTTP overhead × 4)
+
+## Frontend Implementation Example
+
+### Beach Navigation with Images
+
+```tsx
+const CDN_URL = 'https://beachrex.fra1.digitaloceanspaces.com/public';
+
+<div className="beach-navigation">
+  {data.navigation.previous && (
+    <Link href={`/beaches/${data.navigation.previous.slug}`} className="nav-card">
+      {data.navigation.previous.main_image && (
+        <img
+          src={`${CDN_URL}/${data.navigation.previous.main_image}`}
+          alt={data.navigation.previous.name}
+          className="nav-thumbnail"
+        />
+      )}
+      <div className="nav-info">
+        <span className="nav-label">← Previous Beach</span>
+        <h4>{data.navigation.previous.name}</h4>
+        <span className="distance">{data.navigation.previous.distance_km} km away</span>
+      </div>
+    </Link>
+  )}
+
+  {data.navigation.next && (
+    <Link href={`/beaches/${data.navigation.next.slug}`} className="nav-card">
+      <div className="nav-info">
+        <span className="nav-label">Next Beach →</span>
+        <h4>{data.navigation.next.name}</h4>
+        <span className="distance">{data.navigation.next.distance_km} km away</span>
+      </div>
+      {data.navigation.next.main_image && (
+        <img
+          src={`${CDN_URL}/${data.navigation.next.main_image}`}
+          alt={data.navigation.next.name}
+          className="nav-thumbnail"
+        />
+      )}
+    </Link>
+  )}
+</div>
+```
 
 ## Conclusion
 
