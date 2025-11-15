@@ -74,23 +74,23 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="waterbody",
      *         in="query",
-     *         description="Filter by waterbody ID(s). Can be single value or array",
+     *         description="Filter by waterbody code(s) or ID(s). Supports: single value (waterbody=sea), comma-separated (waterbody=sea,lake), or array (waterbody[]=sea&waterbody[]=lake). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="sea,lake")
      *     ),
      *     @OA\Parameter(
      *         name="beach_type",
      *         in="query",
-     *         description="Filter by beach type ID(s). Can be single value or array",
+     *         description="Filter by beach type code(s) or ID(s). Supports: single value (beach_type=sand), comma-separated (beach_type=sand,pebble), or array (beach_type[]=sand&beach_type[]=pebble). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="sand,pebble")
      *     ),
      *     @OA\Parameter(
      *         name="user_type",
      *         in="query",
-     *         description="Filter by user type ID(s). Can be single value or array",
+     *         description="Filter by user type code(s) or ID(s). Supports: single value (user_type=family), comma-separated (user_type=family,couple), or array (user_type[]=family&user_type[]=couple). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="family,couple")
      *     ),
      *     @OA\Parameter(
      *         name="region",
@@ -116,9 +116,9 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="accessibility",
      *         in="query",
-     *         description="Filter by accessibility ID(s). Can be single value or array",
+     *         description="Filter by accessibility code(s) or ID(s). Supports: single value (accessibility=easy), comma-separated (accessibility=easy,moderate), or array (accessibility[]=easy&accessibility[]=moderate). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="easy,moderate")
      *     ),
      *     @OA\Parameter(
      *         name="parking",
@@ -130,37 +130,37 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="parking_capacity",
      *         in="query",
-     *         description="Filter by parking capacity ID(s). Can be single value or array",
+     *         description="Filter by parking capacity code(s) or ID(s). Supports: single value (parking_capacity=large), comma-separated (parking_capacity=large,medium), or array (parking_capacity[]=large&parking_capacity[]=medium). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="large,medium")
      *     ),
      *     @OA\Parameter(
      *         name="beach_inclination",
      *         in="query",
-     *         description="Filter by beach inclination ID(s). Can be single value or array",
+     *         description="Filter by beach inclination code(s) or ID(s). Supports: single value (beach_inclination=gentle), comma-separated (beach_inclination=gentle,steep), or array (beach_inclination[]=gentle&beach_inclination[]=steep). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="gentle,steep")
      *     ),
      *     @OA\Parameter(
      *         name="swimming_depth",
      *         in="query",
-     *         description="Filter by swimming depth ID(s). Can be single value or array",
+     *         description="Filter by swimming depth code(s) or ID(s). Supports: single value (swimming_depth=shallow), comma-separated (swimming_depth=shallow,deep), or array (swimming_depth[]=shallow&swimming_depth[]=deep). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="shallow,deep")
      *     ),
      *     @OA\Parameter(
      *         name="occupancy_rate",
      *         in="query",
-     *         description="Filter by occupancy rate ID(s). Can be single value or array",
+     *         description="Filter by occupancy rate code(s) or ID(s). Supports: single value (occupancy_rate=low), comma-separated (occupancy_rate=low,medium), or array (occupancy_rate[]=low&occupancy_rate[]=medium). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="low,medium")
      *     ),
      *     @OA\Parameter(
      *         name="area_description",
      *         in="query",
-     *         description="Filter by area description ID(s). Can be single value or array",
+     *         description="Filter by area description code(s) or ID(s). Supports: single value (area_description=urban), comma-separated (area_description=urban,rural), or array (area_description[]=urban&area_description[]=rural). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="urban,rural")
      *     ),
      *     @OA\Parameter(
      *         name="has_swimming_pool",
@@ -179,44 +179,44 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="accommodation_around",
      *         in="query",
-     *         description="Filter by accommodation around ID(s). Can be single value or array",
+     *         description="Filter by accommodation around code(s) or ID(s). Supports: single value (accommodation_around=hotel), comma-separated (accommodation_around=hotel,apartment), or array (accommodation_around[]=hotel&accommodation_around[]=apartment). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="hotel,apartment")
      *     ),
      *     @OA\Parameter(
      *         name="culinary_offer",
      *         in="query",
-     *         description="Filter by culinary offer ID(s). Can be single value or array",
+     *         description="Filter by culinary offer code(s) or ID(s). Supports: single value (culinary_offer=restaurant), comma-separated (culinary_offer=restaurant,bar), or array (culinary_offer[]=restaurant&culinary_offer[]=bar). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="restaurant,bar")
      *     ),
      *     @OA\Parameter(
      *         name="location_infrastructure",
      *         in="query",
-     *         description="Filter by location infrastructure ID(s). Can be single value or array",
+     *         description="Filter by location infrastructure code(s) or ID(s). Supports: single value (location_infrastructure=shower), comma-separated (location_infrastructure=shower,toilet), or array (location_infrastructure[]=shower&location_infrastructure[]=toilet). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="shower,toilet")
      *     ),
      *     @OA\Parameter(
      *         name="natural_location_condition",
      *         in="query",
-     *         description="Filter by natural location condition ID(s). Can be single value or array",
+     *         description="Filter by natural location condition code(s) or ID(s). Supports: single value (natural_location_condition=shaded), comma-separated (natural_location_condition=shaded,sunny), or array (natural_location_condition[]=shaded&natural_location_condition[]=sunny). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="shaded,sunny")
      *     ),
      *     @OA\Parameter(
      *         name="sporting_activity",
      *         in="query",
-     *         description="Filter by sporting activity ID(s). Can be single value or array",
+     *         description="Filter by sporting activity code(s) or ID(s). Supports: single value (sporting_activity=diving), comma-separated (sporting_activity=diving,surfing), or array (sporting_activity[]=diving&sporting_activity[]=surfing). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="diving,surfing")
      *     ),
      *     @OA\Parameter(
      *         name="underwater_characteristic",
      *         in="query",
-     *         description="Filter by underwater characteristic ID(s). Can be single value or array",
+     *         description="Filter by underwater characteristic code(s) or ID(s). Supports: single value (underwater_characteristic=coral), comma-separated (underwater_characteristic=coral,rocks), or array (underwater_characteristic[]=coral&underwater_characteristic[]=rocks). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="coral,rocks")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -467,23 +467,23 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="waterbody",
      *         in="query",
-     *         description="Filter by waterbody ID(s). Can be single value or array",
+     *         description="Filter by waterbody code(s) or ID(s). Supports: single value (waterbody=sea), comma-separated (waterbody=sea,lake), or array (waterbody[]=sea&waterbody[]=lake). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="sea,lake")
      *     ),
      *     @OA\Parameter(
      *         name="beach_type",
      *         in="query",
-     *         description="Filter by beach type ID(s). Can be single value or array",
+     *         description="Filter by beach type code(s) or ID(s). Supports: single value (beach_type=sand), comma-separated (beach_type=sand,pebble), or array (beach_type[]=sand&beach_type[]=pebble). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="sand,pebble")
      *     ),
      *     @OA\Parameter(
      *         name="user_type",
      *         in="query",
-     *         description="Filter by user type ID(s). Can be single value or array",
+     *         description="Filter by user type code(s) or ID(s). Supports: single value (user_type=family), comma-separated (user_type=family,couple), or array (user_type[]=family&user_type[]=couple). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="family,couple")
      *     ),
      *     @OA\Parameter(
      *         name="region",
@@ -509,9 +509,9 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="accessibility",
      *         in="query",
-     *         description="Filter by accessibility ID(s). Can be single value or array",
+     *         description="Filter by accessibility code(s) or ID(s). Supports: single value (accessibility=easy), comma-separated (accessibility=easy,moderate), or array (accessibility[]=easy&accessibility[]=moderate). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="easy,moderate")
      *     ),
      *     @OA\Parameter(
      *         name="parking",
@@ -523,37 +523,37 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="parking_capacity",
      *         in="query",
-     *         description="Filter by parking capacity ID(s). Can be single value or array",
+     *         description="Filter by parking capacity code(s) or ID(s). Supports: single value (parking_capacity=large), comma-separated (parking_capacity=large,medium), or array (parking_capacity[]=large&parking_capacity[]=medium). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="large,medium")
      *     ),
      *     @OA\Parameter(
      *         name="beach_inclination",
      *         in="query",
-     *         description="Filter by beach inclination ID(s). Can be single value or array",
+     *         description="Filter by beach inclination code(s) or ID(s). Supports: single value (beach_inclination=gentle), comma-separated (beach_inclination=gentle,steep), or array (beach_inclination[]=gentle&beach_inclination[]=steep). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="gentle,steep")
      *     ),
      *     @OA\Parameter(
      *         name="swimming_depth",
      *         in="query",
-     *         description="Filter by swimming depth ID(s). Can be single value or array",
+     *         description="Filter by swimming depth code(s) or ID(s). Supports: single value (swimming_depth=shallow), comma-separated (swimming_depth=shallow,deep), or array (swimming_depth[]=shallow&swimming_depth[]=deep). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="shallow,deep")
      *     ),
      *     @OA\Parameter(
      *         name="occupancy_rate",
      *         in="query",
-     *         description="Filter by occupancy rate ID(s). Can be single value or array",
+     *         description="Filter by occupancy rate code(s) or ID(s). Supports: single value (occupancy_rate=low), comma-separated (occupancy_rate=low,medium), or array (occupancy_rate[]=low&occupancy_rate[]=medium). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="low,medium")
      *     ),
      *     @OA\Parameter(
      *         name="area_description",
      *         in="query",
-     *         description="Filter by area description ID(s). Can be single value or array",
+     *         description="Filter by area description code(s) or ID(s). Supports: single value (area_description=urban), comma-separated (area_description=urban,rural), or array (area_description[]=urban&area_description[]=rural). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="urban,rural")
      *     ),
      *     @OA\Parameter(
      *         name="has_swimming_pool",
@@ -572,44 +572,44 @@ class PostGISController extends Controller
      *     @OA\Parameter(
      *         name="accommodation_around",
      *         in="query",
-     *         description="Filter by accommodation around ID(s). Can be single value or array",
+     *         description="Filter by accommodation around code(s) or ID(s). Supports: single value (accommodation_around=hotel), comma-separated (accommodation_around=hotel,apartment), or array (accommodation_around[]=hotel&accommodation_around[]=apartment). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="hotel,apartment")
      *     ),
      *     @OA\Parameter(
      *         name="culinary_offer",
      *         in="query",
-     *         description="Filter by culinary offer ID(s). Can be single value or array",
+     *         description="Filter by culinary offer code(s) or ID(s). Supports: single value (culinary_offer=restaurant), comma-separated (culinary_offer=restaurant,bar), or array (culinary_offer[]=restaurant&culinary_offer[]=bar). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="restaurant,bar")
      *     ),
      *     @OA\Parameter(
      *         name="location_infrastructure",
      *         in="query",
-     *         description="Filter by location infrastructure ID(s). Can be single value or array",
+     *         description="Filter by location infrastructure code(s) or ID(s). Supports: single value (location_infrastructure=shower), comma-separated (location_infrastructure=shower,toilet), or array (location_infrastructure[]=shower&location_infrastructure[]=toilet). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="shower,toilet")
      *     ),
      *     @OA\Parameter(
      *         name="natural_location_condition",
      *         in="query",
-     *         description="Filter by natural location condition ID(s). Can be single value or array",
+     *         description="Filter by natural location condition code(s) or ID(s). Supports: single value (natural_location_condition=shaded), comma-separated (natural_location_condition=shaded,sunny), or array (natural_location_condition[]=shaded&natural_location_condition[]=sunny). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="shaded,sunny")
      *     ),
      *     @OA\Parameter(
      *         name="sporting_activity",
      *         in="query",
-     *         description="Filter by sporting activity ID(s). Can be single value or array",
+     *         description="Filter by sporting activity code(s) or ID(s). Supports: single value (sporting_activity=diving), comma-separated (sporting_activity=diving,surfing), or array (sporting_activity[]=diving&sporting_activity[]=surfing). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="diving,surfing")
      *     ),
      *     @OA\Parameter(
      *         name="underwater_characteristic",
      *         in="query",
-     *         description="Filter by underwater characteristic ID(s). Can be single value or array",
+     *         description="Filter by underwater characteristic code(s) or ID(s). Supports: single value (underwater_characteristic=coral), comma-separated (underwater_characteristic=coral,rocks), or array (underwater_characteristic[]=coral&underwater_characteristic[]=rocks). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="coral,rocks")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(

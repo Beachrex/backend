@@ -75,23 +75,23 @@ class BeachController extends Controller
      *     @OA\Parameter(
      *         name="waterbody",
      *         in="query",
-     *         description="Filter by waterbody ID(s). Can be single value or array",
+     *         description="Filter by waterbody code(s) or ID(s). Supports: single value (waterbody=sea), comma-separated (waterbody=sea,lake), or array (waterbody[]=sea&waterbody[]=lake). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="sea,lake")
      *     ),
      *     @OA\Parameter(
      *         name="beach_type",
      *         in="query",
-     *         description="Filter by beach type ID(s). Supports: single value (beach_type=1), comma-separated (beach_type=1,2,3), or array (beach_type[]=1&beach_type[]=2)",
+     *         description="Filter by beach type code(s) or ID(s). Supports: single value (beach_type=sand), comma-separated (beach_type=sand,pebble), or array (beach_type[]=sand&beach_type[]=pebble). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="string", example="1,2,3")
+     *         @OA\Schema(type="string", example="sand,pebble")
      *     ),
      *     @OA\Parameter(
      *         name="user_type",
      *         in="query",
-     *         description="Filter by user type ID(s). Can be single value or array",
+     *         description="Filter by user type code(s) or ID(s). Supports: single value (user_type=family), comma-separated (user_type=family,couple), or array (user_type[]=family&user_type[]=couple). Can mix codes and IDs.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=1)
+     *         @OA\Schema(type="string", example="family,couple")
      *     ),
      *     @OA\Parameter(
      *         name="parking",
