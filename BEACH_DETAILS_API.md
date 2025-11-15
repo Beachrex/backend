@@ -224,6 +224,25 @@ The response is organized into logical sections for easy frontend consumption:
       },
       "created_at": "2024-01-15T10:30:00Z",
       "updated_at": "2024-01-20T14:45:00Z"
+    },
+
+    "navigation": {
+      "previous": {
+        "id": 122,
+        "name": "Nearby Beach 1",
+        "slug": "nearby-beach-1",
+        "latitude": "42.5900000",
+        "longitude": "18.2200000",
+        "distance_km": 1.25
+      },
+      "next": {
+        "id": 124,
+        "name": "Nearby Beach 2",
+        "slug": "nearby-beach-2",
+        "latitude": "42.6000000",
+        "longitude": "18.2400000",
+        "distance_km": 2.50
+      }
     }
   }
 }
@@ -251,6 +270,17 @@ console.log(data.basic_info.name);
 console.log(data.location.country.name);
 console.log(data.media.gallery); // Array of images
 console.log(data.facilities.culinary_offers); // Array of restaurants, bars, etc.
+
+// Navigation - spatially nearest beaches
+if (data.navigation.previous) {
+  console.log(`Previous beach: ${data.navigation.previous.name} (${data.navigation.previous.distance_km} km away)`);
+  // Link to: /beaches/${data.navigation.previous.slug}
+}
+
+if (data.navigation.next) {
+  console.log(`Next beach: ${data.navigation.next.name} (${data.navigation.next.distance_km} km away)`);
+  // Link to: /beaches/${data.navigation.next.slug}
+}
 ```
 
 ### Fetch by ID
@@ -291,6 +321,14 @@ const response = await fetch(
 - Uses eager loading to prevent N+1 queries
 - Single database query with all relationships
 - Optimized for performance
+
+### ✅ Spatial Navigation (PostGIS)
+- Automatically includes `previous` and `next` beaches based on **spatial proximity**
+- Uses PostGIS `ST_Distance` for accurate geographic calculations
+- Returns the 2 nearest beaches (excluding current beach)
+- **NOT based on ID** - based on actual geographic distance
+- Perfect for "Explore Nearby Beaches" pagination
+- Includes distance in kilometers for each navigation beach
 
 ## When to Add Specialized Endpoints
 

@@ -279,6 +279,35 @@ namespace App\Swagger\Schemas;
  *         ),
  *         @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-15T10:30:00Z"),
  *         @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-20T14:45:00Z")
+ *     ),
+ *     @OA\Property(
+ *         property="navigation",
+ *         type="object",
+ *         description="Previous and next beaches based on spatial proximity (PostGIS)",
+ *         @OA\Property(
+ *             property="previous",
+ *             type="object",
+ *             nullable=true,
+ *             description="Nearest beach (spatially closest)",
+ *             @OA\Property(property="id", type="integer", example=122),
+ *             @OA\Property(property="name", type="string", example="Nearby Beach 1"),
+ *             @OA\Property(property="slug", type="string", example="nearby-beach-1"),
+ *             @OA\Property(property="latitude", type="string", example="42.5900000"),
+ *             @OA\Property(property="longitude", type="string", example="18.2200000"),
+ *             @OA\Property(property="distance_km", type="number", format="float", example=1.25, description="Distance in kilometers")
+ *         ),
+ *         @OA\Property(
+ *             property="next",
+ *             type="object",
+ *             nullable=true,
+ *             description="Second nearest beach (spatially)",
+ *             @OA\Property(property="id", type="integer", example=124),
+ *             @OA\Property(property="name", type="string", example="Nearby Beach 2"),
+ *             @OA\Property(property="slug", type="string", example="nearby-beach-2"),
+ *             @OA\Property(property="latitude", type="string", example="42.6000000"),
+ *             @OA\Property(property="longitude", type="string", example="18.2400000"),
+ *             @OA\Property(property="distance_km", type="number", format="float", example=2.50, description="Distance in kilometers")
+ *         )
  *     )
  * )
  *

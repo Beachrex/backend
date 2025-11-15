@@ -7,6 +7,7 @@ use App\Http\Resources\BeachDetailsResource;
 use App\Models\Beach;
 use App\Models\BeachTranslation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -67,7 +68,17 @@ class BeachDetailsController extends Controller
         // Increment view counter
         $beach->increment('beach_views');
 
-        return new BeachDetailsResource($beach);
+        // Get next and previous beaches using PostGIS
+        $locale = app()->getLocale();
+        $navigation = $this->getNavigationBeaches($beach, $locale);
+
+        $resource = new BeachDetailsResource($beach);
+        $resourceArray = $resource->toArray($request);
+
+        // Add navigation to response
+        $resourceArray['navigation'] = $navigation;
+
+        return response()->json(['data' => $resourceArray]);
     }
 
     /**
@@ -156,6 +167,79 @@ class BeachDetailsController extends Controller
         ])
         ->where('status_id', 1) // Only active beaches
         ->find($beachId);
+    }
+
+    /**
+     * Get next and previous beaches based on spatial proximity using PostGIS
+     */
+    private function getNavigationBeaches(Beach $currentBeach, string $locale): array
+    {
+        // Return null navigation if beach doesn't have coordinates
+        if (!$currentBeach->latitude || !$currentBeach->longitude) {
+            return [
+                'previous' => null,
+                'next' => null,
+            ];
+        }
+
+        // Get the two nearest beaches (excluding current beach)
+        // Using PostGIS ST_Distance for accurate spatial calculations
+        $nearestBeaches = DB::select("
+            SELECT
+                b.id,
+                COALESCE(bt.name, bt_en.name) as name,
+                COALESCE(bt.slug, bt_en.slug) as slug,
+                b.latitude,
+                b.longitude,
+                ST_Distance(
+                    ST_Transform(b.location, 3857),
+                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                ) / 1000.0 as distance_km
+            FROM beach b
+            LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
+            LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            WHERE b.id != ?
+              AND b.status_id = 1
+              AND b.location IS NOT NULL
+              AND b.latitude IS NOT NULL
+              AND b.longitude IS NOT NULL
+            ORDER BY ST_Distance(
+                ST_Transform(b.location, 3857),
+                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+            )
+            LIMIT 2
+        ", [
+            $currentBeach->longitude,
+            $currentBeach->latitude,
+            $locale,
+            $currentBeach->id,
+            $currentBeach->longitude,
+            $currentBeach->latitude,
+        ]);
+
+        // Format the results
+        $previous = isset($nearestBeaches[0]) ? [
+            'id' => $nearestBeaches[0]->id,
+            'name' => $nearestBeaches[0]->name,
+            'slug' => $nearestBeaches[0]->slug,
+            'latitude' => $nearestBeaches[0]->latitude,
+            'longitude' => $nearestBeaches[0]->longitude,
+            'distance_km' => round($nearestBeaches[0]->distance_km, 2),
+        ] : null;
+
+        $next = isset($nearestBeaches[1]) ? [
+            'id' => $nearestBeaches[1]->id,
+            'name' => $nearestBeaches[1]->name,
+            'slug' => $nearestBeaches[1]->slug,
+            'latitude' => $nearestBeaches[1]->latitude,
+            'longitude' => $nearestBeaches[1]->longitude,
+            'distance_km' => round($nearestBeaches[1]->distance_km, 2),
+        ] : null;
+
+        return [
+            'previous' => $previous,
+            'next' => $next,
+        ];
     }
 }
 

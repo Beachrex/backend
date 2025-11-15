@@ -6123,6 +6123,78 @@
                             }
                         },
                         "type": "object"
+                    },
+                    "navigation": {
+                        "description": "Previous and next beaches based on spatial proximity (PostGIS)",
+                        "properties": {
+                            "previous": {
+                                "description": "Nearest beach (spatially closest)",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 122
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Nearby Beach 1"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "nearby-beach-1"
+                                    },
+                                    "latitude": {
+                                        "type": "string",
+                                        "example": "42.5900000"
+                                    },
+                                    "longitude": {
+                                        "type": "string",
+                                        "example": "18.2200000"
+                                    },
+                                    "distance_km": {
+                                        "description": "Distance in kilometers",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 1.25
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "next": {
+                                "description": "Second nearest beach (spatially)",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 124
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Nearby Beach 2"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "nearby-beach-2"
+                                    },
+                                    "latitude": {
+                                        "type": "string",
+                                        "example": "42.6000000"
+                                    },
+                                    "longitude": {
+                                        "type": "string",
+                                        "example": "18.2400000"
+                                    },
+                                    "distance_km": {
+                                        "description": "Distance in kilometers",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
                     }
                 },
                 "type": "object"
