@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachDetailsResource;
 use App\Models\Beach;
 use App\Models\BeachTranslation;
+use App\Services\CacheService;
+use App\Traits\CacheAware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class BeachDetailsController extends Controller
 {
+    use CacheAware;
     /**
      * @OA\Get(
      *     path="/api/v1/beach-details/{identifier}",
@@ -56,29 +59,44 @@ class BeachDetailsController extends Controller
      */
     public function show(Request $request, $identifier)
     {
-        // Determine if identifier is ID or slug
-        $beach = $this->findBeachByIdentifier($identifier);
+        $locale = app()->getLocale();
+        $cacheKey = "beach_details:{$locale}:{$identifier}";
 
-        if (!$beach) {
+        // Cache the beach details using BEACH_COUNT_TTL (5 minutes)
+        // Using shorter TTL because beach details can be updated frequently
+        $data = $this->cacheRemember($cacheKey, CacheService::BEACH_COUNT_TTL, function () use ($request, $identifier, $locale) {
+            // Determine if identifier is ID or slug
+            $beach = $this->findBeachByIdentifier($identifier);
+
+            if (!$beach) {
+                return null;
+            }
+
+            // Get next and previous beaches using PostGIS
+            $navigation = $this->getNavigationBeaches($beach, $locale);
+
+            $resource = new BeachDetailsResource($beach);
+            $resourceArray = $resource->toArray($request);
+
+            // Add navigation to response
+            $resourceArray['navigation'] = $navigation;
+
+            return $resourceArray;
+        });
+
+        if (!$data) {
             return response()->json([
                 'message' => 'Beach not found'
             ], 404);
         }
 
-        // Increment view counter
-        $beach->increment('beach_views');
+        // Increment view counter outside of cache (always increment)
+        $beach = $this->findBeachByIdentifier($identifier);
+        if ($beach) {
+            $beach->increment('beach_views');
+        }
 
-        // Get next and previous beaches using PostGIS
-        $locale = app()->getLocale();
-        $navigation = $this->getNavigationBeaches($beach, $locale);
-
-        $resource = new BeachDetailsResource($beach);
-        $resourceArray = $resource->toArray($request);
-
-        // Add navigation to response
-        $resourceArray['navigation'] = $navigation;
-
-        return response()->json(['data' => $resourceArray]);
+        return response()->json(['data' => $data]);
     }
 
     /**
