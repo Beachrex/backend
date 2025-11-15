@@ -102,13 +102,25 @@ class BeachController extends Controller
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="List of beaches",
+     *         description="List of beaches with map center coordinates",
      *         @OA\JsonContent(
      *             type="object",
      *             @OA\Property(
      *                 property="data",
      *                 type="array",
      *                 @OA\Items(ref="#/components/schemas/BeachSchema")
+     *             ),
+     *             @OA\Property(
+     *                 property="meta",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="center",
+     *                     type="object",
+     *                     description="Geographic center (centroid) of all filtered beaches, calculated using PostGIS ST_Centroid",
+     *                     @OA\Property(property="latitude", type="number", format="float", example=43.947149705303886, description="Center latitude"),
+     *                     @OA\Property(property="longitude", type="number", format="float", example=9.871903842707175, description="Center longitude")
+     *                 ),
+     *                 @OA\Property(property="total_beaches", type="integer", example=150, description="Total number of beaches returned (respects limit parameter)")
      *             )
      *         )
      *     )
@@ -161,9 +173,24 @@ class BeachController extends Controller
         // Apply filters
         $query = $this->filterService->applyFilters($query, $request);
 
+        // Calculate center coordinates using PostGIS ST_Centroid on all filtered beaches
+        $centerQuery = clone $query;
+        $center = $centerQuery
+            ->selectRaw('ST_Y(ST_Centroid(ST_Collect(location))) as center_lat, ST_X(ST_Centroid(ST_Collect(location))) as center_lng')
+            ->whereNotNull('location')
+            ->first();
+
         $beaches = $query->limit($limit)->get();
 
-        return BeachResource::collection($beaches);
+        return BeachResource::collection($beaches)->additional([
+            'meta' => [
+                'center' => [
+                    'latitude' => $center?->center_lat ? (float) $center->center_lat : null,
+                    'longitude' => $center?->center_lng ? (float) $center->center_lng : null,
+                ],
+                'total_beaches' => $beaches->count(),
+            ]
+        ]);
     }
 
     /**
