@@ -169,11 +169,17 @@ class PostGISService
      * @param float $minLon
      * @param float $maxLat
      * @param float $maxLon
+     * @param \Illuminate\Http\Request|null $request
      * @return \Illuminate\Support\Collection
      */
-    public function getBeachesInBoundingBox(float $minLat, float $minLon, float $maxLat, float $maxLon)
+    public function getBeachesInBoundingBox(float $minLat, float $minLon, float $maxLat, float $maxLon, ?Request $request = null)
     {
         $locale = app()->getLocale();
+
+        // Get filter conditions if request is provided
+        $filterData = $request ? $this->filterService->buildRawFilters($request) : ['sql' => '', 'bindings' => []];
+        $filterSql = $filterData['sql'];
+        $filterBindings = $filterData['bindings'];
 
         $results = DB::select("
             SELECT
@@ -206,8 +212,12 @@ class PostGISService
               AND b.status_id = 1
               AND b.latitude BETWEEN ? AND ?
               AND b.longitude BETWEEN ? AND ?
+              {$filterSql}
             ORDER BY COALESCE(bt.name, bt_en.name)
-        ", [$locale, $locale, $minLat, $maxLat, $minLon, $maxLon]);
+        ", array_merge(
+            [$locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
+            $filterBindings
+        ));
 
         return $this->formatBeachResults($results);
     }
@@ -299,6 +309,88 @@ class PostGISService
                 'max_longitude' => (float) $stats->max_longitude
             ]
         ];
+    }
+
+    /**
+     * Calculate centroid of beaches within radius
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @param float $radiusKm
+     * @param \Illuminate\Http\Request|null $request
+     * @return object|null
+     */
+    public function calculateCentroid(float $latitude, float $longitude, float $radiusKm, ?Request $request = null)
+    {
+        // Get filter conditions if request is provided
+        $filterData = $request ? $this->filterService->buildRawFilters($request) : ['sql' => '', 'bindings' => []];
+        $filterSql = $filterData['sql'];
+        $filterBindings = $filterData['bindings'];
+
+        $result = DB::selectOne("
+            SELECT
+                ST_Y(ST_Centroid(ST_Collect(b.location))) as center_lat,
+                ST_X(ST_Centroid(ST_Collect(b.location))) as center_lng
+            FROM beach b
+            LEFT JOIN continents cont ON b.continent_code = cont.code
+            LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN city ON b.city_id = city.id
+            WHERE b.latitude IS NOT NULL
+              AND b.longitude IS NOT NULL
+              AND b.status_id = 1
+              AND b.location IS NOT NULL
+              AND ST_DWithin(
+                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
+                    ST_Transform(b.location, 3857),
+                    ?
+                  )
+              {$filterSql}
+        ", array_merge(
+            [$longitude, $latitude, $radiusKm * 1000],
+            $filterBindings
+        ));
+
+        return $result;
+    }
+
+    /**
+     * Calculate centroid of beaches within bounding box
+     *
+     * @param float $minLat
+     * @param float $minLon
+     * @param float $maxLat
+     * @param float $maxLon
+     * @param \Illuminate\Http\Request|null $request
+     * @return object|null
+     */
+    public function calculateCentroidForBoundingBox(float $minLat, float $minLon, float $maxLat, float $maxLon, ?Request $request = null)
+    {
+        // Get filter conditions if request is provided
+        $filterData = $request ? $this->filterService->buildRawFilters($request) : ['sql' => '', 'bindings' => []];
+        $filterSql = $filterData['sql'];
+        $filterBindings = $filterData['bindings'];
+
+        $result = DB::selectOne("
+            SELECT
+                ST_Y(ST_Centroid(ST_Collect(b.location))) as center_lat,
+                ST_X(ST_Centroid(ST_Collect(b.location))) as center_lng
+            FROM beach b
+            LEFT JOIN continents cont ON b.continent_code = cont.code
+            LEFT JOIN countries c ON b.country_code = c.code
+            LEFT JOIN city ON b.city_id = city.id
+            WHERE b.latitude IS NOT NULL
+              AND b.longitude IS NOT NULL
+              AND b.status_id = 1
+              AND b.location IS NOT NULL
+              AND b.latitude BETWEEN ? AND ?
+              AND b.longitude BETWEEN ? AND ?
+              {$filterSql}
+        ", array_merge(
+            [$minLat, $maxLat, $minLon, $maxLon],
+            $filterBindings
+        ));
+
+        return $result;
     }
 
     /**

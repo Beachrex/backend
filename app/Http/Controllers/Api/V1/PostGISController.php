@@ -93,7 +93,38 @@ class PostGISController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(response=200, description="Beaches found within radius")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Beaches found within radius with center coordinates",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/BeachSchema")
+     *             ),
+     *             @OA\Property(
+     *                 property="meta",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="search_center",
+     *                     type="object",
+     *                     description="The center point of the search radius (user-provided)",
+     *                     @OA\Property(property="latitude", type="number", format="float", example=46.0569),
+     *                     @OA\Property(property="longitude", type="number", format="float", example=14.5058)
+     *                 ),
+     *                 @OA\Property(
+     *                     property="results_center",
+     *                     type="object",
+     *                     description="Geographic center (centroid) of all beaches found within the radius, calculated using PostGIS ST_Centroid",
+     *                     @OA\Property(property="latitude", type="number", format="float", example=46.1234),
+     *                     @OA\Property(property="longitude", type="number", format="float", example=14.6789)
+     *                 ),
+     *                 @OA\Property(property="radius_km", type="number", format="float", example=50, description="Search radius in kilometers"),
+     *                 @OA\Property(property="count", type="integer", example=25, description="Number of beaches found")
+     *             )
+     *         )
+     *     )
      * )
      */
     public function beachesWithinRadius(Request $request): JsonResponse
@@ -113,11 +144,23 @@ class PostGISController extends Controller
             $request  // Pass the request for filtering
         );
 
+        // Calculate centroid of returned beaches
+        $centroid = $this->postGISService->calculateCentroid(
+            $request->latitude,
+            $request->longitude,
+            $request->radius,
+            $request
+        );
+
         return response()->json([
             'data' => $beaches,
             'meta' => [
-                'center' => ['latitude' => $request->latitude, 'longitude' => $request->longitude],
-                'radius_km' => $request->radius,
+                'search_center' => ['latitude' => (float) $request->latitude, 'longitude' => (float) $request->longitude],
+                'results_center' => [
+                    'latitude' => $centroid ? (float) $centroid->center_lat : null,
+                    'longitude' => $centroid ? (float) $centroid->center_lng : null
+                ],
+                'radius_km' => (float) $request->radius,
                 'count' => $beaches->count()
             ]
         ]);
@@ -282,7 +325,39 @@ class PostGISController extends Controller
      *         @OA\Schema(type="number", format="float", minimum=-180, maximum=180, example=16.0)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(response=200, description="Beaches found within bounding box")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Beaches found within bounding box with center coordinates",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/BeachSchema")
+     *             ),
+     *             @OA\Property(
+     *                 property="meta",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="bounding_box",
+     *                     type="object",
+     *                     description="The bounding box coordinates (user-provided)",
+     *                     @OA\Property(property="min_latitude", type="number", format="float", example=45.0),
+     *                     @OA\Property(property="min_longitude", type="number", format="float", example=13.0),
+     *                     @OA\Property(property="max_latitude", type="number", format="float", example=47.0),
+     *                     @OA\Property(property="max_longitude", type="number", format="float", example=16.0)
+     *                 ),
+     *                 @OA\Property(
+     *                     property="center",
+     *                     type="object",
+     *                     description="Geographic center (centroid) of all beaches found within the bounding box, calculated using PostGIS ST_Centroid",
+     *                     @OA\Property(property="latitude", type="number", format="float", example=46.0),
+     *                     @OA\Property(property="longitude", type="number", format="float", example=14.5)
+     *                 ),
+     *                 @OA\Property(property="count", type="integer", example=150, description="Number of beaches found")
+     *             )
+     *         )
+     *     )
      * )
      */
     public function beachesInBoundingBox(Request $request): JsonResponse
@@ -298,17 +373,31 @@ class PostGISController extends Controller
             $request->min_lat,
             $request->min_lon,
             $request->max_lat,
-            $request->max_lon
+            $request->max_lon,
+            $request  // Pass the request for filtering
+        );
+
+        // Calculate centroid of returned beaches
+        $centroid = $this->postGISService->calculateCentroidForBoundingBox(
+            $request->min_lat,
+            $request->min_lon,
+            $request->max_lat,
+            $request->max_lon,
+            $request
         );
 
         return response()->json([
             'data' => $beaches,
             'meta' => [
                 'bounding_box' => [
-                    'min_latitude' => $request->min_lat,
-                    'min_longitude' => $request->min_lon,
-                    'max_latitude' => $request->max_lat,
-                    'max_longitude' => $request->max_lon
+                    'min_latitude' => (float) $request->min_lat,
+                    'min_longitude' => (float) $request->min_lon,
+                    'max_latitude' => (float) $request->max_lat,
+                    'max_longitude' => (float) $request->max_lon
+                ],
+                'center' => [
+                    'latitude' => $centroid ? (float) $centroid->center_lat : null,
+                    'longitude' => $centroid ? (float) $centroid->center_lng : null
                 ],
                 'count' => $beaches->count()
             ]

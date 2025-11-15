@@ -3979,7 +3979,70 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Beaches found within radius"
+                        "description": "Beaches found within radius with center coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachSchema"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "search_center": {
+                                                    "description": "The center point of the search radius (user-provided)",
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 46.0569
+                                                        },
+                                                        "longitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 14.5058
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "results_center": {
+                                                    "description": "Geographic center (centroid) of all beaches found within the radius, calculated using PostGIS ST_Centroid",
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 46.1234
+                                                        },
+                                                        "longitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 14.6789
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "radius_km": {
+                                                    "description": "Search radius in kilometers",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 50
+                                                },
+                                                "count": {
+                                                    "description": "Number of beaches found",
+                                                    "type": "integer",
+                                                    "example": 25
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4181,7 +4244,74 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Beaches found within bounding box"
+                        "description": "Beaches found within bounding box with center coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachSchema"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "bounding_box": {
+                                                    "description": "The bounding box coordinates (user-provided)",
+                                                    "properties": {
+                                                        "min_latitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 45
+                                                        },
+                                                        "min_longitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 13
+                                                        },
+                                                        "max_latitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 47
+                                                        },
+                                                        "max_longitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 16
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "center": {
+                                                    "description": "Geographic center (centroid) of all beaches found within the bounding box, calculated using PostGIS ST_Centroid",
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 46
+                                                        },
+                                                        "longitude": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 14.5
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "count": {
+                                                    "description": "Number of beaches found",
+                                                    "type": "integer",
+                                                    "example": 150
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
