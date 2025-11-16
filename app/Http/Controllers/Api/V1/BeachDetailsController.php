@@ -254,10 +254,10 @@ class BeachDetailsController extends Controller
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
-            LEFT JOIN country ON b.country_code = country.code
-            LEFT JOIN continent ON country.continent_code = continent.code
-            LEFT JOIN continent_translation cont_t ON continent.code = cont_t.continent_code AND cont_t.locale = ?
-            LEFT JOIN continent_translation cont_t_en ON continent.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN countries ON b.country_code = countries.code
+            LEFT JOIN continents ON countries.continent_code = continents.code
+            LEFT JOIN continent_translation cont_t ON continents.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON continents.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
             LEFT JOIN country_translation country_t ON b.country_code = country_t.country_code AND country_t.locale = ?
             LEFT JOIN country_translation country_t_en ON b.country_code = country_t_en.country_code AND country_t_en.locale = 'en'
             LEFT JOIN region_translation region_t ON b.region_id = region_t.region_id AND region_t.locale = ?
@@ -334,10 +334,10 @@ class BeachDetailsController extends Controller
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
-            LEFT JOIN country ON b.country_code = country.code
-            LEFT JOIN continent ON country.continent_code = continent.code
-            LEFT JOIN continent_translation cont_t ON continent.code = cont_t.continent_code AND cont_t.locale = ?
-            LEFT JOIN continent_translation cont_t_en ON continent.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN countries ON b.country_code = countries.code
+            LEFT JOIN continents ON countries.continent_code = continents.code
+            LEFT JOIN continent_translation cont_t ON continents.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON continents.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
             LEFT JOIN country_translation country_t ON b.country_code = country_t.country_code AND country_t.locale = ?
             LEFT JOIN country_translation country_t_en ON b.country_code = country_t_en.country_code AND country_t_en.locale = 'en'
             LEFT JOIN region_translation region_t ON b.region_id = region_t.region_id AND region_t.locale = ?

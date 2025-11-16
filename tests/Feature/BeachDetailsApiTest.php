@@ -1,0 +1,350 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Beach;
+use App\Models\BeachTranslation;
+use App\Models\City;
+use App\Models\CityTranslation;
+use App\Models\Continent;
+use App\Models\ContinentTranslation;
+use App\Models\Country;
+use App\Models\CountryTranslation;
+use App\Models\Island;
+use App\Models\IslandTranslation;
+use App\Models\Region;
+use App\Models\RegionTranslation;
+use App\Models\Status;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class BeachDetailsApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Seed statuses
+        Status::insert([
+            ['id' => 1, 'name' => 'active'],
+            ['id' => 2, 'name' => 'inactive'],
+        ]);
+
+        // Seed continents
+        Continent::create(['code' => 'EU']);
+        ContinentTranslation::insert([
+            ['continent_code' => 'EU', 'locale' => 'en', 'name' => 'Europe', 'slug' => 'europe'],
+            ['continent_code' => 'EU', 'locale' => 'hr', 'name' => 'Europa', 'slug' => 'europa'],
+        ]);
+
+        // Seed countries
+        Country::create(['code' => 'HR', 'continent_code' => 'EU']);
+        CountryTranslation::insert([
+            ['country_code' => 'HR', 'locale' => 'en', 'name' => 'Croatia', 'slug' => 'croatia'],
+            ['country_code' => 'HR', 'locale' => 'hr', 'name' => 'Hrvatska', 'slug' => 'hrvatska'],
+        ]);
+
+        // Seed region
+        Region::insert([
+            ['id' => 1, 'code' => 'KV', 'country_code' => 'HR', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        RegionTranslation::insert([
+            ['region_id' => 1, 'locale' => 'en', 'name' => 'Kvarner', 'slug' => 'kvarner'],
+            ['region_id' => 1, 'locale' => 'hr', 'name' => 'Kvarner', 'slug' => 'kvarner'],
+        ]);
+
+        // Seed island
+        Island::insert([
+            ['id' => 1, 'code' => 'CRS', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        IslandTranslation::insert([
+            ['island_id' => 1, 'locale' => 'en', 'name' => 'Island Cres', 'slug' => 'island-cres'],
+            ['island_id' => 1, 'locale' => 'hr', 'name' => 'Otok Cres', 'slug' => 'otok-cres'],
+        ]);
+
+        // Seed city
+        City::insert([
+            ['id' => 1, 'code' => 'CRS', 'country_code' => 'HR', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        CityTranslation::insert([
+            ['city_id' => 1, 'locale' => 'en', 'name' => 'Cres', 'slug' => 'cres'],
+            ['city_id' => 1, 'locale' => 'hr', 'name' => 'Cres', 'slug' => 'cres'],
+        ]);
+    }
+
+    public function test_can_get_beach_details_by_slug()
+    {
+        // Create a beach
+        $beach = Beach::create([
+            'latitude' => '44.9522',
+            'longitude' => '14.4606',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'island_id' => 1,
+            'city_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'test-beach',
+            'mobile_upload' => false,
+        ]);
+
+        BeachTranslation::insert([
+            [
+                'beach_id' => $beach->id,
+                'locale' => 'en',
+                'name' => 'Test Beach',
+                'slug' => 'test-beach',
+                'description' => 'A beautiful test beach',
+            ],
+        ]);
+
+        $response = $this->getJson('/api/v1/beach-details/test-beach', [
+            'Accept-Language' => 'en',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'basic_info' => [
+                        'id',
+                        'name',
+                        'slug',
+                        'latitude',
+                        'longitude',
+                    ],
+                    'location' => [
+                        'continent',
+                        'country',
+                    ],
+                    'navigation' => [
+                        'previous',
+                        'next',
+                    ],
+                ],
+            ])
+            ->assertJson([
+                'data' => [
+                    'basic_info' => [
+                        'slug' => 'test-beach',
+                        'name' => 'Test Beach',
+                    ],
+                    'location' => [
+                        'country' => [
+                            'code' => 'HR',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_can_get_beach_details_by_id()
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522',
+            'longitude' => '14.4606',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'test-beach-2',
+            'mobile_upload' => false,
+        ]);
+
+        BeachTranslation::create([
+            'beach_id' => $beach->id,
+            'locale' => 'en',
+            'name' => 'Test Beach 2',
+            'slug' => 'test-beach-2',
+        ]);
+
+        $response = $this->getJson("/api/v1/beach-details/{$beach->id}", [
+            'Accept-Language' => 'en',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'basic_info' => [
+                        'id' => $beach->id,
+                        'name' => 'Test Beach 2',
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_beach_details_returns_404_for_nonexistent_beach()
+    {
+        $response = $this->getJson('/api/v1/beach-details/nonexistent-beach', [
+            'Accept-Language' => 'en',
+        ]);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'message' => 'Beach not found',
+            ]);
+    }
+
+    public function test_beach_details_returns_404_for_inactive_beach()
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522',
+            'longitude' => '14.4606',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 2, // inactive
+            'folder_name' => 'inactive-beach',
+            'mobile_upload' => false,
+        ]);
+
+        BeachTranslation::create([
+            'beach_id' => $beach->id,
+            'locale' => 'en',
+            'name' => 'Inactive Beach',
+            'slug' => 'inactive-beach',
+        ]);
+
+        $response = $this->getJson('/api/v1/beach-details/inactive-beach', [
+            'Accept-Language' => 'en',
+        ]);
+
+        $response->assertStatus(404);
+    }
+
+    public function test_beach_details_includes_navigation()
+    {
+        // Create three beaches in the same region
+        $beach1 = Beach::create([
+            'latitude' => '44.9522',
+            'longitude' => '14.4606',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'beach-1',
+            'mobile_upload' => false,
+        ]);
+        BeachTranslation::create([
+            'beach_id' => $beach1->id,
+            'locale' => 'en',
+            'name' => 'Beach 1',
+            'slug' => 'beach-1',
+        ]);
+
+        $beach2 = Beach::create([
+            'latitude' => '44.9600',
+            'longitude' => '14.4700',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'beach-2',
+            'mobile_upload' => false,
+        ]);
+        BeachTranslation::create([
+            'beach_id' => $beach2->id,
+            'locale' => 'en',
+            'name' => 'Beach 2',
+            'slug' => 'beach-2',
+        ]);
+
+        $beach3 = Beach::create([
+            'latitude' => '44.9700',
+            'longitude' => '14.4800',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'beach-3',
+            'mobile_upload' => false,
+        ]);
+        BeachTranslation::create([
+            'beach_id' => $beach3->id,
+            'locale' => 'en',
+            'name' => 'Beach 3',
+            'slug' => 'beach-3',
+        ]);
+
+        // Test middle beach has both previous and next
+        $response = $this->getJson('/api/v1/beach-details/beach-2', [
+            'Accept-Language' => 'en',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'navigation' => [
+                        'previous' => [
+                            'id',
+                            'name',
+                            'slug',
+                            'location' => [
+                                'continent_slug',
+                                'country_slug',
+                                'region_slug',
+                                'island_slug',
+                                'city_slug',
+                            ],
+                        ],
+                        'next' => [
+                            'id',
+                            'name',
+                            'slug',
+                            'location',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_beach_details_respects_locale()
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522',
+            'longitude' => '14.4606',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'multilang-beach',
+            'mobile_upload' => false,
+        ]);
+
+        BeachTranslation::insert([
+            [
+                'beach_id' => $beach->id,
+                'locale' => 'en',
+                'name' => 'Multilingual Beach',
+                'slug' => 'multilingual-beach',
+            ],
+            [
+                'beach_id' => $beach->id,
+                'locale' => 'hr',
+                'name' => 'Višejezična Plaža',
+                'slug' => 'visejezicna-plaza',
+            ],
+        ]);
+
+        // Test English
+        $response = $this->getJson('/api/v1/beach-details/multilingual-beach', [
+            'Accept-Language' => 'en',
+        ]);
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'basic_info' => [
+                        'name' => 'Multilingual Beach',
+                    ],
+                ],
+            ]);
+
+        // Test Croatian
+        $response = $this->getJson('/api/v1/beach-details/visejezicna-plaza', [
+            'Accept-Language' => 'hr',
+        ]);
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'basic_info' => [
+                        'name' => 'Višejezična Plaža',
+                    ],
+                ],
+            ]);
+    }
+}
+
