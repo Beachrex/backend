@@ -94,5 +94,15 @@ class Region extends Model
     {
         return $query->where('country_code', strtoupper($countryCode));
     }
+
+    /**
+     * Scope to get only regions that have active beaches (status_id = 1)
+     */
+    public function scopeWithBeaches($query)
+    {
+        return $query->whereHas('beaches', function ($q) {
+            $q->where('status_id', 1);
+        });
+    }
 }
 

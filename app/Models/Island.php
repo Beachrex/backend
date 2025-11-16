@@ -77,5 +77,15 @@ class Island extends Model
     {
         return $query->where('status_id', 1);
     }
+
+    /**
+     * Scope to get only islands that have active beaches (status_id = 1)
+     */
+    public function scopeWithBeaches($query)
+    {
+        return $query->whereHas('beaches', function ($q) {
+            $q->where('status_id', 1);
+        });
+    }
 }
 

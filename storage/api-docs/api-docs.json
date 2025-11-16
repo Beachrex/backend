@@ -1437,6 +1437,159 @@
                 }
             }
         },
+        "/api/v1/cities": {
+            "get": {
+                "tags": [
+                    "Cities"
+                ],
+                "summary": "Get all cities that have beaches",
+                "description": "Returns a list of cities that have at least one beach. Can be filtered by country.",
+                "operationId": "getCities",
+                "parameters": [
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter by country code (e.g., SI, HR, IT)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/City"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cities retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cities/{slug}": {
+            "get": {
+                "tags": [
+                    "Cities"
+                ],
+                "summary": "Get a specific city",
+                "description": "Returns a specific city by slug with its beaches count and country information. Can be filtered by country code.",
+                "operationId": "getCity",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "City slug (e.g., split, dubrovnik, pula)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "split"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter by country code (e.g., SI, HR, IT)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/City"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "City retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "City not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "City not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/continents": {
             "get": {
                 "tags": [
@@ -2387,6 +2540,139 @@
                     },
                     "500": {
                         "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/v1/islands": {
+            "get": {
+                "tags": [
+                    "Islands"
+                ],
+                "summary": "Get all islands that have beaches",
+                "description": "Returns a list of islands that have at least one beach.",
+                "operationId": "getIslands",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Island"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Islands retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/islands/{slug}": {
+            "get": {
+                "tags": [
+                    "Islands"
+                ],
+                "summary": "Get a specific island",
+                "description": "Returns a specific island by slug with its beaches count.",
+                "operationId": "getIsland",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Island slug (e.g., krk, brac, hvar)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "krk"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Island"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Island retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Island not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Island not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4779,6 +5065,159 @@
                 }
             }
         },
+        "/api/v1/regions": {
+            "get": {
+                "tags": [
+                    "Regions"
+                ],
+                "summary": "Get all regions that have beaches",
+                "description": "Returns a list of regions that have at least one beach. Can be filtered by country.",
+                "operationId": "getRegions",
+                "parameters": [
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter by country code (e.g., SI, HR, IT)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Region"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Regions retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/regions/{slug}": {
+            "get": {
+                "tags": [
+                    "Regions"
+                ],
+                "summary": "Get a specific region",
+                "description": "Returns a specific region by slug with its beaches count and country information. Can be filtered by country code.",
+                "operationId": "getRegion",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Region slug (e.g., istria, dalmatia)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "istria"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter by country code (e.g., SI, HR, IT)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Region"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Region retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Region not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Region not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/road-to-parking-types": {
             "get": {
                 "tags": [
@@ -5981,6 +6420,100 @@
                 },
                 "type": "object"
             },
+            "Article": {
+                "title": "Article",
+                "description": "Article model",
+                "properties": {
+                    "id": {
+                        "description": "Article ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Article code",
+                        "type": "string",
+                        "maxLength": 100,
+                        "example": "krk-history"
+                    },
+                    "category": {
+                        "description": "Article category",
+                        "type": "string",
+                        "enum": [
+                            "History",
+                            "Culture",
+                            "Cuisine",
+                            "Sights",
+                            "Nature",
+                            "Activities"
+                        ],
+                        "example": "History",
+                        "nullable": true
+                    },
+                    "title": {
+                        "description": "Article title (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "History of Krk Island"
+                    },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "history-of-krk-island"
+                    },
+                    "excerpt": {
+                        "description": "Short excerpt or summary of the article",
+                        "type": "string",
+                        "example": "Discover the rich history of Krk Island...",
+                        "nullable": true
+                    },
+                    "feature_image": {
+                        "description": "Feature image path",
+                        "type": "string",
+                        "example": "/storage/articles/krk-history.jpg",
+                        "nullable": true
+                    },
+                    "content": {
+                        "description": "Full article content (only included in single article view)",
+                        "type": "string",
+                        "example": "<p>The island of Krk has a long and fascinating history...</p>",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Badge": {
+                "title": "Badge",
+                "description": "Badge model",
+                "properties": {
+                    "id": {
+                        "description": "Badge ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Badge code",
+                        "type": "string",
+                        "maxLength": 100,
+                        "example": "krk-lamb"
+                    },
+                    "name": {
+                        "description": "Badge name (localized based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Krk Lamb"
+                    },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "krk-lamb"
+                    },
+                    "icon": {
+                        "description": "Icon identifier (Font Awesome class)",
+                        "type": "string",
+                        "example": "fa-solid fa-sheep",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "BayLength": {
                 "title": "Bay Length",
                 "description": "Bay length model (3m, 5m, 10m, etc.)",
@@ -7103,6 +7636,71 @@
                 },
                 "type": "object"
             },
+            "City": {
+                "title": "City",
+                "description": "City model",
+                "properties": {
+                    "id": {
+                        "description": "City ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "City code",
+                        "type": "string",
+                        "maxLength": 100,
+                        "example": "split"
+                    },
+                    "name": {
+                        "description": "City name",
+                        "type": "string",
+                        "example": "Split"
+                    },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "split"
+                    },
+                    "country_code": {
+                        "description": "Two-letter country code",
+                        "type": "string",
+                        "maxLength": 2,
+                        "example": "HR"
+                    },
+                    "region_id": {
+                        "description": "Region ID",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches in this city",
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "country": {
+                        "$ref": "#/components/schemas/Country"
+                    },
+                    "region": {
+                        "$ref": "#/components/schemas/Region"
+                    },
+                    "badges": {
+                        "description": "Badges associated with this city (when included)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Badge"
+                        }
+                    },
+                    "articles": {
+                        "description": "Articles associated with this city (when included)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Article"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "Continent": {
                 "title": "Continent",
                 "description": "Continent model",
@@ -7384,6 +7982,52 @@
                             "$ref": "#/components/schemas/FirstPageContentItem"
                         },
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Island": {
+                "title": "Island",
+                "description": "Island model",
+                "properties": {
+                    "id": {
+                        "description": "Island ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Island code",
+                        "type": "string",
+                        "example": "krk"
+                    },
+                    "name": {
+                        "description": "Island name",
+                        "type": "string",
+                        "example": "Krk"
+                    },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "krk"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches on this island",
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "badges": {
+                        "description": "Badges associated with this island (when included)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Badge"
+                        }
+                    },
+                    "articles": {
+                        "description": "Articles associated with this island (when included)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Article"
+                        }
                     }
                 },
                 "type": "object"
@@ -8037,6 +8681,62 @@
                 },
                 "type": "object"
             },
+            "Region": {
+                "title": "Region",
+                "description": "Region model",
+                "properties": {
+                    "id": {
+                        "description": "Region ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Region code",
+                        "type": "string",
+                        "maxLength": 100,
+                        "example": "istria"
+                    },
+                    "name": {
+                        "description": "Region name",
+                        "type": "string",
+                        "example": "Istria"
+                    },
+                    "slug": {
+                        "description": "Localized URL-friendly slug",
+                        "type": "string",
+                        "example": "istria"
+                    },
+                    "country_code": {
+                        "description": "Two-letter country code",
+                        "type": "string",
+                        "maxLength": 2,
+                        "example": "HR"
+                    },
+                    "beaches_count": {
+                        "description": "Number of beaches in this region",
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "country": {
+                        "$ref": "#/components/schemas/Country"
+                    },
+                    "badges": {
+                        "description": "Badges associated with this region (when included)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Badge"
+                        }
+                    },
+                    "articles": {
+                        "description": "Articles associated with this region (when included)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Article"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "RegisterResponse": {
                 "properties": {
                     "user": {
@@ -8599,6 +9299,10 @@
             "description": "API Endpoints for beach surface types (sand, stones, rock, etc.)"
         },
         {
+            "name": "Cities",
+            "description": "API Endpoints for cities"
+        },
+        {
             "name": "Continents",
             "description": "API Endpoints for continents"
         },
@@ -8615,12 +9319,20 @@
             "description": "API Endpoints for first page/homepage content sections"
         },
         {
+            "name": "Islands",
+            "description": "API Endpoints for islands"
+        },
+        {
             "name": "Media",
             "description": "Media management endpoints"
         },
         {
             "name": "Spatial",
             "description": "PostGIS spatial operations for beaches"
+        },
+        {
+            "name": "Regions",
+            "description": "API Endpoints for regions"
         },
         {
             "name": "Waterbodies",

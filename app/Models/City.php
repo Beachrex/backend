@@ -111,4 +111,14 @@ class City extends Model
     {
         return $query->where('region_id', $regionId);
     }
+
+    /**
+     * Scope to get only cities that have active beaches (status_id = 1)
+     */
+    public function scopeWithBeaches($query)
+    {
+        return $query->whereHas('beaches', function ($q) {
+            $q->where('status_id', 1);
+        });
+    }
 }

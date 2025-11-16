@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
 use App\Http\Controllers\Api\V1\ContinentController;
 use App\Http\Controllers\Api\V1\CountryController;
+use App\Http\Controllers\Api\V1\RegionController;
+use App\Http\Controllers\Api\V1\IslandController;
+use App\Http\Controllers\Api\V1\CityController;
 use App\Http\Controllers\Api\V1\PostGISController;
 use App\Http\Controllers\Api\V1\WaterbodyController;
 use App\Http\Controllers\Api\V1\BeachTypeController;
@@ -69,6 +72,18 @@ Route::prefix('api/v1')
         // Country routes
         Route::get('/countries', [CountryController::class, 'index']);
         Route::get('/countries/{code}', [CountryController::class, 'show']);
+
+        // Region routes
+        Route::get('/regions', [RegionController::class, 'index']);
+        Route::get('/regions/{slug}', [RegionController::class, 'show']);
+
+        // Island routes
+        Route::get('/islands', [IslandController::class, 'index']);
+        Route::get('/islands/{slug}', [IslandController::class, 'show']);
+
+        // City routes
+        Route::get('/cities', [CityController::class, 'index']);
+        Route::get('/cities/{slug}', [CityController::class, 'show']);
 
         // Waterbody routes
         Route::get('/waterbodies', [WaterbodyController::class, 'index']);
