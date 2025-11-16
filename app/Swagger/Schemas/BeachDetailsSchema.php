@@ -297,7 +297,17 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="latitude", type="string", example="42.5900000"),
  *             @OA\Property(property="longitude", type="string", example="18.2200000"),
  *             @OA\Property(property="distance_km", type="number", format="float", example=1.25, description="Distance in kilometers"),
- *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)")
+ *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)"),
+ *             @OA\Property(
+ *                 property="location",
+ *                 type="object",
+ *                 description="Location slugs for building beach URL",
+ *                 @OA\Property(property="continent_slug", type="string", nullable=true, example="europe"),
+ *                 @OA\Property(property="country_slug", type="string", nullable=true, example="croatia"),
+ *                 @OA\Property(property="region_slug", type="string", nullable=true, example="kvarner"),
+ *                 @OA\Property(property="island_slug", type="string", nullable=true, example="island-cres"),
+ *                 @OA\Property(property="city_slug", type="string", nullable=true, example="cres")
+ *             )
  *         ),
  *         @OA\Property(
  *             property="next",
@@ -310,7 +320,17 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="latitude", type="string", example="42.6000000"),
  *             @OA\Property(property="longitude", type="string", example="18.2400000"),
  *             @OA\Property(property="distance_km", type="number", format="float", example=2.50, description="Distance in kilometers"),
- *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)")
+ *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)"),
+ *             @OA\Property(
+ *                 property="location",
+ *                 type="object",
+ *                 description="Location slugs for building beach URL",
+ *                 @OA\Property(property="continent_slug", type="string", nullable=true, example="europe"),
+ *                 @OA\Property(property="country_slug", type="string", nullable=true, example="croatia"),
+ *                 @OA\Property(property="region_slug", type="string", nullable=true, example="kvarner"),
+ *                 @OA\Property(property="island_slug", type="string", nullable=true, example="island-cres"),
+ *                 @OA\Property(property="city_slug", type="string", nullable=true, example="cres")
+ *             )
  *         )
  *     )
  * )

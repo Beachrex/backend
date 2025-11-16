@@ -212,8 +212,17 @@ class BeachDetailsController extends Controller
                 b.mobile_upload,
                 b.latitude,
                 b.longitude,
+                b.country_code,
+                b.region_id,
+                b.island_id,
+                b.city_id,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.slug, bt_en.slug) as slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(country_t.slug, country_t_en.slug) as country_slug,
+                COALESCE(region_t.slug, region_t_en.slug) as region_slug,
+                COALESCE(island_t.slug, island_t_en.slug) as island_slug,
+                COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 COALESCE(
                     (SELECT m.file_name
                      FROM media m
@@ -245,6 +254,18 @@ class BeachDetailsController extends Controller
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN country ON b.country_code = country.code
+            LEFT JOIN continent ON country.continent_code = continent.code
+            LEFT JOIN continent_translation cont_t ON continent.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON continent.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN country_translation country_t ON b.country_code = country_t.country_code AND country_t.locale = ?
+            LEFT JOIN country_translation country_t_en ON b.country_code = country_t_en.country_code AND country_t_en.locale = 'en'
+            LEFT JOIN region_translation region_t ON b.region_id = region_t.region_id AND region_t.locale = ?
+            LEFT JOIN region_translation region_t_en ON b.region_id = region_t_en.region_id AND region_t_en.locale = 'en'
+            LEFT JOIN island_translation island_t ON b.island_id = island_t.island_id AND island_t.locale = ?
+            LEFT JOIN island_translation island_t_en ON b.island_id = island_t_en.island_id AND island_t_en.locale = 'en'
+            LEFT JOIN city_translation city_t ON b.city_id = city_t.city_id AND city_t.locale = ?
+            LEFT JOIN city_translation city_t_en ON b.city_id = city_t_en.city_id AND city_t_en.locale = 'en'
             WHERE b.region_id = ?
               AND b.id < ?
               AND b.status_id = 1
@@ -253,6 +274,11 @@ class BeachDetailsController extends Controller
         ", [
             $currentBeach->longitude,
             $currentBeach->latitude,
+            $locale,
+            $locale,
+            $locale,
+            $locale,
+            $locale,
             $locale,
             $currentBeach->region_id,
             $currentBeach->id,
@@ -266,8 +292,17 @@ class BeachDetailsController extends Controller
                 b.mobile_upload,
                 b.latitude,
                 b.longitude,
+                b.country_code,
+                b.region_id,
+                b.island_id,
+                b.city_id,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.slug, bt_en.slug) as slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(country_t.slug, country_t_en.slug) as country_slug,
+                COALESCE(region_t.slug, region_t_en.slug) as region_slug,
+                COALESCE(island_t.slug, island_t_en.slug) as island_slug,
+                COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 COALESCE(
                     (SELECT m.file_name
                      FROM media m
@@ -299,6 +334,18 @@ class BeachDetailsController extends Controller
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
+            LEFT JOIN country ON b.country_code = country.code
+            LEFT JOIN continent ON country.continent_code = continent.code
+            LEFT JOIN continent_translation cont_t ON continent.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON continent.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN country_translation country_t ON b.country_code = country_t.country_code AND country_t.locale = ?
+            LEFT JOIN country_translation country_t_en ON b.country_code = country_t_en.country_code AND country_t_en.locale = 'en'
+            LEFT JOIN region_translation region_t ON b.region_id = region_t.region_id AND region_t.locale = ?
+            LEFT JOIN region_translation region_t_en ON b.region_id = region_t_en.region_id AND region_t_en.locale = 'en'
+            LEFT JOIN island_translation island_t ON b.island_id = island_t.island_id AND island_t.locale = ?
+            LEFT JOIN island_translation island_t_en ON b.island_id = island_t_en.island_id AND island_t_en.locale = 'en'
+            LEFT JOIN city_translation city_t ON b.city_id = city_t.city_id AND city_t.locale = ?
+            LEFT JOIN city_translation city_t_en ON b.city_id = city_t_en.city_id AND city_t_en.locale = 'en'
             WHERE b.region_id = ?
               AND b.id > ?
               AND b.status_id = 1
@@ -307,6 +354,11 @@ class BeachDetailsController extends Controller
         ", [
             $currentBeach->longitude,
             $currentBeach->latitude,
+            $locale,
+            $locale,
+            $locale,
+            $locale,
+            $locale,
             $locale,
             $currentBeach->region_id,
             $currentBeach->id,
@@ -321,6 +373,13 @@ class BeachDetailsController extends Controller
             'longitude' => $previousBeach[0]->longitude,
             'distance_km' => round($previousBeach[0]->distance_km, 2),
             'main_image' => $this->formatMainImage($previousBeach[0]),
+            'location' => [
+                'continent_slug' => $previousBeach[0]->continent_slug,
+                'country_slug' => $previousBeach[0]->country_slug,
+                'region_slug' => $previousBeach[0]->region_slug,
+                'island_slug' => $previousBeach[0]->island_slug,
+                'city_slug' => $previousBeach[0]->city_slug,
+            ],
         ] : null;
 
         $next = isset($nextBeach[0]) ? [
@@ -331,6 +390,13 @@ class BeachDetailsController extends Controller
             'longitude' => $nextBeach[0]->longitude,
             'distance_km' => round($nextBeach[0]->distance_km, 2),
             'main_image' => $this->formatMainImage($nextBeach[0]),
+            'location' => [
+                'continent_slug' => $nextBeach[0]->continent_slug,
+                'country_slug' => $nextBeach[0]->country_slug,
+                'region_slug' => $nextBeach[0]->region_slug,
+                'island_slug' => $nextBeach[0]->island_slug,
+                'city_slug' => $nextBeach[0]->city_slug,
+            ],
         ] : null;
 
         return [

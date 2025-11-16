@@ -7364,6 +7364,37 @@
                                         "type": "string",
                                         "example": "img/beaches/beach-folder/image.jpg",
                                         "nullable": true
+                                    },
+                                    "location": {
+                                        "description": "Location slugs for building beach URL",
+                                        "properties": {
+                                            "continent_slug": {
+                                                "type": "string",
+                                                "example": "europe",
+                                                "nullable": true
+                                            },
+                                            "country_slug": {
+                                                "type": "string",
+                                                "example": "croatia",
+                                                "nullable": true
+                                            },
+                                            "region_slug": {
+                                                "type": "string",
+                                                "example": "kvarner",
+                                                "nullable": true
+                                            },
+                                            "island_slug": {
+                                                "type": "string",
+                                                "example": "island-cres",
+                                                "nullable": true
+                                            },
+                                            "city_slug": {
+                                                "type": "string",
+                                                "example": "cres",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object",
@@ -7403,6 +7434,37 @@
                                         "type": "string",
                                         "example": "img/beaches/beach-folder/image.jpg",
                                         "nullable": true
+                                    },
+                                    "location": {
+                                        "description": "Location slugs for building beach URL",
+                                        "properties": {
+                                            "continent_slug": {
+                                                "type": "string",
+                                                "example": "europe",
+                                                "nullable": true
+                                            },
+                                            "country_slug": {
+                                                "type": "string",
+                                                "example": "croatia",
+                                                "nullable": true
+                                            },
+                                            "region_slug": {
+                                                "type": "string",
+                                                "example": "kvarner",
+                                                "nullable": true
+                                            },
+                                            "island_slug": {
+                                                "type": "string",
+                                                "example": "island-cres",
+                                                "nullable": true
+                                            },
+                                            "city_slug": {
+                                                "type": "string",
+                                                "example": "cres",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object",
