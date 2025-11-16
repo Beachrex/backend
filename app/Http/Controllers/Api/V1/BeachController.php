@@ -119,19 +119,20 @@ class BeachController extends Controller
         $limit = $request->input('limit', 5000);
 
         // Only load relationships that are actually used in BeachResource
-        $query = Beach::with([
-            'translations',
-            'continent.translations',
-            'country.translations',
-            'region.translations',
-            'city.translations',
-            'island.translations',
-            'media' => function ($query) {
-                $query->where('media_collection_id', 1)
-                      ->where('is_primary', true)
-                      ->where('status_id', 1);
-            }
-        ]);
+        $query = Beach::where('status_id', 1)
+            ->with([
+                'translations',
+                'continent.translations',
+                'country.translations',
+                'region.translations',
+                'city.translations',
+                'island.translations',
+                'media' => function ($query) {
+                    $query->where('media_collection_id', 1)
+                          ->where('is_primary', true)
+                          ->where('status_id', 1);
+                }
+            ]);
 
         // Apply filters
         $query = $this->filterService->applyFilters($query, $request);
@@ -272,19 +273,20 @@ class BeachController extends Controller
     public function show($id)
     {
         // Only load relationships that are actually used in BeachResource
-        $beach = Beach::with([
-            'translations',
-            'continent.translations',
-            'country.translations',
-            'region.translations',
-            'city.translations',
-            'island.translations',
-            'media' => function ($query) {
-                $query->where('media_collection_id', 1)
-                      ->where('is_primary', true)
-                      ->where('status_id', 1);
-            }
-        ])->findOrFail($id);
+        $beach = Beach::where('status_id', 1)
+            ->with([
+                'translations',
+                'continent.translations',
+                'country.translations',
+                'region.translations',
+                'city.translations',
+                'island.translations',
+                'media' => function ($query) {
+                    $query->where('media_collection_id', 1)
+                          ->where('is_primary', true)
+                          ->where('status_id', 1);
+                }
+            ])->findOrFail($id);
 
         return new BeachResource($beach);
     }
