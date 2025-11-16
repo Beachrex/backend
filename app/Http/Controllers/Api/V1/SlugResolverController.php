@@ -100,29 +100,36 @@ class SlugResolverController extends Controller
             $parentSlug = $request->get('parent_slug');
             $segmentCount = $request->get('segment_count');
 
-            // Build cache key
+            // Build cache key including all context parameters
+            // This ensures different contexts get different cache entries
             $cacheKey = "slug_resolver:{$locale}:{$slug}"
                 . ($countryCode ? ":{$countryCode}" : '')
                 . ($parentSlug ? ":parent:{$parentSlug}" : '')
                 . ($segmentCount ? ":segments:{$segmentCount}" : '');
 
             $result = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale, $countryCode, $parentSlug, $segmentCount) {
-                // Use segment count to optimize search order
-                // 1 segment: likely region or island
-                // 2 segments: likely city or beach
-                // 3+ segments: likely beach
+                // Optimize search order based on URL segment count
+                // This reduces unnecessary database queries by checking most likely types first
+                //
+                // URL patterns:
+                // - 1 segment:  /kvarner              → likely region or island
+                // - 2 segments: /island-cres/cres     → likely city or beach
+                // - 3+ segments: /kvarner/cres/beach  → likely beach
 
                 $checkOrder = ['region', 'island', 'city', 'beach'];
 
-                // Optimize based on segment count
                 if ($segmentCount === 1) {
+                    // Single segment: prioritize regions and islands
                     $checkOrder = ['region', 'island', 'city', 'beach'];
                 } elseif ($segmentCount === 2) {
+                    // Two segments: prioritize cities and beaches
                     $checkOrder = ['city', 'beach', 'island', 'region'];
                 } elseif ($segmentCount >= 3) {
+                    // Three or more segments: almost always a beach
                     $checkOrder = ['beach', 'city', 'island', 'region'];
                 }
 
+                // Check each entity type in optimized order
                 foreach ($checkOrder as $type) {
                     $result = null;
 
@@ -134,6 +141,7 @@ class SlugResolverController extends Controller
                             $result = $this->checkIsland($slug, $locale, $parentSlug);
                             break;
                         case 'city':
+                            // parent_slug helps resolve ambiguity when island and city have same name
                             $result = $this->checkCity($slug, $locale, $countryCode, $parentSlug);
                             break;
                         case 'beach':
@@ -141,6 +149,7 @@ class SlugResolverController extends Controller
                             break;
                     }
 
+                    // Return first match found
                     if ($result) {
                         return $result;
                     }
@@ -171,6 +180,14 @@ class SlugResolverController extends Controller
         }
     }
 
+    /**
+     * Check if slug matches a region
+     *
+     * @param string $slug The slug to check
+     * @param string $locale Current locale for translation lookup
+     * @param string|null $countryCode Optional country code to narrow search
+     * @return array|null Region data if found, null otherwise
+     */
     private function checkRegion(string $slug, string $locale, ?string $countryCode): ?array
     {
         $region = Region::with(['country.translations', 'translations'])
@@ -202,6 +219,14 @@ class SlugResolverController extends Controller
         return null;
     }
 
+    /**
+     * Check if slug matches an island
+     *
+     * @param string $slug The slug to check
+     * @param string $locale Current locale for translation lookup
+     * @param string|null $parentSlug Not used for islands (reserved for future use)
+     * @return array|null Island data if found, null otherwise
+     */
     private function checkIsland(string $slug, string $locale, ?string $parentSlug): ?array
     {
         $island = Island::with(['translations'])
@@ -226,9 +251,18 @@ class SlugResolverController extends Controller
         return null;
     }
 
+    /**
+     * Check if slug matches a city
+     *
+     * @param string $slug The slug to check
+     * @param string $locale Current locale for translation lookup
+     * @param string|null $countryCode Optional country code to narrow search
+     * @param string|null $parentSlug Not used for cities (cities don't have parent relationship in database)
+     * @return array|null City data if found, null otherwise
+     */
     private function checkCity(string $slug, string $locale, ?string $countryCode, ?string $parentSlug): ?array
     {
-        $city = City::with(['country.translations', 'translations', 'island.translations'])
+        $city = City::with(['country.translations', 'translations'])
             ->withCount(['beaches' => function ($q) {
                 $q->where('status_id', 1);
             }])
@@ -240,14 +274,7 @@ class SlugResolverController extends Controller
             $city->byCountry($countryCode);
         }
 
-        // If parent slug is provided, filter by island
-        if ($parentSlug) {
-            $city->whereHas('island.translations', function ($q) use ($parentSlug, $locale) {
-                $q->where('slug', $parentSlug)->where('locale', $locale);
-            });
-        }
-
-        $city = $city->first(['id', 'country_code', 'region_id', 'island_id', 'status_id']);
+        $city = $city->first(['id', 'country_code', 'region_id', 'status_id']);
 
         if ($city) {
             return [
@@ -263,6 +290,14 @@ class SlugResolverController extends Controller
         return null;
     }
 
+    /**
+     * Check if slug matches a beach
+     *
+     * @param string $slug The slug to check
+     * @param string $locale Current locale for translation lookup
+     * @param string|null $countryCode Optional country code to narrow search
+     * @return array|null Beach data if found, null otherwise
+     */
     private function checkBeach(string $slug, string $locale, ?string $countryCode): ?array
     {
         $beach = Beach::with(['translations'])

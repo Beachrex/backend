@@ -5407,7 +5407,7 @@
                     "Slug Resolver"
                 ],
                 "summary": "Resolve a slug to determine its entity type",
-                "description": "Determines whether a slug represents a region, island, or city. This is useful for dynamic routing where the URL structure can vary. Returns the entity type and basic information.",
+                "description": "Determines whether a slug represents a region, island, city, or beach. This is useful for dynamic routing where the URL structure can vary. Returns the entity type and basic information.",
                 "operationId": "resolveSlug",
                 "parameters": [
                     {
@@ -5428,6 +5428,26 @@
                         "schema": {
                             "type": "string",
                             "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "parent_slug",
+                        "in": "query",
+                        "description": "Optional parent slug to provide context (e.g., if resolving a city within an island, pass the island slug)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "island-cres"
+                        }
+                    },
+                    {
+                        "name": "segment_count",
+                        "in": "query",
+                        "description": "Optional number of segments in the URL path to help determine entity type (1=region/island, 2=city, etc.)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
                         }
                     },
                     {
@@ -5452,7 +5472,8 @@
                                                     "enum": [
                                                         "region",
                                                         "island",
-                                                        "city"
+                                                        "city",
+                                                        "beach"
                                                     ],
                                                     "example": "region"
                                                 },
