@@ -153,7 +153,9 @@ class IslandController extends Controller
                         $q->where('status_id', 1);
                     }])
                     ->whereHas('translations', function ($q) use ($slug, $locale) {
-                        $q->where('slug', $slug)->where('locale', $locale);
+                        // Try requested locale first, fallback to English
+                        $q->where('slug', $slug)
+                          ->whereIn('locale', [$locale, 'en']);
                     })
                     ->first([
                         'id',
