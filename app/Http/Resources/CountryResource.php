@@ -21,7 +21,7 @@ class CountryResource extends JsonResource
             ->firstWhere('locale', $locale)
             ?? $this->translations->firstWhere('locale', 'en');
 
-        return [
+        $data = [
             'code' => $this->code,
             'name' => $translation?->name ?? 'Unknown',
             'full_name' => $translation?->full_name ?? null,
@@ -29,22 +29,28 @@ class CountryResource extends JsonResource
             'iso3' => $this->iso3,
             'continent_code' => $this->continent_code,
             'image_path' => $this->image_path,
-            'continent' => $this->when(
-                $this->relationLoaded('continent'),
-                new ContinentResource($this->continent)
-            ),
-            'beaches_count' => $this->when(
-                $this->relationLoaded('beaches') || isset($this->beaches_count),
-                $this->beaches_count ?? $this->beaches->count()
-            ),
-            'badges' => $this->when(
-                $this->relationLoaded('badges'),
-                BadgeResource::collection($this->badges)
-            ),
-            'articles' => $this->when(
-                $this->relationLoaded('articles'),
-                ArticleResource::collection($this->articles)
-            ),
         ];
+
+        // Add beaches_count if available
+        if ($this->relationLoaded('beaches') || isset($this->beaches_count)) {
+            $data['beaches_count'] = $this->beaches_count ?? $this->beaches->count();
+        }
+
+        // Add continent only if loaded (for show endpoint)
+        if ($this->relationLoaded('continent')) {
+            $data['continent'] = new ContinentResource($this->continent);
+        }
+
+        // Add badges only if loaded (for show endpoint)
+        if ($this->relationLoaded('badges')) {
+            $data['badges'] = BadgeResource::collection($this->badges);
+        }
+
+        // Add articles only if loaded (for show endpoint)
+        if ($this->relationLoaded('articles')) {
+            $data['articles'] = ArticleResource::collection($this->articles);
+        }
+
+        return $data;
     }
 }

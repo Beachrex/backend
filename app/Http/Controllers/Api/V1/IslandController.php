@@ -27,7 +27,7 @@ class IslandController extends Controller
      *     operationId="getIslands",
      *     tags={"Islands"},
      *     summary="Get all islands that have beaches",
-     *     description="Returns a list of islands that have at least one beach.",
+     *     description="Returns a list of islands that have at least one beach. Returns minimal data: id, code, name, slug, beaches_count.",
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
@@ -102,7 +102,7 @@ class IslandController extends Controller
      *     operationId="getIsland",
      *     tags={"Islands"},
      *     summary="Get a specific island",
-     *     description="Returns a specific island by slug with its beaches count.",
+     *     description="Returns a specific island by slug with full details including beaches count, badges, and articles.",
      *     @OA\Parameter(
      *         name="slug",
      *         in="path",

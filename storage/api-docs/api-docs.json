@@ -1443,7 +1443,7 @@
                     "Cities"
                 ],
                 "summary": "Get all cities that have beaches",
-                "description": "Returns a list of cities that have at least one beach. Can be filtered by country.",
+                "description": "Returns a list of cities that have at least one beach. Can be filtered by country. Returns minimal data: id, code, name, slug, country_code, region_id, beaches_count, and country object (without continent, badges, articles).",
                 "operationId": "getCities",
                 "parameters": [
                     {
@@ -1516,7 +1516,7 @@
                     "Cities"
                 ],
                 "summary": "Get a specific city",
-                "description": "Returns a specific city by slug with its beaches count and country information. Can be filtered by country code.",
+                "description": "Returns a specific city by slug with full details including country, region, badges, and articles. Can be filtered by country code.",
                 "operationId": "getCity",
                 "parameters": [
                     {
@@ -2550,7 +2550,7 @@
                     "Islands"
                 ],
                 "summary": "Get all islands that have beaches",
-                "description": "Returns a list of islands that have at least one beach.",
+                "description": "Returns a list of islands that have at least one beach. Returns minimal data: id, code, name, slug, beaches_count.",
                 "operationId": "getIslands",
                 "parameters": [
                     {
@@ -2613,7 +2613,7 @@
                     "Islands"
                 ],
                 "summary": "Get a specific island",
-                "description": "Returns a specific island by slug with its beaches count.",
+                "description": "Returns a specific island by slug with full details including beaches count, badges, and articles.",
                 "operationId": "getIsland",
                 "parameters": [
                     {
@@ -5071,7 +5071,7 @@
                     "Regions"
                 ],
                 "summary": "Get all regions that have beaches",
-                "description": "Returns a list of regions that have at least one beach. Can be filtered by country.",
+                "description": "Returns a list of regions that have at least one beach. Can be filtered by country. Returns minimal data: id, code, name, slug, country_code, beaches_count, and country object (without continent, badges, articles).",
                 "operationId": "getRegions",
                 "parameters": [
                     {
@@ -5144,7 +5144,7 @@
                     "Regions"
                 ],
                 "summary": "Get a specific region",
-                "description": "Returns a specific region by slug with its beaches count and country information. Can be filtered by country code.",
+                "description": "Returns a specific region by slug with full details including country, badges, and articles. Can be filtered by country code.",
                 "operationId": "getRegion",
                 "parameters": [
                     {

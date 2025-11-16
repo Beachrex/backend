@@ -27,7 +27,7 @@ class RegionController extends Controller
      *     operationId="getRegions",
      *     tags={"Regions"},
      *     summary="Get all regions that have beaches",
-     *     description="Returns a list of regions that have at least one beach. Can be filtered by country.",
+     *     description="Returns a list of regions that have at least one beach. Can be filtered by country. Returns minimal data: id, code, name, slug, country_code, beaches_count, and country object (without continent, badges, articles).",
      *     @OA\Parameter(
      *         name="country_code",
      *         in="query",
@@ -117,7 +117,7 @@ class RegionController extends Controller
      *     operationId="getRegion",
      *     tags={"Regions"},
      *     summary="Get a specific region",
-     *     description="Returns a specific region by slug with its beaches count and country information. Can be filtered by country code.",
+     *     description="Returns a specific region by slug with full details including country, badges, and articles. Can be filtered by country code.",
      *     @OA\Parameter(
      *         name="slug",
      *         in="path",

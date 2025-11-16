@@ -21,24 +21,29 @@ class IslandResource extends JsonResource
             ->firstWhere('locale', $locale)
             ?? $this->translations->firstWhere('locale', 'en');
 
-        return [
+        $data = [
             'id' => $this->id,
             'code' => $this->code,
             'name' => $translation?->name ?? 'Unknown',
             'slug' => $translation?->slug ?? 'unknown',
-            'beaches_count' => $this->when(
-                $this->relationLoaded('beaches') || isset($this->beaches_count),
-                $this->beaches_count ?? $this->beaches->count()
-            ),
-            'badges' => $this->when(
-                $this->relationLoaded('badges'),
-                BadgeResource::collection($this->badges)
-            ),
-            'articles' => $this->when(
-                $this->relationLoaded('articles'),
-                ArticleResource::collection($this->articles)
-            ),
         ];
+
+        // Add beaches_count if available
+        if ($this->relationLoaded('beaches') || isset($this->beaches_count)) {
+            $data['beaches_count'] = $this->beaches_count ?? $this->beaches->count();
+        }
+
+        // Add badges only if loaded (for show endpoint)
+        if ($this->relationLoaded('badges')) {
+            $data['badges'] = BadgeResource::collection($this->badges);
+        }
+
+        // Add articles only if loaded (for show endpoint)
+        if ($this->relationLoaded('articles')) {
+            $data['articles'] = ArticleResource::collection($this->articles);
+        }
+
+        return $data;
     }
 }
 

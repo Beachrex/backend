@@ -27,7 +27,7 @@ class CityController extends Controller
      *     operationId="getCities",
      *     tags={"Cities"},
      *     summary="Get all cities that have beaches",
-     *     description="Returns a list of cities that have at least one beach. Can be filtered by country.",
+     *     description="Returns a list of cities that have at least one beach. Can be filtered by country. Returns minimal data: id, code, name, slug, country_code, region_id, beaches_count, and country object (without continent, badges, articles).",
      *     @OA\Parameter(
      *         name="country_code",
      *         in="query",
@@ -77,7 +77,7 @@ class CityController extends Controller
             $cacheKey = "cities:index:{$locale}:" . ($countryFilter ? "country:{$countryFilter}" : "all");
 
             $cities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter) {
-                $query = City::with(['country.translations', 'region.translations', 'translations'])
+                $query = City::with(['country.translations', 'translations'])
                     ->withBeaches()
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
@@ -118,7 +118,7 @@ class CityController extends Controller
      *     operationId="getCity",
      *     tags={"Cities"},
      *     summary="Get a specific city",
-     *     description="Returns a specific city by slug with its beaches count and country information. Can be filtered by country code.",
+     *     description="Returns a specific city by slug with full details including country, region, badges, and articles. Can be filtered by country code.",
      *     @OA\Parameter(
      *         name="slug",
      *         in="path",
