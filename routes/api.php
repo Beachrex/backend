@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\FilterController;
 use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
+use App\Http\Controllers\Api\V1\SlugResolverController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -64,6 +65,9 @@ Route::prefix('api/v1')
 
         // Beach Details routes - comprehensive beach information for detail pages
         Route::get('/beach-details/{identifier}', [BeachDetailsController::class, 'show']);
+
+        // Slug Resolver - determine entity type from slug
+        Route::get('/resolve-slug/{slug}', [SlugResolverController::class, 'resolve']);
 
         // Continent routes
         Route::get('/continents', [ContinentController::class, 'index']);
