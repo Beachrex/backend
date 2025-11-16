@@ -14,11 +14,38 @@ class BeachResource extends JsonResource
         $translation = $this->translations->firstWhere('locale', $locale);
         $translationEn = $this->translations->firstWhere('locale', 'en');
 
-        // Get country name translation
+        // Get country name and slug
         $countryName = null;
+        $countrySlug = null;
         if ($this->country) {
             $countryTranslation = $this->country->translations->firstWhere('locale', $locale);
-            $countryName = $countryTranslation->name ?? null;
+            $countryTranslationEn = $this->country->translations->firstWhere('locale', 'en');
+            $countryName = $countryTranslation?->name ?? null;
+            $countrySlug = $countryTranslation?->slug ?? $countryTranslationEn?->slug ?? null;
+        }
+
+        // Get continent slug
+        $continentSlug = null;
+        if ($this->continent) {
+            $continentTranslation = $this->continent->translations->firstWhere('locale', $locale);
+            $continentTranslationEn = $this->continent->translations->firstWhere('locale', 'en');
+            $continentSlug = $continentTranslation?->slug ?? $continentTranslationEn?->slug ?? null;
+        }
+
+        // Get region slug
+        $regionSlug = null;
+        if ($this->region) {
+            $regionTranslation = $this->region->translations->firstWhere('locale', $locale);
+            $regionTranslationEn = $this->region->translations->firstWhere('locale', 'en');
+            $regionSlug = $regionTranslation?->slug ?? $regionTranslationEn?->slug ?? null;
+        }
+
+        // Get city slug
+        $citySlug = null;
+        if ($this->city) {
+            $cityTranslation = $this->city->translations->firstWhere('locale', $locale);
+            $cityTranslationEn = $this->city->translations->firstWhere('locale', 'en');
+            $citySlug = $cityTranslation?->slug ?? $cityTranslationEn?->slug ?? null;
         }
 
         // Get primary image from beach gallery (collection_id = 1)
@@ -39,7 +66,11 @@ class BeachResource extends JsonResource
             'longitude' => $this->longitude,
             'country_code' => $this->country_code,
             'country_name' => $countryName,
+            'country_slug' => $countrySlug,
             'continent_code' => $this->continent_code,
+            'continent_slug' => $continentSlug,
+            'region_slug' => $regionSlug,
+            'city_slug' => $citySlug,
             'main_image' => $mainImage,
         ];
     }

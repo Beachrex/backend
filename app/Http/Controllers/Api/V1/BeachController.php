@@ -149,6 +149,7 @@ class BeachController extends Controller
             'continent.translations',
             'country.translations',
             'region.translations',
+            'city.translations',
             'island.translations',
             // Eager load media
             'media' => function ($query) {
@@ -277,6 +278,8 @@ class BeachController extends Controller
             // Eager load location relationships with translations
             'continent.translations',
             'country.translations',
+            'region.translations',
+            'city.translations',
             'island.translations',
         ]));
     }
@@ -344,6 +347,8 @@ class BeachController extends Controller
             // Eager load location relationships with translations
             'continent.translations',
             'country.translations',
+            'region.translations',
+            'city.translations',
             'island.translations',
             // Eager load media
             'media' => function ($query) {

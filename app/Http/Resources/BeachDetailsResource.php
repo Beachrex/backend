@@ -49,17 +49,21 @@ class BeachDetailsResource extends JsonResource
         return [
             'continent' => $this->when($this->continent, function () use ($locale) {
                 $trans = $this->continent->translations->firstWhere('locale', $locale);
+                $transEn = $this->continent->translations->firstWhere('locale', 'en');
                 return [
                     'code' => $this->continent->code,
                     'name' => $trans?->name ?? $this->continent->code,
+                    'slug' => $trans?->slug ?? $transEn?->slug ?? null,
                 ];
             }),
             'country' => $this->when($this->country, function () use ($locale) {
                 $trans = $this->country->translations->firstWhere('locale', $locale);
+                $transEn = $this->country->translations->firstWhere('locale', 'en');
                 return [
                     'code' => $this->country->code,
                     'name' => $trans?->name ?? $this->country->code,
                     'full_name' => $trans?->full_name ?? null,
+                    'slug' => $trans?->slug ?? $transEn?->slug ?? null,
                 ];
             }),
             'region' => $this->when($this->region, function () use ($locale) {

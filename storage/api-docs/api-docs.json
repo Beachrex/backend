@@ -6173,6 +6173,11 @@
                                     "name": {
                                         "type": "string",
                                         "example": "Europe"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "europe",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object",
@@ -6191,6 +6196,11 @@
                                     "full_name": {
                                         "type": "string",
                                         "example": "Republic of Croatia",
+                                        "nullable": true
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "croatia",
                                         "nullable": true
                                     }
                                 },
@@ -6984,10 +6994,34 @@
                         "type": "string",
                         "example": "Croatia"
                     },
+                    "country_slug": {
+                        "description": "Country slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "croatia",
+                        "nullable": true
+                    },
                     "continent_code": {
                         "description": "Continent code",
                         "type": "string",
                         "example": "EU"
+                    },
+                    "continent_slug": {
+                        "description": "Continent slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "europe",
+                        "nullable": true
+                    },
+                    "region_slug": {
+                        "description": "Region slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "dalmatia",
+                        "nullable": true
+                    },
+                    "city_slug": {
+                        "description": "City slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "split",
+                        "nullable": true
                     },
                     "main_image": {
                         "description": "Primary beach image path (prepend CDN URL on frontend)",

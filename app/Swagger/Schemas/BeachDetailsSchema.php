@@ -30,7 +30,8 @@ namespace App\Swagger\Schemas;
  *             type="object",
  *             nullable=true,
  *             @OA\Property(property="code", type="string", example="EU"),
- *             @OA\Property(property="name", type="string", example="Europe")
+ *             @OA\Property(property="name", type="string", example="Europe"),
+ *             @OA\Property(property="slug", type="string", nullable=true, example="europe")
  *         ),
  *         @OA\Property(
  *             property="country",
@@ -38,7 +39,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="code", type="string", example="HR"),
  *             @OA\Property(property="name", type="string", example="Croatia"),
- *             @OA\Property(property="full_name", type="string", nullable=true, example="Republic of Croatia")
+ *             @OA\Property(property="full_name", type="string", nullable=true, example="Republic of Croatia"),
+ *             @OA\Property(property="slug", type="string", nullable=true, example="croatia")
  *         ),
  *         @OA\Property(
  *             property="region",
