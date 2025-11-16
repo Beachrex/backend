@@ -5401,6 +5401,144 @@
                 }
             }
         },
+        "/api/v1/resolve-slug/{slug}": {
+            "get": {
+                "tags": [
+                    "Slug Resolver"
+                ],
+                "summary": "Resolve a slug to determine its entity type",
+                "description": "Determines whether a slug represents a region, island, or city. This is useful for dynamic routing where the URL structure can vary. Returns the entity type and basic information.",
+                "operationId": "resolveSlug",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "The slug to resolve (e.g., kvarner, island-cres, split)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "kvarner"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Optional country code to narrow down the search (e.g., HR, SI, IT)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Slug resolved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "region",
+                                                        "island",
+                                                        "city"
+                                                    ],
+                                                    "example": "region"
+                                                },
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "slug": {
+                                                    "type": "string",
+                                                    "example": "kvarner"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Kvarner"
+                                                },
+                                                "code": {
+                                                    "description": "Only for regions",
+                                                    "type": "string",
+                                                    "example": "KV"
+                                                },
+                                                "country_code": {
+                                                    "description": "Country code",
+                                                    "type": "string",
+                                                    "example": "HR"
+                                                },
+                                                "beaches_count": {
+                                                    "description": "Number of beaches",
+                                                    "type": "integer",
+                                                    "example": 45
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Slug resolved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Slug not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Slug not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred while resolving the slug"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sporting-activities": {
             "get": {
                 "tags": [
@@ -9401,6 +9539,10 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
+        },
+        {
+            "name": "Slug Resolver",
+            "description": "Slug Resolver"
         },
         {
             "name": "Sporting Activities",
