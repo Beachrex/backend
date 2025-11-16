@@ -190,12 +190,17 @@ class SlugResolverController extends Controller
      */
     private function checkRegion(string $slug, string $locale, ?string $countryCode): ?array
     {
+        // Try to find region with slug in requested locale OR English (fallback)
         $region = Region::with(['country.translations', 'translations'])
             ->withCount(['beaches' => function ($q) {
                 $q->where('status_id', 1);
             }])
             ->whereHas('translations', function ($q) use ($slug, $locale) {
-                $q->where('slug', $slug)->where('locale', $locale);
+                $q->where('slug', $slug)
+                    ->where(function ($query) use ($locale) {
+                        $query->where('locale', $locale)
+                            ->orWhere('locale', 'en'); // Fallback to English
+                    });
             });
 
         if ($countryCode) {
@@ -229,12 +234,17 @@ class SlugResolverController extends Controller
      */
     private function checkIsland(string $slug, string $locale, ?string $parentSlug): ?array
     {
+        // Try to find island with slug in requested locale OR English (fallback)
         $island = Island::with(['translations'])
             ->withCount(['beaches' => function ($q) {
                 $q->where('status_id', 1);
             }])
             ->whereHas('translations', function ($q) use ($slug, $locale) {
-                $q->where('slug', $slug)->where('locale', $locale);
+                $q->where('slug', $slug)
+                    ->where(function ($query) use ($locale) {
+                        $query->where('locale', $locale)
+                            ->orWhere('locale', 'en'); // Fallback to English
+                    });
             })
             ->first(['id', 'status_id']);
 
@@ -262,12 +272,17 @@ class SlugResolverController extends Controller
      */
     private function checkCity(string $slug, string $locale, ?string $countryCode, ?string $parentSlug): ?array
     {
+        // Try to find city with slug in requested locale OR English (fallback)
         $city = City::with(['country.translations', 'translations'])
             ->withCount(['beaches' => function ($q) {
                 $q->where('status_id', 1);
             }])
             ->whereHas('translations', function ($q) use ($slug, $locale) {
-                $q->where('slug', $slug)->where('locale', $locale);
+                $q->where('slug', $slug)
+                    ->where(function ($query) use ($locale) {
+                        $query->where('locale', $locale)
+                            ->orWhere('locale', 'en'); // Fallback to English
+                    });
             });
 
         if ($countryCode) {
@@ -300,9 +315,14 @@ class SlugResolverController extends Controller
      */
     private function checkBeach(string $slug, string $locale, ?string $countryCode): ?array
     {
+        // Try to find beach with slug in requested locale OR English (fallback)
         $beach = Beach::with(['translations'])
             ->whereHas('translations', function ($q) use ($slug, $locale) {
-                $q->where('slug', $slug)->where('locale', $locale);
+                $q->where('slug', $slug)
+                    ->where(function ($query) use ($locale) {
+                        $query->where('locale', $locale)
+                            ->orWhere('locale', 'en'); // Fallback to English
+                    });
             })
             ->where('status_id', 1);
 
