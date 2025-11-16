@@ -46,6 +46,11 @@ class PostGISService
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
                 ct.name as country_name,
+                COALESCE(ct.slug, ct_en.slug) as country_slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(reg_t.slug, reg_t_en.slug) as region_slug,
+                COALESCE(isl_t.slug, isl_t_en.slug) as island_slug,
+                COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 m.file_path as main_image_path,
                 m.disk as main_image_disk,
                 ST_Distance(
@@ -56,11 +61,20 @@ class PostGISService
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
             LEFT JOIN continents cont ON b.continent_code = cont.code
+            LEFT JOIN continent_translation cont_t ON cont.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON cont.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN country_translation ct_en ON c.code = ct_en.country_code AND ct_en.locale = 'en'
             LEFT JOIN region reg ON b.region_id = reg.id
+            LEFT JOIN region_translation reg_t ON reg.id = reg_t.region_id AND reg_t.locale = ?
+            LEFT JOIN region_translation reg_t_en ON reg.id = reg_t_en.region_id AND reg_t_en.locale = 'en'
             LEFT JOIN island isl ON b.island_id = isl.id
+            LEFT JOIN island_translation isl_t ON isl.id = isl_t.island_id AND isl_t.locale = ?
+            LEFT JOIN island_translation isl_t_en ON isl.id = isl_t_en.island_id AND isl_t_en.locale = 'en'
             LEFT JOIN city ON b.city_id = city.id
+            LEFT JOIN city_translation city_t ON city.id = city_t.city_id AND city_t.locale = ?
+            LEFT JOIN city_translation city_t_en ON city.id = city_t_en.city_id AND city_t_en.locale = 'en'
             LEFT JOIN waterbody wb ON b.waterbody_id = wb.id
             LEFT JOIN beach_type btype ON b.beach_type_id = btype.id
             LEFT JOIN accessibility acc ON b.accessibility_id = acc.id
@@ -87,7 +101,7 @@ class PostGISService
             ORDER BY distance_km
             LIMIT ?
         ", array_merge(
-            [$longitude, $latitude, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
+            [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
             $filterBindings,
             [$limit]
         ));
@@ -203,17 +217,31 @@ class PostGISService
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
                 ct.name as country_name,
+                COALESCE(ct.slug, ct_en.slug) as country_slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(reg_t.slug, reg_t_en.slug) as region_slug,
+                COALESCE(isl_t.slug, isl_t_en.slug) as island_slug,
+                COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 m.file_path as main_image_path,
                 m.disk as main_image_disk
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
             LEFT JOIN continents cont ON b.continent_code = cont.code
+            LEFT JOIN continent_translation cont_t ON cont.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON cont.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN country_translation ct_en ON c.code = ct_en.country_code AND ct_en.locale = 'en'
             LEFT JOIN region reg ON b.region_id = reg.id
+            LEFT JOIN region_translation reg_t ON reg.id = reg_t.region_id AND reg_t.locale = ?
+            LEFT JOIN region_translation reg_t_en ON reg.id = reg_t_en.region_id AND reg_t_en.locale = 'en'
             LEFT JOIN island isl ON b.island_id = isl.id
+            LEFT JOIN island_translation isl_t ON isl.id = isl_t.island_id AND isl_t.locale = ?
+            LEFT JOIN island_translation isl_t_en ON isl.id = isl_t_en.island_id AND isl_t_en.locale = 'en'
             LEFT JOIN city ON b.city_id = city.id
+            LEFT JOIN city_translation city_t ON city.id = city_t.city_id AND city_t.locale = ?
+            LEFT JOIN city_translation city_t_en ON city.id = city_t_en.city_id AND city_t_en.locale = 'en'
             LEFT JOIN waterbody wb ON b.waterbody_id = wb.id
             LEFT JOIN beach_type btype ON b.beach_type_id = btype.id
             LEFT JOIN accessibility acc ON b.accessibility_id = acc.id
@@ -235,7 +263,7 @@ class PostGISService
               {$filterSql}
             ORDER BY COALESCE(bt.name, bt_en.name)
         ", array_merge(
-            [$locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
+            [$locale, $locale, $locale, $locale, $locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
             $filterBindings
         ));
 
@@ -457,7 +485,12 @@ class PostGISService
                 'longitude' => $beach->longitude,
                 'country_code' => $beach->country_code,
                 'country_name' => $beach->country_name,
+                'country_slug' => $beach->country_slug ?? null,
                 'continent_code' => $beach->continent_code,
+                'continent_slug' => $beach->continent_slug ?? null,
+                'region_slug' => $beach->region_slug ?? null,
+                'island_slug' => $beach->island_slug ?? null,
+                'city_slug' => $beach->city_slug ?? null,
                 'main_image' => $mainImage,
                 'distance_km' => $beach->distance_km ?? null,
             ];
