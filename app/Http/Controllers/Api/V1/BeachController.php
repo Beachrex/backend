@@ -118,40 +118,14 @@ class BeachController extends Controller
     {
         $limit = $request->input('limit', 5000);
 
+        // Only load relationships that are actually used in BeachResource
         $query = Beach::with([
             'translations',
-            'status',
-            'user',
-            // Eager load all feature relationships with their translations
-            'waterbody.translations',
-            'beachType.translations',
-            'areaDescription.translations',
-            'accessibility.translations',
-            'roadToParkingType.translations',
-            'parkingCapacity.translations',
-            'parkingBeachDistance.translations',
-            'parkingBeachHeight.translations',
-            'locationLength.translations',
-            'bayLength.translations',
-            'beachInclination.translations',
-            'swimmingDepthOfOneM.translations',
-            'occupancyRate.translations',
-            // Eager load many-to-many relationships with their translations
-            'accommodationArounds.translations',
-            'culinaryOffers.translations',
-            'locationInfrastructures.translations',
-            'naturalLocationConditions.translations',
-            'recommendedTransportTypes.translations',
-            'sportingActivities.translations',
-            'underwaterCharacteristics.translations',
-            'userTypes.translations',
-            // Eager load location relationships with translations
             'continent.translations',
             'country.translations',
             'region.translations',
             'city.translations',
             'island.translations',
-            // Eager load media
             'media' => function ($query) {
                 $query->where('media_collection_id', 1)
                       ->where('is_primary', true)
@@ -248,39 +222,19 @@ class BeachController extends Controller
             ]);
         }
 
+        // Only load relationships that are actually used in BeachResource
         return new BeachResource($beach->load([
             'translations',
-            'status',
-            'user',
-            // Eager load all feature relationships with their translations
-            'waterbody.translations',
-            'beachType.translations',
-            'areaDescription.translations',
-            'accessibility.translations',
-            'roadToParkingType.translations',
-            'parkingCapacity.translations',
-            'parkingBeachDistance.translations',
-            'parkingBeachHeight.translations',
-            'locationLength.translations',
-            'bayLength.translations',
-            'beachInclination.translations',
-            'swimmingDepthOfOneM.translations',
-            'occupancyRate.translations',
-            // Eager load many-to-many relationships with their translations
-            'accommodationArounds.translations',
-            'culinaryOffers.translations',
-            'locationInfrastructures.translations',
-            'naturalLocationConditions.translations',
-            'recommendedTransportTypes.translations',
-            'sportingActivities.translations',
-            'underwaterCharacteristics.translations',
-            'userTypes.translations',
-            // Eager load location relationships with translations
             'continent.translations',
             'country.translations',
             'region.translations',
             'city.translations',
             'island.translations',
+            'media' => function ($query) {
+                $query->where('media_collection_id', 1)
+                      ->where('is_primary', true)
+                      ->where('status_id', 1);
+            }
         ]));
     }
 
@@ -317,40 +271,14 @@ class BeachController extends Controller
      */
     public function show($id)
     {
+        // Only load relationships that are actually used in BeachResource
         $beach = Beach::with([
             'translations',
-            'status',
-            'user',
-            // Eager load all feature relationships with their translations
-            'waterbody.translations',
-            'beachType.translations',
-            'areaDescription.translations',
-            'accessibility.translations',
-            'roadToParkingType.translations',
-            'parkingCapacity.translations',
-            'parkingBeachDistance.translations',
-            'parkingBeachHeight.translations',
-            'locationLength.translations',
-            'bayLength.translations',
-            'beachInclination.translations',
-            'swimmingDepthOfOneM.translations',
-            'occupancyRate.translations',
-            // Eager load many-to-many relationships with their translations
-            'accommodationArounds.translations',
-            'culinaryOffers.translations',
-            'locationInfrastructures.translations',
-            'naturalLocationConditions.translations',
-            'recommendedTransportTypes.translations',
-            'sportingActivities.translations',
-            'underwaterCharacteristics.translations',
-            'userTypes.translations',
-            // Eager load location relationships with translations
             'continent.translations',
             'country.translations',
             'region.translations',
             'city.translations',
             'island.translations',
-            // Eager load media
             'media' => function ($query) {
                 $query->where('media_collection_id', 1)
                       ->where('is_primary', true)

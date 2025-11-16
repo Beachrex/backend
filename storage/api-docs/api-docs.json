@@ -7771,6 +7771,12 @@
                         "example": "dalmatia",
                         "nullable": true
                     },
+                    "island_slug": {
+                        "description": "Island slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "island-hvar",
+                        "nullable": true
+                    },
                     "city_slug": {
                         "description": "City slug (translated based on Accept-Language header)",
                         "type": "string",

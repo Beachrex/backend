@@ -48,6 +48,14 @@ class BeachResource extends JsonResource
             $citySlug = $cityTranslation?->slug ?? $cityTranslationEn?->slug ?? null;
         }
 
+        // Get island slug
+        $islandSlug = null;
+        if ($this->island) {
+            $islandTranslation = $this->island->translations->firstWhere('locale', $locale);
+            $islandTranslationEn = $this->island->translations->firstWhere('locale', 'en');
+            $islandSlug = $islandTranslation?->slug ?? $islandTranslationEn?->slug ?? null;
+        }
+
         // Get primary image from beach gallery (collection_id = 1)
         $mainImage = null;
         if ($this->media && $this->media->isNotEmpty()) {
@@ -70,6 +78,7 @@ class BeachResource extends JsonResource
             'continent_code' => $this->continent_code,
             'continent_slug' => $continentSlug,
             'region_slug' => $regionSlug,
+            'island_slug' => $islandSlug,
             'city_slug' => $citySlug,
             'main_image' => $mainImage,
         ];

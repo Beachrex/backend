@@ -20,6 +20,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(property="continent_code", type="string", example="EU", description="Continent code"),
  *     @OA\Property(property="continent_slug", type="string", nullable=true, example="europe", description="Continent slug (translated based on Accept-Language header)"),
  *     @OA\Property(property="region_slug", type="string", nullable=true, example="dalmatia", description="Region slug (translated based on Accept-Language header)"),
+ *     @OA\Property(property="island_slug", type="string", nullable=true, example="island-hvar", description="Island slug (translated based on Accept-Language header)"),
  *     @OA\Property(property="city_slug", type="string", nullable=true, example="split", description="City slug (translated based on Accept-Language header)"),
  *     @OA\Property(property="main_image", type="string", nullable=true, example="/img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg", description="Primary beach image path (prepend CDN URL on frontend)")
  * )
