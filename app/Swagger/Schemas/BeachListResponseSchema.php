@@ -25,6 +25,15 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="latitude", type="number", format="float", nullable=true, example=43.947149705303886, description="Center latitude"),
  *             @OA\Property(property="longitude", type="number", format="float", nullable=true, example=9.871903842707175, description="Center longitude")
  *         ),
+ *         @OA\Property(
+ *             property="bounding_box",
+ *             type="object",
+ *             description="Bounding box of all filtered beaches (min/max coordinates)",
+ *             @OA\Property(property="min_latitude", type="number", format="float", nullable=true, example=42.5, description="Minimum latitude"),
+ *             @OA\Property(property="min_longitude", type="number", format="float", nullable=true, example=8.2, description="Minimum longitude"),
+ *             @OA\Property(property="max_latitude", type="number", format="float", nullable=true, example=45.8, description="Maximum latitude"),
+ *             @OA\Property(property="max_longitude", type="number", format="float", nullable=true, example=15.6, description="Maximum longitude")
+ *         ),
  *         @OA\Property(property="total_beaches", type="integer", example=150, description="Total number of beaches returned (respects limit parameter)")
  *     )
  * )
