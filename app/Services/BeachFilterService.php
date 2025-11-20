@@ -1557,5 +1557,85 @@ class BeachFilterService
 
         return [$value];
     }
+
+    /**
+     * Generate a cache key suffix based on active filters
+     * Returns a consistent, sorted string representation of all active filters
+     *
+     * @param Request $request
+     * @return string
+     */
+    public function generateCacheKeySuffix(Request $request): string
+    {
+        $filters = [];
+
+        // List of all possible filter parameters
+        $filterParams = [
+            'continent_code',
+            'country',
+            'region',
+            'island',
+            'city',
+            'waterbody',
+            'beach_type',
+            'user_type',
+            'surface',
+            'shade',
+            'beach_facility',
+            'sport_recreation',
+            'accommodation_around',
+            'culinary_offer',
+            'location_infrastructure',
+            'underwater_characteristic',
+            'accessibility',
+            'parking',
+            'parking_capacity',
+            'parking_beach_height',
+            'area_description',
+            'beach_inclination',
+            'swimming_depth',
+            'occupancy_rate',
+            'has_swimming_pool',
+            'boat_only',
+            'limit'
+        ];
+
+        // Collect all active filters
+        foreach ($filterParams as $param) {
+            if ($request->has($param)) {
+                $value = $request->input($param);
+
+                // Normalize arrays and comma-separated values
+                if (is_array($value)) {
+                    sort($value);
+                    $filters[$param] = implode(',', $value);
+                } elseif (is_string($value) && str_contains($value, ',')) {
+                    $parts = array_map('trim', explode(',', $value));
+                    sort($parts);
+                    $filters[$param] = implode(',', $parts);
+                } elseif (is_bool($value) || $param === 'parking' || $param === 'has_swimming_pool' || $param === 'boat_only') {
+                    // Handle boolean filters
+                    $filters[$param] = $request->boolean($param) ? '1' : '0';
+                } else {
+                    $filters[$param] = (string) $value;
+                }
+            }
+        }
+
+        // Sort by key for consistency
+        ksort($filters);
+
+        // Build cache key suffix
+        if (empty($filters)) {
+            return 'all';
+        }
+
+        $parts = [];
+        foreach ($filters as $key => $value) {
+            $parts[] = $key . '=' . $value;
+        }
+
+        return implode(':', $parts);
+    }
 }
 

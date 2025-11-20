@@ -19,6 +19,34 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
 fi
 
 echo ""
-echo "✅ All tests passed! Proceeding with commit..."
+echo "✅ All tests passed!"
+echo ""
+echo "Regenerating Swagger documentation..."
+
+# Regenerate Swagger docs
+./vendor/bin/sail artisan l5-swagger:generate
+
+# Capture the exit code
+SWAGGER_EXIT_CODE=$?
+
+if [ $SWAGGER_EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "⚠️  Warning: Swagger generation failed, but proceeding with commit."
+else
+    echo ""
+    echo "✅ Swagger documentation regenerated successfully!"
+
+    # Check if api-docs.json was modified
+    if git diff --quiet storage/api-docs/api-docs.json; then
+        echo "   No changes to Swagger documentation."
+    else
+        echo "   Swagger documentation updated. Adding to commit..."
+        git add storage/api-docs/api-docs.json
+        echo "   ✅ storage/api-docs/api-docs.json added to commit"
+    fi
+fi
+
+echo ""
+echo "✅ Proceeding with commit..."
 exit 0
 

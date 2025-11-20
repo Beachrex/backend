@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\PostGISService;
+use App\Services\BeachFilterService;
+use App\Services\CacheService;
+use App\Traits\CacheAware;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -15,11 +18,15 @@ use Illuminate\Http\JsonResponse;
  */
 class PostGISController extends Controller
 {
-    protected PostGISService $postGISService;
+    use CacheAware;
 
-    public function __construct(PostGISService $postGISService)
+    protected PostGISService $postGISService;
+    protected BeachFilterService $filterService;
+
+    public function __construct(PostGISService $postGISService, BeachFilterService $filterService)
     {
         $this->postGISService = $postGISService;
+        $this->filterService = $filterService;
     }
 
     /**
@@ -235,32 +242,47 @@ class PostGISController extends Controller
             'limit' => 'sometimes|integer|min:1|max:10000'
         ]);
 
-        $beaches = $this->postGISService->getBeachesWithinRadius(
-            $request->latitude,
-            $request->longitude,
-            $request->radius,
-            $request->get('limit', 5000),
-            $request  // Pass the request for filtering
-        );
+        // Generate cache key based on coordinates, radius, filters, and locale
+        $locale = app()->getLocale();
+        $filterSuffix = $this->filterService->generateCacheKeySuffix($request);
+        $lat = round($request->latitude, 4);
+        $lng = round($request->longitude, 4);
+        $radius = round($request->radius, 2);
+        $cacheKey = "beaches:within_radius:{$locale}:lat={$lat}:lng={$lng}:radius={$radius}:{$filterSuffix}";
 
-        // Calculate centroid of returned beaches
-        $centroid = $this->postGISService->calculateCentroid(
-            $request->latitude,
-            $request->longitude,
-            $request->radius,
-            $request
-        );
+        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
+            $beaches = $this->postGISService->getBeachesWithinRadius(
+                $request->latitude,
+                $request->longitude,
+                $request->radius,
+                $request->get('limit', 5000),
+                $request  // Pass the request for filtering
+            );
+
+            // Calculate centroid of returned beaches
+            $centroid = $this->postGISService->calculateCentroid(
+                $request->latitude,
+                $request->longitude,
+                $request->radius,
+                $request
+            );
+
+            return [
+                'beaches' => $beaches,
+                'centroid' => $centroid
+            ];
+        });
 
         return response()->json([
-            'data' => $beaches,
+            'data' => $data['beaches'],
             'meta' => [
                 'search_center' => ['latitude' => (float) $request->latitude, 'longitude' => (float) $request->longitude],
                 'results_center' => [
-                    'latitude' => $centroid ? (float) $centroid->center_lat : null,
-                    'longitude' => $centroid ? (float) $centroid->center_lng : null
+                    'latitude' => $data['centroid'] ? (float) $data['centroid']->center_lat : null,
+                    'longitude' => $data['centroid'] ? (float) $data['centroid']->center_lng : null
                 ],
                 'radius_km' => (float) $request->radius,
-                'count' => $beaches->count()
+                'count' => $data['beaches']->count()
             ]
         ]);
     }
@@ -601,25 +623,41 @@ class PostGISController extends Controller
             'max_lon' => 'required|numeric|between:-180,180'
         ]);
 
-        $beaches = $this->postGISService->getBeachesInBoundingBox(
-            $request->min_lat,
-            $request->min_lon,
-            $request->max_lat,
-            $request->max_lon,
-            $request  // Pass the request for filtering
-        );
+        // Generate cache key based on bounding box, filters, and locale
+        $locale = app()->getLocale();
+        $filterSuffix = $this->filterService->generateCacheKeySuffix($request);
+        $minLat = round($request->min_lat, 4);
+        $minLon = round($request->min_lon, 4);
+        $maxLat = round($request->max_lat, 4);
+        $maxLon = round($request->max_lon, 4);
+        $cacheKey = "beaches:bounding_box:{$locale}:min_lat={$minLat}:min_lon={$minLon}:max_lat={$maxLat}:max_lon={$maxLon}:{$filterSuffix}";
 
-        // Calculate centroid of returned beaches
-        $centroid = $this->postGISService->calculateCentroidForBoundingBox(
-            $request->min_lat,
-            $request->min_lon,
-            $request->max_lat,
-            $request->max_lon,
-            $request
-        );
+        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
+            $beaches = $this->postGISService->getBeachesInBoundingBox(
+                $request->min_lat,
+                $request->min_lon,
+                $request->max_lat,
+                $request->max_lon,
+                $request  // Pass the request for filtering
+            );
+
+            // Calculate centroid of returned beaches
+            $centroid = $this->postGISService->calculateCentroidForBoundingBox(
+                $request->min_lat,
+                $request->min_lon,
+                $request->max_lat,
+                $request->max_lon,
+                $request
+            );
+
+            return [
+                'beaches' => $beaches,
+                'centroid' => $centroid
+            ];
+        });
 
         return response()->json([
-            'data' => $beaches,
+            'data' => $data['beaches'],
             'meta' => [
                 'bounding_box' => [
                     'min_latitude' => (float) $request->min_lat,
@@ -628,10 +666,10 @@ class PostGISController extends Controller
                     'max_longitude' => (float) $request->max_lon
                 ],
                 'center' => [
-                    'latitude' => $centroid ? (float) $centroid->center_lat : null,
-                    'longitude' => $centroid ? (float) $centroid->center_lng : null
+                    'latitude' => $data['centroid'] ? (float) $data['centroid']->center_lat : null,
+                    'longitude' => $data['centroid'] ? (float) $data['centroid']->center_lng : null
                 ],
-                'count' => $beaches->count()
+                'count' => $data['beaches']->count()
             ]
         ]);
     }
