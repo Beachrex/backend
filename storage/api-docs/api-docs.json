@@ -805,6 +805,63 @@
                 }
             }
         },
+        "/api/v1/beaches/map-bounds": {
+            "get": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "Get map bounds for all active beaches",
+                "description": "Returns only the bounding box and center coordinates of all active beaches (status_id=1). Used for initial map load to calculate proper zoom and center. Does not return beach data. This endpoint is heavily cached (30 days TTL) and cache is automatically cleared when beaches are updated.",
+                "operationId": "getBeachesMapBounds",
+                "responses": {
+                    "200": {
+                        "description": "Map bounds calculated successfully",
+                        "headers": {
+                            "X-Cache-Status": {
+                                "description": "Cache status: HIT (from cache), MISS (from database), or BYPASS (not cached)",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "HIT",
+                                        "MISS",
+                                        "BYPASS"
+                                    ],
+                                    "example": "HIT"
+                                }
+                            },
+                            "X-Cache-Key": {
+                                "description": "The cache key used for this request",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "beaches:map_bounds"
+                                }
+                            },
+                            "X-Response-Time": {
+                                "description": "Response time in milliseconds",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "2.45ms"
+                                }
+                            },
+                            "X-Locale": {
+                                "description": "The locale used for this response",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "en"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BeachMapBoundsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/beaches": {
             "get": {
                 "tags": [
@@ -7664,6 +7721,82 @@
                             }
                         },
                         "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "BeachMapBoundsResponse": {
+                "title": "Beach Map Bounds Response",
+                "description": "Response schema for beach map bounds endpoint - returns geographic bounds and center of all active beaches without beach data. Used for initial map load.",
+                "properties": {
+                    "center": {
+                        "description": "Geographic center (centroid) of all active beaches, calculated using PostGIS ST_Centroid function",
+                        "required": [
+                            "latitude",
+                            "longitude"
+                        ],
+                        "properties": {
+                            "latitude": {
+                                "description": "Center latitude coordinate",
+                                "type": "number",
+                                "format": "float",
+                                "example": 43.947149705303886,
+                                "nullable": true
+                            },
+                            "longitude": {
+                                "description": "Center longitude coordinate",
+                                "type": "number",
+                                "format": "float",
+                                "example": 9.871903842707175,
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "bounding_box": {
+                        "description": "Bounding box containing all active beaches (min/max latitude and longitude)",
+                        "required": [
+                            "min_latitude",
+                            "min_longitude",
+                            "max_latitude",
+                            "max_longitude"
+                        ],
+                        "properties": {
+                            "min_latitude": {
+                                "description": "Minimum latitude (southern boundary)",
+                                "type": "number",
+                                "format": "float",
+                                "example": 42.5,
+                                "nullable": true
+                            },
+                            "min_longitude": {
+                                "description": "Minimum longitude (western boundary)",
+                                "type": "number",
+                                "format": "float",
+                                "example": 8.2,
+                                "nullable": true
+                            },
+                            "max_latitude": {
+                                "description": "Maximum latitude (northern boundary)",
+                                "type": "number",
+                                "format": "float",
+                                "example": 45.8,
+                                "nullable": true
+                            },
+                            "max_longitude": {
+                                "description": "Maximum longitude (eastern boundary)",
+                                "type": "number",
+                                "format": "float",
+                                "example": 15.6,
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "total_beaches": {
+                        "description": "Total count of active beaches (status_id=1)",
+                        "type": "integer",
+                        "example": 1500
                     }
                 },
                 "type": "object"

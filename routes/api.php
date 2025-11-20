@@ -57,9 +57,10 @@ Route::prefix('api/v1')
         // Public media routes
         Route::get('/media/{id}', [MediaController::class, 'show']);
 
-        // Beach routes - filters must come before {id} route
-        Route::get('/beaches', [BeachController::class, 'index']);
+        // Beach routes - filters and map-bounds must come before {id} route
+        Route::get('/beaches/map-bounds', [BeachController::class, 'mapBounds']);
         Route::get('/beaches/filters', [FilterController::class, 'index']);
+        Route::get('/beaches', [BeachController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
 

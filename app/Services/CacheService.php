@@ -8,10 +8,13 @@ class CacheService
 {
     /**
      * Cache TTL in seconds
+     * Data changes only a few times per year, so we use long TTLs.
+     * Cache invalidation (via Cacheable trait) handles clearing cache when data is updated via admin.
+     * These TTLs are just a safety net in case cache invalidation fails.
      */
-    const TRANSLATION_TTL = 86400; // 24 hours
-    const REFERENCE_DATA_TTL = 3600; // 1 hour
-    const BEACH_COUNT_TTL = 300; // 5 minutes
+    const TRANSLATION_TTL = 2592000; // 30 days (translations almost never change)
+    const REFERENCE_DATA_TTL = 2592000; // 30 days (reference data rarely changes)
+    const BEACH_COUNT_TTL = 2592000; // 30 days (beaches added once, cache cleared on admin updates)
 
     /**
      * Cache key prefixes

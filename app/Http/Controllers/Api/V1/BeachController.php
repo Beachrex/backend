@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachResource;
 use App\Models\Beach;
 use App\Services\BeachFilterService;
+use App\Services\CacheService;
+use App\Traits\CacheAware;
 use Illuminate\Http\Request;
 
 /**
@@ -16,11 +18,83 @@ use Illuminate\Http\Request;
  */
 class BeachController extends Controller
 {
+    use CacheAware;
+
     protected BeachFilterService $filterService;
 
     public function __construct(BeachFilterService $filterService)
     {
         $this->filterService = $filterService;
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/beaches/map-bounds",
+     *     operationId="getBeachesMapBounds",
+     *     summary="Get map bounds for all active beaches",
+     *     description="Returns only the bounding box and center coordinates of all active beaches (status_id=1). Used for initial map load to calculate proper zoom and center. Does not return beach data. This endpoint is heavily cached (30 days TTL) and cache is automatically cleared when beaches are updated.",
+     *     tags={"Beaches"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Map bounds calculated successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/BeachMapBoundsResponse"),
+     *         @OA\Header(
+     *             header="X-Cache-Status",
+     *             description="Cache status: HIT (from cache), MISS (from database), or BYPASS (not cached)",
+     *             @OA\Schema(type="string", enum={"HIT", "MISS", "BYPASS"}, example="HIT")
+     *         ),
+     *         @OA\Header(
+     *             header="X-Cache-Key",
+     *             description="The cache key used for this request",
+     *             @OA\Schema(type="string", example="beaches:map_bounds")
+     *         ),
+     *         @OA\Header(
+     *             header="X-Response-Time",
+     *             description="Response time in milliseconds",
+     *             @OA\Schema(type="string", example="2.45ms")
+     *         ),
+     *         @OA\Header(
+     *             header="X-Locale",
+     *             description="The locale used for this response",
+     *             @OA\Schema(type="string", example="en")
+     *         )
+     *     )
+     * )
+     */
+    public function mapBounds()
+    {
+        $cacheKey = 'beaches:map_bounds';
+
+        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+            $geoData = Beach::where('status_id', 1)
+                ->selectRaw('
+                    ST_Y(ST_Centroid(ST_Collect(location))) as center_lat,
+                    ST_X(ST_Centroid(ST_Collect(location))) as center_lng,
+                    MIN(ST_Y(location)) as min_lat,
+                    MAX(ST_Y(location)) as max_lat,
+                    MIN(ST_X(location)) as min_lng,
+                    MAX(ST_X(location)) as max_lng,
+                    COUNT(*) as total
+                ')
+                ->whereNotNull('location')
+                ->first();
+
+            return [
+                'center' => [
+                    'latitude' => $geoData?->center_lat ? (float) $geoData->center_lat : null,
+                    'longitude' => $geoData?->center_lng ? (float) $geoData->center_lng : null,
+                ],
+                'bounding_box' => [
+                    'min_latitude' => $geoData?->min_lat ? (float) $geoData->min_lat : null,
+                    'min_longitude' => $geoData?->min_lng ? (float) $geoData->min_lng : null,
+                    'max_latitude' => $geoData?->max_lat ? (float) $geoData->max_lat : null,
+                    'max_longitude' => $geoData?->max_lng ? (float) $geoData->max_lng : null,
+                ],
+                'total_beaches' => $geoData?->total ? (int) $geoData->total : 0,
+            ];
+        });
+
+        return response()->json($data);
     }
 
     /**
