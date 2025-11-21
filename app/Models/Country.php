@@ -50,6 +50,14 @@ class Country extends Model
     }
 
     /**
+     * Get all islands for this country
+     */
+    public function islands(): HasMany
+    {
+        return $this->hasMany(Island::class, 'country_code', 'code');
+    }
+
+    /**
      * Get all beaches for this country
      */
     public function beaches(): HasMany

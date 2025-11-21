@@ -18,6 +18,7 @@ class City extends Model
         'code',
         'country_code',
         'region_id',
+        'island_id',
         'status_id',
     ];
 
@@ -54,6 +55,14 @@ class City extends Model
     public function region(): BelongsTo
     {
         return $this->belongsTo(Region::class);
+    }
+
+    /**
+     * Get the island this city belongs to
+     */
+    public function island(): BelongsTo
+    {
+        return $this->belongsTo(Island::class);
     }
 
     /**

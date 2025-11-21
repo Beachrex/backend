@@ -2186,12 +2186,69 @@
                 "tags": [
                     "Filters"
                 ],
-                "summary": "Get all beach filter options",
-                "description": "Returns all available filter options for beaches including waterbody types, user types, etc. All data is translated based on Accept-Language header with English fallback.",
+                "summary": "Get beach filter options with optional cascading filters",
+                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback.",
                 "operationId": "getBeachFilters",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "continent_code",
+                        "in": "query",
+                        "description": "Filter by continent code (e.g., EU, AS, AF)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "in": "query",
+                        "description": "Filter by country code or ID (e.g., HR, SI, or numeric ID)",
+                        "required": false,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "description": "Filter by region ID or code",
+                        "required": false,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "island",
+                        "in": "query",
+                        "description": "Filter by island ID or code",
+                        "required": false,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        }
                     }
                 ],
                 "responses": {

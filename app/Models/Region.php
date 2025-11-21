@@ -64,6 +64,14 @@ class Region extends Model
     }
 
     /**
+     * Get all islands in this region
+     */
+    public function islands(): HasMany
+    {
+        return $this->hasMany(Island::class);
+    }
+
+    /**
      * Get all badges for this region
      */
     public function badges(): BelongsToMany

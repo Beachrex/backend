@@ -16,6 +16,8 @@ class Island extends Model
 
     protected $fillable = [
         'code',
+        'country_code',
+        'region_id',
         'status_id',
     ];
 
@@ -36,6 +38,22 @@ class Island extends Model
     public function status(): BelongsTo
     {
         return $this->belongsTo(Status::class);
+    }
+
+    /**
+     * Get the country this island belongs to
+     */
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'country_code', 'code');
+    }
+
+    /**
+     * Get the region this island belongs to
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
     }
 
     /**

@@ -9,7 +9,11 @@ use App\Models\BeachType;
 use App\Models\Country;
 use App\Models\Region;
 use App\Models\Island;
+use App\Models\City;
+use App\Services\CacheService;
+use App\Traits\CacheAware;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -20,14 +24,44 @@ use Illuminate\Support\Facades\DB;
  */
 class FilterController extends Controller
 {
+    use CacheAware;
+
     /**
      * @OA\Get(
      *     path="/api/v1/beaches/filters",
      *     operationId="getBeachFilters",
-     *     summary="Get all beach filter options",
-     *     description="Returns all available filter options for beaches including waterbody types, user types, etc. All data is translated based on Accept-Language header with English fallback.",
+     *     summary="Get beach filter options with optional cascading filters",
+     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback.",
      *     tags={"Filters"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Parameter(
+     *         name="continent_code",
+     *         in="query",
+     *         description="Filter by continent code (e.g., EU, AS, AF)",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="country",
+     *         in="query",
+     *         description="Filter by country code or ID (e.g., HR, SI, or numeric ID)",
+     *         required=false,
+     *         @OA\Schema(oneOf={@OA\Schema(type="string"), @OA\Schema(type="integer")})
+     *     ),
+     *     @OA\Parameter(
+     *         name="region",
+     *         in="query",
+     *         description="Filter by region ID or code",
+     *         required=false,
+     *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
+     *     ),
+     *     @OA\Parameter(
+     *         name="island",
+     *         in="query",
+     *         description="Filter by island ID or code",
+     *         required=false,
+     *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Filter options retrieved successfully",
@@ -155,50 +189,78 @@ class FilterController extends Controller
      *     )
      * )
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         // Get locale from middleware (SetLocaleFromHeader handles si->sl mapping)
         $locale = app()->getLocale();
 
-        $filters = [];
+        // Get optional geographic filters for cascading
+        $continentCode = $request->get('continent_code');
+        $countryParam = $request->get('country');
+        $regionParam = $request->get('region');
+        $islandParam = $request->get('island');
 
-        // Build country filter from database
-        $countryData = $this->getCountryFilterData($locale);
-        if ($countryData) {
-            $filters['country'] = $countryData;
-        }
+        // Resolve country parameter (can be code or ID)
+        $countryCode = $this->resolveCountryParameter($countryParam);
 
-        // Build region filter from database
-        $regionData = $this->getRegionFilterData($locale);
-        if ($regionData) {
-            $filters['region'] = $regionData;
-        }
+        // Resolve region parameter (can be code or ID)
+        $regionId = $this->resolveRegionParameter($regionParam);
 
-        // Build island filter from database
-        $islandData = $this->getIslandFilterData($locale);
-        if ($islandData) {
-            $filters['island'] = $islandData;
-        }
+        // Resolve island parameter (can be code or ID)
+        $islandId = $this->resolveIslandParameter($islandParam);
 
-        // Build waterbody filter from database
-        $waterbodyData = $this->getWaterbodyFilterData($locale);
-        if ($waterbodyData) {
-            $filters['waterbody'] = $waterbodyData;
-        }
+        // Generate cache key based on filters
+        $cacheKeySuffix = $this->generateCacheKeySuffix($continentCode, $countryCode, $regionId, $islandId);
+        $cacheKey = "beaches:filters:{$locale}:{$cacheKeySuffix}";
 
-        // Build user_type filter from database
-        $userTypeData = $this->getUserTypeFilterData($locale);
-        if ($userTypeData) {
-            $filters['user_type'] = $userTypeData;
-        }
+        // Use cache with filter-aware key
+        $filters = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($locale, $continentCode, $countryCode, $regionId, $islandId) {
+            $filters = [];
 
-        // Build beach_type filter from database
-        $beachTypeData = $this->getBeachTypeFilterData($locale);
-        if ($beachTypeData) {
-            $filters['beach_type'] = $beachTypeData;
-        }
+            // Build country filter from database
+            $countryData = $this->getCountryFilterData($locale, $continentCode);
+            if ($countryData) {
+                $filters['country'] = $countryData;
+            }
 
+            // Build region filter from database
+            $regionData = $this->getRegionFilterData($locale, $countryCode);
+            if ($regionData) {
+                $filters['region'] = $regionData;
+            }
 
+            // Build island filter from database
+            $islandData = $this->getIslandFilterData($locale, $countryCode, $regionId);
+            if ($islandData) {
+                $filters['island'] = $islandData;
+            }
+
+            // Build city filter from database
+            $cityData = $this->getCityFilterData($locale, $countryCode, $regionId, $islandId);
+            if ($cityData) {
+                $filters['city'] = $cityData;
+            }
+
+            // Build waterbody filter from database
+            $waterbodyData = $this->getWaterbodyFilterData($locale);
+            if ($waterbodyData) {
+                $filters['waterbody'] = $waterbodyData;
+            }
+
+            // Build user_type filter from database
+            $userTypeData = $this->getUserTypeFilterData($locale);
+            if ($userTypeData) {
+                $filters['user_type'] = $userTypeData;
+            }
+
+            // Build beach_type filter from database
+            $beachTypeData = $this->getBeachTypeFilterData($locale);
+            if ($beachTypeData) {
+                $filters['beach_type'] = $beachTypeData;
+            }
+
+            return $filters;
+        });
 
         return response()->json([
             'data' => $filters
@@ -369,13 +431,19 @@ class FilterController extends Controller
     /**
      * Get country filter data with metadata
      */
-    private function getCountryFilterData(string $locale): ?array
+    private function getCountryFilterData(string $locale, ?string $continentCode = null): ?array
     {
         // Get countries that have more than 1 beach
-        $countries = Country::with('translations')
+        $query = Country::with('translations')
             ->select('countries.id', 'countries.code')
             ->join('beach', 'beach.country_code', '=', 'countries.code')
-            ->where('beach.status_id', 1)
+            ->where('beach.status_id', 1);
+
+        if ($continentCode) {
+            $query->where('countries.continent_code', strtoupper($continentCode));
+        }
+
+        $countries = $query
             ->groupBy('countries.id', 'countries.code')
             ->havingRaw('COUNT(beach.id) > 1')
             ->orderBy('countries.code')
@@ -419,14 +487,20 @@ class FilterController extends Controller
     /**
      * Get region filter data with metadata
      */
-    private function getRegionFilterData(string $locale): ?array
+    private function getRegionFilterData(string $locale, ?string $countryCode = null): ?array
     {
         // Get regions that have more than 1 beach
-        $regions = Region::with('translations')
+        $query = Region::with('translations')
             ->select('region.id', 'region.code')
             ->join('beach', 'beach.region_id', '=', 'region.id')
             ->where('beach.status_id', 1)
-            ->where('region.status_id', 1)
+            ->where('region.status_id', 1);
+
+        if ($countryCode) {
+            $query->where('region.country_code', strtoupper($countryCode));
+        }
+
+        $regions = $query
             ->groupBy('region.id', 'region.code')
             ->havingRaw('COUNT(beach.id) > 1')
             ->orderBy('region.code')
@@ -470,14 +544,24 @@ class FilterController extends Controller
     /**
      * Get island filter data with metadata
      */
-    private function getIslandFilterData(string $locale): ?array
+    private function getIslandFilterData(string $locale, ?string $countryCode = null, ?int $regionId = null): ?array
     {
         // Get islands that have more than 1 beach
-        $islands = Island::with('translations')
+        $query = Island::with('translations')
             ->select('island.id', 'island.code')
             ->join('beach', 'beach.island_id', '=', 'island.id')
             ->where('beach.status_id', 1)
-            ->where('island.status_id', 1)
+            ->where('island.status_id', 1);
+
+        if ($countryCode) {
+            $query->where('island.country_code', strtoupper($countryCode));
+        }
+
+        if ($regionId) {
+            $query->where('island.region_id', $regionId);
+        }
+
+        $islands = $query
             ->groupBy('island.id', 'island.code')
             ->havingRaw('COUNT(beach.id) > 1')
             ->orderBy('island.code')
@@ -516,5 +600,169 @@ class FilterController extends Controller
                 'slug' => $translation->slug ?? $translationEn->slug ?? null,
             ];
         })->toArray();
+    }
+
+    /**
+     * Get city filter data with metadata
+     */
+    private function getCityFilterData(string $locale, ?string $countryCode = null, ?int $regionId = null, ?int $islandId = null): ?array
+    {
+        // Get cities that have beaches
+        $query = City::with('translations')
+            ->select('city.id', 'city.code')
+            ->join('beach', 'beach.city_id', '=', 'city.id')
+            ->where('beach.status_id', 1)
+            ->where('city.status_id', 1);
+
+        if ($countryCode) {
+            $query->where('city.country_code', strtoupper($countryCode));
+        }
+
+        if ($regionId) {
+            $query->where('city.region_id', $regionId);
+        }
+
+        if ($islandId) {
+            $query->where('city.island_id', $islandId);
+        }
+
+        $cities = $query
+            ->groupBy('city.id', 'city.code')
+            ->orderBy('city.code')
+            ->get();
+
+        if ($cities->isEmpty()) {
+            return null;
+        }
+
+        // Get the first city to extract filter metadata
+        $firstCity = $cities->first();
+        $translation = $firstCity->translations->firstWhere('locale', $locale);
+        $translationEn = $firstCity->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'City',
+            'icon' => null,
+            'input_type' => 'select',
+            'options' => $this->getCityFilters($locale, $cities),
+        ];
+    }
+
+    /**
+     * Get city filter options
+     */
+    private function getCityFilters(string $locale, $cities): array
+    {
+        return $cities->map(function ($city) use ($locale) {
+            $translation = $city->translations->firstWhere('locale', $locale);
+            $translationEn = $city->translations->firstWhere('locale', 'en');
+
+            return [
+                'id' => $city->id,
+                'code' => $city->code,
+                'name' => $translation->name ?? $translationEn->name ?? $city->code,
+                'slug' => $translation->slug ?? $translationEn->slug ?? null,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Resolve country parameter - can be code or ID
+     * Returns country code if found, null otherwise
+     */
+    private function resolveCountryParameter($param): ?string
+    {
+        if (!$param) {
+            return null;
+        }
+
+        // If it's numeric, treat as ID
+        if (is_numeric($param)) {
+            $country = Country::find($param);
+            return $country ? $country->code : null;
+        }
+
+        // Otherwise treat as code
+        return strtoupper($param);
+    }
+
+    /**
+     * Resolve region parameter - can be code or ID
+     * Returns region ID if found, null otherwise
+     */
+    private function resolveRegionParameter($param): ?int
+    {
+        if (!$param) {
+            return null;
+        }
+
+        // If it's numeric, treat as ID
+        if (is_numeric($param)) {
+            return (int) $param;
+        }
+
+        // Otherwise treat as code
+        $region = Region::where('code', $param)->first();
+        return $region ? $region->id : null;
+    }
+
+    /**
+     * Resolve island parameter - can be code or ID
+     * Returns island ID if found, null otherwise
+     */
+    private function resolveIslandParameter($param): ?int
+    {
+        if (!$param) {
+            return null;
+        }
+
+        // If it's numeric, treat as ID
+        if (is_numeric($param)) {
+            return (int) $param;
+        }
+
+        // Otherwise treat as code
+        $island = Island::where('code', $param)->first();
+        return $island ? $island->id : null;
+    }
+
+    /**
+     * Generate cache key suffix from filter parameters
+     * Ensures consistent cache keys for the same filter combinations
+     */
+    private function generateCacheKeySuffix(?string $continentCode = null, ?string $countryCode = null, ?int $regionId = null, ?int $islandId = null): string
+    {
+        $parts = [];
+
+        if ($continentCode) {
+            $parts['continent_code'] = strtoupper($continentCode);
+        }
+
+        if ($countryCode) {
+            $parts['country'] = strtoupper($countryCode);
+        }
+
+        if ($regionId) {
+            $parts['region'] = $regionId;
+        }
+
+        if ($islandId) {
+            $parts['island'] = $islandId;
+        }
+
+        if (empty($parts)) {
+            return 'all';
+        }
+
+        // Sort keys for consistency
+        ksort($parts);
+
+        // Build suffix like: continent_code=EU:country=HR:region=1
+        $suffix = '';
+        foreach ($parts as $key => $value) {
+            $suffix .= ($suffix ? ':' : '') . "{$key}={$value}";
+        }
+
+        return $suffix;
     }
 }
