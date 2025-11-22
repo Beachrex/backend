@@ -431,7 +431,11 @@ class PostGISService
         $result = DB::selectOne("
             SELECT
                 ST_Y(ST_Centroid(ST_Collect(b.location))) as center_lat,
-                ST_X(ST_Centroid(ST_Collect(b.location))) as center_lng
+                ST_X(ST_Centroid(ST_Collect(b.location))) as center_lng,
+                MIN(ST_Y(b.location)) as min_lat,
+                MAX(ST_Y(b.location)) as max_lat,
+                MIN(ST_X(b.location)) as min_lng,
+                MAX(ST_X(b.location)) as max_lng
             FROM beach b
             LEFT JOIN continents cont ON b.continent_code = cont.code
             LEFT JOIN countries c ON b.country_code = c.code

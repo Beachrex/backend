@@ -660,10 +660,10 @@ class PostGISController extends Controller
             'data' => $data['beaches'],
             'meta' => [
                 'bounding_box' => [
-                    'min_latitude' => (float) $request->min_lat,
-                    'min_longitude' => (float) $request->min_lon,
-                    'max_latitude' => (float) $request->max_lat,
-                    'max_longitude' => (float) $request->max_lon
+                    'min_latitude' => $data['centroid'] && $data['centroid']->min_lat ? (float) $data['centroid']->min_lat : (float) $request->min_lat,
+                    'min_longitude' => $data['centroid'] && $data['centroid']->min_lng ? (float) $data['centroid']->min_lng : (float) $request->min_lon,
+                    'max_latitude' => $data['centroid'] && $data['centroid']->max_lat ? (float) $data['centroid']->max_lat : (float) $request->max_lat,
+                    'max_longitude' => $data['centroid'] && $data['centroid']->max_lng ? (float) $data['centroid']->max_lng : (float) $request->max_lon
                 ],
                 'center' => [
                     'latitude' => $data['centroid'] ? (float) $data['centroid']->center_lat : null,
