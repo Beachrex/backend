@@ -278,8 +278,8 @@ class PostGISController extends Controller
             'meta' => [
                 'search_center' => ['latitude' => (float) $request->latitude, 'longitude' => (float) $request->longitude],
                 'results_center' => [
-                    'latitude' => $data['centroid'] ? (float) $data['centroid']->center_lat : null,
-                    'longitude' => $data['centroid'] ? (float) $data['centroid']->center_lng : null
+                    'latitude' => $data['centroid'] && isset($data['centroid']->center_lat) ? (float) $data['centroid']->center_lat : null,
+                    'longitude' => $data['centroid'] && isset($data['centroid']->center_lng) ? (float) $data['centroid']->center_lng : null
                 ],
                 'radius_km' => (float) $request->radius,
                 'count' => $data['beaches']->count()
@@ -660,14 +660,14 @@ class PostGISController extends Controller
             'data' => $data['beaches'],
             'meta' => [
                 'bounding_box' => [
-                    'min_latitude' => $data['centroid'] && $data['centroid']->min_lat ? (float) $data['centroid']->min_lat : (float) $request->min_lat,
-                    'min_longitude' => $data['centroid'] && $data['centroid']->min_lng ? (float) $data['centroid']->min_lng : (float) $request->min_lon,
-                    'max_latitude' => $data['centroid'] && $data['centroid']->max_lat ? (float) $data['centroid']->max_lat : (float) $request->max_lat,
-                    'max_longitude' => $data['centroid'] && $data['centroid']->max_lng ? (float) $data['centroid']->max_lng : (float) $request->max_lon
+                    'min_latitude' => $data['centroid'] && isset($data['centroid']->min_lat) && $data['centroid']->min_lat !== null ? (float) $data['centroid']->min_lat : (float) $request->min_lat,
+                    'min_longitude' => $data['centroid'] && isset($data['centroid']->min_lng) && $data['centroid']->min_lng !== null ? (float) $data['centroid']->min_lng : (float) $request->min_lon,
+                    'max_latitude' => $data['centroid'] && isset($data['centroid']->max_lat) && $data['centroid']->max_lat !== null ? (float) $data['centroid']->max_lat : (float) $request->max_lat,
+                    'max_longitude' => $data['centroid'] && isset($data['centroid']->max_lng) && $data['centroid']->max_lng !== null ? (float) $data['centroid']->max_lng : (float) $request->max_lon
                 ],
                 'center' => [
-                    'latitude' => $data['centroid'] ? (float) $data['centroid']->center_lat : null,
-                    'longitude' => $data['centroid'] ? (float) $data['centroid']->center_lng : null
+                    'latitude' => $data['centroid'] && isset($data['centroid']->center_lat) ? (float) $data['centroid']->center_lat : null,
+                    'longitude' => $data['centroid'] && isset($data['centroid']->center_lng) ? (float) $data['centroid']->center_lng : null
                 ],
                 'count' => $data['beaches']->count()
             ]

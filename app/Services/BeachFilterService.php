@@ -1586,6 +1586,8 @@ class BeachFilterService
             'accommodation_around',
             'culinary_offer',
             'location_infrastructure',
+            'natural_location_condition',
+            'sporting_activity',
             'underwater_characteristic',
             'accessibility',
             'parking',
