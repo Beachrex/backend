@@ -36,6 +36,20 @@ This file tracks backend changes that are important for frontend integration and
 - This is inconsistent with the relative path convention used throughout the application.
 - All paths should be relative without leading slashes (e.g., `icons/filters/waterbody.svg`, `img/beaches/...`).
 
+---
+
+### 4. Fixed Escaped Quotes in Beach Translations
+
+**Context**
+- Beach translation data (names, descriptions, slugs) contained literal backslash characters escaping apostrophes.
+- Example: Database had `Beach d\'en Perris` instead of `Beach d'en Perris`.
+- This caused the API to return double-escaped strings like `Beach d\\'en Perris`.
+- The issue affected 366 records across name and description fields.
+
+**Root Cause**
+- Data was incorrectly inserted with SQL-escaped strings stored as literal values.
+- The backslash-apostrophe sequence (`\'`) was stored in the database instead of just the apostrophe (`'`).
+
 **Database Tables Affected**
 - `waterbody.icon` - 4 records fixed
 - `beach_type.icon` - 8 records fixed
@@ -80,24 +94,86 @@ This file tracks backend changes that are important for frontend integration and
    - `/api/v1/spatial/beaches/bounding-box`
    - `/api/v1/spatial/beaches/nearest`
 
+**Database Tables Affected**
+- `beach_translation.name` - 105 records fixed
+- `beach_translation.description` - 261 records fixed
+- `beach_translation.slug` - 0 records (none had backslashes)
+
+**Fix Applied**
+
+Created migration: `database/migrations/2025_11_26_000002_fix_escaped_quotes_in_beach_translations.php`
+
+The migration uses PostgreSQL's `CHR()` function and `REPLACE()` to fix the data:
+```sql
+UPDATE beach_translation
+SET name = REPLACE(name, CHR(92) || CHR(39), CHR(39))
+WHERE POSITION(CHR(92) IN name) > 0
+```
+
+This replaces `\'` (backslash + apostrophe) with just `'` (apostrophe).
+
 **Deployment Instructions**
 
-To apply these fixes to development and production databases:
+To apply all data quality fixes to development and production databases:
 
 1. **Development:**
    ```bash
    ./vendor/bin/sail artisan migrate
+   ./vendor/bin/sail artisan cache:clear
    ```
 
 2. **Production:**
    ```bash
    php artisan migrate
-   ```
-
-3. **Clear cache after deployment:**
-   ```bash
    php artisan cache:clear
    ```
+
+**Migrations to Run (in order):**
+1. `2025_11_26_000001_remove_leading_slashes_from_icon_paths.php` - Fixes icon paths
+2. `2025_11_26_000002_fix_escaped_quotes_in_beach_translations.php` - Fixes escaped quotes
+3. `2025_11_26_000003_remove_double_spaces_from_beach_translations.php` - Removes double spaces
+
+**Impact**
+
+After running both migrations:
+- All icon paths will be relative without leading slashes
+- All beach translation names and descriptions will have proper apostrophes instead of escaped backslashes
+- API responses will return clean, properly formatted text
+
+---
+
+### 5. Removed Double Spaces from Beach Translations
+
+**Context**
+- Some beach translation names and descriptions contained multiple consecutive spaces.
+- Example: `Beach  Sveti Duh` (with double space) instead of `Beach Sveti Duh`.
+- This affected 13 names and 58 descriptions.
+
+**Database Tables Affected**
+- `beach_translation.name` - 13 records fixed
+- `beach_translation.description` - 58 records fixed
+- `beach_translation.slug` - 0 records (none had double spaces)
+
+**Fix Applied**
+
+Created migration: `database/migrations/2025_11_26_000003_remove_double_spaces_from_beach_translations.php`
+
+The migration uses PostgreSQL's `REGEXP_REPLACE()` to replace multiple consecutive spaces with a single space:
+```sql
+UPDATE beach_translation
+SET name = REGEXP_REPLACE(name, ' {2,}', ' ', 'g')
+WHERE name ~ ' {2,}'
+```
+
+This replaces any sequence of 2 or more spaces with a single space.
+
+**Examples**
+
+Before → After:
+- `Beach  Sveti Duh` → `Beach Sveti Duh`
+- `Beach  Aiguablava` → `Beach Aiguablava`
+- `Beach Sa  Rocca Tunda` → `Beach Sa Rocca Tunda`
+- `Platja  Albaranes` → `Platja Albaranes`
 
 The migration will automatically fix all icon paths with leading slashes. If you need to rollback:
 ```bash
