@@ -223,7 +223,7 @@ namespace App\Swagger\Schemas;
  *         @OA\Property(
  *             property="spheres_360",
  *             type="array",
- *             description="360-degree panoramic images",
+ *             description="360-degree panoramic images and their virtual tours",
  *             @OA\Items(ref="#/components/schemas/MediaItem")
  *         ),
  *         @OA\Property(
@@ -297,7 +297,7 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="latitude", type="string", example="42.5900000"),
  *             @OA\Property(property="longitude", type="string", example="18.2200000"),
  *             @OA\Property(property="distance_km", type="number", format="float", example=1.25, description="Distance in kilometers"),
- *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)"),
+ *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (relative, without CDN/domain prefix)."),
  *             @OA\Property(
  *                 property="location",
  *                 type="object",
@@ -320,7 +320,7 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="latitude", type="string", example="42.6000000"),
  *             @OA\Property(property="longitude", type="string", example="18.2400000"),
  *             @OA\Property(property="distance_km", type="number", format="float", example=2.50, description="Distance in kilometers"),
- *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (prepend CDN URL)"),
+ *             @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/beach-folder/image.jpg", description="Main beach image path (relative, without CDN/domain prefix)."),
  *             @OA\Property(
  *                 property="location",
  *                 type="object",
@@ -338,12 +338,13 @@ namespace App\Swagger\Schemas;
  * @OA\Schema(
  *     schema="MediaItem",
  *     title="Media Item",
- *     description="Individual media item (image, video, etc.)",
+ *     description="Individual media item (image, video, 360 sphere, etc.)",
  *     type="object",
  *     @OA\Property(property="id", type="integer", example=456),
- *     @OA\Property(property="file_name", type="string", example="beach-photo.jpg"),
- *     @OA\Property(property="url", type="string", example="https://cdn.example.com/img/beaches/beach-123/photo.jpg"),
- *     @OA\Property(property="thumbnail_url", type="string", nullable=true, example="https://cdn.example.com/img/beaches/beach-123/thumb_photo.jpg"),
+ *     @OA\Property(property="file_name", type="string", example="hr-6-o-hvar-sl3.jpg"),
+ *     @OA\Property(property="url", type="string", example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN."),
+ *     @OA\Property(property="thumbnail_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative thumbnail path (same as url for now)."),
+ *     @OA\Property(property="tour_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/vtour/tour.html", description="Virtual tour HTML path for 360 spheres (present only for spheres_360 collection)."),
  *     @OA\Property(property="mime_type", type="string", example="image/jpeg"),
  *     @OA\Property(property="width", type="integer", nullable=true, example=1920),
  *     @OA\Property(property="height", type="integer", nullable=true, example=1080),

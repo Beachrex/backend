@@ -132,16 +132,17 @@ class Media extends Model
     }
 
     /**
-     * Get the full URL to the media file
+     * Get the URL to the media file without CDN/domain prefix
+     * Returns the stored file_path so frontend can prepend its own base URL.
      */
     public function getUrlAttribute(): string
     {
-        return Storage::disk($this->disk)->url($this->file_path);
+        return $this->file_path;
     }
 
     /**
      * Get the thumbnail URL (for images)
-     * This is a placeholder - implement actual thumbnail generation logic
+     * Currently just returns the same relative path as the original file
      */
     public function getThumbnailUrlAttribute(): ?string
     {
@@ -149,8 +150,6 @@ class Media extends Model
             return null;
         }
 
-        // TODO: Implement thumbnail generation
-        // For now, return the original URL
         return $this->url;
     }
 

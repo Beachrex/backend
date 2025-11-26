@@ -341,7 +341,7 @@ class BeachDetailsResource extends JsonResource
         return [
             'gallery' => $this->formatMediaCollection($mediaByCollection->get('beach_gallery', collect())),
             'videos' => $this->formatMediaCollection($mediaByCollection->get('beach_videos', collect())),
-            'spheres_360' => $this->formatMediaCollection($mediaByCollection->get('beach_360_sphere', collect())),
+            'spheres_360' => $this->formatMediaCollection($mediaByCollection->get('beach_360_sphere', collect()), 'beach_360_sphere'),
             'parking_images' => $this->formatMediaCollection($mediaByCollection->get('parking_images', collect())),
             'spot_images' => $this->formatMediaCollection($mediaByCollection->get('beach_spot_images', collect())),
             'infrastructure_images' => $this->formatMediaCollection($mediaByCollection->get('infrastructure_images', collect())),
@@ -349,14 +349,19 @@ class BeachDetailsResource extends JsonResource
         ];
     }
 
-    private function formatMediaCollection($mediaItems): array
+    private function formatMediaCollection($mediaItems, ?string $collectionCode = null): array
     {
-        return $mediaItems->map(function ($media) {
+        $vtourUrl = ($collectionCode === 'beach_360_sphere' && $this->folder_name && $mediaItems->isNotEmpty())
+            ? "img/beaches/{$this->folder_name}/vtour/tour.html"
+            : null;
+
+        return $mediaItems->map(function ($media) use ($vtourUrl, $collectionCode) {
             return [
                 'id' => $media->id,
                 'file_name' => $media->file_name,
                 'url' => $media->url,
                 'thumbnail_url' => $media->thumbnail_url,
+                'tour_url' => $collectionCode === 'beach_360_sphere' ? $vtourUrl : null,
                 'mime_type' => $media->mime_type,
                 'width' => $media->width,
                 'height' => $media->height,

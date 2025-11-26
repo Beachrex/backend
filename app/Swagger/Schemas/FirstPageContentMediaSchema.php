@@ -23,8 +23,8 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(
  *         property="url",
  *         type="string",
- *         description="Full CDN URL to the media file",
- *         example="https://beachrex.fra1.digitaloceanspaces.com/public/img/first-page/hero-bg.jpg"
+ *         description="Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN.",
+ *         example="img/first-page/hero-bg.jpg"
  *     ),
  *     @OA\Property(
  *         property="file_name",

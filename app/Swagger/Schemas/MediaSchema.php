@@ -24,9 +24,9 @@ namespace App\Swagger\Schemas;
  *         @OA\Property(property="code", type="string", example="beach_gallery"),
  *         @OA\Property(property="name", type="string", example="Beach Gallery")
  *     ),
- *     @OA\Property(property="file_name", type="string", example="beach-sunset.jpg"),
- *     @OA\Property(property="url", type="string", example="https://beachrex.fra1.digitaloceanspaces.com/Beach/1/beach_gallery/beach-sunset_1234567890_abc123.jpg"),
- *     @OA\Property(property="thumbnail_url", type="string", nullable=true, example="https://beachrex.fra1.digitaloceanspaces.com/Beach/1/beach_gallery/thumbs/beach-sunset_1234567890_abc123.jpg"),
+ *     @OA\Property(property="file_name", type="string", example="hr-6-o-hvar-sl3.jpg"),
+ *     @OA\Property(property="url", type="string", example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN."),
+ *     @OA\Property(property="thumbnail_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative thumbnail path (same as url for now)."),
  *     @OA\Property(property="mime_type", type="string", example="image/jpeg"),
  *     @OA\Property(property="size", type="integer", example=2048576, description="File size in bytes"),
  *     @OA\Property(property="human_readable_size", type="string", example="2 MB"),
