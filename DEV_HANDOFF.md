@@ -43,6 +43,7 @@ This file tracks backend changes that are important for frontend integration and
 
 **Code Files Affected**
 - `app/Http/Resources/BeachResource.php` - Removed hardcoded leading slash from `main_image` path (line 64)
+- `app/Services/PostGISService.php` - Removed hardcoded leading slash from spatial API responses (line 480)
 
 **Fixes Applied**
 
@@ -60,6 +61,24 @@ This file tracks backend changes that are important for frontend integration and
    ```php
    $mainImage = $primaryMedia->file_path;
    ```
+
+3. **PostGISService formatBeachResults** - Changed from:
+   ```php
+   // Ensure main_image starts with a forward slash
+   $mainImage = null;
+   if ($beach->main_image_path) {
+       $mainImage = '/' . ltrim($beach->main_image_path, '/');
+   }
+   ```
+   To:
+   ```php
+   // Return main_image path as-is (relative path without leading slash)
+   $mainImage = $beach->main_image_path ?? null;
+   ```
+   This affects all spatial API endpoints:
+   - `/api/v1/spatial/beaches/within-radius`
+   - `/api/v1/spatial/beaches/bounding-box`
+   - `/api/v1/spatial/beaches/nearest`
 
 **Deployment Instructions**
 

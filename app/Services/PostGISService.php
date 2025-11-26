@@ -474,11 +474,8 @@ class PostGISService
     private function formatBeachResults(array $results)
     {
         return collect($results)->map(function ($beach) {
-            // Ensure main_image starts with a forward slash
-            $mainImage = null;
-            if ($beach->main_image_path) {
-                $mainImage = '/' . ltrim($beach->main_image_path, '/');
-            }
+            // Return main_image path as-is (relative path without leading slash)
+            $mainImage = $beach->main_image_path ?? null;
 
             return [
                 'id' => $beach->id,
