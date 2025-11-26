@@ -7330,7 +7330,7 @@
                                 }
                             },
                             "spheres_360": {
-                                "description": "360-degree panoramic images",
+                                "description": "360-degree panoramic images and their virtual tours",
                                 "type": "array",
                                 "items": {
                                     "$ref": "#/components/schemas/MediaItem"
@@ -7474,7 +7474,7 @@
                                         "example": 1.25
                                     },
                                     "main_image": {
-                                        "description": "Main beach image path (prepend CDN URL)",
+                                        "description": "Main beach image path (relative, without CDN/domain prefix).",
                                         "type": "string",
                                         "example": "img/beaches/beach-folder/image.jpg",
                                         "nullable": true
@@ -7544,7 +7544,7 @@
                                         "example": 2.5
                                     },
                                     "main_image": {
-                                        "description": "Main beach image path (prepend CDN URL)",
+                                        "description": "Main beach image path (relative, without CDN/domain prefix).",
                                         "type": "string",
                                         "example": "img/beaches/beach-folder/image.jpg",
                                         "nullable": true
@@ -7592,7 +7592,7 @@
             },
             "MediaItem": {
                 "title": "Media Item",
-                "description": "Individual media item (image, video, etc.)",
+                "description": "Individual media item (image, video, 360 sphere, etc.)",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -7600,15 +7600,23 @@
                     },
                     "file_name": {
                         "type": "string",
-                        "example": "beach-photo.jpg"
+                        "example": "hr-6-o-hvar-sl3.jpg"
                     },
                     "url": {
+                        "description": "Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN.",
                         "type": "string",
-                        "example": "https://cdn.example.com/img/beaches/beach-123/photo.jpg"
+                        "example": "img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
                     },
                     "thumbnail_url": {
+                        "description": "Relative thumbnail path (same as url for now).",
                         "type": "string",
-                        "example": "https://cdn.example.com/img/beaches/beach-123/thumb_photo.jpg",
+                        "example": "img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg",
+                        "nullable": true
+                    },
+                    "tour_url": {
+                        "description": "Virtual tour HTML path for 360 spheres (present only for spheres_360 collection).",
+                        "type": "string",
+                        "example": "img/beaches/hr-6-o-hvar/vtour/tour.html",
                         "nullable": true
                     },
                     "mime_type": {
@@ -8008,9 +8016,9 @@
                         "nullable": true
                     },
                     "main_image": {
-                        "description": "Primary beach image path (prepend CDN URL on frontend)",
+                        "description": "Primary beach image path (relative, without CDN/domain prefix). Frontend should prepend its own base URL or CDN.",
                         "type": "string",
-                        "example": "/img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
+                        "example": "img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
                         "nullable": true
                     }
                 },
@@ -8348,9 +8356,9 @@
                         "example": "image"
                     },
                     "url": {
-                        "description": "Full CDN URL to the media file",
+                        "description": "Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN.",
                         "type": "string",
-                        "example": "https://beachrex.fra1.digitaloceanspaces.com/public/img/first-page/hero-bg.jpg"
+                        "example": "img/first-page/hero-bg.jpg"
                     },
                     "file_name": {
                         "description": "File name",
@@ -8681,15 +8689,17 @@
                     },
                     "file_name": {
                         "type": "string",
-                        "example": "beach-sunset.jpg"
+                        "example": "hr-6-o-hvar-sl3.jpg"
                     },
                     "url": {
+                        "description": "Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN.",
                         "type": "string",
-                        "example": "https://beachrex.fra1.digitaloceanspaces.com/Beach/1/beach_gallery/beach-sunset_1234567890_abc123.jpg"
+                        "example": "img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
                     },
                     "thumbnail_url": {
+                        "description": "Relative thumbnail path (same as url for now).",
                         "type": "string",
-                        "example": "https://beachrex.fra1.digitaloceanspaces.com/Beach/1/beach_gallery/thumbs/beach-sunset_1234567890_abc123.jpg",
+                        "example": "img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg",
                         "nullable": true
                     },
                     "mime_type": {
