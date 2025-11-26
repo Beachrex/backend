@@ -61,7 +61,7 @@ class BeachResource extends JsonResource
         if ($this->media && $this->media->isNotEmpty()) {
             $primaryMedia = $this->media->first();
             if ($primaryMedia && $primaryMedia->file_path) {
-                $mainImage = '/' . ltrim($primaryMedia->file_path, '/');
+                $mainImage = $primaryMedia->file_path;
             }
         }
 

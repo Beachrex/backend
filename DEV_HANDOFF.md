@@ -4,6 +4,130 @@ This file tracks backend changes that are important for frontend integration and
 
 ---
 
+## 2025-11-26 – Spatial API Cache Key Fixes and Error Handling
+
+### 1. Fixed Missing Filter Parameters in Cache Key Generation
+
+**Context**
+- The spatial endpoints (`/beaches/within-radius` and `/beaches/bounding-box`) support filtering by `natural_location_condition` and `sporting_activity`.
+- These filters were implemented in the query logic but were **missing** from the cache key generation in `BeachFilterService::generateCacheKeySuffix()`.
+- This caused incorrect cached results to be returned when these filters were used.
+
+**Implementation**
+- **File:** `app/Services/BeachFilterService.php`
+  - Added `natural_location_condition` and `sporting_activity` to the `$filterParams` array in `generateCacheKeySuffix()` method (lines 1587-1588).
+  - Cache keys now properly include these filters when present in the request.
+
+**Impact**
+- Cache keys are now unique for each combination of filters, preventing incorrect cached results.
+- Example cache key before: `beaches:within_radius:en:lat=46.0569:lng=14.5058:radius=50.00:country=HR`
+- Example cache key after: `beaches:within_radius:en:lat=46.0569:lng=14.5058:radius=50.00:country=HR:natural_location_condition=shaded:sporting_activity=diving`
+
+**Action Required**
+- Clear Redis cache after deployment to ensure all cached data uses the new cache key structure.
+- Command: `php artisan cache:clear` or `redis-cli FLUSHDB`
+
+---
+
+### 3. Fixed Image Paths with Leading Slashes
+
+**Context**
+- Some paths in the database and code were stored/returned with a leading slash (e.g., `/icons/filters/waterbody.svg`, `/img/beaches/...`).
+- This is inconsistent with the relative path convention used throughout the application.
+- All paths should be relative without leading slashes (e.g., `icons/filters/waterbody.svg`, `img/beaches/...`).
+
+**Database Tables Affected**
+- `waterbody.icon` - 4 records fixed
+- `beach_type.icon` - 8 records fixed
+- `user_type.icon` - 3 records fixed
+
+**Code Files Affected**
+- `app/Http/Resources/BeachResource.php` - Removed hardcoded leading slash from `main_image` path (line 64)
+
+**Fixes Applied**
+
+1. **Database icon paths** - Created migration to remove leading slashes:
+   - **Migration file:** `database/migrations/2025_11_26_000001_remove_leading_slashes_from_icon_paths.php`
+   - Updates `waterbody.icon`, `beach_type.icon`, and `user_type.icon` tables
+   - Removes leading `/` from all icon paths
+   - Includes rollback functionality in `down()` method
+
+2. **BeachResource main_image** - Changed from:
+   ```php
+   $mainImage = '/' . ltrim($primaryMedia->file_path, '/');
+   ```
+   To:
+   ```php
+   $mainImage = $primaryMedia->file_path;
+   ```
+
+**Deployment Instructions**
+
+To apply these fixes to development and production databases:
+
+1. **Development:**
+   ```bash
+   ./vendor/bin/sail artisan migrate
+   ```
+
+2. **Production:**
+   ```bash
+   php artisan migrate
+   ```
+
+3. **Clear cache after deployment:**
+   ```bash
+   php artisan cache:clear
+   ```
+
+The migration will automatically fix all icon paths with leading slashes. If you need to rollback:
+```bash
+php artisan migrate:rollback --step=1
+```
+
+**Verification**
+- Comprehensive scan of all database tables confirmed no paths starting with `/` remain.
+- Checked 117 table/column combinations across the entire database.
+- Verified all API resources return paths without leading slashes.
+
+**Example**
+- Before: `/icons/filters/waterbody.svg`, `/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg`
+- After: `icons/filters/waterbody.svg`, `img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg`
+
+**Impact**
+- All paths (media, icons) are now consistent with the relative path convention.
+- Frontend can prepend base URL/CDN consistently across all paths.
+- API responses for beaches, filters, and badges now return clean relative paths.
+
+---
+
+### 2. Added Defensive Checks for Centroid Properties
+
+**Context**
+- The spatial endpoints return centroid data (center coordinates and bounding box) calculated from the beaches found.
+- When accessing cached data, if the centroid object structure changed or properties were missing, the API would throw "Undefined property: stdClass::$property" errors.
+- This was particularly noticeable when accessing endpoints via browser vs curl, as browsers might retrieve stale cached data.
+
+**Implementation**
+- **File:** `app/Http/Controllers/Api/V1/PostGISController.php`
+  - **Method:** `beachesInBoundingBox()` (lines 663-670)
+    - Added `isset()` checks for all centroid properties: `min_lat`, `max_lat`, `min_lng`, `max_lng`, `center_lat`, `center_lng`
+    - Falls back to request parameters or null if properties don't exist
+  - **Method:** `beachesWithinRadius()` (lines 281-282)
+    - Added `isset()` checks for `center_lat` and `center_lng`
+    - Falls back to null if properties don't exist
+
+**Example**
+- Before: `$data['centroid']->min_lat` → Error if property doesn't exist
+- After: `$data['centroid'] && isset($data['centroid']->min_lat) && $data['centroid']->min_lat !== null ? (float) $data['centroid']->min_lat : (float) $request->min_lat`
+
+**Impact**
+- API endpoints are now resilient to cached data with different structures
+- No more "Undefined property" errors when accessing spatial endpoints
+- Graceful fallback to request parameters when centroid data is unavailable
+
+---
+
 ## 2025-11-26 – Media URLs, 360 Spheres, and Swagger Updates
 
 ### 1. Media URLs: CDN prefix removed
