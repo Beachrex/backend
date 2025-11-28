@@ -65,53 +65,10 @@ services:
                 - ping
             retries: 3
             timeout: 5s
-    imagor:
-        image: 'shumc/imagor:latest'
-        # Port mapping removed - access via Nginx proxy instead
-        # ports:
-        #     - '${IMAGOR_PORT:-8001}:8000'
-        environment:
-            PORT: 8000
-            IMAGOR_SECRET: '${IMAGOR_SECRET}'
-            IMAGOR_UNSAFE: '${IMAGOR_UNSAFE:-0}'  # Set to 1 to enable unsigned URLs for testing
-            IMAGOR_AUTO_WEBP: '${IMAGOR_AUTO_WEBP:-1}'
-            IMAGOR_AUTO_AVIF: '${IMAGOR_AUTO_AVIF:-0}'
-            IMAGOR_CACHE_HEADER_TTL: '${IMAGOR_CACHE_HEADER_TTL:-168h}'
-            IMAGOR_CACHE_HEADER_SWR: '${IMAGOR_CACHE_HEADER_SWR:-24h}'
-
-            # S3/DigitalOcean Spaces Configuration
-            AWS_ACCESS_KEY_ID: '${DO_SPACES_KEY}'
-            AWS_SECRET_ACCESS_KEY: '${DO_SPACES_SECRET}'
-            AWS_REGION: '${DO_SPACES_REGION}'
-            S3_ENDPOINT: '${DO_SPACES_ENDPOINT}'
-            S3_FORCE_PATH_STYLE: 1
-
-            # S3 Loader - Load images from DigitalOcean Spaces
-            S3_LOADER_BUCKET: '${DO_SPACES_BUCKET}'
-            S3_LOADER_BASE_DIR: 'public'
-
-            # S3 Result Storage - Cache processed images
-            S3_RESULT_STORAGE_BUCKET: '${DO_SPACES_BUCKET}'
-            S3_RESULT_STORAGE_BASE_DIR: 'public/imagor-cache'
-            S3_RESULT_STORAGE_ACL: 'public-read'
-            S3_RESULT_STORAGE_EXPIRATION: '${IMAGOR_RESULT_STORAGE_EXPIRATION:-720h}'
-
-            # VIPS Configuration
-            VIPS_MAX_WIDTH: '${IMAGOR_MAX_WIDTH:-5000}'
-            VIPS_MAX_HEIGHT: '${IMAGOR_MAX_HEIGHT:-5000}'
-            VIPS_MAX_RESOLUTION: '${IMAGOR_MAX_RESOLUTION:-16800000}'
-
-            # Server Configuration
-            SERVER_CORS: 1
-            SERVER_ACCESS_LOG: '${IMAGOR_ACCESS_LOG:-0}'
-        networks:
-            - sail
-        healthcheck:
-            test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 10s
+    # Imagor service removed - now deployed separately on DigitalOcean App Platform
+    # Production URL: https://beachrex-imagor-xadoz.ondigitalocean.app
+    # Frontend uses NEXT_PUBLIC_IMAGOR_ENDPOINT to access Imagor directly
+    # Laravel uses ImagorService to generate URL paths (e.g., "unsafe/400x300/img/...")
 networks:
     sail:
         driver: bridge

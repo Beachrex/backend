@@ -14,7 +14,7 @@ class ImagorService
 {
     private string $baseUrl;
     private string $publicUrl;
-    private string $secret;
+    private ?string $secret;
     private string $signerType;
     private bool $autoWebp;
     private bool $autoAvif;
@@ -30,9 +30,10 @@ class ImagorService
         $this->autoAvif = config('imagor.auto_avif', false);
         $this->usePublicUrl = config('imagor.use_public_url', true); // Default to true for client-facing URLs
 
-        if (empty($this->secret)) {
-            throw new InvalidArgumentException('Imagor secret is not configured. Set IMAGOR_SECRET in .env');
-        }
+        // Secret is only required for signed URLs, not for unsigned URLs
+        // if (empty($this->secret)) {
+        //     throw new InvalidArgumentException('Imagor secret is not configured. Set IMAGOR_SECRET in .env');
+        // }
     }
 
     /**
@@ -213,6 +214,12 @@ class ImagorService
      */
     private function sign(string $path): string
     {
+        if (empty($this->secret)) {
+            throw new InvalidArgumentException(
+                'Imagor secret is required for signed URLs. Set IMAGOR_SECRET in .env or use unsafeUrl() instead.'
+            );
+        }
+
         $hash = hash_hmac($this->signerType, $path, $this->secret, true);
         $signature = rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
 

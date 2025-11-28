@@ -158,29 +158,37 @@ unsafe/{transformations}/{image-path}
 
 ### 4. Environment Configuration
 
-**Required Environment Variables:**
-
+**Laravel API `.env`** (required for generating Imagor URL paths):
 ```env
-# Imagor Configuration
-IMAGOR_URL=http://imagor:8000                    # Internal Docker URL
-IMAGOR_PUBLIC_URL=http://localhost:8001          # Public URL for development
-IMAGOR_SECRET=mysecret                           # Secret for signing URLs
-IMAGOR_UNSAFE=1                                  # Enable unsigned URLs (dev only)
-IMAGOR_USE_PUBLIC_URL=true                       # Use public URL in responses
+# Imagor Configuration (External Service on DigitalOcean App Platform)
+IMAGOR_URL=https://beachrex-imagor-xadoz.ondigitalocean.app
+IMAGOR_SECRET=mysecret  # Required for URL path generation (even for unsigned URLs)
+IMAGOR_UNSAFE=1         # Using unsigned URLs (temporary until signed URLs work)
 
-# DigitalOcean Spaces (used by Imagor)
-DO_SPACES_KEY=your-key
-DO_SPACES_SECRET=your-secret
-DO_SPACES_ENDPOINT=https://fra1.digitaloceanspaces.com
-DO_SPACES_REGION=fra1
-DO_SPACES_BUCKET=beachrex
+# Note: IMAGOR_PUBLIC_URL not needed - frontend prepends URL directly
+# Note: Other Imagor settings (AUTO_WEBP, CACHE_TTL, etc.) are configured on DigitalOcean App Platform
 ```
 
+**Frontend `.env`** (Next.js on Vercel):
+```env
+NEXT_PUBLIC_IMAGOR_ENDPOINT=https://beachrex-imagor-xadoz.ondigitalocean.app
+```
+
+**Imagor Service** (DigitalOcean App Platform):
+All Imagor-specific settings are configured in the DigitalOcean App Platform dashboard:
+- `PORT=8080`
+- `IMAGOR_SECRET=mysecret`
+- `IMAGOR_UNSAFE=1`
+- `IMAGOR_AUTO_WEBP=1`
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (for DigitalOcean Spaces)
+- `S3_ENDPOINT`, `S3_LOADER_BUCKET`, `S3_RESULT_STORAGE_BUCKET`, etc.
+- See DigitalOcean App Platform environment variables for full configuration
+
 **Production Configuration:**
-- Set `IMAGOR_UNSAFE=0` to disable unsigned URLs
-- Set `IMAGOR_PUBLIC_URL` to production Imagor URL (e.g., `https://imagor.beachrex.com`)
+- For production, set `IMAGOR_UNSAFE=0` on DigitalOcean App Platform to require signed URLs
 - Generate strong secret: `openssl rand -base64 32`
-- Update `IMAGOR_SECRET` with the generated secret
+- Update `IMAGOR_SECRET` in both Laravel `.env` and DigitalOcean App Platform
+- Optional: Set up custom domain `imagor.beachrex.com` in Cloudflare → Update `NEXT_PUBLIC_IMAGOR_ENDPOINT`
 
 ---
 
