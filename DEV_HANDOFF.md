@@ -4,20 +4,22 @@ This file tracks backend changes that are important for frontend integration and
 
 ---
 
-## 2025-11-28 – Imagor Integration for Image Transformation
+## 2025-11-28 – Image Handling Simplified (Imagor Removed from Backend)
 
 ### 1. Overview
 
 **Context**
-- Integrated Imagor (fast, secure image processing server using libvips) for on-the-fly image transformation.
-- All API endpoints now return Imagor-transformed URLs alongside original image paths.
-- Imagor is configured to use DigitalOcean Spaces as the image source.
+- **Removed all Imagor-related code from Laravel backend**
+- Frontend now handles all image transformations directly via Imagor subdomain (`s3.beachrex.com`)
+- Backend only returns relative image paths (`main_image`)
+- Significantly reduced API response sizes and memory usage
 
 **Benefits**
-- Fast image transformations (4-8x faster than ImageMagick)
-- Automatic format conversion, resizing, cropping, and quality optimization
-- Reduced bandwidth usage with optimized images
-- No need for pre-generated thumbnails
+- ✅ Simpler backend architecture (no Imagor service dependencies)
+- ✅ Smaller API responses (removed `description` and `main_image_imagor` fields from list endpoints)
+- ✅ Reduced memory usage when caching (fixed memory exhaustion errors)
+- ✅ Frontend has full control over image transformations
+- ✅ Easier to maintain and deploy
 
 ---
 
@@ -31,23 +33,30 @@ This file tracks backend changes that are important for frontend integration and
 - `GET /api/v1/spatial/beaches/within-radius`
 - `GET /api/v1/spatial/beaches/bounding-box`
 
-**New Field:**
-- `main_image_imagor` (string, nullable): Imagor-transformed URL for the primary beach image (small size, 400x300)
+**Fields Removed:**
+- ❌ `description` - Removed from list endpoints to reduce memory usage when caching
+- ❌ `main_image_imagor` - Removed, frontend constructs Imagor URLs directly
 
-**Example Response:**
+**Current Response:**
 ```json
 {
   "id": 1,
   "name": "Beach Livade i Obatnice",
-  "main_image": "img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg",
-  "main_image_imagor": "unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg"
+  "slug": "beach-livade-i-obatnice",
+  "latitude": "44.5996000",
+  "longitude": "14.9876000",
+  "country_code": "HR",
+  "main_image": "img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg"
 }
 ```
 
 **Frontend Usage:**
 ```typescript
-const imagorEndpoint = process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT; // "http://localhost:8001"
-const imageUrl = `${imagorEndpoint}/${beach.main_image_imagor}`;
+// Frontend constructs Imagor URLs
+const imagorEndpoint = process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT; // "https://s3.beachrex.com"
+const imagorTransform = process.env.NEXT_PUBLIC_IMAGOR_TRANSFORM; // "unsafe/fit-in/400x300/filters:quality(85)/"
+const imageUrl = `${imagorEndpoint}/${imagorTransform}${beach.main_image}`;
+// Result: https://s3.beachrex.com/unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg
 ```
 
 ---
@@ -57,21 +66,10 @@ const imageUrl = `${imagorEndpoint}/${beach.main_image_imagor}`;
 **Affected Endpoints:**
 - `GET /api/v1/beach-details/{identifier}`
 
-**New Field:**
-- `imagor` (object, nullable): Object containing 5 different Imagor-transformed URLs for each image in all media collections (gallery, videos, spheres_360, parking_images, spot_images, infrastructure_images, info_images)
+**Fields Removed:**
+- ❌ `imagor` object - Removed from media items, frontend constructs Imagor URLs directly
 
-**Imagor Object Structure:**
-```json
-{
-  "thumbnail": "unsafe/fit-in/150x150/smart/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-  "small": "unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-  "medium": "unsafe/fit-in/800x600/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-  "large": "unsafe/fit-in/1200x900/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-  "hero": "unsafe/1920x600/smart/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg"
-}
-```
-
-**Example Response:**
+**Current Response:**
 ```json
 {
   "media": {
@@ -80,72 +78,88 @@ const imageUrl = `${imagorEndpoint}/${beach.main_image_imagor}`;
         "id": 2,
         "file_name": "hr-69-o-pag-sl1.jpg",
         "url": "img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-        "imagor": {
-          "thumbnail": "unsafe/fit-in/150x150/smart/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-          "small": "unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-          "medium": "unsafe/fit-in/800x600/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-          "large": "unsafe/fit-in/1200x900/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
-          "hero": "unsafe/1920x600/smart/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg"
-        }
+        "mime_type": "image/jpeg",
+        "size": 245678,
+        "width": 1920,
+        "height": 1080
       }
     ]
   }
 }
 ```
 
-**Note:** The `imagor` object is only present for images, not videos.
+**Frontend Usage:**
+```typescript
+// Frontend constructs different sizes as needed
+const imagorEndpoint = process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT; // "https://s3.beachrex.com"
+
+// Thumbnail
+const thumbnailUrl = `${imagorEndpoint}/unsafe/fit-in/150x150/smart/filters:quality(85)/${media.url}`;
+
+// Small
+const smallUrl = `${imagorEndpoint}/unsafe/fit-in/400x300/filters:quality(85)/${media.url}`;
+
+// Medium
+const mediumUrl = `${imagorEndpoint}/unsafe/fit-in/800x600/filters:quality(90)/${media.url}`;
+
+// Large
+const largeUrl = `${imagorEndpoint}/unsafe/fit-in/1200x900/filters:quality(90)/${media.url}`;
+
+// Hero/Banner
+const heroUrl = `${imagorEndpoint}/unsafe/1920x600/smart/filters:quality(90)/${media.url}`;
+```
 
 ---
 
 ### 3. Implementation Details
 
-#### 3.1 Backend Files Modified
+#### 3.1 Backend Files Deleted
 
 **Services:**
-- `app/Services/ImagorService.php`
-  - Main service for generating Imagor URLs
-  - Methods: `url()` (signed), `unsafeUrl()` (unsigned), `thumbnail()`, `small()`, `medium()`, `large()`, `hero()`
-  - Returns relative URLs by default (without domain) for frontend flexibility
-  - Optional `$includeBaseUrl` parameter to include full URL when needed
+- ❌ `app/Services/ImagorService.php` - Deleted (no longer needed)
+
+**Controllers:**
+- ❌ `app/Http/Controllers/Api/ImagorController.php` - Deleted (no longer needed)
+
+**Configuration:**
+- ❌ `config/imagor.php` - Deleted (no longer needed)
+
+#### 3.2 Backend Files Modified
 
 **Models:**
 - `app/Models/Media.php`
-  - Added methods: `imagorUrl()`, `imagorThumbnail()`, `imagorSmall()`, `imagorMedium()`, `imagorLarge()`, `imagorHero()`
-  - All methods return relative Imagor URLs
+  - ❌ Removed all Imagor methods: `imagorUrl()`, `imagorThumbnail()`, `imagorSmall()`, `imagorMedium()`, `imagorLarge()`, `imagorHero()`
 
 **Resources:**
 - `app/Http/Resources/BeachResource.php`
-  - Added `main_image_imagor` field (small size only for list performance)
+  - ❌ Removed `main_image_imagor` field
+  - ❌ Removed `description` field (to reduce memory usage)
 - `app/Http/Resources/BeachDetailsResource.php`
-  - Updated `formatMediaCollection()` to include `imagor` object for all images
+  - ❌ Removed `imagor` object from media items
+- `app/Http/Resources/MediaResource.php`
+  - ❌ Removed `imagor` property
 
 **Services:**
 - `app/Services/PostGISService.php`
-  - Updated `formatBeachResults()` to include `main_image_imagor` for spatial API responses
+  - ❌ Removed `main_image_imagor` field generation
 
-**Configuration:**
-- `config/imagor.php`
-  - Configuration file for Imagor service
-  - Environment variables: `IMAGOR_URL`, `IMAGOR_PUBLIC_URL`, `IMAGOR_SECRET`, `IMAGOR_UNSAFE`, etc.
+**Routes:**
+- `routes/api.php`
+  - ❌ Removed all Imagor routes (`/api/v1/imagor/*`)
 
-**Docker:**
-- `docker-compose.yml`
-  - Added Imagor service container
-  - Configured with DigitalOcean Spaces integration
-  - Port 8001 exposed for local development
+**Swagger:**
+- `app/Swagger/Schemas/BeachSchema.php`
+  - ✅ Updated to reflect `main_image` only (no `main_image_imagor`)
+- `app/Swagger/Schemas/BeachDetailsSchema.php`
+  - ✅ Removed `imagor` object from media schema
 
 ---
 
-#### 3.2 Imagor URL Format
+### 4. Imagor URL Format (Frontend Reference)
 
-**Unsigned URLs (Development):**
+**Unsigned URLs:**
 ```
-unsafe/{transformations}/{image-path}
-```
-
-**Signed URLs (Production - not yet working):**
-```
-{signature}/{transformations}/{image-path}
+https://s3.beachrex.com/unsafe/{transformations}/{image-path}
 ```
 
 **Transformation Examples:**
@@ -153,124 +167,155 @@ unsafe/{transformations}/{image-path}
 - `400x300` - Exact dimensions (may crop)
 - `smart` - Smart crop (detects important areas)
 - `filters:quality(85)` - JPEG quality 85%
+- `filters:format(webp)` - Convert to WebP format
+
+**Example URLs:**
+```
+# Thumbnail
+https://s3.beachrex.com/unsafe/fit-in/150x150/smart/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg
+
+# Small
+https://s3.beachrex.com/unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg
+
+# Medium
+https://s3.beachrex.com/unsafe/fit-in/800x600/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg
+
+# Large
+https://s3.beachrex.com/unsafe/fit-in/1200x900/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg
+
+# Hero/Banner
+https://s3.beachrex.com/unsafe/1920x600/smart/filters:quality(90)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg
+```
 
 ---
 
-### 4. Environment Configuration
+### 5. Environment Configuration
 
-**Laravel API `.env`** (required for generating Imagor URL paths):
+**Laravel API `.env`** (NO Imagor configuration needed):
 ```env
-# Imagor Configuration (External Service on DigitalOcean App Platform)
-IMAGOR_URL=https://beachrex-imagor-xadoz.ondigitalocean.app
-IMAGOR_SECRET=mysecret  # Required for URL path generation (even for unsigned URLs)
-IMAGOR_UNSAFE=1         # Using unsigned URLs (temporary until signed URLs work)
-
-# Note: IMAGOR_PUBLIC_URL not needed - frontend prepends URL directly
-# Note: Other Imagor settings (AUTO_WEBP, CACHE_TTL, etc.) are configured on DigitalOcean App Platform
+# ❌ IMAGOR_URL - Removed (not needed)
+# ❌ IMAGOR_SECRET - Removed (not needed)
+# ❌ IMAGOR_UNSAFE - Removed (not needed)
 ```
 
 **Frontend `.env`** (Next.js on Vercel):
 ```env
-NEXT_PUBLIC_IMAGOR_ENDPOINT=https://beachrex-imagor-xadoz.ondigitalocean.app
+# Imagor endpoint (subdomain pointing to Imagor service)
+NEXT_PUBLIC_IMAGOR_ENDPOINT=https://s3.beachrex.com
+
+# Optional: Default transformation for list views
+NEXT_PUBLIC_IMAGOR_TRANSFORM=unsafe/fit-in/400x300/filters:quality(85)/
 ```
 
 **Imagor Service** (DigitalOcean App Platform):
-All Imagor-specific settings are configured in the DigitalOcean App Platform dashboard:
-- `PORT=8080`
-- `IMAGOR_SECRET=mysecret`
-- `IMAGOR_UNSAFE=1`
-- `IMAGOR_AUTO_WEBP=1`
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (for DigitalOcean Spaces)
-- `S3_ENDPOINT`, `S3_LOADER_BUCKET`, `S3_RESULT_STORAGE_BUCKET`, etc.
-- See DigitalOcean App Platform environment variables for full configuration
+Imagor runs as a separate service at `https://beachrex-imagor-xadoz.ondigitalocean.app` with subdomain `s3.beachrex.com` pointing to it.
 
-**Production Configuration:**
-- For production, set `IMAGOR_UNSAFE=0` on DigitalOcean App Platform to require signed URLs
-- Generate strong secret: `openssl rand -base64 32`
-- Update `IMAGOR_SECRET` in both Laravel `.env` and DigitalOcean App Platform
-- Optional: Set up custom domain `imagor.beachrex.com` in Cloudflare → Update `NEXT_PUBLIC_IMAGOR_ENDPOINT`
+Configuration (on DigitalOcean App Platform):
+- `PORT=8080`
+- `IMAGOR_UNSAFE=1` (unsigned URLs enabled)
+- `IMAGOR_AUTO_WEBP=1` (automatic WebP conversion)
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (for DigitalOcean Spaces)
+- `S3_ENDPOINT=fra1.digitaloceanspaces.com`
+- `S3_LOADER_BUCKET=beachrex`
+- `S3_RESULT_STORAGE_BUCKET=beachrex`
 
 ---
 
-### 5. Swagger Documentation Updates
+### 6. Swagger Documentation Updates
 
 **Updated Schemas:**
 - `app/Swagger/Schemas/BeachSchema.php`
-  - Added `main_image_imagor` property with description and example
+  - ✅ Updated `main_image` description to explain frontend constructs Imagor URLs
+  - ❌ Removed `main_image_imagor` property
 - `app/Swagger/Schemas/BeachDetailsSchema.php`
-  - Added `imagor` object to MediaItem schema with all 5 size variants
+  - ❌ Removed `imagor` object from MediaItem schema
 
 ---
 
-### 6. Performance Impact
+### 7. Performance Impact
 
-**Before:**
-- List endpoint with 100 beaches: ~5MB (with full media arrays)
+**Before (with Imagor URLs in API):**
+- List endpoint with 100 beaches: ~54KB (with `main_image_imagor`)
+- Memory exhaustion errors when caching 5000+ beaches with descriptions
 
-**After:**
-- List endpoint with 100 beaches: ~54KB (with single Imagor URL per beach)
-- **90% reduction in response size!**
-
----
-
-### 7. Known Issues
-
-**Signed URLs Not Working:**
-- Signed URLs currently return 403 "url signature mismatch" errors
-- Root cause unknown - signature generation appears correct
-- **Temporary workaround:** Using unsigned URLs with `IMAGOR_UNSAFE=1`
-- **Action required:** Investigate Imagor configuration and secret handling before production deployment
+**After (Imagor removed, description removed):**
+- List endpoint with 100 beaches: ~45KB (smaller, no `main_image_imagor`, no `description`)
+- ✅ No more memory exhaustion errors
+- ✅ Caching works reliably with 5000+ beaches
 
 ---
 
 ### 8. Frontend Integration Guide
 
-**Step 1: Set Environment Variable**
+**Step 1: Set Environment Variables**
 ```env
-NEXT_PUBLIC_IMAGOR_ENDPOINT=http://localhost:8001
+# Imagor endpoint (subdomain pointing to Imagor service)
+NEXT_PUBLIC_IMAGOR_ENDPOINT=https://s3.beachrex.com
+
+# Optional: Default transformation for list views
+NEXT_PUBLIC_IMAGOR_TRANSFORM=unsafe/fit-in/400x300/filters:quality(85)/
 ```
 
-**Step 2: Use Imagor URLs**
+**Step 2: Construct Imagor URLs in Frontend**
 ```typescript
 // For list views (beaches, spatial results)
-const imageUrl = `${process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT}/${beach.main_image_imagor}`;
+const imagorEndpoint = process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT;
+const imagorTransform = process.env.NEXT_PUBLIC_IMAGOR_TRANSFORM;
+const imageUrl = `${imagorEndpoint}/${imagorTransform}${beach.main_image}`;
+// Result: https://s3.beachrex.com/unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg
 
-// For detail views (beach details)
-const thumbnailUrl = `${process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT}/${media.imagor.thumbnail}`;
-const smallUrl = `${process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT}/${media.imagor.small}`;
-const mediumUrl = `${process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT}/${media.imagor.medium}`;
-const largeUrl = `${process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT}/${media.imagor.large}`;
-const heroUrl = `${process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT}/${media.imagor.hero}`;
+// For detail views (beach details) - construct different sizes
+const thumbnailUrl = `${imagorEndpoint}/unsafe/fit-in/150x150/smart/filters:quality(85)/${media.url}`;
+const smallUrl = `${imagorEndpoint}/unsafe/fit-in/400x300/filters:quality(85)/${media.url}`;
+const mediumUrl = `${imagorEndpoint}/unsafe/fit-in/800x600/filters:quality(90)/${media.url}`;
+const largeUrl = `${imagorEndpoint}/unsafe/fit-in/1200x900/filters:quality(90)/${media.url}`;
+const heroUrl = `${imagorEndpoint}/unsafe/1920x600/smart/filters:quality(90)/${media.url}`;
 ```
 
-**Step 3: Remove Client-Side Imagor Logic**
-- No need for client-side Imagor URL generation
-- Backend returns all necessary URLs
-- Frontend only needs to prepend the Imagor endpoint
+**Step 3: Create Reusable Helper Function**
+```typescript
+// utils/imagor.ts
+export const getImagorUrl = (
+  imagePath: string,
+  size: 'thumbnail' | 'small' | 'medium' | 'large' | 'hero' = 'small'
+): string => {
+  const endpoint = process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT;
+
+  const transformations = {
+    thumbnail: 'unsafe/fit-in/150x150/smart/filters:quality(85)',
+    small: 'unsafe/fit-in/400x300/filters:quality(85)',
+    medium: 'unsafe/fit-in/800x600/filters:quality(90)',
+    large: 'unsafe/fit-in/1200x900/filters:quality(90)',
+    hero: 'unsafe/1920x600/smart/filters:quality(90)',
+  };
+
+  return `${endpoint}/${transformations[size]}/${imagePath}`;
+};
+
+// Usage
+const imageUrl = getImagorUrl(beach.main_image, 'small');
+```
 
 ---
 
 ### 9. Testing
 
-**Test Unsigned URLs:**
+**Test Direct Imagor URLs:**
 ```bash
-# Direct Imagor URL
-curl "http://localhost:8001/unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg"
-
-# Via API
-curl "http://localhost/api/v1/beaches/1" | jq '.data.main_image_imagor'
+# Direct Imagor URL (via subdomain)
+curl "https://s3.beachrex.com/unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-69-o-pag/hr-69-o-pag-sl7.jpg"
 ```
 
 **Test API Responses:**
 ```bash
-# List endpoint
-curl "http://localhost/api/v1/beaches?limit=10" | jq '.data[0] | {id, name, main_image, main_image_imagor}'
+# List endpoint - verify main_image is present (no main_image_imagor)
+curl "https://dev-api.beachrex.com/api/v1/beaches?limit=10" | jq '.data[0] | {id, name, main_image}'
 
-# Detail endpoint
-curl "http://localhost/api/v1/beach-details/beach-livade-i-obatnice" | jq '.data.media.gallery[0].imagor'
+# Detail endpoint - verify media has url (no imagor object)
+curl "https://dev-api.beachrex.com/api/v1/beach-details/beach-livade-i-obatnice" | jq '.data.media.gallery[0] | {id, file_name, url}'
 
-# Spatial endpoint
-curl "http://localhost/api/v1/spatial/beaches/within-radius?latitude=44.5&longitude=14.5&radius=50&limit=3" | jq '.data[0] | {id, name, main_image_imagor}'
+# Spatial endpoint - verify main_image is present
+curl "https://dev-api.beachrex.com/api/v1/spatial/beaches/within-radius?latitude=44.5&longitude=14.5&radius=50&limit=3" | jq '.data[0] | {id, name, main_image}'
 ```
 
 ---
