@@ -370,17 +370,6 @@ class BeachDetailsResource extends JsonResource
                 'order' => $media->order,
             ];
 
-            // Add Imagor URLs for images
-            if ($media->isImage()) {
-                $baseData['imagor'] = [
-                    'thumbnail' => $media->imagorThumbnail(),
-                    'small' => $media->imagorSmall(),
-                    'medium' => $media->imagorMedium(),
-                    'large' => $media->imagorLarge(),
-                    'hero' => $media->imagorHero(),
-                ];
-            }
-
             return $baseData;
         })->values()->toArray();
     }

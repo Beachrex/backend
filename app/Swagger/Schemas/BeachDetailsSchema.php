@@ -350,18 +350,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(property="height", type="integer", nullable=true, example=1080),
  *     @OA\Property(property="duration", type="integer", nullable=true, example=120, description="Duration in seconds for videos"),
  *     @OA\Property(property="is_primary", type="boolean", example=true),
- *     @OA\Property(property="order", type="integer", example=1),
- *     @OA\Property(
- *         property="imagor",
- *         type="object",
- *         nullable=true,
- *         description="Imagor-transformed image URLs (only present for images, not videos). All paths are relative - frontend should prepend IMAGOR_ENDPOINT.",
- *         @OA\Property(property="thumbnail", type="string", example="unsafe/fit-in/150x150/smart/filters:quality(85)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Thumbnail size (150x150)"),
- *         @OA\Property(property="small", type="string", example="unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Small size (400x300)"),
- *         @OA\Property(property="medium", type="string", example="unsafe/fit-in/800x600/filters:quality(90)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Medium size (800x600)"),
- *         @OA\Property(property="large", type="string", example="unsafe/fit-in/1200x900/filters:quality(90)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Large size (1200x900)"),
- *         @OA\Property(property="hero", type="string", example="unsafe/1920x600/smart/filters:quality(90)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Hero/banner size (1920x600)")
- *     )
+ *     @OA\Property(property="order", type="integer", example=1)
  * )
  */
 class BeachDetailsSchema {}

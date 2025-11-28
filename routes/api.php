@@ -36,7 +36,6 @@ use App\Http\Controllers\Api\V1\FilterController;
 use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
-use App\Http\Controllers\Api\ImagorController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -187,13 +186,5 @@ Route::prefix('api/v1')
             Route::get('/beaches/density-grid', [PostGISController::class, 'beachDensityGrid']);
             Route::get('/beaches/statistics', [PostGISController::class, 'beachStatistics']);
             Route::get('/distance/calculate', [PostGISController::class, 'calculateDistance']);
-        });
-
-        // Imagor image processing routes
-        Route::prefix('imagor')->group(function () {
-            Route::post('/url', [ImagorController::class, 'generateUrl']);
-            Route::get('/presets', [ImagorController::class, 'presets']);
-            Route::post('/preset/{preset}', [ImagorController::class, 'generatePresetUrl']);
-            Route::post('/batch', [ImagorController::class, 'batchGenerate']);
         });
     });

@@ -30,15 +30,6 @@ class MediaResource extends JsonResource
             'url' => $this->url,
             'thumbnail_url' => $this->when($this->isImage(), $this->thumbnail_url),
 
-            // Imagor URLs (processed images with various sizes)
-            'imagor' => $this->when($this->isImage(), [
-                'thumbnail' => $this->imagorThumbnail(),
-                'small' => $this->imagorSmall(),
-                'medium' => $this->imagorMedium(),
-                'large' => $this->imagorLarge(),
-                'hero' => $this->imagorHero(),
-            ]),
-
             'mime_type' => $this->mime_type,
             'size' => $this->size,
             'human_readable_size' => $this->human_readable_size,

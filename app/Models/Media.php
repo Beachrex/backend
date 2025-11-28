@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Services\ImagorService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -201,126 +200,7 @@ class Media extends Model
         return $this->metadata['caption'] ?? null;
     }
 
-    /**
-     * Get Imagor URL for this media with custom transformations
-     *
-     * @param array $options Imagor transformation options
-     * @return string|null Imagor URL or null if not an image
-     */
-    public function imagorUrl(array $options = []): ?string
-    {
-        if (!$this->isImage()) {
-            return null;
-        }
 
-        try {
-            $imagor = app(ImagorService::class);
-            // Use unsigned URLs for now (IMAGOR_UNSAFE=1)
-            return $imagor->unsafeUrl($this->file_path, $options);
-        } catch (\Exception $e) {
-            \Log::warning('Failed to generate Imagor URL', [
-                'media_id' => $this->id,
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
-
-    /**
-     * Get Imagor thumbnail URL
-     *
-     * @param int $size Thumbnail size (default: 150)
-     * @return string|null
-     */
-    public function imagorThumbnail(int $size = 150): ?string
-    {
-        if (!$this->isImage()) {
-            return null;
-        }
-
-        try {
-            $imagor = app(ImagorService::class);
-            return $imagor->thumbnail($this->file_path, $size);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Get Imagor small image URL
-     *
-     * @return string|null
-     */
-    public function imagorSmall(): ?string
-    {
-        if (!$this->isImage()) {
-            return null;
-        }
-
-        try {
-            $imagor = app(ImagorService::class);
-            return $imagor->small($this->file_path);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Get Imagor medium image URL
-     *
-     * @return string|null
-     */
-    public function imagorMedium(): ?string
-    {
-        if (!$this->isImage()) {
-            return null;
-        }
-
-        try {
-            $imagor = app(ImagorService::class);
-            return $imagor->medium($this->file_path);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Get Imagor large image URL
-     *
-     * @return string|null
-     */
-    public function imagorLarge(): ?string
-    {
-        if (!$this->isImage()) {
-            return null;
-        }
-
-        try {
-            $imagor = app(ImagorService::class);
-            return $imagor->large($this->file_path);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Get Imagor hero/banner image URL
-     *
-     * @return string|null
-     */
-    public function imagorHero(): ?string
-    {
-        if (!$this->isImage()) {
-            return null;
-        }
-
-        try {
-            $imagor = app(ImagorService::class);
-            return $imagor->hero($this->file_path);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
 
     /**
      * Delete the physical file when model is deleted
