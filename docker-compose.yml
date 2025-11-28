@@ -67,8 +67,9 @@ services:
             timeout: 5s
     imagor:
         image: 'shumc/imagor:latest'
-        ports:
-            - '${IMAGOR_PORT:-8001}:8000'
+        # Port mapping removed - access via Nginx proxy instead
+        # ports:
+        #     - '${IMAGOR_PORT:-8001}:8000'
         environment:
             PORT: 8000
             IMAGOR_SECRET: '${IMAGOR_SECRET}'
