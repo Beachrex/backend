@@ -215,7 +215,8 @@ class Media extends Model
 
         try {
             $imagor = app(ImagorService::class);
-            return $imagor->url($this->file_path, $options);
+            // Use unsigned URLs for now (IMAGOR_UNSAFE=1)
+            return $imagor->unsafeUrl($this->file_path, $options);
         } catch (\Exception $e) {
             \Log::warning('Failed to generate Imagor URL', [
                 'media_id' => $this->id,

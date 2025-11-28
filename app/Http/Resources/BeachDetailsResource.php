@@ -356,7 +356,7 @@ class BeachDetailsResource extends JsonResource
             : null;
 
         return $mediaItems->map(function ($media) use ($vtourUrl, $collectionCode) {
-            return [
+            $baseData = [
                 'id' => $media->id,
                 'file_name' => $media->file_name,
                 'url' => $media->url,
@@ -369,6 +369,19 @@ class BeachDetailsResource extends JsonResource
                 'is_primary' => $media->is_primary,
                 'order' => $media->order,
             ];
+
+            // Add Imagor URLs for images
+            if ($media->isImage()) {
+                $baseData['imagor'] = [
+                    'thumbnail' => $media->imagorThumbnail(),
+                    'small' => $media->imagorSmall(),
+                    'medium' => $media->imagorMedium(),
+                    'large' => $media->imagorLarge(),
+                    'hero' => $media->imagorHero(),
+                ];
+            }
+
+            return $baseData;
         })->values()->toArray();
     }
 

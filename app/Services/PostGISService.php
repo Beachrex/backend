@@ -473,9 +473,17 @@ class PostGISService
      */
     private function formatBeachResults(array $results)
     {
-        return collect($results)->map(function ($beach) {
+        $imagorService = app(\App\Services\ImagorService::class);
+
+        return collect($results)->map(function ($beach) use ($imagorService) {
             // Return main_image path as-is (relative path without leading slash)
             $mainImage = $beach->main_image_path ?? null;
+
+            // Generate Imagor URL for the main image (small size for list view)
+            $mainImageImagor = null;
+            if ($mainImage) {
+                $mainImageImagor = $imagorService->small($mainImage);
+            }
 
             return [
                 'id' => $beach->id,
@@ -493,6 +501,7 @@ class PostGISService
                 'island_slug' => $beach->island_slug ?? null,
                 'city_slug' => $beach->city_slug ?? null,
                 'main_image' => $mainImage,
+                'main_image_imagor' => $mainImageImagor,
                 'distance_km' => $beach->distance_km ?? null,
             ];
         });

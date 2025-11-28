@@ -6,25 +6,29 @@ use InvalidArgumentException;
 
 /**
  * Imagor Service
- * 
+ *
  * Generates signed URLs for Imagor image processing server
  * Documentation: https://github.com/cshum/imagor
  */
 class ImagorService
 {
     private string $baseUrl;
+    private string $publicUrl;
     private string $secret;
     private string $signerType;
     private bool $autoWebp;
     private bool $autoAvif;
+    private bool $usePublicUrl;
 
     public function __construct()
     {
         $this->baseUrl = rtrim(config('imagor.url'), '/');
+        $this->publicUrl = rtrim(config('imagor.public_url'), '/');
         $this->secret = config('imagor.secret');
-        $this->signerType = config('imagor.signer_type', 'sha1');
+        $this->signerType = config('imagor.signer_type', 'sha256');
         $this->autoWebp = config('imagor.auto_webp', true);
         $this->autoAvif = config('imagor.auto_avif', false);
+        $this->usePublicUrl = config('imagor.use_public_url', true); // Default to true for client-facing URLs
 
         if (empty($this->secret)) {
             throw new InvalidArgumentException('Imagor secret is not configured. Set IMAGOR_SECRET in .env');
@@ -38,12 +42,20 @@ class ImagorService
      * @param array $options Image transformation options
      * @return string Signed Imagor URL
      */
-    public function url(string $imagePath, array $options = []): string
+    public function url(string $imagePath, array $options = [], bool $includeBaseUrl = false): string
     {
         $path = $this->buildPath($imagePath, $options);
         $signature = $this->sign($path);
-        
-        return "{$this->baseUrl}/{$signature}/{$path}";
+
+        // Return relative path by default for frontend to prepend its own domain
+        if (!$includeBaseUrl) {
+            return "{$signature}/{$path}";
+        }
+
+        // Use public URL for client-facing responses when base URL is needed
+        $baseUrl = $this->usePublicUrl ? $this->publicUrl : $this->baseUrl;
+
+        return "{$baseUrl}/{$signature}/{$path}";
     }
 
     /**
@@ -52,13 +64,22 @@ class ImagorService
      *
      * @param string $imagePath Image path
      * @param array $options Image transformation options
+     * @param bool $includeBaseUrl Whether to include the base URL (default: false for relative paths)
      * @return string Unsigned Imagor URL
      */
-    public function unsafeUrl(string $imagePath, array $options = []): string
+    public function unsafeUrl(string $imagePath, array $options = [], bool $includeBaseUrl = false): string
     {
         $path = $this->buildPath($imagePath, $options);
-        
-        return "{$this->baseUrl}/unsafe/{$path}";
+
+        // Return relative path by default for frontend to prepend its own domain
+        if (!$includeBaseUrl) {
+            return "unsafe/{$path}";
+        }
+
+        // Use public URL for client-facing responses when base URL is needed
+        $baseUrl = $this->usePublicUrl ? $this->publicUrl : $this->baseUrl;
+
+        return "{$baseUrl}/unsafe/{$path}";
     }
 
     /**
@@ -79,7 +100,7 @@ class ImagorService
 
         // Trim
         if (isset($options['trim'])) {
-            $trim = is_array($options['trim']) 
+            $trim = is_array($options['trim'])
                 ? 'trim:' . implode(':', $options['trim'])
                 : 'trim';
             $parts[] = $trim;
@@ -170,7 +191,7 @@ class ImagorService
     {
         // Remove leading slash if present
         $path = ltrim($path, '/');
-        
+
         // Split by / and encode each segment
         $segments = explode('/', $path);
         $encoded = array_map(function ($segment) {
@@ -207,7 +228,7 @@ class ImagorService
      */
     public function thumbnail(string $imagePath, int $size = 150): string
     {
-        return $this->url($imagePath, [
+        return $this->unsafeUrl($imagePath, [
             'width' => $size,
             'height' => $size,
             'fit_in' => true,
@@ -222,11 +243,11 @@ class ImagorService
      * Preset: Small image
      *
      * @param string $imagePath Image path
-     * @return string Signed URL
+     * @return string Unsigned URL
      */
     public function small(string $imagePath): string
     {
-        return $this->url($imagePath, [
+        return $this->unsafeUrl($imagePath, [
             'width' => 400,
             'height' => 300,
             'fit_in' => true,
@@ -240,11 +261,11 @@ class ImagorService
      * Preset: Medium image
      *
      * @param string $imagePath Image path
-     * @return string Signed URL
+     * @return string Unsigned URL
      */
     public function medium(string $imagePath): string
     {
-        return $this->url($imagePath, [
+        return $this->unsafeUrl($imagePath, [
             'width' => 800,
             'height' => 600,
             'fit_in' => true,
@@ -258,11 +279,11 @@ class ImagorService
      * Preset: Large image
      *
      * @param string $imagePath Image path
-     * @return string Signed URL
+     * @return string Unsigned URL
      */
     public function large(string $imagePath): string
     {
-        return $this->url($imagePath, [
+        return $this->unsafeUrl($imagePath, [
             'width' => 1200,
             'height' => 900,
             'fit_in' => true,
@@ -276,11 +297,11 @@ class ImagorService
      * Preset: Hero/Banner image
      *
      * @param string $imagePath Image path
-     * @return string Signed URL
+     * @return string Unsigned URL
      */
     public function hero(string $imagePath): string
     {
-        return $this->url($imagePath, [
+        return $this->unsafeUrl($imagePath, [
             'width' => 1920,
             'height' => 600,
             'smart' => true,

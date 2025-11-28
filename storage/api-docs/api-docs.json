@@ -7916,6 +7916,38 @@
                     "order": {
                         "type": "integer",
                         "example": 1
+                    },
+                    "imagor": {
+                        "description": "Imagor-transformed image URLs (only present for images, not videos). All paths are relative - frontend should prepend IMAGOR_ENDPOINT.",
+                        "properties": {
+                            "thumbnail": {
+                                "description": "Thumbnail size (150x150)",
+                                "type": "string",
+                                "example": "unsafe/fit-in/150x150/smart/filters:quality(85)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
+                            },
+                            "small": {
+                                "description": "Small size (400x300)",
+                                "type": "string",
+                                "example": "unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
+                            },
+                            "medium": {
+                                "description": "Medium size (800x600)",
+                                "type": "string",
+                                "example": "unsafe/fit-in/800x600/filters:quality(90)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
+                            },
+                            "large": {
+                                "description": "Large size (1200x900)",
+                                "type": "string",
+                                "example": "unsafe/fit-in/1200x900/filters:quality(90)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
+                            },
+                            "hero": {
+                                "description": "Hero/banner size (1920x600)",
+                                "type": "string",
+                                "example": "unsafe/1920x600/smart/filters:quality(90)/img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg"
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -8289,6 +8321,12 @@
                         "description": "Primary beach image path (relative, without CDN/domain prefix). Frontend should prepend its own base URL or CDN.",
                         "type": "string",
                         "example": "img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
+                        "nullable": true
+                    },
+                    "main_image_imagor": {
+                        "description": "Imagor-transformed image URL (small size, 400x300, relative path). Frontend should prepend IMAGOR_ENDPOINT (e.g., http://localhost:8001).",
+                        "type": "string",
+                        "example": "unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
                         "nullable": true
                     }
                 },

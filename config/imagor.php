@@ -48,12 +48,11 @@ return [
     | The hashing algorithm to use for URL signatures.
     | Supported: sha1, sha256, sha512
     |
-    | Note: sha1 is the default for Thumbor compatibility, but sha256 or
-    | sha512 are more secure.
+    | Note: Imagor uses sha256 by default. sha1 is for Thumbor compatibility.
     |
     */
 
-    'signer_type' => env('IMAGOR_SIGNER_TYPE', 'sha1'),
+    'signer_type' => env('IMAGOR_SIGNER_TYPE', 'sha256'),
 
     /*
     |--------------------------------------------------------------------------
@@ -84,12 +83,13 @@ return [
     | Use Public URL
     |--------------------------------------------------------------------------
     |
-    | Whether to use the public URL in generated URLs. Set to true in
-    | production to return public-facing URLs to clients.
+    | Whether to use the public URL in generated URLs. Set to true to return
+    | public-facing URLs to clients (recommended for API responses).
+    | Set to false only if you need internal Docker URLs.
     |
     */
 
-    'use_public_url' => env('IMAGOR_USE_PUBLIC_URL', false),
+    'use_public_url' => env('IMAGOR_USE_PUBLIC_URL', true),
 
     /*
     |--------------------------------------------------------------------------

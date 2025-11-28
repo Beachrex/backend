@@ -72,6 +72,7 @@ services:
         environment:
             PORT: 8000
             IMAGOR_SECRET: '${IMAGOR_SECRET}'
+            IMAGOR_UNSAFE: '${IMAGOR_UNSAFE:-0}'  # Set to 1 to enable unsigned URLs for testing
             IMAGOR_AUTO_WEBP: '${IMAGOR_AUTO_WEBP:-1}'
             IMAGOR_AUTO_AVIF: '${IMAGOR_AUTO_AVIF:-0}'
             IMAGOR_CACHE_HEADER_TTL: '${IMAGOR_CACHE_HEADER_TTL:-168h}'
