@@ -190,63 +190,66 @@ class BeachController extends Controller
      */
     public function index(Request $request)
     {
-        // NOTE: Caching disabled for beaches list endpoint due to large data size
-        // Caching 5000 beaches with relationships causes memory exhaustion (268MB limit)
-        // The query is fast enough with proper indexes, no caching needed
+        // Generate cache key based on filters and locale
+        $locale = app()->getLocale();
+        $filterSuffix = $this->filterService->generateCacheKeySuffix($request);
+        $cacheKey = "beaches:index:{$locale}:{$filterSuffix}";
 
-        $limit = $request->input('limit', 5000);
+        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
+            $limit = $request->input('limit', 5000);
 
-        // Only load relationships that are actually used in BeachResource
-        $query = Beach::where('status_id', 1)
-            ->with([
-                'translations',
-                'continent.translations',
-                'country.translations',
-                'region.translations',
-                'city.translations',
-                'island.translations',
-                'media' => function ($query) {
-                    $query->where('media_collection_id', 1)
-                          ->where('is_primary', true)
-                          ->where('status_id', 1);
-                }
-            ]);
+            // Only load relationships that are actually used in BeachResource
+            $query = Beach::where('status_id', 1)
+                ->with([
+                    'translations',
+                    'continent.translations',
+                    'country.translations',
+                    'region.translations',
+                    'city.translations',
+                    'island.translations',
+                    'media' => function ($query) {
+                        $query->where('media_collection_id', 1)
+                              ->where('is_primary', true)
+                              ->where('status_id', 1);
+                    }
+                ]);
 
-        // Apply filters
-        $query = $this->filterService->applyFilters($query, $request);
+            // Apply filters
+            $query = $this->filterService->applyFilters($query, $request);
 
-        // Calculate center coordinates and bounding box using PostGIS on all filtered beaches
-        $centerQuery = clone $query;
-        $geoData = $centerQuery
-            ->selectRaw('
-                ST_Y(ST_Centroid(ST_Collect(location))) as center_lat,
-                ST_X(ST_Centroid(ST_Collect(location))) as center_lng,
-                MIN(ST_Y(location)) as min_lat,
-                MAX(ST_Y(location)) as max_lat,
-                MIN(ST_X(location)) as min_lng,
-                MAX(ST_X(location)) as max_lng
-            ')
-            ->whereNotNull('location')
-            ->first();
+            // Calculate center coordinates and bounding box using PostGIS on all filtered beaches
+            $centerQuery = clone $query;
+            $geoData = $centerQuery
+                ->selectRaw('
+                    ST_Y(ST_Centroid(ST_Collect(location))) as center_lat,
+                    ST_X(ST_Centroid(ST_Collect(location))) as center_lng,
+                    MIN(ST_Y(location)) as min_lat,
+                    MAX(ST_Y(location)) as max_lat,
+                    MIN(ST_X(location)) as min_lng,
+                    MAX(ST_X(location)) as max_lng
+                ')
+                ->whereNotNull('location')
+                ->first();
 
-        $beaches = $query->limit($limit)->get();
+            $beaches = $query->limit($limit)->get();
 
-        $data = [
-            'beaches' => $beaches,
-            'meta' => [
-                'center' => [
-                    'latitude' => $geoData?->center_lat ? (float) $geoData->center_lat : null,
-                    'longitude' => $geoData?->center_lng ? (float) $geoData->center_lng : null,
-                ],
-                'bounding_box' => [
-                    'min_latitude' => $geoData?->min_lat ? (float) $geoData->min_lat : null,
-                    'min_longitude' => $geoData?->min_lng ? (float) $geoData->min_lng : null,
-                    'max_latitude' => $geoData?->max_lat ? (float) $geoData->max_lat : null,
-                    'max_longitude' => $geoData?->max_lng ? (float) $geoData->max_lng : null,
-                ],
-                'total_beaches' => $beaches->count(),
-            ]
-        ];
+            return [
+                'beaches' => $beaches,
+                'meta' => [
+                    'center' => [
+                        'latitude' => $geoData?->center_lat ? (float) $geoData->center_lat : null,
+                        'longitude' => $geoData?->center_lng ? (float) $geoData->center_lng : null,
+                    ],
+                    'bounding_box' => [
+                        'min_latitude' => $geoData?->min_lat ? (float) $geoData->min_lat : null,
+                        'min_longitude' => $geoData?->min_lng ? (float) $geoData->min_lng : null,
+                        'max_latitude' => $geoData?->max_lat ? (float) $geoData->max_lat : null,
+                        'max_longitude' => $geoData?->max_lng ? (float) $geoData->max_lng : null,
+                    ],
+                    'total_beaches' => $beaches->count(),
+                ]
+            ];
+        });
 
         return BeachResource::collection($data['beaches'])->additional([
             'meta' => $data['meta']

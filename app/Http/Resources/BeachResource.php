@@ -72,7 +72,7 @@ class BeachResource extends JsonResource
             'id' => $this->id,
             'name' => $translation->name ?? $translationEn->name ?? $this->name,
             'slug' => $translation->slug ?? $translationEn->slug ?? null,
-            'description' => $translation->description ?? $translationEn->description ?? null,
+            // 'description' removed from list view to reduce memory usage when caching
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'country_code' => $this->country_code,

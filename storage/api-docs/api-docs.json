@@ -8256,12 +8256,6 @@
                         "type": "string",
                         "example": "beach-bucanj"
                     },
-                    "description": {
-                        "description": "Beach description (with English fallback if translation missing)",
-                        "type": "string",
-                        "example": "Beautiful beach with crystal clear water",
-                        "nullable": true
-                    },
                     "latitude": {
                         "description": "Beach latitude",
                         "type": "string",

@@ -11,7 +11,6 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(property="id", type="integer", example=793, description="Beach ID"),
  *     @OA\Property(property="name", type="string", example="Beach Bucanj", description="Beach name (with English fallback if translation missing)"),
  *     @OA\Property(property="slug", type="string", example="beach-bucanj", description="URL-friendly slug (with English fallback if translation missing)"),
- *     @OA\Property(property="description", type="string", nullable=true, example="Beautiful beach with crystal clear water", description="Beach description (with English fallback if translation missing)"),
  *     @OA\Property(property="latitude", type="string", example="42.5996000", description="Beach latitude"),
  *     @OA\Property(property="longitude", type="string", example="18.2302000", description="Beach longitude"),
  *     @OA\Property(property="country_code", type="string", example="HR", description="ISO country code"),
