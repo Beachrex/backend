@@ -58,13 +58,10 @@ class BeachResource extends JsonResource
 
         // Get primary image from beach gallery (collection_id = 1)
         $mainImage = null;
-        $mainImageImagor = null;
         if ($this->media && $this->media->isNotEmpty()) {
             $primaryMedia = $this->media->first();
             if ($primaryMedia && $primaryMedia->file_path) {
                 $mainImage = $primaryMedia->file_path;
-                // Generate small Imagor URL for list view
-                $mainImageImagor = $primaryMedia->imagorSmall();
             }
         }
 
@@ -84,7 +81,7 @@ class BeachResource extends JsonResource
             'island_slug' => $islandSlug,
             'city_slug' => $citySlug,
             'main_image' => $mainImage,
-            'main_image_imagor' => $mainImageImagor,
+            // 'main_image_imagor' removed - frontend constructs Imagor URLs directly
         ];
     }
 }

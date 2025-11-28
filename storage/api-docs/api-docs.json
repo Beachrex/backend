@@ -8312,15 +8312,9 @@
                         "nullable": true
                     },
                     "main_image": {
-                        "description": "Primary beach image path (relative, without CDN/domain prefix). Frontend should prepend its own base URL or CDN.",
+                        "description": "Primary beach image path (relative, without CDN/domain prefix). Frontend constructs Imagor URLs by prepending IMAGOR_ENDPOINT + transformation params (e.g., 'unsafe/fit-in/400x300/filters:quality(85)/') + main_image.",
                         "type": "string",
                         "example": "img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
-                        "nullable": true
-                    },
-                    "main_image_imagor": {
-                        "description": "Imagor-transformed image URL (small size, 400x300, relative path). Frontend should prepend IMAGOR_ENDPOINT (e.g., http://localhost:8001).",
-                        "type": "string",
-                        "example": "unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
                         "nullable": true
                     }
                 },
