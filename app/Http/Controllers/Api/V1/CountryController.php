@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Traits\CacheAware;
+use App\Traits\ProvidesWeather;
 
 /**
  * @OA\Tag(
@@ -19,7 +20,7 @@ use App\Traits\CacheAware;
  */
 class CountryController extends Controller
 {
-    use CacheAware;
+    use CacheAware, ProvidesWeather;
 
     /**
      * @OA\Get(
@@ -218,5 +219,138 @@ class CountryController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/countries/{code}/weather",
+     *     operationId="getCountryWeather",
+     *     summary="Get current weather for a country",
+     *     description="Returns real-time weather data from OpenWeatherMap for a specific country (typically capital or centroid coordinates). Weather data is cached for 1 hour.",
+     *     tags={"Countries"},
+     *     @OA\Parameter(
+     *         name="code",
+     *         in="path",
+     *         required=true,
+     *         description="Country code (e.g., HR, SI, IT)",
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Weather data retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="country_id", type="integer", example=1),
+     *                 @OA\Property(property="country_slug", type="string", example="croatia"),
+     *                 @OA\Property(
+     *                     property="coordinates",
+     *                     type="object",
+     *                     @OA\Property(property="latitude", type="string", example="45.1000"),
+     *                     @OA\Property(property="longitude", type="string", example="15.2000")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="weather",
+     *                     type="object",
+     *                     nullable=true,
+     *                     description="Current weather data from OpenWeatherMap (cached for 1 hour)",
+     *                     @OA\Property(property="temperature", type="number", format="float", example=9.9),
+     *                     @OA\Property(property="feels_like", type="number", format="float", example=8.7),
+     *                     @OA\Property(property="temp_min", type="number", format="float", example=9.9),
+     *                     @OA\Property(property="temp_max", type="number", format="float", example=9.9),
+     *                     @OA\Property(property="pressure", type="integer", example=1014),
+     *                     @OA\Property(property="humidity", type="integer", example=58),
+     *                     @OA\Property(property="condition", type="string", example="Clouds"),
+     *                     @OA\Property(property="description", type="string", example="broken clouds"),
+     *                     @OA\Property(property="icon", type="string", example="04d"),
+     *                     @OA\Property(property="icon_url", type="string", example="https://openweathermap.org/img/wn/04d@2x.png"),
+     *                     @OA\Property(property="wind_speed", type="number", format="float", example=2.52),
+     *                     @OA\Property(property="wind_deg", type="integer", example=27),
+     *                     @OA\Property(property="clouds", type="integer", example=60),
+     *                     @OA\Property(property="visibility", type="integer", example=10000),
+     *                     @OA\Property(property="sunrise", type="string", example="06:13"),
+     *                     @OA\Property(property="sunset", type="string", example="15:22"),
+     *                     @OA\Property(property="location_name", type="string", example="Croatia")
+     *                 ),
+     *                 @OA\Property(property="sea_temperature", type="number", format="float", example=23.5, nullable=true),
+     *                 @OA\Property(property="cached_at", type="string", format="date-time", example="2025-11-29T10:17:50+00:00")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Country not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Country not found")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Country has no coordinates",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Country has no coordinates for weather data")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=503,
+     *         description="Weather service unavailable",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Weather data temporarily unavailable")
+     *         )
+     *     )
+     * )
+     */
+    public function weather(string $code): JsonResponse
+    {
+        try {
+            // Find country by code
+            $country = Country::with('translations')
+                ->where('code', strtoupper($code))
+                ->first(['id', 'code', 'latitude', 'longitude']);
+
+            if (!$country) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Country not found'
+                ], 404);
+            }
+
+            // Get country slug in current locale
+            $countrySlug = $this->getCountrySlug($country);
+
+            // Use ProvidesWeather trait to build response
+            return $this->buildWeatherResponse($country, 'country', $countrySlug);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving weather data',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Get country slug in current locale
+     */
+    private function getCountrySlug($country): ?string
+    {
+        $locale = app()->getLocale();
+
+        $translation = $country->translations->firstWhere('locale', $locale);
+        if ($translation) {
+            return $translation->slug;
+        }
+
+        // Fallback to English
+        $translationEn = $country->translations->firstWhere('locale', 'en');
+        return $translationEn?->slug;
     }
 }

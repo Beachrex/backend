@@ -19,6 +19,8 @@ class Country extends Model
         'iso3',
         'number',
         'continent_code',
+        'latitude',
+        'longitude',
         'image_path',
     ];
 

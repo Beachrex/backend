@@ -78,18 +78,22 @@ Route::prefix('api/v1')
         // Country routes
         Route::get('/countries', [CountryController::class, 'index']);
         Route::get('/countries/{code}', [CountryController::class, 'show']);
+        Route::get('/countries/{code}/weather', [CountryController::class, 'weather']);
 
         // Region routes
         Route::get('/regions', [RegionController::class, 'index']);
         Route::get('/regions/{slug}', [RegionController::class, 'show']);
+        Route::get('/regions/{slug}/weather', [RegionController::class, 'weather']);
 
         // Island routes
         Route::get('/islands', [IslandController::class, 'index']);
         Route::get('/islands/{slug}', [IslandController::class, 'show']);
+        Route::get('/islands/{slug}/weather', [IslandController::class, 'weather']);
 
         // City routes
         Route::get('/cities', [CityController::class, 'index']);
         Route::get('/cities/{slug}', [CityController::class, 'show']);
+        Route::get('/cities/{slug}/weather', [CityController::class, 'weather']);
 
         // Waterbody routes
         Route::get('/waterbodies', [WaterbodyController::class, 'index']);

@@ -16,6 +16,430 @@ All technical documentation is organized in the **[docs/](./docs/README.md)** fo
 
 ---
 
+## 2025-11-29 – Weather Endpoints for Geographic Entities
+
+### 1. Overview
+
+**Context**
+- Extended weather functionality from beaches to all geographic entities (cities, regions, islands, countries)
+- Added latitude/longitude fields to geographic entity tables
+- Created seeder to populate coordinates from beach centroids
+- All entities now support weather API endpoints following the same pattern as beaches
+
+**Benefits**
+- ✅ Consistent weather data across all geographic levels
+- ✅ Weather endpoints for cities, regions, islands, and countries
+- ✅ Coordinates calculated automatically from beach centroids
+- ✅ Full Swagger/OpenAPI documentation for all new endpoints
+- ✅ Frontend can generate TypeScript types from OpenAPI schema
+
+---
+
+### 2. Database Changes
+
+#### 2.1 New Fields Added
+
+**Migration:** `database/migrations/2025_11_29_000000_add_coordinates_to_geographic_entities.php`
+
+Added `latitude` and `longitude` fields to:
+- `city` table - DECIMAL(10,7), nullable, with index
+- `region` table - DECIMAL(10,7), nullable, with index
+- `island` table - DECIMAL(10,7), nullable, with index
+- `countries` table - DECIMAL(10,7), nullable, with index
+
+**Model Updates:**
+- `app/Models/City.php` - Added `latitude`, `longitude` to fillable
+- `app/Models/Region.php` - Added `latitude`, `longitude` to fillable
+- `app/Models/Island.php` - Added `latitude`, `longitude` to fillable
+- `app/Models/Country.php` - Added `latitude`, `longitude` to fillable
+
+#### 2.2 Coordinate Population
+
+**Seeder:** `database/seeders/GeographicEntityCoordinatesSeeder.php`
+
+Populates coordinates by calculating centroid (average) from beaches:
+- **Cities**: Average of all beaches where `beach.city_id = city.id`
+- **Islands**: Average of all beaches where `beach.island_id = island.id`
+- **Regions**: Average of all beaches in cities within the region (joins through city table)
+- **Countries**: Average of all beaches where `beach.country_code = countries.code`
+
+**Features:**
+- Only uses active beaches (`status_id = 1`)
+- Rounds coordinates to 7 decimal places (~1.1cm precision)
+- Skips entities where coordinates are already up-to-date
+- Provides detailed feedback on updated vs skipped entities
+- Safe to run multiple times
+
+**Documentation:** `database/seeders/README_GEOGRAPHIC_COORDINATES.md`
+
+---
+
+### 3. New API Endpoints
+
+All endpoints follow the same pattern as beach weather endpoint, using the `ProvidesWeather` trait.
+
+#### 3.1 City Weather
+
+**Endpoint:** `GET /api/v1/cities/{slug}/weather`
+
+**Parameters:**
+- `slug` (path, required) - City slug (e.g., "split", "dubrovnik")
+- `country_code` (query, optional) - Filter by country code to disambiguate cities with same name
+- `Accept-Language` (header) - Locale for response
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "city_id": 1,
+    "city_slug": "split",
+    "coordinates": {
+      "latitude": "43.5081000",
+      "longitude": "16.4402000"
+    },
+    "weather": {
+      "temperature": 9.9,
+      "feels_like": 8.7,
+      "condition": "Clouds",
+      "description": "broken clouds",
+      "icon": "04d",
+      "icon_url": "https://openweathermap.org/img/wn/04d@2x.png",
+      "wind_speed": 2.52,
+      "humidity": 58,
+      ...
+    },
+    "sea_temperature": 9.9,
+    "cached_at": "2025-11-29T10:20:47+00:00"
+  }
+}
+```
+
+#### 3.2 Region Weather
+
+**Endpoint:** `GET /api/v1/regions/{slug}/weather`
+
+**Parameters:**
+- `slug` (path, required) - Region slug (e.g., "dalmatia", "istria")
+- `country_code` (query, optional) - Filter by country code
+- `Accept-Language` (header) - Locale for response
+
+**Response:** Same structure as city weather, with `region_id` and `region_slug`
+
+#### 3.3 Island Weather
+
+**Endpoint:** `GET /api/v1/islands/{slug}/weather`
+
+**Parameters:**
+- `slug` (path, required) - Island slug (e.g., "hvar", "krk", "brac")
+- `Accept-Language` (header) - Locale for response
+
+**Response:** Same structure as city weather, with `island_id` and `island_slug`
+
+#### 3.4 Country Weather
+
+**Endpoint:** `GET /api/v1/countries/{code}/weather`
+
+**Parameters:**
+- `code` (path, required) - Country code (e.g., "HR", "SI", "IT")
+- `Accept-Language` (header) - Locale for response
+
+**Response:** Same structure as city weather, with `country_id` and `country_slug`
+
+---
+
+### 4. Swagger/OpenAPI Schema Updates
+
+#### 4.1 Entity Schemas Updated
+
+Added `latitude` and `longitude` fields to all geographic entity schemas:
+
+**Files Updated:**
+- `app/Swagger/Schemas/CitySchema.php`
+- `app/Swagger/Schemas/RegionSchema.php`
+- `app/Swagger/Schemas/IslandSchema.php`
+- `app/Swagger/Schemas/CountrySchema.php`
+
+**New Properties:**
+```php
+@OA\Property(
+    property="latitude",
+    type="number",
+    format="double",
+    nullable=true,
+    description="Entity latitude (centroid of beaches)",
+    example=43.5081
+),
+@OA\Property(
+    property="longitude",
+    type="number",
+    format="double",
+    nullable=true,
+    description="Entity longitude (centroid of beaches)",
+    example=16.4402
+)
+```
+
+#### 4.2 Weather Endpoint Documentation
+
+All four controllers have full OpenAPI annotations:
+- `app/Http/Controllers/Api/V1/CityController.php` - `weather()` method
+- `app/Http/Controllers/Api/V1/RegionController.php` - `weather()` method
+- `app/Http/Controllers/Api/V1/IslandController.php` - `weather()` method
+- `app/Http/Controllers/Api/V1/CountryController.php` - `weather()` method
+
+Each includes:
+- Complete parameter documentation
+- Response schemas with weather data structure
+- Error responses (404, 400, 503)
+- Examples for all fields
+
+---
+
+### 5. Implementation Details
+
+#### 5.1 Controllers Updated
+
+All controllers now use the `ProvidesWeather` trait:
+
+```php
+use App\Traits\ProvidesWeather;
+
+class CityController extends Controller
+{
+    use CacheAware, ProvidesWeather;
+
+    public function weather(string $slug, Request $request): JsonResponse
+    {
+        // Find entity by slug
+        // Get entity slug in current locale
+        // Use ProvidesWeather trait to build response
+        return $this->buildWeatherResponse($entity, 'city', $entitySlug);
+    }
+}
+```
+
+#### 5.2 Routes Added
+
+**File:** `routes/api.php`
+
+```php
+// City weather
+Route::get('/cities/{slug}/weather', [CityController::class, 'weather']);
+
+// Region weather
+Route::get('/regions/{slug}/weather', [RegionController::class, 'weather']);
+
+// Island weather
+Route::get('/islands/{slug}/weather', [IslandController::class, 'weather']);
+
+// Country weather
+Route::get('/countries/{code}/weather', [CountryController::class, 'weather']);
+```
+
+---
+
+### 6. Deployment Instructions
+
+#### 6.1 Development Environment
+
+```bash
+# Run migration
+./vendor/bin/sail artisan migrate
+
+# Populate coordinates from beaches
+./vendor/bin/sail artisan db:seed --class=GeographicEntityCoordinatesSeeder
+
+# Clear cache
+./vendor/bin/sail artisan cache:clear
+
+# Regenerate Swagger docs
+./vendor/bin/sail artisan l5-swagger:generate
+```
+
+#### 6.2 Production Server
+
+```bash
+# Run migration
+php artisan migrate
+
+# Populate coordinates from beaches
+php artisan db:seed --class=GeographicEntityCoordinatesSeeder
+
+# Clear cache
+php artisan cache:clear
+
+# Regenerate Swagger docs (if needed)
+php artisan l5-swagger:generate
+```
+
+---
+
+### 7. Frontend Integration
+
+#### 7.1 TypeScript Type Generation
+
+The frontend can now generate TypeScript types for all weather endpoints from the OpenAPI schema:
+
+```bash
+# Generate types from Swagger/OpenAPI
+npx openapi-typescript https://api.beachrex.com/api/documentation/json -o src/lib/api-client/types.gen.ts
+```
+
+This will include types for:
+- `CityWeatherResponse`
+- `RegionWeatherResponse`
+- `IslandWeatherResponse`
+- `CountryWeatherResponse`
+- Updated `City`, `Region`, `Island`, `Country` schemas with `latitude` and `longitude` fields
+
+#### 7.2 Example Usage
+
+```typescript
+import { apiClient } from '@/lib/api-client';
+
+// Get city weather
+const cityWeather = await apiClient.GET('/api/v1/cities/{slug}/weather', {
+  params: {
+    path: { slug: 'split' },
+    query: { country_code: 'HR' }
+  },
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+
+// Get region weather
+const regionWeather = await apiClient.GET('/api/v1/regions/{slug}/weather', {
+  params: {
+    path: { slug: 'dalmatia' }
+  },
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+
+// Get island weather
+const islandWeather = await apiClient.GET('/api/v1/islands/{slug}/weather', {
+  params: {
+    path: { slug: 'hvar' }
+  },
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+
+// Get country weather
+const countryWeather = await apiClient.GET('/api/v1/countries/{code}/weather', {
+  params: {
+    path: { code: 'HR' }
+  },
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+```
+
+---
+
+### 8. Testing
+
+#### 8.1 Test Endpoints
+
+```bash
+# City weather
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/cities/split/weather
+
+# Region weather
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/regions/dalmatia/weather
+
+# Island weather
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/islands/hvar/weather
+
+# Country weather
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/countries/HR/weather
+```
+
+#### 8.2 Verify Coordinates
+
+```sql
+-- Check cities with coordinates
+SELECT id, code, latitude, longitude
+FROM city
+WHERE latitude IS NOT NULL
+ORDER BY id LIMIT 10;
+
+-- Check regions with coordinates
+SELECT id, code, latitude, longitude
+FROM region
+WHERE latitude IS NOT NULL
+ORDER BY id;
+
+-- Check islands with coordinates
+SELECT id, code, latitude, longitude
+FROM island
+WHERE latitude IS NOT NULL
+ORDER BY id LIMIT 10;
+
+-- Check countries with coordinates
+SELECT id, code, latitude, longitude
+FROM countries
+WHERE latitude IS NOT NULL
+ORDER BY code;
+```
+
+---
+
+### 9. Error Handling
+
+All weather endpoints return consistent error responses:
+
+**404 - Entity Not Found:**
+```json
+{
+  "success": false,
+  "message": "City not found"
+}
+```
+
+**400 - No Coordinates:**
+```json
+{
+  "success": false,
+  "message": "City has no coordinates for weather data"
+}
+```
+
+**503 - Weather Service Unavailable:**
+```json
+{
+  "success": false,
+  "message": "Weather data temporarily unavailable"
+}
+```
+
+---
+
+### 10. Caching
+
+Weather data is cached for 1 hour (same as beach weather):
+- Cache key includes entity type, ID, and coordinates
+- Coordinates rounded to 2 decimals for cache key consistency
+- Cache cleared automatically after 1 hour
+- Manual cache clear: `php artisan cache:clear`
+
+---
+
+### 11. Notes
+
+- **Centroid Calculation**: Coordinates represent the geographic center of all active beaches within each entity
+- **Null Coordinates**: Entities without beaches (or beaches without coordinates) will have NULL coordinates and return 400 error
+- **Coordinate Precision**: 7 decimal places (~1.1cm precision) - more than sufficient for weather data
+- **Active Beaches Only**: Only beaches with `status_id = 1` are included in centroid calculation
+- **Re-running Seeder**: Safe to run multiple times - skips entities where coordinates haven't changed
+
+---
+
 ## 2025-11-28 – Image Handling Simplified (Imagor Removed from Backend)
 
 ### 1. Overview

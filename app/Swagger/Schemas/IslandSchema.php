@@ -33,6 +33,22 @@ namespace App\Swagger\Schemas;
  *         example="krk"
  *     ),
  *     @OA\Property(
+ *         property="latitude",
+ *         type="number",
+ *         format="double",
+ *         nullable=true,
+ *         description="Island latitude (centroid of beaches)",
+ *         example=45.0272
+ *     ),
+ *     @OA\Property(
+ *         property="longitude",
+ *         type="number",
+ *         format="double",
+ *         nullable=true,
+ *         description="Island longitude (centroid of beaches)",
+ *         example=14.5719
+ *     ),
+ *     @OA\Property(
  *         property="beaches_count",
  *         type="integer",
  *         description="Number of beaches on this island",

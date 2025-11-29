@@ -18,6 +18,8 @@ class Island extends Model
         'code',
         'country_code',
         'region_id',
+        'latitude',
+        'longitude',
         'status_id',
     ];
 

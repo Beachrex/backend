@@ -50,6 +50,22 @@ namespace App\Swagger\Schemas;
  *         example="EU"
  *     ),
  *     @OA\Property(
+ *         property="latitude",
+ *         type="number",
+ *         format="double",
+ *         nullable=true,
+ *         description="Country latitude (centroid of beaches)",
+ *         example=46.1512
+ *     ),
+ *     @OA\Property(
+ *         property="longitude",
+ *         type="number",
+ *         format="double",
+ *         nullable=true,
+ *         description="Country longitude (centroid of beaches)",
+ *         example=14.9955
+ *     ),
+ *     @OA\Property(
  *         property="image_path",
  *         type="string",
  *         nullable=true,

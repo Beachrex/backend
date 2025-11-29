@@ -1752,6 +1752,236 @@
                 }
             }
         },
+        "/api/v1/cities/{slug}/weather": {
+            "get": {
+                "tags": [
+                    "Cities"
+                ],
+                "summary": "Get current weather for a city",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific city. Weather data is cached for 1 hour.",
+                "operationId": "getCityWeather",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "City slug (e.g., split, dubrovnik, pula)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "split"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Country code to disambiguate cities with same name (e.g., HR, SI)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weather data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "city_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "city_slug": {
+                                                    "type": "string",
+                                                    "example": "split"
+                                                },
+                                                "coordinates": {
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "string",
+                                                            "example": "43.5081"
+                                                        },
+                                                        "longitude": {
+                                                            "type": "string",
+                                                            "example": "16.4402"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "weather": {
+                                                    "description": "Current weather data from OpenWeatherMap (cached for 1 hour)",
+                                                    "properties": {
+                                                        "temperature": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "feels_like": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 8.7
+                                                        },
+                                                        "temp_min": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "temp_max": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "pressure": {
+                                                            "type": "integer",
+                                                            "example": 1014
+                                                        },
+                                                        "humidity": {
+                                                            "type": "integer",
+                                                            "example": 58
+                                                        },
+                                                        "condition": {
+                                                            "type": "string",
+                                                            "example": "Clouds"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "example": "broken clouds"
+                                                        },
+                                                        "icon": {
+                                                            "type": "string",
+                                                            "example": "04d"
+                                                        },
+                                                        "icon_url": {
+                                                            "type": "string",
+                                                            "example": "https://openweathermap.org/img/wn/04d@2x.png"
+                                                        },
+                                                        "wind_speed": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2.52
+                                                        },
+                                                        "wind_deg": {
+                                                            "type": "integer",
+                                                            "example": 27
+                                                        },
+                                                        "clouds": {
+                                                            "type": "integer",
+                                                            "example": 60
+                                                        },
+                                                        "visibility": {
+                                                            "type": "integer",
+                                                            "example": 10000
+                                                        },
+                                                        "sunrise": {
+                                                            "type": "string",
+                                                            "example": "06:13"
+                                                        },
+                                                        "sunset": {
+                                                            "type": "string",
+                                                            "example": "15:22"
+                                                        },
+                                                        "location_name": {
+                                                            "type": "string",
+                                                            "example": "Split"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "sea_temperature": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 23.5,
+                                                    "nullable": true
+                                                },
+                                                "cached_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-29T10:17:50+00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "City not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "City not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "City has no coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "City has no coordinates for weather data"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Weather service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Weather data temporarily unavailable"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/continents": {
             "get": {
                 "tags": [
@@ -2123,6 +2353,226 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Country not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/countries/{code}/weather": {
+            "get": {
+                "tags": [
+                    "Countries"
+                ],
+                "summary": "Get current weather for a country",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific country (typically capital or centroid coordinates). Weather data is cached for 1 hour.",
+                "operationId": "getCountryWeather",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "path",
+                        "description": "Country code (e.g., HR, SI, IT)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weather data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "country_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "country_slug": {
+                                                    "type": "string",
+                                                    "example": "croatia"
+                                                },
+                                                "coordinates": {
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "string",
+                                                            "example": "45.1000"
+                                                        },
+                                                        "longitude": {
+                                                            "type": "string",
+                                                            "example": "15.2000"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "weather": {
+                                                    "description": "Current weather data from OpenWeatherMap (cached for 1 hour)",
+                                                    "properties": {
+                                                        "temperature": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "feels_like": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 8.7
+                                                        },
+                                                        "temp_min": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "temp_max": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "pressure": {
+                                                            "type": "integer",
+                                                            "example": 1014
+                                                        },
+                                                        "humidity": {
+                                                            "type": "integer",
+                                                            "example": 58
+                                                        },
+                                                        "condition": {
+                                                            "type": "string",
+                                                            "example": "Clouds"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "example": "broken clouds"
+                                                        },
+                                                        "icon": {
+                                                            "type": "string",
+                                                            "example": "04d"
+                                                        },
+                                                        "icon_url": {
+                                                            "type": "string",
+                                                            "example": "https://openweathermap.org/img/wn/04d@2x.png"
+                                                        },
+                                                        "wind_speed": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2.52
+                                                        },
+                                                        "wind_deg": {
+                                                            "type": "integer",
+                                                            "example": 27
+                                                        },
+                                                        "clouds": {
+                                                            "type": "integer",
+                                                            "example": 60
+                                                        },
+                                                        "visibility": {
+                                                            "type": "integer",
+                                                            "example": 10000
+                                                        },
+                                                        "sunrise": {
+                                                            "type": "string",
+                                                            "example": "06:13"
+                                                        },
+                                                        "sunset": {
+                                                            "type": "string",
+                                                            "example": "15:22"
+                                                        },
+                                                        "location_name": {
+                                                            "type": "string",
+                                                            "example": "Croatia"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "sea_temperature": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 23.5,
+                                                    "nullable": true
+                                                },
+                                                "cached_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-29T10:17:50+00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Country not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Country not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Country has no coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Country has no coordinates for weather data"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Weather service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Weather data temporarily unavailable"
                                         }
                                     },
                                     "type": "object"
@@ -2886,6 +3336,226 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Island not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/islands/{slug}/weather": {
+            "get": {
+                "tags": [
+                    "Islands"
+                ],
+                "summary": "Get current weather for an island",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific island. Weather data is cached for 1 hour.",
+                "operationId": "getIslandWeather",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Island slug (e.g., krk, brac, hvar)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "hvar"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weather data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "island_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "island_slug": {
+                                                    "type": "string",
+                                                    "example": "hvar"
+                                                },
+                                                "coordinates": {
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "string",
+                                                            "example": "43.1729"
+                                                        },
+                                                        "longitude": {
+                                                            "type": "string",
+                                                            "example": "16.4411"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "weather": {
+                                                    "description": "Current weather data from OpenWeatherMap (cached for 1 hour)",
+                                                    "properties": {
+                                                        "temperature": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "feels_like": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 8.7
+                                                        },
+                                                        "temp_min": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "temp_max": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "pressure": {
+                                                            "type": "integer",
+                                                            "example": 1014
+                                                        },
+                                                        "humidity": {
+                                                            "type": "integer",
+                                                            "example": 58
+                                                        },
+                                                        "condition": {
+                                                            "type": "string",
+                                                            "example": "Clouds"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "example": "broken clouds"
+                                                        },
+                                                        "icon": {
+                                                            "type": "string",
+                                                            "example": "04d"
+                                                        },
+                                                        "icon_url": {
+                                                            "type": "string",
+                                                            "example": "https://openweathermap.org/img/wn/04d@2x.png"
+                                                        },
+                                                        "wind_speed": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2.52
+                                                        },
+                                                        "wind_deg": {
+                                                            "type": "integer",
+                                                            "example": 27
+                                                        },
+                                                        "clouds": {
+                                                            "type": "integer",
+                                                            "example": 60
+                                                        },
+                                                        "visibility": {
+                                                            "type": "integer",
+                                                            "example": 10000
+                                                        },
+                                                        "sunrise": {
+                                                            "type": "string",
+                                                            "example": "06:13"
+                                                        },
+                                                        "sunset": {
+                                                            "type": "string",
+                                                            "example": "15:22"
+                                                        },
+                                                        "location_name": {
+                                                            "type": "string",
+                                                            "example": "Hvar"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "sea_temperature": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 23.5,
+                                                    "nullable": true
+                                                },
+                                                "cached_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-29T10:17:50+00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Island not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Island not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Island has no coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Island has no coordinates for weather data"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Weather service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Weather data temporarily unavailable"
                                         }
                                     },
                                     "type": "object"
@@ -5427,6 +6097,236 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Region not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/regions/{slug}/weather": {
+            "get": {
+                "tags": [
+                    "Regions"
+                ],
+                "summary": "Get current weather for a region",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific region. Weather data is cached for 1 hour.",
+                "operationId": "getRegionWeather",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Region slug (e.g., dalmatia, istria)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "dalmatia"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Country code to disambiguate regions with same name (e.g., HR, SI)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weather data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "region_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "region_slug": {
+                                                    "type": "string",
+                                                    "example": "dalmatia"
+                                                },
+                                                "coordinates": {
+                                                    "properties": {
+                                                        "latitude": {
+                                                            "type": "string",
+                                                            "example": "43.5147"
+                                                        },
+                                                        "longitude": {
+                                                            "type": "string",
+                                                            "example": "16.4435"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "weather": {
+                                                    "description": "Current weather data from OpenWeatherMap (cached for 1 hour)",
+                                                    "properties": {
+                                                        "temperature": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "feels_like": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 8.7
+                                                        },
+                                                        "temp_min": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "temp_max": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 9.9
+                                                        },
+                                                        "pressure": {
+                                                            "type": "integer",
+                                                            "example": 1014
+                                                        },
+                                                        "humidity": {
+                                                            "type": "integer",
+                                                            "example": 58
+                                                        },
+                                                        "condition": {
+                                                            "type": "string",
+                                                            "example": "Clouds"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "example": "broken clouds"
+                                                        },
+                                                        "icon": {
+                                                            "type": "string",
+                                                            "example": "04d"
+                                                        },
+                                                        "icon_url": {
+                                                            "type": "string",
+                                                            "example": "https://openweathermap.org/img/wn/04d@2x.png"
+                                                        },
+                                                        "wind_speed": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2.52
+                                                        },
+                                                        "wind_deg": {
+                                                            "type": "integer",
+                                                            "example": 27
+                                                        },
+                                                        "clouds": {
+                                                            "type": "integer",
+                                                            "example": 60
+                                                        },
+                                                        "visibility": {
+                                                            "type": "integer",
+                                                            "example": 10000
+                                                        },
+                                                        "sunrise": {
+                                                            "type": "string",
+                                                            "example": "06:13"
+                                                        },
+                                                        "sunset": {
+                                                            "type": "string",
+                                                            "example": "15:22"
+                                                        },
+                                                        "location_name": {
+                                                            "type": "string",
+                                                            "example": "Dalmatia"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "sea_temperature": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 23.5,
+                                                    "nullable": true
+                                                },
+                                                "cached_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-29T10:17:50+00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Region not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Region not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Region has no coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Region has no coordinates for weather data"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Weather service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Weather data temporarily unavailable"
                                         }
                                     },
                                     "type": "object"
@@ -8422,6 +9322,20 @@
                         "example": 1,
                         "nullable": true
                     },
+                    "latitude": {
+                        "description": "City latitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 43.5081,
+                        "nullable": true
+                    },
+                    "longitude": {
+                        "description": "City longitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 16.4402,
+                        "nullable": true
+                    },
                     "beaches_count": {
                         "description": "Number of beaches in this city",
                         "type": "integer",
@@ -8516,6 +9430,20 @@
                         "type": "string",
                         "maxLength": 2,
                         "example": "EU"
+                    },
+                    "latitude": {
+                        "description": "Country latitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 46.1512,
+                        "nullable": true
+                    },
+                    "longitude": {
+                        "description": "Country longitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 14.9955,
+                        "nullable": true
                     },
                     "image_path": {
                         "description": "Path to the country image",
@@ -8758,6 +9686,20 @@
                         "description": "Localized URL-friendly slug",
                         "type": "string",
                         "example": "krk"
+                    },
+                    "latitude": {
+                        "description": "Island latitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 45.0272,
+                        "nullable": true
+                    },
+                    "longitude": {
+                        "description": "Island longitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 14.5719,
+                        "nullable": true
                     },
                     "beaches_count": {
                         "description": "Number of beaches on this island",
@@ -9462,6 +10404,20 @@
                         "type": "string",
                         "maxLength": 2,
                         "example": "HR"
+                    },
+                    "latitude": {
+                        "description": "Region latitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 43.5147,
+                        "nullable": true
+                    },
+                    "longitude": {
+                        "description": "Region longitude (centroid of beaches)",
+                        "type": "number",
+                        "format": "double",
+                        "example": 16.4435,
+                        "nullable": true
                     },
                     "beaches_count": {
                         "description": "Number of beaches in this region",

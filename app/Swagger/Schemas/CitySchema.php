@@ -48,6 +48,22 @@ namespace App\Swagger\Schemas;
  *         example=1
  *     ),
  *     @OA\Property(
+ *         property="latitude",
+ *         type="number",
+ *         format="double",
+ *         nullable=true,
+ *         description="City latitude (centroid of beaches)",
+ *         example=43.5081
+ *     ),
+ *     @OA\Property(
+ *         property="longitude",
+ *         type="number",
+ *         format="double",
+ *         nullable=true,
+ *         description="City longitude (centroid of beaches)",
+ *         example=16.4402
+ *     ),
+ *     @OA\Property(
  *         property="beaches_count",
  *         type="integer",
  *         description="Number of beaches in this city",

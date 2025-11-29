@@ -19,6 +19,8 @@ class City extends Model
         'country_code',
         'region_id',
         'island_id',
+        'latitude',
+        'longitude',
         'status_id',
     ];
 
