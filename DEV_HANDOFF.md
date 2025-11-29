@@ -2,6 +2,18 @@
 
 This file tracks backend changes that are important for frontend integration and future development.
 
+## 📚 Documentation
+
+All technical documentation is organized in the **[docs/](./docs/README.md)** folder:
+
+- **[docs/weather/](./docs/weather/README.md)** - OpenWeatherMap integration (weather endpoints)
+- **[docs/api/](./docs/api/)** - API endpoint documentation
+- **[docs/admin/](./docs/admin/)** - Admin panel documentation
+- **[docs/features/](./docs/features/)** - Feature-specific guides (Imagor, translations, etc.)
+- **[docs/deployment/](./docs/deployment/)** - Deployment and server configuration
+
+👉 **Start here:** [docs/README.md](./docs/README.md)
+
 ---
 
 ## 2025-11-28 – Image Handling Simplified (Imagor Removed from Backend)

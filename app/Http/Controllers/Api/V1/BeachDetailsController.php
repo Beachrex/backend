@@ -8,6 +8,8 @@ use App\Models\Beach;
 use App\Models\BeachTranslation;
 use App\Services\CacheService;
 use App\Traits\CacheAware;
+use App\Traits\ProvidesWeather;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  */
 class BeachDetailsController extends Controller
 {
-    use CacheAware;
+    use CacheAware, ProvidesWeather;
     /**
      * @OA\Get(
      *     path="/api/v1/beach-details/{identifier}",
@@ -62,9 +64,9 @@ class BeachDetailsController extends Controller
         $locale = app()->getLocale();
         $cacheKey = "beach_details:{$locale}:{$identifier}";
 
-        // Cache the beach details using BEACH_COUNT_TTL (5 minutes)
-        // Using shorter TTL because beach details can be updated frequently
-        $data = $this->cacheRemember($cacheKey, CacheService::BEACH_COUNT_TTL, function () use ($request, $identifier, $locale) {
+        // Cache the beach details for 8 hours
+        // Weather data is fetched separately via /beach-details/{id}/weather with 1-hour cache
+        $data = $this->cacheRemember($cacheKey, CacheService::BEACH_DETAILS_TTL, function () use ($request, $identifier, $locale) {
             // Determine if identifier is ID or slug
             $beach = $this->findBeachByIdentifier($identifier);
 
@@ -418,6 +420,96 @@ class BeachDetailsController extends Controller
         $path = $beach->mobile_upload ? 'img/beaches_mobile/' : 'img/beaches/';
 
         return $path . $beach->folder_name . '/' . $beach->main_image;
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/beach-details/{identifier}/weather",
+     *     operationId="getBeachWeather",
+     *     summary="Get current weather for a beach",
+     *     description="Returns real-time weather data from OpenWeatherMap for a specific beach. Weather data is cached for 1 hour. Accepts either beach ID (numeric) or slug (string) in any language.",
+     *     tags={"Beach Details"},
+     *     @OA\Parameter(
+     *         name="identifier",
+     *         in="path",
+     *         required=true,
+     *         description="Beach ID (numeric) or slug (string in any language)",
+     *         @OA\Schema(
+     *             oneOf={
+     *                 @OA\Schema(type="integer", example=123),
+     *                 @OA\Schema(type="string", example="paradise-beach")
+     *             }
+     *         )
+     *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Weather data retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/BeachWeatherResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Beach not found",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Beach not found")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Beach has no coordinates",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Beach has no coordinates for weather data")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=503,
+     *         description="Weather service unavailable",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Weather data temporarily unavailable")
+     *         )
+     *     )
+     * )
+     */
+    public function weather($identifier): JsonResponse
+    {
+        // Find beach by ID or slug
+        $beach = $this->findBeachByIdentifier($identifier);
+
+        if (!$beach) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Beach not found'
+            ], 404);
+        }
+
+        // Get beach slug in current locale
+        $slug = $this->getBeachSlug($beach);
+
+        // Use ProvidesWeather trait to build response
+        return $this->buildWeatherResponse($beach, 'beach', $slug);
+    }
+
+    /**
+     * Get beach slug in current locale
+     */
+    private function getBeachSlug(Beach $beach): ?string
+    {
+        $locale = app()->getLocale();
+
+        $translation = $beach->translations->firstWhere('locale', $locale);
+        if ($translation) {
+            return $translation->slug;
+        }
+
+        // Fallback to English
+        $translationEn = $beach->translations->firstWhere('locale', 'en');
+        return $translationEn?->slug;
     }
 }
 

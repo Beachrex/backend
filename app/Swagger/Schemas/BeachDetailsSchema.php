@@ -254,12 +254,12 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(
  *         property="embeds",
  *         type="object",
- *         description="Embedded content (videos, webcams, maps, widgets)",
+ *         description="Embedded content (videos, webcams, maps, widgets). Note: Real-time weather data is now available via separate endpoint /beaches/{identifier}/weather",
  *         @OA\Property(property="video_url", type="string", nullable=true, example="https://youtube.com/watch?v=..."),
  *         @OA\Property(property="webcam", type="string", nullable=true, example="<iframe>...</iframe>"),
  *         @OA\Property(property="map_url", type="string", nullable=true, example="https://maps.google.com/..."),
- *         @OA\Property(property="weather", type="string", nullable=true, example="<div>...</div>"),
- *         @OA\Property(property="water_temperature", type="string", nullable=true, example="<div>...</div>")
+ *         @OA\Property(property="weather", type="string", nullable=true, example="<div>...</div>", description="Legacy weather widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)"),
+ *         @OA\Property(property="water_temperature", type="string", nullable=true, example="<div>...</div>", description="Legacy water temperature widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)")
  *     ),
  *     @OA\Property(
  *         property="swimming_pool_features",

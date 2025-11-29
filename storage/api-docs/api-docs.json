@@ -1178,6 +1178,111 @@
                 }
             }
         },
+        "/api/v1/beach-details/{identifier}/weather": {
+            "get": {
+                "tags": [
+                    "Beach Details"
+                ],
+                "summary": "Get current weather for a beach",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific beach. Weather data is cached for 1 hour. Accepts either beach ID (numeric) or slug (string) in any language.",
+                "operationId": "getBeachWeather",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "description": "Beach ID (numeric) or slug (string in any language)",
+                        "required": true,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "type": "integer",
+                                    "example": 123
+                                },
+                                {
+                                    "type": "string",
+                                    "example": "paradise-beach"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weather data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BeachWeatherResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Beach not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Beach has no coordinates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Beach has no coordinates for weather data"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Weather service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Weather data temporarily unavailable"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/beach-inclinations": {
             "get": {
                 "tags": [
@@ -7368,7 +7473,7 @@
                         "type": "object"
                     },
                     "embeds": {
-                        "description": "Embedded content (videos, webcams, maps, widgets)",
+                        "description": "Embedded content (videos, webcams, maps, widgets). Note: Real-time weather data is now available via separate endpoint /beaches/{identifier}/weather",
                         "properties": {
                             "video_url": {
                                 "type": "string",
@@ -7386,11 +7491,13 @@
                                 "nullable": true
                             },
                             "weather": {
+                                "description": "Legacy weather widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)",
                                 "type": "string",
                                 "example": "<div>...</div>",
                                 "nullable": true
                             },
                             "water_temperature": {
+                                "description": "Legacy water temperature widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)",
                                 "type": "string",
                                 "example": "<div>...</div>",
                                 "nullable": true
@@ -8085,6 +8192,195 @@
                         "description": "URL-friendly slug",
                         "type": "string",
                         "example": "sand-beaches"
+                    }
+                },
+                "type": "object"
+            },
+            "BeachWeatherResponse": {
+                "title": "Beach Weather Response",
+                "description": "Response schema for beach weather endpoint",
+                "required": [
+                    "success",
+                    "data"
+                ],
+                "properties": {
+                    "success": {
+                        "description": "Whether the request was successful",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "data": {
+                        "description": "Weather data for the beach",
+                        "required": [
+                            "beach_id",
+                            "beach_slug",
+                            "coordinates",
+                            "weather",
+                            "sea_temperature",
+                            "cached_at"
+                        ],
+                        "properties": {
+                            "beach_id": {
+                                "description": "Beach ID",
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "beach_slug": {
+                                "description": "Beach slug in current locale",
+                                "type": "string",
+                                "example": "plaza-livade-i-obatnice"
+                            },
+                            "coordinates": {
+                                "description": "Beach coordinates",
+                                "required": [
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Beach latitude",
+                                        "type": "string",
+                                        "example": "44.33880000"
+                                    },
+                                    "longitude": {
+                                        "description": "Beach longitude",
+                                        "type": "string",
+                                        "example": "15.10510000"
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "weather": {
+                                "description": "Current weather data from OpenWeatherMap (cached for 1 hour)",
+                                "required": [
+                                    "temperature",
+                                    "feels_like",
+                                    "temp_min",
+                                    "temp_max",
+                                    "pressure",
+                                    "humidity",
+                                    "condition",
+                                    "description",
+                                    "icon",
+                                    "icon_url",
+                                    "wind_speed",
+                                    "wind_deg",
+                                    "clouds",
+                                    "visibility",
+                                    "sunrise",
+                                    "sunset",
+                                    "location_name"
+                                ],
+                                "properties": {
+                                    "temperature": {
+                                        "description": "Current temperature in Celsius",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 9.9
+                                    },
+                                    "feels_like": {
+                                        "description": "Feels like temperature in Celsius",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 8.7
+                                    },
+                                    "temp_min": {
+                                        "description": "Minimum temperature in Celsius",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 9.9
+                                    },
+                                    "temp_max": {
+                                        "description": "Maximum temperature in Celsius",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 9.9
+                                    },
+                                    "pressure": {
+                                        "description": "Atmospheric pressure in hPa",
+                                        "type": "integer",
+                                        "example": 1014
+                                    },
+                                    "humidity": {
+                                        "description": "Humidity percentage",
+                                        "type": "integer",
+                                        "example": 58
+                                    },
+                                    "condition": {
+                                        "description": "Weather condition (Clear, Clouds, Rain, etc.)",
+                                        "type": "string",
+                                        "example": "Clouds"
+                                    },
+                                    "description": {
+                                        "description": "Detailed weather description",
+                                        "type": "string",
+                                        "example": "broken clouds"
+                                    },
+                                    "icon": {
+                                        "description": "Weather icon code",
+                                        "type": "string",
+                                        "example": "04d"
+                                    },
+                                    "icon_url": {
+                                        "description": "Full URL to weather icon",
+                                        "type": "string",
+                                        "example": "https://openweathermap.org/img/wn/04d@2x.png"
+                                    },
+                                    "wind_speed": {
+                                        "description": "Wind speed in m/s",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.52
+                                    },
+                                    "wind_deg": {
+                                        "description": "Wind direction in degrees",
+                                        "type": "integer",
+                                        "example": 27
+                                    },
+                                    "clouds": {
+                                        "description": "Cloudiness percentage",
+                                        "type": "integer",
+                                        "example": 60
+                                    },
+                                    "visibility": {
+                                        "description": "Visibility in meters",
+                                        "type": "integer",
+                                        "example": 10000
+                                    },
+                                    "sunrise": {
+                                        "description": "Sunrise time (HH:mm)",
+                                        "type": "string",
+                                        "example": "06:13"
+                                    },
+                                    "sunset": {
+                                        "description": "Sunset time (HH:mm)",
+                                        "type": "string",
+                                        "example": "15:22"
+                                    },
+                                    "location_name": {
+                                        "description": "Location name from weather API",
+                                        "type": "string",
+                                        "example": "Vir"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "sea_temperature": {
+                                "description": "Sea surface temperature in Celsius (approximation from weather data)",
+                                "type": "number",
+                                "format": "float",
+                                "example": 9.9,
+                                "nullable": true
+                            },
+                            "cached_at": {
+                                "description": "Timestamp when the weather data was cached (ISO 8601 format)",
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2025-11-29T10:20:47+00:00"
+                            }
+                        },
+                        "type": "object"
                     }
                 },
                 "type": "object"

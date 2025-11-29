@@ -66,6 +66,7 @@ Route::prefix('api/v1')
 
         // Beach Details routes - comprehensive beach information for detail pages
         Route::get('/beach-details/{identifier}', [BeachDetailsController::class, 'show']);
+        Route::get('/beach-details/{identifier}/weather', [BeachDetailsController::class, 'weather']);
 
         // Slug Resolver - determine entity type from slug
         Route::get('/resolve-slug/{slug}', [SlugResolverController::class, 'resolve']);
