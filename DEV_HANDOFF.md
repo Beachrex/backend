@@ -118,35 +118,52 @@ island:weather:{locale}:{slug}:{country_code}:{region_code}
 
 ---
 
-### 5. Test Database Fix
+### 5. Data Seeding Architecture Fix
 
 **Issue:**
-- Data-seeding migrations (`assign_badges_and_articles_to_regions` and `assign_badges_and_articles_to_cities`) were failing in test environment
-- Test database has no seeded badges/articles, causing foreign key violations
+- Initially created migrations for data operations (assigning badges/articles, cleaning data)
+- **Problem:** Migrations run BEFORE seeders, so:
+  - Badge/article assignments would fail (foreign key violations)
+  - Data cleanup operations would run on empty tables
+- This would cause failures on fresh production database setup
 
 **Solution:**
-Added environment check to skip data-seeding migrations in testing:
+Converted all data-manipulation migrations to proper seeders that run AFTER data is seeded:
 
+**Files Created:**
+- `database/seeders/RegionBadgeArticleSeeder.php` - Assigns badges and articles to regions
+- `database/seeders/CityBadgeArticleSeeder.php` - Assigns badges and articles to cities
+- `database/seeders/DataCleanupSeeder.php` - Performs data quality fixes (runs LAST):
+  - Removes leading slashes from icon paths (waterbody, beach_type, user_type)
+  - Fixes escaped quotes in beach translations (name, description, slug)
+  - Removes double spaces from beach translations
+
+**Files Deleted:**
+- `database/migrations/2025_11_29_212833_assign_badges_and_articles_to_regions.php` (converted to seeder)
+- `database/migrations/2025_11_29_220741_assign_badges_and_articles_to_cities.php` (converted to seeder)
+- `database/migrations/2025_11_26_000001_remove_leading_slashes_from_icon_paths.php` (converted to seeder)
+- `database/migrations/2025_11_26_000002_fix_escaped_quotes_in_beach_translations.php` (converted to seeder)
+- `database/migrations/2025_11_26_000003_remove_double_spaces_from_beach_translations.php` (converted to seeder)
+
+**DatabaseSeeder Updated:**
+Added new seeders in correct order:
 ```php
-public function up(): void
-{
-    // Skip this migration in testing environment (no seeded data)
-    if (app()->environment('testing')) {
-        return;
-    }
-
-    // ... rest of migration code
-}
+IslandSeeder::class,
+ArticleSeeder::class,
+BadgeSeeder::class,
+RegionBadgeArticleSeeder::class,  // Assign badges/articles to regions (after BadgeSeeder/ArticleSeeder)
+CityBadgeArticleSeeder::class,    // Assign badges/articles to cities (after BadgeSeeder/ArticleSeeder)
+GenderSeeder::class,
+// ... other seeders
+GeographicEntityMainImageSeeder::class,
+DataCleanupSeeder::class,  // Data cleanup operations (run LAST after all data is seeded)
 ```
 
-**Files Modified:**
-- `database/migrations/2025_11_29_212833_assign_badges_and_articles_to_regions.php`
-- `database/migrations/2025_11_29_220741_assign_badges_and_articles_to_cities.php`
-
 **Impact:**
-- ✅ Migrations work correctly in development/production (have seeded data)
-- ✅ Migrations skip gracefully in testing environment (no seeded data)
-- ✅ All tests now passing (7/7 Island API tests)
+- ✅ Seeders run in correct order (data created first, then manipulated)
+- ✅ Works correctly on fresh production database setup
+- ✅ All tests passing
+- ✅ Data quality fixes applied after seeding
 
 ---
 

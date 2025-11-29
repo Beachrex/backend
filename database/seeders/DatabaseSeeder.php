@@ -45,6 +45,8 @@ class DatabaseSeeder extends Seeder
             IslandSeeder::class,
             ArticleSeeder::class,
             BadgeSeeder::class,
+            RegionBadgeArticleSeeder::class,  // Assign badges/articles to regions (after BadgeSeeder/ArticleSeeder)
+            CityBadgeArticleSeeder::class,    // Assign badges/articles to cities (after BadgeSeeder/ArticleSeeder)
             GenderSeeder::class,
             CountryFilterTitleSeeder::class,
             RegionFilterTitleSeeder::class,
@@ -54,6 +56,7 @@ class DatabaseSeeder extends Seeder
             GeographicEntityCoordinatesSeeder::class,
             GeographicEntityMainImageSeeder::class,
 //            BeachSeeder::class, // do not run since we have old DB migration
+            DataCleanupSeeder::class,  // Data cleanup operations (run LAST after all data is seeded)
         ]);
     }
 }

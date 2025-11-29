@@ -1,22 +1,20 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
+class CityBadgeArticleSeeder extends Seeder
 {
     /**
-     * Run the migrations.
+     * Run the database seeds.
+     * 
+     * Assigns badges and articles to cities.
+     * This seeder should run AFTER BadgeSeeder and ArticleSeeder.
      */
-    public function up(): void
+    public function run(): void
     {
-        // Skip this migration in testing environment (no seeded data)
-        if (app()->environment('testing')) {
-            return;
-        }
-
         // City-specific badges:
         // 19: city-marina
         // 20: city-promenade
@@ -58,7 +56,7 @@ return new class extends Migration
         $this->assignBadgesToCity(130, [19, 21]);
 
         // Assign articles to cities
-        // Articles 13-16 are city-related articles (based on previous migration)
+        // Articles 13-16 are city-related articles
 
         // Split - Major city gets multiple articles
         $this->assignArticlesToCity(60, [13, 14]);
@@ -80,6 +78,8 @@ return new class extends Migration
 
         // Poreč - Tourist city
         $this->assignArticlesToCity(18, [16]);
+
+        $this->command->info('✅ Assigned badges and articles to cities');
     }
 
     /**
@@ -107,16 +107,5 @@ return new class extends Migration
             ]);
         }
     }
+}
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        // Remove all badge-city and article-city associations created by this migration
-        $cityIds = [60, 29, 90, 9, 20, 18, 148, 48, 187, 130];
-
-        DB::table('badge_city')->whereIn('city_id', $cityIds)->delete();
-        DB::table('article_city')->whereIn('city_id', $cityIds)->delete();
-    }
-};

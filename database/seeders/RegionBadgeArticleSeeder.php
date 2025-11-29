@@ -1,20 +1,20 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
+class RegionBadgeArticleSeeder extends Seeder
 {
     /**
-     * Run the migrations.
+     * Run the database seeds.
+     * 
+     * Assigns badges and articles to regions.
+     * This seeder should run AFTER BadgeSeeder and ArticleSeeder.
      */
-    public function up(): void
+    public function run(): void
     {
-        // Skip this migration in testing environment (no seeded data)
-        if (app()->environment('testing')) {
-            return;
-        }
-
         // Assign Krk-specific badges to Kvarner region (ID: 7)
         // Badges: 13 (Krk Lamb), 14 (Žlahtina Wine), 15 (Crna Ovca Festival)
         $krkBadges = [13, 14, 15];
@@ -72,15 +72,8 @@ return new class extends Migration
                 'region_id' => 4,
             ]);
         }
-    }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        // Remove all badge-region and article-region associations created by this migration
-        DB::table('badge_region')->whereIn('region_id', [5, 7])->delete();
-        DB::table('article_region')->whereIn('region_id', [4, 5, 7])->delete();
+        $this->command->info('✅ Assigned badges and articles to regions');
     }
-};
+}
+
