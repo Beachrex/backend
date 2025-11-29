@@ -95,6 +95,7 @@ class CityController extends Controller
                     'code',
                     'country_code',
                     'region_id',
+                    'main_image',
                     'status_id'
                 ]);
             });
@@ -243,6 +244,7 @@ class CityController extends Controller
                     'code',
                     'country_code',
                     'region_id',
+                    'main_image',
                     'status_id'
                 ]);
 

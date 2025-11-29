@@ -48,6 +48,7 @@ class ContinentController extends Controller
      *                     @OA\Property(property="code", type="string", example="EU"),
      *                     @OA\Property(property="name", type="string", example="Europe"),
      *                     @OA\Property(property="slug", type="string", example="europe"),
+     *                     @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg", description="Relative path to main image from most viewed beach"),
      *                     @OA\Property(property="beaches_count", type="integer", example=15)
      *                 )
      *             ),
@@ -82,7 +83,7 @@ class ContinentController extends Controller
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
                     }])
-                    ->get(['code']);
+                    ->get(['code', 'main_image']);
             });
 
             return response()->json([
@@ -127,6 +128,7 @@ class ContinentController extends Controller
      *                 @OA\Property(property="code", type="string", example="EU"),
      *                 @OA\Property(property="name", type="string", example="Europe"),
      *                 @OA\Property(property="slug", type="string", example="europe"),
+     *                 @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg", description="Relative path to main image from most viewed beach"),
      *                 @OA\Property(property="beaches_count", type="integer", example=15),
      *                 @OA\Property(
      *                     property="navigation",
@@ -189,7 +191,7 @@ class ContinentController extends Controller
                         $q->where('status_id', 1);
                     }])
                     ->where('code', $code)
-                    ->first(['code']);
+                    ->first(['code', 'main_image']);
 
                 if (!$continent) {
                     return null;

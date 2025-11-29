@@ -69,8 +69,8 @@ namespace App\Swagger\Schemas;
  *         property="main_image",
  *         type="string",
  *         nullable=true,
- *         description="Path to the country main image",
- *         example="/storage/countries/slovenia.jpg"
+ *         description="Relative path to main image from most viewed beach",
+ *         example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg"
  *     ),
  *     @OA\Property(
  *         property="beaches_count",

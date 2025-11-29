@@ -16,6 +16,215 @@ All technical documentation is organized in the **[docs/](./docs/README.md)** fo
 
 ---
 
+## 2025-11-29 – Geographic Entity Main Image Seeder & API Consistency
+
+### 1. Overview
+
+**Context**
+- Created database seeder to automatically populate `main_image` for all geographic entities
+- Images are sourced from the most viewed beach in each geographic segment
+- Standardized all geographic entity APIs to use `main_image` field consistently
+- Removed `image_path` from Country API responses for consistency
+- Updated all Swagger/OpenAPI documentation
+
+**Benefits**
+- ✅ Automatic image population based on actual beach data
+- ✅ Images represent the most popular beach in each geographic area
+- ✅ Consistent API field naming across all geographic entities
+- ✅ No manual image upload required for initial data
+- ✅ Can be re-run to update images based on latest beach view counts
+
+---
+
+### 2. Database Seeder
+
+#### 2.1 GeographicEntityMainImageSeeder
+
+**File:** `database/seeders/GeographicEntityMainImageSeeder.php`
+
+**Purpose:** Populates `main_image` field for all geographic entities (continents, countries, regions, islands, cities) by selecting the primary image from the most viewed beach in each segment.
+
+**Selection Logic:**
+1. Finds the beach with highest `beach_views` for each geographic entity
+2. Only considers beaches with `status_id = 1` (active beaches)
+3. Gets the primary image from beach's media gallery:
+   - Filters: `media_type_id = 1` (images), `media_collection_id = 1` (beach_gallery), `status_id = 1`
+   - Prioritizes: `is_primary = 1` (true)
+   - Fallback: First image with `is_primary = 0` ordered by `order ASC, created_at ASC`
+4. Updates entity's `main_image` field with the image path
+5. Skips entities that don't have beaches or don't have valid images
+
+**Database Fields Updated:**
+- `continents.main_image`
+- `countries.image_path` (aliased as `main_image` in API)
+- `region.main_image`
+- `island.main_image`
+- `city.main_image`
+
+**How to Run:**
+```bash
+# Development
+./vendor/bin/sail artisan db:seed --class=GeographicEntityMainImageSeeder
+
+# Production
+php artisan db:seed --class=GeographicEntityMainImageSeeder
+```
+
+**Results (as of 2025-11-29):**
+- ✅ 1 continent populated (EU - Europe)
+- ✅ 13 countries populated
+- ✅ 73 regions populated
+- ✅ 29 islands populated
+- ✅ 1050 cities populated
+
+**Image Path Format:**
+- Web uploads: `img/beaches/{folder_name}/{filename}`
+- Mobile uploads: `img/beaches_mobile/{folder_name}/{filename}`
+- Path determined by `beach.mobile_upload` boolean field
+
+**Safe to Re-run:**
+- Yes, can be run multiple times to update images based on latest view counts
+- Will overwrite existing `main_image` values
+
+---
+
+### 3. API Changes - Consistent `main_image` Field
+
+#### 3.1 Country API Standardization
+
+**Previous Behavior:**
+- Country API returned both `image_path` and `main_image` (duplicate data)
+
+**New Behavior:**
+- Country API now returns only `main_image` (consistent with all other entities)
+- Database still uses `image_path` column, but it's mapped to `main_image` in API responses
+
+**Files Updated:**
+- `app/Http/Resources/CountryResource.php` - Removed `image_path`, kept only `main_image`
+- `app/Swagger/Schemas/CountrySchema.php` - Updated to show only `main_image`
+- `app/Http/Controllers/Api/V1/CountryController.php` - Updated Swagger annotations
+
+#### 3.2 All Geographic Entity APIs
+
+All geographic entity list and detail endpoints now consistently return `main_image`:
+
+**Endpoints:**
+- `GET /api/v1/continents` - Returns `main_image`
+- `GET /api/v1/continents/{code}` - Returns `main_image`
+- `GET /api/v1/countries` - Returns `main_image` (no longer `image_path`)
+- `GET /api/v1/countries/{code}` - Returns `main_image` (no longer `image_path`)
+- `GET /api/v1/regions` - Returns `main_image`
+- `GET /api/v1/regions/{slug}` - Returns `main_image`
+- `GET /api/v1/islands` - Returns `main_image`
+- `GET /api/v1/islands/{slug}` - Returns `main_image`
+- `GET /api/v1/cities` - Returns `main_image`
+- `GET /api/v1/cities/{slug}` - Returns `main_image`
+
+**Files Updated:**
+- `app/Http/Controllers/Api/V1/ContinentController.php` - Added `main_image` to select queries
+- `app/Http/Controllers/Api/V1/RegionController.php` - Added `main_image` to select queries
+- `app/Http/Controllers/Api/V1/IslandController.php` - Added `main_image` to select queries
+- `app/Http/Controllers/Api/V1/CityController.php` - Added `main_image` to select queries
+- `app/Http/Resources/ContinentResource.php` - Added `main_image` to response
+- `app/Http/Resources/RegionResource.php` - Added `main_image` to response
+- `app/Http/Resources/IslandResource.php` - Added `main_image` to response
+- `app/Http/Resources/CityResource.php` - Added `main_image` to response
+
+---
+
+### 4. Swagger/OpenAPI Documentation Updates
+
+All Swagger schemas and controller annotations updated to reflect `main_image` field:
+
+**Schema Files Updated:**
+- `app/Swagger/Schemas/ContinentSchema.php` - Added `main_image` property
+- `app/Swagger/Schemas/CountrySchema.php` - Updated `main_image` description (removed `image_path` reference)
+- `app/Swagger/Schemas/RegionSchema.php` - Added `main_image` property
+- `app/Swagger/Schemas/IslandSchema.php` - Added `main_image` property
+- `app/Swagger/Schemas/CitySchema.php` - Added `main_image` property
+
+**Controller Annotations Updated:**
+- `app/Http/Controllers/Api/V1/ContinentController.php` - Updated index and show endpoint schemas
+- `app/Http/Controllers/Api/V1/CountryController.php` - Updated examples to match actual data format
+
+**Property Definition:**
+```php
+@OA\Property(
+    property="main_image",
+    type="string",
+    nullable=true,
+    description="Relative path to main image from most viewed beach",
+    example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg"
+)
+```
+
+---
+
+### 5. API Response Examples
+
+#### 5.1 Continent Response
+```json
+{
+  "code": "EU",
+  "name": "Europe",
+  "slug": "europe",
+  "main_image": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
+  "beaches_count": 2876
+}
+```
+
+#### 5.2 Country Response
+```json
+{
+  "code": "HR",
+  "name": "Croatia",
+  "full_name": "Croatia",
+  "slug": "croatia",
+  "iso3": "HRV",
+  "continent_code": "EU",
+  "main_image": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
+  "beaches_count": 1167
+}
+```
+
+#### 5.3 Region/Island/City Response
+```json
+{
+  "id": 2,
+  "code": "dalmatia-dubrovnik",
+  "name": "Dalmatia - Dubrovnik",
+  "slug": "dalmatia-dubrovnik",
+  "country_code": "HR",
+  "main_image": "img/beaches/hr-766-k-jdalmacija/hr-766-k-jdalmacija-sl1.jpg",
+  "beaches_count": 166
+}
+```
+
+---
+
+### 6. Frontend Integration Notes
+
+**Image URL Construction:**
+- API returns relative paths (e.g., `img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg`)
+- Frontend should prepend CDN domain: `https://beachrex.fra1.digitaloceanspaces.com/public/`
+- Full URL: `https://beachrex.fra1.digitaloceanspaces.com/public/img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg`
+
+**Imagor Integration:**
+- Can use Imagor for image transformation
+- Prepend Imagor domain instead of CDN domain
+- Example: `http://localhost:8001/unsafe/fit-in/400x300/filters:quality(85)/img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg`
+
+**Null Handling:**
+- `main_image` is nullable
+- Some entities may not have images if they don't have beaches or beaches don't have images
+- Frontend should handle null values gracefully with placeholder images
+
+**TypeScript Types:**
+- All geographic entity types should include `main_image?: string | null`
+- Can be auto-generated from updated Swagger/OpenAPI schema
+
+---
+
 ## 2025-11-29 – Geographic Entity Navigation and Image Upload
 
 ### 1. Overview

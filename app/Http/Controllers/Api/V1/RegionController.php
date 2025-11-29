@@ -94,6 +94,7 @@ class RegionController extends Controller
                     'id',
                     'code',
                     'country_code',
+                    'main_image',
                     'status_id'
                 ]);
             });
@@ -236,6 +237,7 @@ class RegionController extends Controller
                     'id',
                     'code',
                     'country_code',
+                    'main_image',
                     'status_id'
                 ]);
 

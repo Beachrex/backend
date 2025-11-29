@@ -28,7 +28,7 @@ class CountryResource extends JsonResource
             'slug' => $translation?->slug ?? 'unknown',
             'iso3' => $this->iso3,
             'continent_code' => $this->continent_code,
-            'image_path' => $this->image_path,
+            'main_image' => $this->image_path,
         ];
 
         // Add beaches_count if available

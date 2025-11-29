@@ -26,6 +26,7 @@ class IslandResource extends JsonResource
             'code' => $this->code,
             'name' => $translation?->name ?? 'Unknown',
             'slug' => $translation?->slug ?? 'unknown',
+            'main_image' => $this->main_image,
         ];
 
         // Add beaches_count if available

@@ -28,6 +28,7 @@ class CityResource extends JsonResource
             'slug' => $translation?->slug ?? 'unknown',
             'country_code' => $this->country_code,
             'region_id' => $this->region_id,
+            'main_image' => $this->main_image,
         ];
 
         // Add beaches_count if available

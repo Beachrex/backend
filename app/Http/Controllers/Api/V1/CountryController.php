@@ -57,7 +57,7 @@ class CountryController extends Controller
      *                     @OA\Property(property="full_name", type="string", example="Republic of Slovenia"),
      *                     @OA\Property(property="iso3", type="string", example="SVN"),
      *                     @OA\Property(property="continent_code", type="string", example="EU"),
-     *                     @OA\Property(property="main_image", type="string", nullable=true, example="/storage/countries/slovenia.jpg"),
+     *                     @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg"),
      *                     @OA\Property(property="beaches_count", type="integer", example=5)
      *                 )
      *             ),
@@ -151,7 +151,7 @@ class CountryController extends Controller
      *                 @OA\Property(property="continent_code", type="string", example="EU"),
      *                 @OA\Property(property="latitude", type="number", format="double", nullable=true, example=46.1512),
      *                 @OA\Property(property="longitude", type="number", format="double", nullable=true, example=14.9955),
-     *                 @OA\Property(property="main_image", type="string", nullable=true, example="/storage/countries/slovenia.jpg"),
+     *                 @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg"),
      *                 @OA\Property(property="beaches_count", type="integer", example=5),
      *                 @OA\Property(
      *                     property="continent",

@@ -57,6 +57,13 @@ namespace App\Swagger\Schemas;
  *         example=16.4435
  *     ),
  *     @OA\Property(
+ *         property="main_image",
+ *         type="string",
+ *         nullable=true,
+ *         description="Relative path to main image from most viewed beach",
+ *         example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg"
+ *     ),
+ *     @OA\Property(
  *         property="beaches_count",
  *         type="integer",
  *         description="Number of beaches in this region",

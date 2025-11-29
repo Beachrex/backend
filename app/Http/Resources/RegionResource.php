@@ -27,6 +27,7 @@ class RegionResource extends JsonResource
             'name' => $translation?->name ?? 'Unknown',
             'slug' => $translation?->slug ?? 'unknown',
             'country_code' => $this->country_code,
+            'main_image' => $this->main_image,
         ];
 
         // Add beaches_count if available

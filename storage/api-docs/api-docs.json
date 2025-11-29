@@ -2143,6 +2143,12 @@
                                                         "type": "string",
                                                         "example": "europe"
                                                     },
+                                                    "main_image": {
+                                                        "description": "Relative path to main image from most viewed beach",
+                                                        "type": "string",
+                                                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
+                                                        "nullable": true
+                                                    },
                                                     "beaches_count": {
                                                         "type": "integer",
                                                         "example": 15
@@ -2231,6 +2237,12 @@
                                                 "slug": {
                                                     "type": "string",
                                                     "example": "europe"
+                                                },
+                                                "main_image": {
+                                                    "description": "Relative path to main image from most viewed beach",
+                                                    "type": "string",
+                                                    "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
+                                                    "nullable": true
                                                 },
                                                 "beaches_count": {
                                                     "type": "integer",
@@ -2389,7 +2401,7 @@
                                                     },
                                                     "main_image": {
                                                         "type": "string",
-                                                        "example": "/storage/countries/slovenia.jpg",
+                                                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
                                                         "nullable": true
                                                     },
                                                     "beaches_count": {
@@ -2500,7 +2512,7 @@
                                                 },
                                                 "main_image": {
                                                     "type": "string",
-                                                    "example": "/storage/countries/slovenia.jpg",
+                                                    "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
                                                     "nullable": true
                                                 },
                                                 "beaches_count": {
@@ -9828,6 +9840,12 @@
                         "example": 16.4402,
                         "nullable": true
                     },
+                    "main_image": {
+                        "description": "Relative path to main image from most viewed beach",
+                        "type": "string",
+                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
+                        "nullable": true
+                    },
                     "beaches_count": {
                         "description": "Number of beaches in this city",
                         "type": "integer",
@@ -9875,6 +9893,12 @@
                         "description": "Localized URL-friendly slug",
                         "type": "string",
                         "example": "europe"
+                    },
+                    "main_image": {
+                        "description": "Relative path to main image from most viewed beach",
+                        "type": "string",
+                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
+                        "nullable": true
                     },
                     "beaches_count": {
                         "description": "Number of beaches in this continent",
@@ -9938,9 +9962,9 @@
                         "nullable": true
                     },
                     "main_image": {
-                        "description": "Path to the country main image",
+                        "description": "Relative path to main image from most viewed beach",
                         "type": "string",
-                        "example": "/storage/countries/slovenia.jpg",
+                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
                         "nullable": true
                     },
                     "beaches_count": {
@@ -10191,6 +10215,12 @@
                         "type": "number",
                         "format": "double",
                         "example": 14.5719,
+                        "nullable": true
+                    },
+                    "main_image": {
+                        "description": "Relative path to main image from most viewed beach",
+                        "type": "string",
+                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
                         "nullable": true
                     },
                     "beaches_count": {
@@ -10909,6 +10939,12 @@
                         "type": "number",
                         "format": "double",
                         "example": 16.4435,
+                        "nullable": true
+                    },
+                    "main_image": {
+                        "description": "Relative path to main image from most viewed beach",
+                        "type": "string",
+                        "example": "img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg",
                         "nullable": true
                     },
                     "beaches_count": {

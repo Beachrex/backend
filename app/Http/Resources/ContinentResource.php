@@ -25,6 +25,7 @@ class ContinentResource extends JsonResource
             'code' => $this->code,
             'name' => $translation?->name ?? 'Unknown',
             'slug' => $translation?->slug ?? 'unknown',
+            'main_image' => $this->main_image,
             'beaches_count' => $this->when(
                 $this->relationLoaded('beaches') || isset($this->beaches_count),
                 $this->beaches_count ?? $this->beaches->count()
