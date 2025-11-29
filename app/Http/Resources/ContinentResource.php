@@ -30,6 +30,7 @@ class ContinentResource extends JsonResource
                 $this->relationLoaded('beaches') || isset($this->beaches_count),
                 $this->beaches_count ?? $this->beaches->count()
             ),
+            'accommodation_count' => 0, // Hardcoded until booking integration
         ];
     }
 }

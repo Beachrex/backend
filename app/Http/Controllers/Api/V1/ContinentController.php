@@ -49,7 +49,8 @@ class ContinentController extends Controller
      *                     @OA\Property(property="name", type="string", example="Europe"),
      *                     @OA\Property(property="slug", type="string", example="europe"),
      *                     @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg", description="Relative path to main image from most viewed beach"),
-     *                     @OA\Property(property="beaches_count", type="integer", example=15)
+     *                     @OA\Property(property="beaches_count", type="integer", example=15),
+     *                     @OA\Property(property="accommodation_count", type="integer", example=0, description="Number of accommodations (hardcoded to 0 until booking integration)")
      *                 )
      *             ),
      *             @OA\Property(
@@ -130,6 +131,7 @@ class ContinentController extends Controller
      *                 @OA\Property(property="slug", type="string", example="europe"),
      *                 @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-13-k-istra/hr-13-k-istra-sl2.jpg", description="Relative path to main image from most viewed beach"),
      *                 @OA\Property(property="beaches_count", type="integer", example=15),
+                @OA\Property(property="accommodation_count", type="integer", example=0, description="Number of accommodations (hardcoded to 0 until booking integration)"),
      *                 @OA\Property(
      *                     property="navigation",
      *                     type="object",

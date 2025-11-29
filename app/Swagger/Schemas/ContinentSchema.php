@@ -39,6 +39,12 @@ namespace App\Swagger\Schemas;
  *         type="integer",
  *         description="Number of beaches in this continent",
  *         example=15
+ *     ),
+ *     @OA\Property(
+ *         property="accommodation_count",
+ *         type="integer",
+ *         description="Number of accommodations in this continent (hardcoded to 0 until booking integration)",
+ *         example=0
  *     )
  * )
  */

@@ -2152,6 +2152,11 @@
                                                     "beaches_count": {
                                                         "type": "integer",
                                                         "example": 15
+                                                    },
+                                                    "accommodation_count": {
+                                                        "description": "Number of accommodations (hardcoded to 0 until booking integration)",
+                                                        "type": "integer",
+                                                        "example": 0
                                                     }
                                                 },
                                                 "type": "object"
@@ -2247,6 +2252,11 @@
                                                 "beaches_count": {
                                                     "type": "integer",
                                                     "example": 15
+                                                },
+                                                "accommodation_count": {
+                                                    "description": "Number of accommodations (hardcoded to 0 until booking integration)",
+                                                    "type": "integer",
+                                                    "example": 0
                                                 },
                                                 "navigation": {
                                                     "description": "Navigation to previous and next continents with beaches",
@@ -9904,6 +9914,11 @@
                         "description": "Number of beaches in this continent",
                         "type": "integer",
                         "example": 15
+                    },
+                    "accommodation_count": {
+                        "description": "Number of accommodations in this continent (hardcoded to 0 until booking integration)",
+                        "type": "integer",
+                        "example": 0
                     }
                 },
                 "type": "object"
