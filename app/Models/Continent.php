@@ -17,6 +17,7 @@ class Continent extends Model
 
     protected $fillable = [
         'code',
+        'main_image',
     ];
 
     protected $appends = ['name'];

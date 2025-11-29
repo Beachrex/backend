@@ -9,6 +9,7 @@ use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Traits\CacheAware;
 use App\Traits\ProvidesWeather;
 
@@ -120,7 +121,52 @@ class IslandController extends Controller
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(
      *                 property="data",
-     *                 ref="#/components/schemas/Island"
+     *                 allOf={
+     *                     @OA\Schema(ref="#/components/schemas/Island"),
+     *                     @OA\Schema(
+     *                         @OA\Property(
+     *                             property="navigation",
+     *                             type="object",
+     *                             description="Navigation to previous and next islands with beaches in the same region or country",
+     *                             @OA\Property(
+     *                                 property="previous",
+     *                                 type="object",
+     *                                 nullable=true,
+     *                                 @OA\Property(property="id", type="integer", example=1),
+     *                                 @OA\Property(property="name", type="string", example="Krk"),
+     *                                 @OA\Property(property="slug", type="string", example="krk"),
+     *                                 @OA\Property(property="latitude", type="string", example="45.0"),
+     *                                 @OA\Property(property="longitude", type="string", example="14.6"),
+     *                                 @OA\Property(property="main_image", type="string", nullable=true, example="img/islands/krk.jpg"),
+     *                                 @OA\Property(
+     *                                     property="location",
+     *                                     type="object",
+     *                                     @OA\Property(property="continent_slug", type="string", example="europe"),
+     *                                     @OA\Property(property="country_slug", type="string", example="croatia"),
+     *                                     @OA\Property(property="region_slug", type="string", example="kvarner")
+     *                                 )
+     *                             ),
+     *                             @OA\Property(
+     *                                 property="next",
+     *                                 type="object",
+     *                                 nullable=true,
+     *                                 @OA\Property(property="id", type="integer", example=3),
+     *                                 @OA\Property(property="name", type="string", example="Hvar"),
+     *                                 @OA\Property(property="slug", type="string", example="hvar"),
+     *                                 @OA\Property(property="latitude", type="string", example="43.1"),
+     *                                 @OA\Property(property="longitude", type="string", example="16.4"),
+     *                                 @OA\Property(property="main_image", type="string", nullable=true, example="img/islands/hvar.jpg"),
+     *                                 @OA\Property(
+     *                                     property="location",
+     *                                     type="object",
+     *                                     @OA\Property(property="continent_slug", type="string", example="europe"),
+     *                                     @OA\Property(property="country_slug", type="string", example="croatia"),
+     *                                     @OA\Property(property="region_slug", type="string", example="dalmatia")
+     *                                 )
+     *                             )
+     *                         )
+     *                     )
+     *                 }
      *             ),
      *             @OA\Property(property="message", type="string", example="Island retrieved successfully")
      *         )
@@ -136,14 +182,14 @@ class IslandController extends Controller
      *     )
      * )
      */
-    public function show(string $slug): JsonResponse
+    public function show(string $slug, Request $request): JsonResponse
     {
         try {
             $locale = app()->getLocale();
             $cacheKey = "island:show:{$locale}:{$slug}";
 
-            $island = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale) {
-                return Island::with([
+            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale, $request) {
+                $island = Island::with([
                         'translations',
                         'badges.translations',
                         'badges.status',
@@ -161,11 +207,28 @@ class IslandController extends Controller
                     ->first([
                         'id',
                         'code',
+                        'country_code',
+                        'region_id',
                         'status_id'
                     ]);
+
+                if (!$island) {
+                    return null;
+                }
+
+                // Get next and previous islands
+                $navigation = $this->getNavigationIslands($island, $locale);
+
+                $resource = new IslandResource($island);
+                $resourceArray = $resource->toArray($request);
+
+                // Add navigation to response
+                $resourceArray['navigation'] = $navigation;
+
+                return $resourceArray;
             });
 
-            if (!$island) {
+            if (!$data) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Island not found'
@@ -174,7 +237,7 @@ class IslandController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new IslandResource($island),
+                'data' => $data,
                 'message' => 'Island retrieved successfully'
             ], 200);
 
@@ -323,6 +386,142 @@ class IslandController extends Controller
         // Fallback to English
         $translationEn = $island->translations->firstWhere('locale', 'en');
         return $translationEn?->slug;
+    }
+
+    /**
+     * Get next and previous islands based on region and ID order
+     * Previous = highest ID < current ID in same region (or country if no region)
+     * Next = lowest ID > current ID in same region (or country if no region)
+     */
+    private function getNavigationIslands(Island $currentIsland, string $locale): array
+    {
+        // Determine scope: region if available, otherwise country
+        $scopeField = $currentIsland->region_id ? 'region_id' : 'country_code';
+        $scopeValue = $currentIsland->region_id ? $currentIsland->region_id : $currentIsland->country_code;
+
+        // Get previous island: highest ID < current ID in same scope
+        $previousIsland = DB::select("
+            SELECT
+                i.id,
+                i.code,
+                i.country_code,
+                i.region_id,
+                i.latitude,
+                i.longitude,
+                i.main_image,
+                COALESCE(it.name, it_en.name) as name,
+                COALESCE(it.slug, it_en.slug) as slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(country_t.slug, country_t_en.slug) as country_slug,
+                COALESCE(region_t.slug, region_t_en.slug) as region_slug
+            FROM island i
+            LEFT JOIN island_translation it ON i.id = it.island_id AND it.locale = ?
+            LEFT JOIN island_translation it_en ON i.id = it_en.island_id AND it_en.locale = 'en'
+            LEFT JOIN countries ON i.country_code = countries.code
+            LEFT JOIN continents ON countries.continent_code = continents.code
+            LEFT JOIN continent_translation cont_t ON continents.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON continents.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN country_translation country_t ON i.country_code = country_t.country_code AND country_t.locale = ?
+            LEFT JOIN country_translation country_t_en ON i.country_code = country_t_en.country_code AND country_t_en.locale = 'en'
+            LEFT JOIN region_translation region_t ON i.region_id = region_t.region_id AND region_t.locale = ?
+            LEFT JOIN region_translation region_t_en ON i.region_id = region_t_en.region_id AND region_t_en.locale = 'en'
+            WHERE i.{$scopeField} = ?
+              AND i.id < ?
+              AND i.status_id = 1
+              AND EXISTS (
+                  SELECT 1 FROM beach b
+                  WHERE b.island_id = i.id
+                    AND b.status_id = 1
+              )
+            ORDER BY i.id DESC
+            LIMIT 1
+        ", [
+            $locale,
+            $locale,
+            $locale,
+            $locale,
+            $scopeValue,
+            $currentIsland->id,
+        ]);
+
+        // Get next island: lowest ID > current ID in same scope
+        $nextIsland = DB::select("
+            SELECT
+                i.id,
+                i.code,
+                i.country_code,
+                i.region_id,
+                i.latitude,
+                i.longitude,
+                i.main_image,
+                COALESCE(it.name, it_en.name) as name,
+                COALESCE(it.slug, it_en.slug) as slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(country_t.slug, country_t_en.slug) as country_slug,
+                COALESCE(region_t.slug, region_t_en.slug) as region_slug
+            FROM island i
+            LEFT JOIN island_translation it ON i.id = it.island_id AND it.locale = ?
+            LEFT JOIN island_translation it_en ON i.id = it_en.island_id AND it_en.locale = 'en'
+            LEFT JOIN countries ON i.country_code = countries.code
+            LEFT JOIN continents ON countries.continent_code = continents.code
+            LEFT JOIN continent_translation cont_t ON continents.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON continents.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN country_translation country_t ON i.country_code = country_t.country_code AND country_t.locale = ?
+            LEFT JOIN country_translation country_t_en ON i.country_code = country_t_en.country_code AND country_t_en.locale = 'en'
+            LEFT JOIN region_translation region_t ON i.region_id = region_t.region_id AND region_t.locale = ?
+            LEFT JOIN region_translation region_t_en ON i.region_id = region_t_en.region_id AND region_t_en.locale = 'en'
+            WHERE i.{$scopeField} = ?
+              AND i.id > ?
+              AND i.status_id = 1
+              AND EXISTS (
+                  SELECT 1 FROM beach b
+                  WHERE b.island_id = i.id
+                    AND b.status_id = 1
+              )
+            ORDER BY i.id ASC
+            LIMIT 1
+        ", [
+            $locale,
+            $locale,
+            $locale,
+            $locale,
+            $scopeValue,
+            $currentIsland->id,
+        ]);
+
+        // Format the results
+        $previous = isset($previousIsland[0]) ? [
+            'id' => $previousIsland[0]->id,
+            'name' => $previousIsland[0]->name,
+            'slug' => $previousIsland[0]->slug,
+            'latitude' => $previousIsland[0]->latitude,
+            'longitude' => $previousIsland[0]->longitude,
+            'main_image' => $previousIsland[0]->main_image,
+            'location' => [
+                'continent_slug' => $previousIsland[0]->continent_slug,
+                'country_slug' => $previousIsland[0]->country_slug,
+                'region_slug' => $previousIsland[0]->region_slug,
+            ],
+        ] : null;
+
+        $next = isset($nextIsland[0]) ? [
+            'id' => $nextIsland[0]->id,
+            'name' => $nextIsland[0]->name,
+            'slug' => $nextIsland[0]->slug,
+            'latitude' => $nextIsland[0]->latitude,
+            'longitude' => $nextIsland[0]->longitude,
+            'main_image' => $nextIsland[0]->main_image,
+            'location' => [
+                'continent_slug' => $nextIsland[0]->continent_slug,
+                'country_slug' => $nextIsland[0]->country_slug,
+                'region_slug' => $nextIsland[0]->region_slug,
+            ],
+        ] : null;
+
+        return [
+            'previous' => $previous,
+            'next' => $next,
+        ];
     }
 }
 

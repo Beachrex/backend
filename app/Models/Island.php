@@ -20,6 +20,7 @@ class Island extends Model
         'region_id',
         'latitude',
         'longitude',
+        'main_image',
         'status_id',
     ];
 

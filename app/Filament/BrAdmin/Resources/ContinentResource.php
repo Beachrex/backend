@@ -26,6 +26,24 @@ class ContinentResource extends Resource
                 Forms\Components\TextInput::make('code')
                     ->required()
                     ->maxLength(2),
+                Forms\Components\FileUpload::make('main_image')
+                    ->label('Continent Main Image')
+                    ->image()
+                    ->imageEditor()
+                    ->imageEditorAspectRatios([
+                        null,
+                        '16:9',
+                        '4:3',
+                        '1:1',
+                    ])
+                    ->disk('spaces')
+                    ->directory('public/img/continents')
+                    ->visibility('public')
+                    ->maxSize(10240)
+                    ->downloadable()
+                    ->openable()
+                    ->previewable()
+                    ->helperText('Upload a representative image for this continent (max 10MB). Will be saved to DigitalOcean Spaces.'),
             ]);
     }
 

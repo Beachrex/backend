@@ -66,10 +66,10 @@ namespace App\Swagger\Schemas;
  *         example=14.9955
  *     ),
  *     @OA\Property(
- *         property="image_path",
+ *         property="main_image",
  *         type="string",
  *         nullable=true,
- *         description="Path to the country image",
+ *         description="Path to the country main image",
  *         example="/storage/countries/slovenia.jpg"
  *     ),
  *     @OA\Property(

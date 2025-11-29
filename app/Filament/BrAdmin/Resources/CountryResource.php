@@ -33,13 +33,23 @@ class CountryResource extends Resource
                 Forms\Components\TextInput::make('continent_code')
                     ->maxLength(2),
                 Forms\Components\FileUpload::make('image_path')
-                    ->label('Country Image')
+                    ->label('Country Main Image')
                     ->image()
                     ->imageEditor()
-                    ->directory('countries')
+                    ->imageEditorAspectRatios([
+                        null,
+                        '16:9',
+                        '4:3',
+                        '1:1',
+                    ])
+                    ->disk('spaces')
+                    ->directory('public/img/countries')
                     ->visibility('public')
-                    ->maxSize(5120)
-                    ->helperText('Upload a representative image for this country (max 5MB)'),
+                    ->maxSize(10240)
+                    ->downloadable()
+                    ->openable()
+                    ->previewable()
+                    ->helperText('Upload a representative image for this country (max 10MB). Will be saved to DigitalOcean Spaces.'),
             ]);
     }
 

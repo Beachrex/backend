@@ -21,6 +21,7 @@ class City extends Model
         'island_id',
         'latitude',
         'longitude',
+        'main_image',
         'status_id',
     ];
 

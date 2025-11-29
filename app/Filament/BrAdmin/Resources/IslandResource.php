@@ -36,6 +36,24 @@ class IslandResource extends Resource
                     ->required()
                     ->default(1)
                     ->searchable(),
+                Forms\Components\FileUpload::make('main_image')
+                    ->label('Island Main Image')
+                    ->image()
+                    ->imageEditor()
+                    ->imageEditorAspectRatios([
+                        null,
+                        '16:9',
+                        '4:3',
+                        '1:1',
+                    ])
+                    ->disk('spaces')
+                    ->directory('public/img/islands')
+                    ->visibility('public')
+                    ->maxSize(10240)
+                    ->downloadable()
+                    ->openable()
+                    ->previewable()
+                    ->helperText('Upload a representative image for this island (max 10MB). Will be saved to DigitalOcean Spaces.'),
             ]);
     }
 

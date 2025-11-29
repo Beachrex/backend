@@ -1717,7 +1717,128 @@
                                             "example": true
                                         },
                                         "data": {
-                                            "$ref": "#/components/schemas/City"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/City"
+                                                },
+                                                {
+                                                    "properties": {
+                                                        "navigation": {
+                                                            "description": "Navigation to previous and next cities with beaches in the same island, region, or country",
+                                                            "properties": {
+                                                                "previous": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Split"
+                                                                        },
+                                                                        "slug": {
+                                                                            "type": "string",
+                                                                            "example": "split"
+                                                                        },
+                                                                        "latitude": {
+                                                                            "type": "string",
+                                                                            "example": "43.5"
+                                                                        },
+                                                                        "longitude": {
+                                                                            "type": "string",
+                                                                            "example": "16.4"
+                                                                        },
+                                                                        "main_image": {
+                                                                            "type": "string",
+                                                                            "example": "img/cities/split.jpg",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "location": {
+                                                                            "properties": {
+                                                                                "continent_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "europe"
+                                                                                },
+                                                                                "country_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "croatia"
+                                                                                },
+                                                                                "region_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "dalmatia"
+                                                                                },
+                                                                                "island_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": null,
+                                                                                    "nullable": true
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                },
+                                                                "next": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 3
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Dubrovnik"
+                                                                        },
+                                                                        "slug": {
+                                                                            "type": "string",
+                                                                            "example": "dubrovnik"
+                                                                        },
+                                                                        "latitude": {
+                                                                            "type": "string",
+                                                                            "example": "42.6"
+                                                                        },
+                                                                        "longitude": {
+                                                                            "type": "string",
+                                                                            "example": "18.1"
+                                                                        },
+                                                                        "main_image": {
+                                                                            "type": "string",
+                                                                            "example": "img/cities/dubrovnik.jpg",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "location": {
+                                                                            "properties": {
+                                                                                "continent_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "europe"
+                                                                                },
+                                                                                "country_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "croatia"
+                                                                                },
+                                                                                "region_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "dalmatia"
+                                                                                },
+                                                                                "island_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": null,
+                                                                                    "nullable": true
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            ]
                                         },
                                         "message": {
                                             "type": "string",
@@ -2114,6 +2235,66 @@
                                                 "beaches_count": {
                                                     "type": "integer",
                                                     "example": 15
+                                                },
+                                                "navigation": {
+                                                    "description": "Navigation to previous and next continents with beaches",
+                                                    "properties": {
+                                                        "previous": {
+                                                            "properties": {
+                                                                "code": {
+                                                                    "type": "string",
+                                                                    "example": "AS"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Asia"
+                                                                },
+                                                                "slug": {
+                                                                    "type": "string",
+                                                                    "example": "asia"
+                                                                },
+                                                                "main_image": {
+                                                                    "type": "string",
+                                                                    "example": "img/continents/asia.jpg",
+                                                                    "nullable": true
+                                                                },
+                                                                "location": {
+                                                                    "description": "Empty object for continents (top level)",
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        },
+                                                        "next": {
+                                                            "properties": {
+                                                                "code": {
+                                                                    "type": "string",
+                                                                    "example": "NA"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "North America"
+                                                                },
+                                                                "slug": {
+                                                                    "type": "string",
+                                                                    "example": "north-america"
+                                                                },
+                                                                "main_image": {
+                                                                    "type": "string",
+                                                                    "example": "img/continents/north-america.jpg",
+                                                                    "nullable": true
+                                                                },
+                                                                "location": {
+                                                                    "description": "Empty object for continents (top level)",
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -2206,9 +2387,9 @@
                                                         "type": "string",
                                                         "example": "EU"
                                                     },
-                                                    "image_path": {
+                                                    "main_image": {
                                                         "type": "string",
-                                                        "example": "/images/countries/slovenia.jpg",
+                                                        "example": "/storage/countries/slovenia.jpg",
                                                         "nullable": true
                                                     },
                                                     "beaches_count": {
@@ -2305,9 +2486,21 @@
                                                     "type": "string",
                                                     "example": "EU"
                                                 },
-                                                "image_path": {
+                                                "latitude": {
+                                                    "type": "number",
+                                                    "format": "double",
+                                                    "example": 46.1512,
+                                                    "nullable": true
+                                                },
+                                                "longitude": {
+                                                    "type": "number",
+                                                    "format": "double",
+                                                    "example": 14.9955,
+                                                    "nullable": true
+                                                },
+                                                "main_image": {
                                                     "type": "string",
-                                                    "example": "/images/countries/slovenia.jpg",
+                                                    "example": "/storage/countries/slovenia.jpg",
                                                     "nullable": true
                                                 },
                                                 "beaches_count": {
@@ -2323,6 +2516,91 @@
                                                         "name": {
                                                             "type": "string",
                                                             "example": "Europe"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "navigation": {
+                                                    "properties": {
+                                                        "previous": {
+                                                            "properties": {
+                                                                "code": {
+                                                                    "type": "string",
+                                                                    "example": "HR"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Croatia"
+                                                                },
+                                                                "slug": {
+                                                                    "type": "string",
+                                                                    "example": "croatia"
+                                                                },
+                                                                "latitude": {
+                                                                    "type": "string",
+                                                                    "example": "45.1"
+                                                                },
+                                                                "longitude": {
+                                                                    "type": "string",
+                                                                    "example": "15.2"
+                                                                },
+                                                                "main_image": {
+                                                                    "type": "string",
+                                                                    "example": "/storage/countries/croatia.jpg",
+                                                                    "nullable": true
+                                                                },
+                                                                "location": {
+                                                                    "properties": {
+                                                                        "continent_slug": {
+                                                                            "type": "string",
+                                                                            "example": "europe"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        },
+                                                        "next": {
+                                                            "properties": {
+                                                                "code": {
+                                                                    "type": "string",
+                                                                    "example": "IT"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Italy"
+                                                                },
+                                                                "slug": {
+                                                                    "type": "string",
+                                                                    "example": "italy"
+                                                                },
+                                                                "latitude": {
+                                                                    "type": "string",
+                                                                    "example": "41.8719"
+                                                                },
+                                                                "longitude": {
+                                                                    "type": "string",
+                                                                    "example": "12.5674"
+                                                                },
+                                                                "main_image": {
+                                                                    "type": "string",
+                                                                    "example": "/storage/countries/italy.jpg",
+                                                                    "nullable": true
+                                                                },
+                                                                "location": {
+                                                                    "properties": {
+                                                                        "continent_slug": {
+                                                                            "type": "string",
+                                                                            "example": "europe"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
                                                         }
                                                     },
                                                     "type": "object"
@@ -3311,7 +3589,118 @@
                                             "example": true
                                         },
                                         "data": {
-                                            "$ref": "#/components/schemas/Island"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/Island"
+                                                },
+                                                {
+                                                    "properties": {
+                                                        "navigation": {
+                                                            "description": "Navigation to previous and next islands with beaches in the same region or country",
+                                                            "properties": {
+                                                                "previous": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Krk"
+                                                                        },
+                                                                        "slug": {
+                                                                            "type": "string",
+                                                                            "example": "krk"
+                                                                        },
+                                                                        "latitude": {
+                                                                            "type": "string",
+                                                                            "example": "45.0"
+                                                                        },
+                                                                        "longitude": {
+                                                                            "type": "string",
+                                                                            "example": "14.6"
+                                                                        },
+                                                                        "main_image": {
+                                                                            "type": "string",
+                                                                            "example": "img/islands/krk.jpg",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "location": {
+                                                                            "properties": {
+                                                                                "continent_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "europe"
+                                                                                },
+                                                                                "country_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "croatia"
+                                                                                },
+                                                                                "region_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "kvarner"
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                },
+                                                                "next": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 3
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Hvar"
+                                                                        },
+                                                                        "slug": {
+                                                                            "type": "string",
+                                                                            "example": "hvar"
+                                                                        },
+                                                                        "latitude": {
+                                                                            "type": "string",
+                                                                            "example": "43.1"
+                                                                        },
+                                                                        "longitude": {
+                                                                            "type": "string",
+                                                                            "example": "16.4"
+                                                                        },
+                                                                        "main_image": {
+                                                                            "type": "string",
+                                                                            "example": "img/islands/hvar.jpg",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "location": {
+                                                                            "properties": {
+                                                                                "continent_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "europe"
+                                                                                },
+                                                                                "country_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "croatia"
+                                                                                },
+                                                                                "region_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "dalmatia"
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            ]
                                         },
                                         "message": {
                                             "type": "string",
@@ -6072,7 +6461,110 @@
                                             "example": true
                                         },
                                         "data": {
-                                            "$ref": "#/components/schemas/Region"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/Region"
+                                                },
+                                                {
+                                                    "properties": {
+                                                        "navigation": {
+                                                            "description": "Navigation to previous and next regions with beaches in the same country",
+                                                            "properties": {
+                                                                "previous": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Istria"
+                                                                        },
+                                                                        "slug": {
+                                                                            "type": "string",
+                                                                            "example": "istria"
+                                                                        },
+                                                                        "latitude": {
+                                                                            "type": "string",
+                                                                            "example": "45.1"
+                                                                        },
+                                                                        "longitude": {
+                                                                            "type": "string",
+                                                                            "example": "13.9"
+                                                                        },
+                                                                        "main_image": {
+                                                                            "type": "string",
+                                                                            "example": "img/regions/istria.jpg",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "location": {
+                                                                            "properties": {
+                                                                                "continent_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "europe"
+                                                                                },
+                                                                                "country_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "croatia"
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                },
+                                                                "next": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 3
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Dalmatia"
+                                                                        },
+                                                                        "slug": {
+                                                                            "type": "string",
+                                                                            "example": "dalmatia"
+                                                                        },
+                                                                        "latitude": {
+                                                                            "type": "string",
+                                                                            "example": "43.5"
+                                                                        },
+                                                                        "longitude": {
+                                                                            "type": "string",
+                                                                            "example": "16.4"
+                                                                        },
+                                                                        "main_image": {
+                                                                            "type": "string",
+                                                                            "example": "img/regions/dalmatia.jpg",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "location": {
+                                                                            "properties": {
+                                                                                "continent_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "europe"
+                                                                                },
+                                                                                "country_slug": {
+                                                                                    "type": "string",
+                                                                                    "example": "croatia"
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            ]
                                         },
                                         "message": {
                                             "type": "string",
@@ -9445,8 +9937,8 @@
                         "example": 14.9955,
                         "nullable": true
                     },
-                    "image_path": {
-                        "description": "Path to the country image",
+                    "main_image": {
+                        "description": "Path to the country main image",
                         "type": "string",
                         "example": "/storage/countries/slovenia.jpg",
                         "nullable": true

@@ -19,6 +19,7 @@ class Region extends Model
         'country_code',
         'latitude',
         'longitude',
+        'main_image',
         'status_id',
     ];
 

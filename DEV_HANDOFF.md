@@ -16,6 +16,412 @@ All technical documentation is organized in the **[docs/](./docs/README.md)** fo
 
 ---
 
+## 2025-11-29 – Geographic Entity Navigation and Image Upload
+
+### 1. Overview
+
+**Context**
+- Added `main_image` field to all geographic entities (regions, islands, cities, continents)
+- Implemented S3/DigitalOcean Spaces image upload in admin panel for all geographic entities
+- Added navigation (previous/next) to all geographic entity detail endpoints
+- Navigation only includes entities that have beaches with `status_id = 1`
+- All navigation structures now consistent across all entity types
+
+**Benefits**
+- ✅ Consistent image handling across all geographic entities
+- ✅ S3-based image storage with Filament dropzone upload
+- ✅ Navigation allows browsing through entities with beaches
+- ✅ Full Swagger/OpenAPI documentation for all navigation structures
+- ✅ Frontend can generate TypeScript types from OpenAPI schema
+
+---
+
+### 2. Database Changes
+
+#### 2.1 New Fields Added
+
+**Migration:** `database/migrations/2025_11_29_120000_add_main_image_to_geographic_entities.php`
+
+Added `main_image` field to:
+- `city` table - VARCHAR(255), nullable
+- `region` table - VARCHAR(255), nullable
+- `island` table - VARCHAR(255), nullable
+- `continents` table - VARCHAR(255), nullable
+
+**Note:** Countries already had `image_path` field, which is aliased to `main_image` in API responses for consistency.
+
+**Model Updates:**
+- `app/Models/City.php` - Added `main_image` to fillable
+- `app/Models/Region.php` - Added `main_image` to fillable
+- `app/Models/Island.php` - Added `main_image` to fillable
+- `app/Models/Continent.php` - Added `main_image` to fillable
+
+---
+
+### 3. Admin Panel - Image Upload
+
+All geographic entity admin resources now have S3-based image upload with Filament FileUpload component:
+
+**Files Updated:**
+- `app/Filament/BrAdmin/Resources/CountryResource.php` - Updated to use S3 (`disk('spaces')`)
+- `app/Filament/BrAdmin/Resources/RegionResource.php` - Added image upload field
+- `app/Filament/BrAdmin/Resources/IslandResource.php` - Added image upload field
+- `app/Filament/BrAdmin/Resources/CityResource.php` - Added image upload field
+- `app/Filament/BrAdmin/Resources/ContinentResource.php` - Added image upload field
+
+**Configuration:**
+- Disk: `spaces` (DigitalOcean Spaces)
+- Directories:
+  - Countries: `public/img/countries/`
+  - Regions: `public/img/regions/`
+  - Islands: `public/img/islands/`
+  - Cities: `public/img/cities/`
+  - Continents: `public/img/continents/`
+- Image editor with aspect ratios: null, 16:9, 4:3, 1:1
+- Max file size: 10MB
+- Visibility: public
+- Features: downloadable, openable, previewable
+
+---
+
+### 4. Navigation Implementation
+
+#### 4.1 Navigation Logic
+
+All geographic entity detail endpoints now include navigation (previous/next) in their responses:
+
+**Endpoints with Navigation:**
+- `GET /api/v1/continents/{code}` - Navigate between continents with beaches
+- `GET /api/v1/countries/{code}` - Navigate between countries with beaches in same continent
+- `GET /api/v1/regions/{slug}` - Navigate between regions with beaches in same country
+- `GET /api/v1/islands/{slug}` - Navigate between islands with beaches in same region/country
+- `GET /api/v1/cities/{slug}` - Navigate between cities with beaches in same island/region/country
+
+**Navigation Filtering:**
+All navigation queries use `EXISTS` subqueries to ensure only entities with active beaches (`status_id = 1`) are included:
+
+- **Countries**: Only countries that have beaches with `status_id = 1`
+- **Regions**: Only regions that have beaches with `status_id = 1`
+- **Islands**: Only islands that have beaches with `status_id = 1`
+- **Cities**: Only cities that have beaches with `status_id = 1`
+- **Continents**: Only continents that have countries with beaches with `status_id = 1`
+
+**Ordering:**
+- Countries: Ordered by `code` within same continent
+- Regions: Ordered by `id` within same country
+- Islands: Ordered by `id` within same region (or country if no region)
+- Cities: Ordered by `id` within same island/region/country
+- Continents: Ordered by `code`
+
+#### 4.2 Navigation Response Structure
+
+All navigation responses follow the same structure with entity-specific fields and parent location slugs:
+
+**Country Navigation:**
+```json
+{
+  "navigation": {
+    "previous": {
+      "code": "HR",
+      "name": "Croatia",
+      "slug": "croatia",
+      "latitude": "45.1",
+      "longitude": "15.2",
+      "main_image": "img/countries/croatia.jpg",
+      "location": {
+        "continent_slug": "europe"
+      }
+    },
+    "next": { /* same structure */ }
+  }
+}
+```
+
+**Region Navigation:**
+```json
+{
+  "navigation": {
+    "previous": {
+      "id": 1,
+      "name": "Istria",
+      "slug": "istria",
+      "latitude": "45.1",
+      "longitude": "13.9",
+      "main_image": "img/regions/istria.jpg",
+      "location": {
+        "continent_slug": "europe",
+        "country_slug": "croatia"
+      }
+    },
+    "next": { /* same structure */ }
+  }
+}
+```
+
+**Island Navigation:**
+```json
+{
+  "navigation": {
+    "previous": {
+      "id": 1,
+      "name": "Krk",
+      "slug": "krk",
+      "latitude": "45.0",
+      "longitude": "14.6",
+      "main_image": "img/islands/krk.jpg",
+      "location": {
+        "continent_slug": "europe",
+        "country_slug": "croatia",
+        "region_slug": "kvarner"
+      }
+    },
+    "next": { /* same structure */ }
+  }
+}
+```
+
+**City Navigation:**
+```json
+{
+  "navigation": {
+    "previous": {
+      "id": 1,
+      "name": "Split",
+      "slug": "split",
+      "latitude": "43.5",
+      "longitude": "16.4",
+      "main_image": "img/cities/split.jpg",
+      "location": {
+        "continent_slug": "europe",
+        "country_slug": "croatia",
+        "region_slug": "dalmatia",
+        "island_slug": null
+      }
+    },
+    "next": { /* same structure */ }
+  }
+}
+```
+
+**Continent Navigation:**
+```json
+{
+  "navigation": {
+    "previous": {
+      "code": "AS",
+      "name": "Asia",
+      "slug": "asia",
+      "main_image": "img/continents/asia.jpg",
+      "location": {}
+    },
+    "next": { /* same structure */ }
+  }
+}
+```
+
+---
+
+### 5. Controller Updates
+
+All geographic entity controllers updated with navigation methods:
+
+**Files Modified:**
+- `app/Http/Controllers/Api/V1/ContinentController.php`
+  - Added `getNavigationContinents()` method
+  - Navigation filters by continents with beaches
+  - SQL queries include `main_image` field
+
+- `app/Http/Controllers/Api/V1/CountryController.php`
+  - Updated `getNavigationCountries()` method
+  - Navigation filters by countries with beaches in same continent
+  - SQL queries include `main_image` field (aliased from `image_path`)
+
+- `app/Http/Controllers/Api/V1/RegionController.php`
+  - Added `getNavigationRegions()` method
+  - Navigation filters by regions with beaches in same country
+  - SQL queries include `main_image` field
+
+- `app/Http/Controllers/Api/V1/IslandController.php`
+  - Added `getNavigationIslands()` method
+  - Navigation filters by islands with beaches in same region/country
+  - SQL queries include `main_image` field
+
+- `app/Http/Controllers/Api/V1/CityController.php`
+  - Added `getNavigationCities()` method
+  - Navigation filters by cities with beaches in same island/region/country
+  - SQL queries include `main_image` field
+
+---
+
+### 6. Swagger/OpenAPI Documentation
+
+All geographic entity show endpoints now have complete navigation documentation:
+
+**Files Updated:**
+- `app/Http/Controllers/Api/V1/ContinentController.php` - Added navigation schema to show endpoint
+- `app/Http/Controllers/Api/V1/CountryController.php` - Updated navigation schema with `main_image`
+- `app/Http/Controllers/Api/V1/RegionController.php` - Added navigation schema to show endpoint
+- `app/Http/Controllers/Api/V1/IslandController.php` - Added navigation schema to show endpoint
+- `app/Http/Controllers/Api/V1/CityController.php` - Added navigation schema to show endpoint
+
+**Schema Updates:**
+- `app/Swagger/Schemas/CountrySchema.php` - Changed `image_path` to `main_image`
+
+Each navigation schema includes:
+- Complete structure with all fields (id/code, name, slug, latitude, longitude, main_image)
+- Location object with parent slugs
+- Nullable properties where appropriate
+- Examples for all fields
+
+---
+
+### 7. Deployment Instructions
+
+#### 7.1 Development Environment
+
+```bash
+# Run migration
+./vendor/bin/sail artisan migrate
+
+# Clear cache
+./vendor/bin/sail artisan cache:clear
+
+# Regenerate Swagger docs
+./vendor/bin/sail artisan l5-swagger:generate
+```
+
+#### 7.2 Production Server
+
+```bash
+# Run migration
+php artisan migrate
+
+# Clear cache
+php artisan cache:clear
+
+# Regenerate Swagger docs
+php artisan l5-swagger:generate
+```
+
+---
+
+### 8. Frontend Integration
+
+#### 8.1 TypeScript Type Generation
+
+The frontend can generate TypeScript types for all navigation structures from the OpenAPI schema:
+
+```bash
+# Generate types from Swagger/OpenAPI
+npx openapi-typescript https://api.beachrex.com/api/documentation/json -o src/lib/api-client/types.gen.ts
+```
+
+This will include updated types for:
+- `ContinentResponse` with navigation
+- `CountryResponse` with navigation
+- `RegionResponse` with navigation
+- `IslandResponse` with navigation
+- `CityResponse` with navigation
+
+#### 8.2 Example Usage
+
+```typescript
+import { apiClient } from '@/lib/api-client';
+
+// Get country with navigation
+const country = await apiClient.GET('/api/v1/countries/{code}', {
+  params: {
+    path: { code: 'HR' }
+  },
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+
+// Access navigation
+const previousCountry = country.data?.navigation?.previous;
+const nextCountry = country.data?.navigation?.next;
+
+// Get region with navigation
+const region = await apiClient.GET('/api/v1/regions/{slug}', {
+  params: {
+    path: { slug: 'dalmatia' },
+    query: { country_code: 'HR' }
+  },
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+```
+
+#### 8.3 Image URL Construction
+
+All `main_image` fields are relative paths. Frontend should prepend CDN/base URL:
+
+```typescript
+// For geographic entity images
+const imagorEndpoint = process.env.NEXT_PUBLIC_IMAGOR_ENDPOINT; // "https://s3.beachrex.com"
+const imageUrl = `${imagorEndpoint}/unsafe/fit-in/800x600/filters:quality(90)/${entity.main_image}`;
+// Result: https://s3.beachrex.com/unsafe/fit-in/800x600/filters:quality(90)/img/countries/croatia.jpg
+```
+
+---
+
+### 9. Testing
+
+#### 9.1 Test Navigation Endpoints
+
+```bash
+# Continent navigation
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/continents/EU
+
+# Country navigation
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/countries/HR
+
+# Region navigation
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/regions/dalmatia?country_code=HR
+
+# Island navigation
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/islands/hvar
+
+# City navigation
+curl -H "Accept-Language: en" https://api.beachrex.com/api/v1/cities/split?country_code=HR
+```
+
+#### 9.2 Verify Navigation Filtering
+
+All navigation should only include entities with beaches:
+
+```sql
+-- Verify countries in navigation have beaches
+SELECT c.code, c.name, COUNT(b.id) as beach_count
+FROM countries c
+LEFT JOIN beach b ON b.country_code = c.code AND b.status_id = 1
+GROUP BY c.code, c.name
+HAVING COUNT(b.id) > 0
+ORDER BY c.code;
+
+-- Verify regions in navigation have beaches
+SELECT r.id, r.code, COUNT(b.id) as beach_count
+FROM region r
+LEFT JOIN beach b ON b.region_id = r.id AND b.status_id = 1
+GROUP BY r.id, r.code
+HAVING COUNT(b.id) > 0
+ORDER BY r.id;
+```
+
+---
+
+### 10. Notes
+
+- **Image Field Naming**: Countries use `image_path` in database but return `main_image` in API for consistency
+- **Navigation Filtering**: All navigation only includes entities with active beaches (`status_id = 1`)
+- **Null Values**: Navigation can be null if no previous/next entity exists
+- **Location Object**: Contains only parent slugs (no child slugs)
+- **Caching**: Navigation data is cached with entity details using `CacheService::REFERENCE_DATA_TTL`
+
+---
+
 ## 2025-11-29 – Weather Endpoints for Geographic Entities
 
 ### 1. Overview

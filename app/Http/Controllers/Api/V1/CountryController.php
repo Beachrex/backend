@@ -9,6 +9,7 @@ use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Traits\CacheAware;
 use App\Traits\ProvidesWeather;
 
@@ -56,7 +57,7 @@ class CountryController extends Controller
      *                     @OA\Property(property="full_name", type="string", example="Republic of Slovenia"),
      *                     @OA\Property(property="iso3", type="string", example="SVN"),
      *                     @OA\Property(property="continent_code", type="string", example="EU"),
-     *                     @OA\Property(property="image_path", type="string", nullable=true, example="/images/countries/slovenia.jpg"),
+     *                     @OA\Property(property="main_image", type="string", nullable=true, example="/storage/countries/slovenia.jpg"),
      *                     @OA\Property(property="beaches_count", type="integer", example=5)
      *                 )
      *             ),
@@ -148,13 +149,51 @@ class CountryController extends Controller
      *                 @OA\Property(property="full_name", type="string", example="Republic of Slovenia"),
      *                 @OA\Property(property="iso3", type="string", example="SVN"),
      *                 @OA\Property(property="continent_code", type="string", example="EU"),
-     *                 @OA\Property(property="image_path", type="string", nullable=true, example="/images/countries/slovenia.jpg"),
+     *                 @OA\Property(property="latitude", type="number", format="double", nullable=true, example=46.1512),
+     *                 @OA\Property(property="longitude", type="number", format="double", nullable=true, example=14.9955),
+     *                 @OA\Property(property="main_image", type="string", nullable=true, example="/storage/countries/slovenia.jpg"),
      *                 @OA\Property(property="beaches_count", type="integer", example=5),
      *                 @OA\Property(
      *                     property="continent",
      *                     type="object",
      *                     @OA\Property(property="code", type="string", example="EU"),
      *                     @OA\Property(property="name", type="string", example="Europe")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="navigation",
+     *                     type="object",
+     *                     @OA\Property(
+     *                         property="previous",
+     *                         type="object",
+     *                         nullable=true,
+     *                         @OA\Property(property="code", type="string", example="HR"),
+     *                         @OA\Property(property="name", type="string", example="Croatia"),
+     *                         @OA\Property(property="slug", type="string", example="croatia"),
+     *                         @OA\Property(property="latitude", type="string", example="45.1"),
+     *                         @OA\Property(property="longitude", type="string", example="15.2"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="/storage/countries/croatia.jpg"),
+     *                         @OA\Property(
+     *                             property="location",
+     *                             type="object",
+     *                             @OA\Property(property="continent_slug", type="string", example="europe")
+     *                         )
+     *                     ),
+     *                     @OA\Property(
+     *                         property="next",
+     *                         type="object",
+     *                         nullable=true,
+     *                         @OA\Property(property="code", type="string", example="IT"),
+     *                         @OA\Property(property="name", type="string", example="Italy"),
+     *                         @OA\Property(property="slug", type="string", example="italy"),
+     *                         @OA\Property(property="latitude", type="string", example="41.8719"),
+     *                         @OA\Property(property="longitude", type="string", example="12.5674"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="/storage/countries/italy.jpg"),
+     *                         @OA\Property(
+     *                             property="location",
+     *                             type="object",
+     *                             @OA\Property(property="continent_slug", type="string", example="europe")
+     *                         )
+     *                     )
      *                 )
      *             ),
      *             @OA\Property(property="message", type="string", example="Country retrieved successfully")
@@ -171,15 +210,15 @@ class CountryController extends Controller
      *     )
      * )
      */
-    public function show(string $code): JsonResponse
+    public function show(string $code, Request $request): JsonResponse
     {
         try {
             $code = strtoupper($code);
             $locale = app()->getLocale();
             $cacheKey = "country:show:{$locale}:{$code}";
 
-            $country = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
-                return Country::with([
+            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code, $locale, $request) {
+                $country = Country::with([
                         'continent.translations',
                         'translations',
                         'badges.translations',
@@ -197,9 +236,24 @@ class CountryController extends Controller
                         'continent_code',
                         'image_path'
                     ]);
+
+                if (!$country) {
+                    return null;
+                }
+
+                // Get next and previous countries
+                $navigation = $this->getNavigationCountries($country, $locale);
+
+                $resource = new CountryResource($country);
+                $resourceArray = $resource->toArray($request);
+
+                // Add navigation to response
+                $resourceArray['navigation'] = $navigation;
+
+                return $resourceArray;
             });
 
-            if (!$country) {
+            if (!$data) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Country not found'
@@ -208,7 +262,7 @@ class CountryController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new CountryResource($country),
+                'data' => $data,
                 'message' => 'Country retrieved successfully'
             ], 200);
 
@@ -352,5 +406,111 @@ class CountryController extends Controller
         // Fallback to English
         $translationEn = $country->translations->firstWhere('locale', 'en');
         return $translationEn?->slug;
+    }
+
+    /**
+     * Get next and previous countries based on continent and code order
+     * Previous = highest code < current code in same continent
+     * Next = lowest code > current code in same continent
+     */
+    private function getNavigationCountries(Country $currentCountry, string $locale): array
+    {
+        // Get previous country: highest code < current code in same continent
+        // Only include countries that have beaches with status_id = 1
+        $previousCountry = DB::select("
+            SELECT
+                c.code,
+                c.iso3,
+                c.continent_code,
+                c.latitude,
+                c.longitude,
+                c.image_path as main_image,
+                COALESCE(ct.name, ct_en.name) as name,
+                COALESCE(ct.slug, ct_en.slug) as slug,
+                COALESCE(continent_t.slug, continent_t_en.slug) as continent_slug
+            FROM countries c
+            LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN country_translation ct_en ON c.code = ct_en.country_code AND ct_en.locale = 'en'
+            LEFT JOIN continent_translation continent_t ON c.continent_code = continent_t.continent_code AND continent_t.locale = ?
+            LEFT JOIN continent_translation continent_t_en ON c.continent_code = continent_t_en.continent_code AND continent_t_en.locale = 'en'
+            WHERE c.continent_code = ?
+              AND c.code < ?
+              AND EXISTS (
+                  SELECT 1 FROM beach b
+                  WHERE b.country_code = c.code
+                    AND b.status_id = 1
+              )
+            ORDER BY c.code DESC
+            LIMIT 1
+        ", [
+            $locale,
+            $locale,
+            $currentCountry->continent_code,
+            $currentCountry->code,
+        ]);
+
+        // Get next country: lowest code > current code in same continent
+        // Only include countries that have beaches with status_id = 1
+        $nextCountry = DB::select("
+            SELECT
+                c.code,
+                c.iso3,
+                c.continent_code,
+                c.latitude,
+                c.longitude,
+                c.image_path as main_image,
+                COALESCE(ct.name, ct_en.name) as name,
+                COALESCE(ct.slug, ct_en.slug) as slug,
+                COALESCE(continent_t.slug, continent_t_en.slug) as continent_slug
+            FROM countries c
+            LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN country_translation ct_en ON c.code = ct_en.country_code AND ct_en.locale = 'en'
+            LEFT JOIN continent_translation continent_t ON c.continent_code = continent_t.continent_code AND continent_t.locale = ?
+            LEFT JOIN continent_translation continent_t_en ON c.continent_code = continent_t_en.continent_code AND continent_t_en.locale = 'en'
+            WHERE c.continent_code = ?
+              AND c.code > ?
+              AND EXISTS (
+                  SELECT 1 FROM beach b
+                  WHERE b.country_code = c.code
+                    AND b.status_id = 1
+              )
+            ORDER BY c.code ASC
+            LIMIT 1
+        ", [
+            $locale,
+            $locale,
+            $currentCountry->continent_code,
+            $currentCountry->code,
+        ]);
+
+        // Format the results
+        $previous = isset($previousCountry[0]) ? [
+            'code' => $previousCountry[0]->code,
+            'name' => $previousCountry[0]->name,
+            'slug' => $previousCountry[0]->slug,
+            'latitude' => $previousCountry[0]->latitude,
+            'longitude' => $previousCountry[0]->longitude,
+            'main_image' => $previousCountry[0]->main_image,
+            'location' => [
+                'continent_slug' => $previousCountry[0]->continent_slug,
+            ],
+        ] : null;
+
+        $next = isset($nextCountry[0]) ? [
+            'code' => $nextCountry[0]->code,
+            'name' => $nextCountry[0]->name,
+            'slug' => $nextCountry[0]->slug,
+            'latitude' => $nextCountry[0]->latitude,
+            'longitude' => $nextCountry[0]->longitude,
+            'main_image' => $nextCountry[0]->main_image,
+            'location' => [
+                'continent_slug' => $nextCountry[0]->continent_slug,
+            ],
+        ] : null;
+
+        return [
+            'previous' => $previous,
+            'next' => $next,
+        ];
     }
 }

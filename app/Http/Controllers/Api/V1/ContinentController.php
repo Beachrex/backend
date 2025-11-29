@@ -7,7 +7,9 @@ use App\Http\Resources\ContinentResource;
 use App\Models\Continent;
 use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Traits\CacheAware;
 
 /**
@@ -125,7 +127,40 @@ class ContinentController extends Controller
      *                 @OA\Property(property="code", type="string", example="EU"),
      *                 @OA\Property(property="name", type="string", example="Europe"),
      *                 @OA\Property(property="slug", type="string", example="europe"),
-     *                 @OA\Property(property="beaches_count", type="integer", example=15)
+     *                 @OA\Property(property="beaches_count", type="integer", example=15),
+     *                 @OA\Property(
+     *                     property="navigation",
+     *                     type="object",
+     *                     description="Navigation to previous and next continents with beaches",
+     *                     @OA\Property(
+     *                         property="previous",
+     *                         type="object",
+     *                         nullable=true,
+     *                         @OA\Property(property="code", type="string", example="AS"),
+     *                         @OA\Property(property="name", type="string", example="Asia"),
+     *                         @OA\Property(property="slug", type="string", example="asia"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="img/continents/asia.jpg"),
+     *                         @OA\Property(
+     *                             property="location",
+     *                             type="object",
+     *                             description="Empty object for continents (top level)"
+     *                         )
+     *                     ),
+     *                     @OA\Property(
+     *                         property="next",
+     *                         type="object",
+     *                         nullable=true,
+     *                         @OA\Property(property="code", type="string", example="NA"),
+     *                         @OA\Property(property="name", type="string", example="North America"),
+     *                         @OA\Property(property="slug", type="string", example="north-america"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="img/continents/north-america.jpg"),
+     *                         @OA\Property(
+     *                             property="location",
+     *                             type="object",
+     *                             description="Empty object for continents (top level)"
+     *                         )
+     *                     )
+     *                 )
      *             ),
      *             @OA\Property(property="message", type="string", example="Continent retrieved successfully")
      *         )
@@ -141,23 +176,38 @@ class ContinentController extends Controller
      *     )
      * )
      */
-    public function show(string $code): JsonResponse
+    public function show(string $code, Request $request): JsonResponse
     {
         try {
             $code = strtoupper($code);
             $locale = app()->getLocale();
             $cacheKey = "continent:show:{$locale}:{$code}";
 
-            $continent = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code) {
-                return Continent::with('translations')
+            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code, $locale, $request) {
+                $continent = Continent::with('translations')
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
                     }])
                     ->where('code', $code)
                     ->first(['code']);
+
+                if (!$continent) {
+                    return null;
+                }
+
+                // Get next and previous continents
+                $navigation = $this->getNavigationContinents($continent, $locale);
+
+                $resource = new ContinentResource($continent);
+                $resourceArray = $resource->toArray($request);
+
+                // Add navigation to response
+                $resourceArray['navigation'] = $navigation;
+
+                return $resourceArray;
             });
 
-            if (!$continent) {
+            if (!$data) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Continent not found'
@@ -166,7 +216,7 @@ class ContinentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new ContinentResource($continent),
+                'data' => $data,
                 'message' => 'Continent retrieved successfully'
             ], 200);
 
@@ -177,5 +227,83 @@ class ContinentController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
+    }
+
+    /**
+     * Get next and previous continents based on code order
+     * Previous = highest code < current code
+     * Next = lowest code > current code
+     */
+    private function getNavigationContinents(Continent $currentContinent, string $locale): array
+    {
+        // Get previous continent: highest code < current code
+        $previousContinent = DB::select("
+            SELECT
+                c.code,
+                c.main_image,
+                COALESCE(ct.name, ct_en.name) as name,
+                COALESCE(ct.slug, ct_en.slug) as slug
+            FROM continents c
+            LEFT JOIN continent_translation ct ON c.code = ct.continent_code AND ct.locale = ?
+            LEFT JOIN continent_translation ct_en ON c.code = ct_en.continent_code AND ct_en.locale = 'en'
+            WHERE c.code < ?
+              AND EXISTS (
+                  SELECT 1 FROM countries co
+                  JOIN beach b ON b.country_code = co.code
+                  WHERE co.continent_code = c.code
+                    AND b.status_id = 1
+              )
+            ORDER BY c.code DESC
+            LIMIT 1
+        ", [
+            $locale,
+            $currentContinent->code,
+        ]);
+
+        // Get next continent: lowest code > current code
+        $nextContinent = DB::select("
+            SELECT
+                c.code,
+                c.main_image,
+                COALESCE(ct.name, ct_en.name) as name,
+                COALESCE(ct.slug, ct_en.slug) as slug
+            FROM continents c
+            LEFT JOIN continent_translation ct ON c.code = ct.continent_code AND ct.locale = ?
+            LEFT JOIN continent_translation ct_en ON c.code = ct_en.continent_code AND ct_en.locale = 'en'
+            WHERE c.code > ?
+              AND EXISTS (
+                  SELECT 1 FROM countries co
+                  JOIN beach b ON b.country_code = co.code
+                  WHERE co.continent_code = c.code
+                    AND b.status_id = 1
+              )
+            ORDER BY c.code ASC
+            LIMIT 1
+        ", [
+            $locale,
+            $currentContinent->code,
+        ]);
+
+        // Format the results
+        $previous = isset($previousContinent[0]) ? [
+            'code' => $previousContinent[0]->code,
+            'name' => $previousContinent[0]->name,
+            'slug' => $previousContinent[0]->slug,
+            'main_image' => $previousContinent[0]->main_image,
+            'location' => []
+        ] : null;
+
+        $next = isset($nextContinent[0]) ? [
+            'code' => $nextContinent[0]->code,
+            'name' => $nextContinent[0]->name,
+            'slug' => $nextContinent[0]->slug,
+            'main_image' => $nextContinent[0]->main_image,
+            'location' => []
+        ] : null;
+
+        return [
+            'previous' => $previous,
+            'next' => $next,
+        ];
     }
 }

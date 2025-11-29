@@ -40,8 +40,8 @@ class CityResource extends JsonResource
             $data['country'] = new CountryResource($this->country);
         }
 
-        // Add region only if loaded (for show endpoint)
-        if ($this->relationLoaded('region')) {
+        // Add region only if loaded and not null (for show endpoint)
+        if ($this->relationLoaded('region') && $this->region) {
             $data['region'] = new RegionResource($this->region);
         }
 
