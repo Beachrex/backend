@@ -70,6 +70,12 @@ namespace App\Swagger\Schemas;
  *         example=25
  *     ),
  *     @OA\Property(
+ *         property="accommodation_count",
+ *         type="integer",
+ *         description="Number of accommodations in this region (hardcoded to 0 until booking integration)",
+ *         example=0
+ *     ),
+ *     @OA\Property(
  *         property="country",
  *         ref="#/components/schemas/Country",
  *         description="Country information (when included)"

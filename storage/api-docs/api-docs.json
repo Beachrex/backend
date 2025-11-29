@@ -1605,7 +1605,7 @@
                     "Cities"
                 ],
                 "summary": "Get all cities that have beaches",
-                "description": "Returns a list of cities that have at least one beach. Can be filtered by country. Returns minimal data: id, code, name, slug, country_code, region_id, beaches_count, and country object (without continent, badges, articles).",
+                "description": "Returns a list of cities that have at least one active beach (status_id = 1). Supports multiple filter parameters that can be combined: country_code (e.g., HR, IT), region_code (e.g., istria, kvarner), island_code (e.g., krk, rab). Returns minimal data: id, code, name, slug, country_code, region_id, island_id, beaches_count, accommodation_count, and country object (without continent, badges, articles).",
                 "operationId": "getCities",
                 "parameters": [
                     {
@@ -1616,6 +1616,26 @@
                         "schema": {
                             "type": "string",
                             "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Filter by region code (e.g., istria, kvarner, dalmatia-split)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "istria"
+                        }
+                    },
+                    {
+                        "name": "island_code",
+                        "in": "query",
+                        "description": "Filter by island code (e.g., krk, rab, hvar)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "krk"
                         }
                     },
                     {
@@ -1678,7 +1698,7 @@
                     "Cities"
                 ],
                 "summary": "Get a specific city",
-                "description": "Returns a specific city by slug with full details including country, region, badges, and articles. Can be filtered by country code.",
+                "description": "Returns a specific city by slug with full details including country, region, badges, articles, and navigation. Supports filter parameters (country_code, region_code, island_code) to ensure the city matches the specified criteria - returns 404 if filters don't match.",
                 "operationId": "getCity",
                 "parameters": [
                     {
@@ -1699,6 +1719,26 @@
                         "schema": {
                             "type": "string",
                             "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Filter by region code (e.g., istria, kvarner, dalmatia-split)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "istria"
+                        }
+                    },
+                    {
+                        "name": "island_code",
+                        "in": "query",
+                        "description": "Filter by island code (e.g., krk, rab, hvar)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "krk"
                         }
                     },
                     {
@@ -1879,7 +1919,7 @@
                     "Cities"
                 ],
                 "summary": "Get current weather for a city",
-                "description": "Returns real-time weather data from OpenWeatherMap for a specific city. Weather data is cached for 1 hour.",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific city. Weather data is cached for 1 hour. Supports filter parameters (country_code, region_code, island_code) to disambiguate cities with the same name or ensure the city matches specified criteria.",
                 "operationId": "getCityWeather",
                 "parameters": [
                     {
@@ -1900,6 +1940,26 @@
                         "schema": {
                             "type": "string",
                             "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Region code to filter cities (e.g., istria, kvarner)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "istria"
+                        }
+                    },
+                    {
+                        "name": "island_code",
+                        "in": "query",
+                        "description": "Island code to filter cities (e.g., krk, rab)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "krk"
                         }
                     },
                     {
@@ -3519,9 +3579,29 @@
                     "Islands"
                 ],
                 "summary": "Get all islands that have beaches",
-                "description": "Returns a list of islands that have at least one beach. Returns minimal data: id, code, name, slug, beaches_count.",
+                "description": "Returns a list of islands that have at least one active beach (status_id = 1). Can be filtered by country_code and/or region_code. Filters can be combined. Returns minimal data: id, code, name, slug, country_code, region_id, main_image, beaches_count, accommodation_count.",
                 "operationId": "getIslands",
                 "parameters": [
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter by country code (e.g., SI, HR, IT)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Filter by region code (e.g., istria, kvarner, dalmatia-split)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "kvarner"
+                        }
+                    },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
                     }
@@ -3582,7 +3662,7 @@
                     "Islands"
                 ],
                 "summary": "Get a specific island",
-                "description": "Returns a specific island by slug with full details including beaches count, badges, and articles.",
+                "description": "Returns a specific island by slug with full details including beaches count, badges, and articles. Optional filters (country_code, region_code) can be used to validate the island matches the specified criteria - returns 404 if filters don't match.",
                 "operationId": "getIsland",
                 "parameters": [
                     {
@@ -3593,6 +3673,26 @@
                         "schema": {
                             "type": "string",
                             "example": "krk"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Optional: Validate island is in specified country (e.g., HR, IT, SI)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Optional: Validate island is in specified region (e.g., kvarner, istria)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "kvarner"
                         }
                     },
                     {
@@ -3763,7 +3863,7 @@
                     "Islands"
                 ],
                 "summary": "Get current weather for an island",
-                "description": "Returns real-time weather data from OpenWeatherMap for a specific island. Weather data is cached for 1 hour.",
+                "description": "Returns real-time weather data from OpenWeatherMap for a specific island. Weather data is cached for 1 hour. Optional filters (country_code, region_code) can be used to disambiguate islands with the same name or validate the island matches specified criteria.",
                 "operationId": "getIslandWeather",
                 "parameters": [
                     {
@@ -3774,6 +3874,26 @@
                         "schema": {
                             "type": "string",
                             "example": "hvar"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Optional: Filter by country code to disambiguate (e.g., HR, IT, SI)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Optional: Filter by region code to disambiguate (e.g., kvarner, istria)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "kvarner"
                         }
                     },
                     {
@@ -9801,7 +9921,7 @@
             },
             "City": {
                 "title": "City",
-                "description": "City model",
+                "description": "City model. Can be filtered by country_code, region_code, or island_code in list endpoints.",
                 "properties": {
                     "id": {
                         "description": "City ID",
@@ -9825,15 +9945,21 @@
                         "example": "split"
                     },
                     "country_code": {
-                        "description": "Two-letter country code",
+                        "description": "Two-letter country code (can be used as filter parameter)",
                         "type": "string",
                         "maxLength": 2,
                         "example": "HR"
                     },
                     "region_id": {
-                        "description": "Region ID",
+                        "description": "Region ID (use region_code parameter to filter)",
                         "type": "integer",
-                        "example": 1,
+                        "example": 4,
+                        "nullable": true
+                    },
+                    "island_id": {
+                        "description": "Island ID (use island_code parameter to filter)",
+                        "type": "integer",
+                        "example": 10,
                         "nullable": true
                     },
                     "latitude": {
@@ -9860,6 +9986,11 @@
                         "description": "Number of beaches in this city",
                         "type": "integer",
                         "example": 10
+                    },
+                    "accommodation_count": {
+                        "description": "Number of accommodations in this city (hardcoded to 0 until booking integration)",
+                        "type": "integer",
+                        "example": 0
                     },
                     "country": {
                         "$ref": "#/components/schemas/Country"
@@ -10196,7 +10327,7 @@
             },
             "Island": {
                 "title": "Island",
-                "description": "Island model",
+                "description": "Island model. Can be filtered by country_code or region_code in list endpoints.",
                 "properties": {
                     "id": {
                         "description": "Island ID",
@@ -10217,6 +10348,18 @@
                         "description": "Localized URL-friendly slug",
                         "type": "string",
                         "example": "krk"
+                    },
+                    "country_code": {
+                        "description": "Two-letter country code (can be used as filter parameter)",
+                        "type": "string",
+                        "maxLength": 2,
+                        "example": "HR"
+                    },
+                    "region_id": {
+                        "description": "Region ID (use region_code parameter to filter)",
+                        "type": "integer",
+                        "example": 7,
+                        "nullable": true
                     },
                     "latitude": {
                         "description": "Island latitude (centroid of beaches)",
@@ -10242,6 +10385,11 @@
                         "description": "Number of beaches on this island",
                         "type": "integer",
                         "example": 15
+                    },
+                    "accommodation_count": {
+                        "description": "Number of accommodations on this island (hardcoded to 0 until booking integration)",
+                        "type": "integer",
+                        "example": 0
                     },
                     "badges": {
                         "description": "Badges associated with this island (when included)",
@@ -10967,6 +11115,11 @@
                         "type": "integer",
                         "example": 25
                     },
+                    "accommodation_count": {
+                        "description": "Number of accommodations in this region (hardcoded to 0 until booking integration)",
+                        "type": "integer",
+                        "example": 0
+                    },
                     "country": {
                         "$ref": "#/components/schemas/Country"
                     },
@@ -11550,7 +11703,7 @@
         },
         {
             "name": "Cities",
-            "description": "API Endpoints for cities"
+            "description": "API Endpoints for cities. All endpoints support filtering by country_code, region_code, and island_code parameters. Only cities with active beaches (status_id = 1) are returned."
         },
         {
             "name": "Continents",
@@ -11570,7 +11723,7 @@
         },
         {
             "name": "Islands",
-            "description": "API Endpoints for islands"
+            "description": "API Endpoints for islands. All endpoints support filtering by country_code and region_code parameters. Only islands with active beaches (status_id = 1) are returned."
         },
         {
             "name": "Media",

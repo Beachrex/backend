@@ -102,6 +102,9 @@ class City extends Model
 
     /**
      * Scope to get only active cities
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
     {
@@ -109,7 +112,13 @@ class City extends Model
     }
 
     /**
-     * Scope to filter cities by country
+     * Scope to filter cities by country code
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $countryCode Two-letter country code (e.g., HR, IT, SI)
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @example City::byCountry('HR')->get()  // Get all cities in Croatia
      */
     public function scopeByCountry($query, $countryCode)
     {
@@ -117,15 +126,58 @@ class City extends Model
     }
 
     /**
-     * Scope to filter cities by region
+     * Scope to filter cities by region (accepts region ID or code)
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int|string $regionIdOrCode Region ID (numeric) or region code (string, e.g., istria, kvarner)
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @example City::byRegion('istria')->get()  // Get all cities in Istria region
+     * @example City::byRegion(5)->get()         // Get all cities in region with ID 5
      */
-    public function scopeByRegion($query, $regionId)
+    public function scopeByRegion($query, $regionIdOrCode)
     {
-        return $query->where('region_id', $regionId);
+        // Check if it's numeric (ID) or string (code)
+        if (is_numeric($regionIdOrCode)) {
+            return $query->where('region_id', $regionIdOrCode);
+        }
+
+        // Filter by region code using relationship
+        return $query->whereHas('region', function ($q) use ($regionIdOrCode) {
+            $q->where('code', $regionIdOrCode);
+        });
+    }
+
+    /**
+     * Scope to filter cities by island (accepts island ID or code)
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int|string $islandIdOrCode Island ID (numeric) or island code (string, e.g., krk, rab, hvar)
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @example City::byIsland('krk')->get()  // Get all cities on Krk island
+     * @example City::byIsland(10)->get()     // Get all cities on island with ID 10
+     */
+    public function scopeByIsland($query, $islandIdOrCode)
+    {
+        // Check if it's numeric (ID) or string (code)
+        if (is_numeric($islandIdOrCode)) {
+            return $query->where('island_id', $islandIdOrCode);
+        }
+
+        // Filter by island code using relationship
+        return $query->whereHas('island', function ($q) use ($islandIdOrCode) {
+            $q->where('code', $islandIdOrCode);
+        });
     }
 
     /**
      * Scope to get only cities that have active beaches (status_id = 1)
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @example City::withBeaches()->get()  // Get only cities that have at least one active beach
      */
     public function scopeWithBeaches($query)
     {

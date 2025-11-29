@@ -49,9 +49,9 @@ class IslandApiTest extends TestCase
 
         // Seed islands
         Island::insert([
-            ['id' => 1, 'code' => 'CRS', 'created_at' => now(), 'updated_at' => now()],
-            ['id' => 2, 'code' => 'KRK', 'created_at' => now(), 'updated_at' => now()],
-            ['id' => 3, 'code' => 'CRT', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 1, 'code' => 'CRS', 'country_code' => 'HR', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 2, 'code' => 'KRK', 'country_code' => 'HR', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 3, 'code' => 'CRT', 'country_code' => 'GR', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         IslandTranslation::insert([

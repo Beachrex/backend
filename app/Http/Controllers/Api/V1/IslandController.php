@@ -16,7 +16,7 @@ use App\Traits\ProvidesWeather;
 /**
  * @OA\Tag(
  *     name="Islands",
- *     description="API Endpoints for islands"
+ *     description="API Endpoints for islands. All endpoints support filtering by country_code and region_code parameters. Only islands with active beaches (status_id = 1) are returned."
  * )
  */
 class IslandController extends Controller
@@ -29,7 +29,21 @@ class IslandController extends Controller
      *     operationId="getIslands",
      *     tags={"Islands"},
      *     summary="Get all islands that have beaches",
-     *     description="Returns a list of islands that have at least one beach. Returns minimal data: id, code, name, slug, beaches_count.",
+     *     description="Returns a list of islands that have at least one active beach (status_id = 1). Can be filtered by country_code and/or region_code. Filters can be combined. Returns minimal data: id, code, name, slug, country_code, region_id, main_image, beaches_count, accommodation_count.",
+     *     @OA\Parameter(
+     *         name="country_code",
+     *         in="query",
+     *         description="Filter by country code (e.g., SI, HR, IT)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Filter by region code (e.g., istria, kvarner, dalmatia-split)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="kvarner")
+     *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
@@ -64,24 +78,44 @@ class IslandController extends Controller
      *     )
      * )
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
             $locale = app()->getLocale();
-            $cacheKey = "islands:index:{$locale}";
 
-            $islands = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
-                return Island::with('translations')
-                    ->withBeaches()
+            // Get filter parameters (all optional, can be combined)
+            $countryFilter = $request->get('country_code');  // e.g., HR, IT, SI
+            $regionFilter = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
+
+            // Build cache key based on active filters to ensure proper cache segmentation
+            $filterParts = [];
+            if ($countryFilter) $filterParts[] = "country:{$countryFilter}";
+            if ($regionFilter) $filterParts[] = "region:{$regionFilter}";
+            $cacheKey = "islands:index:{$locale}:" . (count($filterParts) > 0 ? implode(':', $filterParts) : "all");
+
+            $islands = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter, $regionFilter) {
+                $query = Island::with('translations')
+                    ->withBeaches()  // Only islands with active beaches (status_id = 1)
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
-                    }])
-                    ->get([
-                        'id',
-                        'code',
-                        'main_image',
-                        'status_id'
-                    ]);
+                    }]);
+
+                // Apply geographic filters if provided (filters can be combined)
+                if ($countryFilter) {
+                    $query->byCountry($countryFilter);  // Filter by country code
+                }
+                if ($regionFilter) {
+                    $query->byRegion($regionFilter);    // Filter by region code or ID
+                }
+
+                return $query->get([
+                    'id',
+                    'code',
+                    'country_code',
+                    'region_id',
+                    'main_image',
+                    'status_id'
+                ]);
             });
 
             return response()->json([
@@ -105,13 +139,27 @@ class IslandController extends Controller
      *     operationId="getIsland",
      *     tags={"Islands"},
      *     summary="Get a specific island",
-     *     description="Returns a specific island by slug with full details including beaches count, badges, and articles.",
+     *     description="Returns a specific island by slug with full details including beaches count, badges, and articles. Optional filters (country_code, region_code) can be used to validate the island matches the specified criteria - returns 404 if filters don't match.",
      *     @OA\Parameter(
      *         name="slug",
      *         in="path",
      *         description="Island slug (e.g., krk, brac, hvar)",
      *         required=true,
      *         @OA\Schema(type="string", example="krk")
+     *     ),
+     *     @OA\Parameter(
+     *         name="country_code",
+     *         in="query",
+     *         description="Optional: Validate island is in specified country (e.g., HR, IT, SI)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Optional: Validate island is in specified region (e.g., kvarner, istria)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="kvarner")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -187,10 +235,19 @@ class IslandController extends Controller
     {
         try {
             $locale = app()->getLocale();
-            $cacheKey = "island:show:{$locale}:{$slug}";
 
-            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale, $request) {
-                $island = Island::with([
+            // Get filter parameters (optional - used to validate island matches criteria)
+            $countryCode = $request->get('country_code');  // e.g., HR, IT, SI
+            $regionCode = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
+
+            // Build cache key based on active filters
+            $filterParts = [];
+            if ($countryCode) $filterParts[] = $countryCode;
+            if ($regionCode) $filterParts[] = $regionCode;
+            $cacheKey = "island:show:{$locale}:{$slug}" . (count($filterParts) > 0 ? ":" . implode(':', $filterParts) : "");
+
+            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale, $request, $countryCode, $regionCode) {
+                $query = Island::with([
                         'translations',
                         'badges.translations',
                         'badges.status',
@@ -204,8 +261,17 @@ class IslandController extends Controller
                         // Try requested locale first, fallback to English
                         $q->where('slug', $slug)
                           ->whereIn('locale', [$locale, 'en']);
-                    })
-                    ->first([
+                    });
+
+                // Apply filters if provided - returns 404 if island doesn't match criteria
+                if ($countryCode) {
+                    $query->byCountry($countryCode);  // Validate island is in specified country
+                }
+                if ($regionCode) {
+                    $query->byRegion($regionCode);    // Validate island is in specified region
+                }
+
+                $island = $query->first([
                         'id',
                         'code',
                         'country_code',
@@ -257,7 +323,7 @@ class IslandController extends Controller
      *     path="/api/v1/islands/{slug}/weather",
      *     operationId="getIslandWeather",
      *     summary="Get current weather for an island",
-     *     description="Returns real-time weather data from OpenWeatherMap for a specific island. Weather data is cached for 1 hour.",
+     *     description="Returns real-time weather data from OpenWeatherMap for a specific island. Weather data is cached for 1 hour. Optional filters (country_code, region_code) can be used to disambiguate islands with the same name or validate the island matches specified criteria.",
      *     tags={"Islands"},
      *     @OA\Parameter(
      *         name="slug",
@@ -265,6 +331,20 @@ class IslandController extends Controller
      *         required=true,
      *         description="Island slug (e.g., krk, brac, hvar)",
      *         @OA\Schema(type="string", example="hvar")
+     *     ),
+     *     @OA\Parameter(
+     *         name="country_code",
+     *         in="query",
+     *         description="Optional: Filter by country code to disambiguate (e.g., HR, IT, SI)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Optional: Filter by region code to disambiguate (e.g., kvarner, istria)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="kvarner")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -338,18 +418,31 @@ class IslandController extends Controller
      *     )
      * )
      */
-    public function weather(string $slug): JsonResponse
+    public function weather(string $slug, Request $request): JsonResponse
     {
         try {
             $locale = app()->getLocale();
 
-            // Find island by slug
-            $island = Island::with('translations')
+            // Get filter parameters (optional - used to disambiguate islands with same name)
+            $countryCode = $request->get('country_code');  // e.g., HR, IT, SI
+            $regionCode = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
+
+            // Find island by slug with optional filters
+            $query = Island::with('translations')
                 ->whereHas('translations', function ($q) use ($slug, $locale) {
                     $q->where('slug', $slug)
                       ->whereIn('locale', [$locale, 'en']);
-                })
-                ->first(['id', 'code', 'latitude', 'longitude']);
+                });
+
+            // Apply filters if provided to disambiguate or validate
+            if ($countryCode) {
+                $query->byCountry($countryCode);  // Ensure island is in specified country
+            }
+            if ($regionCode) {
+                $query->byRegion($regionCode);    // Ensure island is in specified region
+            }
+
+            $island = $query->first(['id', 'code', 'latitude', 'longitude']);
 
             if (!$island) {
                 return response()->json([

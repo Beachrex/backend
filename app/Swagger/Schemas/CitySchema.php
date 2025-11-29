@@ -7,7 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="City",
  *     type="object",
  *     title="City",
- *     description="City model",
+ *     description="City model. Can be filtered by country_code, region_code, or island_code in list endpoints.",
  *     @OA\Property(
  *         property="id",
  *         type="integer",
@@ -37,15 +37,22 @@ namespace App\Swagger\Schemas;
  *         property="country_code",
  *         type="string",
  *         maxLength=2,
- *         description="Two-letter country code",
+ *         description="Two-letter country code (can be used as filter parameter)",
  *         example="HR"
  *     ),
  *     @OA\Property(
  *         property="region_id",
  *         type="integer",
  *         nullable=true,
- *         description="Region ID",
- *         example=1
+ *         description="Region ID (use region_code parameter to filter)",
+ *         example=4
+ *     ),
+ *     @OA\Property(
+ *         property="island_id",
+ *         type="integer",
+ *         nullable=true,
+ *         description="Island ID (use island_code parameter to filter)",
+ *         example=10
  *     ),
  *     @OA\Property(
  *         property="latitude",
@@ -75,6 +82,12 @@ namespace App\Swagger\Schemas;
  *         type="integer",
  *         description="Number of beaches in this city",
  *         example=10
+ *     ),
+ *     @OA\Property(
+ *         property="accommodation_count",
+ *         type="integer",
+ *         description="Number of accommodations in this city (hardcoded to 0 until booking integration)",
+ *         example=0
  *     ),
  *     @OA\Property(
  *         property="country",

@@ -16,7 +16,7 @@ use App\Traits\ProvidesWeather;
 /**
  * @OA\Tag(
  *     name="Cities",
- *     description="API Endpoints for cities"
+ *     description="API Endpoints for cities. All endpoints support filtering by country_code, region_code, and island_code parameters. Only cities with active beaches (status_id = 1) are returned."
  * )
  */
 class CityController extends Controller
@@ -29,13 +29,27 @@ class CityController extends Controller
      *     operationId="getCities",
      *     tags={"Cities"},
      *     summary="Get all cities that have beaches",
-     *     description="Returns a list of cities that have at least one beach. Can be filtered by country. Returns minimal data: id, code, name, slug, country_code, region_id, beaches_count, and country object (without continent, badges, articles).",
+     *     description="Returns a list of cities that have at least one active beach (status_id = 1). Supports multiple filter parameters that can be combined: country_code (e.g., HR, IT), region_code (e.g., istria, kvarner), island_code (e.g., krk, rab). Returns minimal data: id, code, name, slug, country_code, region_id, island_id, beaches_count, accommodation_count, and country object (without continent, badges, articles).",
      *     @OA\Parameter(
      *         name="country_code",
      *         in="query",
      *         description="Filter by country code (e.g., SI, HR, IT)",
      *         required=false,
      *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Filter by region code (e.g., istria, kvarner, dalmatia-split)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="istria")
+     *     ),
+     *     @OA\Parameter(
+     *         name="island_code",
+     *         in="query",
+     *         description="Filter by island code (e.g., krk, rab, hvar)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="krk")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -75,19 +89,35 @@ class CityController extends Controller
     {
         try {
             $locale = app()->getLocale();
-            $countryFilter = $request->get('country_code');
-            $cacheKey = "cities:index:{$locale}:" . ($countryFilter ? "country:{$countryFilter}" : "all");
 
-            $cities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter) {
+            // Get filter parameters (all optional, can be combined)
+            $countryFilter = $request->get('country_code');  // e.g., HR, IT, SI
+            $regionFilter = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
+            $islandFilter = $request->get('island_code');    // e.g., krk, rab, hvar
+
+            // Build cache key based on active filters to ensure proper cache segmentation
+            $filterParts = [];
+            if ($countryFilter) $filterParts[] = "country:{$countryFilter}";
+            if ($regionFilter) $filterParts[] = "region:{$regionFilter}";
+            if ($islandFilter) $filterParts[] = "island:{$islandFilter}";
+            $cacheKey = "cities:index:{$locale}:" . (count($filterParts) > 0 ? implode(':', $filterParts) : "all");
+
+            $cities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter, $regionFilter, $islandFilter) {
                 $query = City::with(['country.translations', 'translations'])
-                    ->withBeaches()
+                    ->withBeaches()  // Only cities with active beaches (status_id = 1)
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
                     }]);
 
-                // Filter by country if provided
+                // Apply geographic filters if provided (filters can be combined)
                 if ($countryFilter) {
-                    $query->byCountry($countryFilter);
+                    $query->byCountry($countryFilter);  // Filter by country code
+                }
+                if ($regionFilter) {
+                    $query->byRegion($regionFilter);    // Filter by region code or ID
+                }
+                if ($islandFilter) {
+                    $query->byIsland($islandFilter);    // Filter by island code or ID
                 }
 
                 return $query->get([
@@ -95,6 +125,7 @@ class CityController extends Controller
                     'code',
                     'country_code',
                     'region_id',
+                    'island_id',
                     'main_image',
                     'status_id'
                 ]);
@@ -121,7 +152,7 @@ class CityController extends Controller
      *     operationId="getCity",
      *     tags={"Cities"},
      *     summary="Get a specific city",
-     *     description="Returns a specific city by slug with full details including country, region, badges, and articles. Can be filtered by country code.",
+     *     description="Returns a specific city by slug with full details including country, region, badges, articles, and navigation. Supports filter parameters (country_code, region_code, island_code) to ensure the city matches the specified criteria - returns 404 if filters don't match.",
      *     @OA\Parameter(
      *         name="slug",
      *         in="path",
@@ -135,6 +166,20 @@ class CityController extends Controller
      *         description="Filter by country code (e.g., SI, HR, IT)",
      *         required=false,
      *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Filter by region code (e.g., istria, kvarner, dalmatia-split)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="istria")
+     *     ),
+     *     @OA\Parameter(
+     *         name="island_code",
+     *         in="query",
+     *         description="Filter by island code (e.g., krk, rab, hvar)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="krk")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -212,10 +257,20 @@ class CityController extends Controller
     {
         try {
             $locale = app()->getLocale();
-            $countryCode = $request->get('country_code');
-            $cacheKey = "city:show:{$locale}:{$slug}" . ($countryCode ? ":{$countryCode}" : "");
 
-            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request, $slug, $locale, $countryCode) {
+            // Get filter parameters (optional - used to validate city matches criteria)
+            $countryCode = $request->get('country_code');  // e.g., HR, IT, SI
+            $regionCode = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
+            $islandCode = $request->get('island_code');    // e.g., krk, rab, hvar
+
+            // Build cache key based on active filters
+            $filterParts = [];
+            if ($countryCode) $filterParts[] = $countryCode;
+            if ($regionCode) $filterParts[] = $regionCode;
+            if ($islandCode) $filterParts[] = $islandCode;
+            $cacheKey = "city:show:{$locale}:{$slug}" . (count($filterParts) > 0 ? ":" . implode(':', $filterParts) : "");
+
+            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request, $slug, $locale, $countryCode, $regionCode, $islandCode) {
                 $query = City::with([
                         'country.translations',
                         'region.translations',
@@ -234,9 +289,15 @@ class CityController extends Controller
                           ->whereIn('locale', [$locale, 'en']);
                     });
 
-                // Filter by country if provided
+                // Apply filters if provided - returns 404 if city doesn't match criteria
                 if ($countryCode) {
-                    $query->byCountry($countryCode);
+                    $query->byCountry($countryCode);  // Validate city is in specified country
+                }
+                if ($regionCode) {
+                    $query->byRegion($regionCode);    // Validate city is in specified region
+                }
+                if ($islandCode) {
+                    $query->byIsland($islandCode);    // Validate city is on specified island
                 }
 
                 $city = $query->first([
@@ -244,6 +305,7 @@ class CityController extends Controller
                     'code',
                     'country_code',
                     'region_id',
+                    'island_id',
                     'main_image',
                     'status_id'
                 ]);
@@ -291,7 +353,7 @@ class CityController extends Controller
      *     path="/api/v1/cities/{slug}/weather",
      *     operationId="getCityWeather",
      *     summary="Get current weather for a city",
-     *     description="Returns real-time weather data from OpenWeatherMap for a specific city. Weather data is cached for 1 hour.",
+     *     description="Returns real-time weather data from OpenWeatherMap for a specific city. Weather data is cached for 1 hour. Supports filter parameters (country_code, region_code, island_code) to disambiguate cities with the same name or ensure the city matches specified criteria.",
      *     tags={"Cities"},
      *     @OA\Parameter(
      *         name="slug",
@@ -306,6 +368,20 @@ class CityController extends Controller
      *         description="Country code to disambiguate cities with same name (e.g., HR, SI)",
      *         required=false,
      *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Region code to filter cities (e.g., istria, kvarner)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="istria")
+     *     ),
+     *     @OA\Parameter(
+     *         name="island_code",
+     *         in="query",
+     *         description="Island code to filter cities (e.g., krk, rab)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="krk")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -383,18 +459,28 @@ class CityController extends Controller
     {
         try {
             $locale = app()->getLocale();
-            $countryCode = $request->get('country_code');
 
-            // Find city by slug
+            // Get filter parameters (optional - used to disambiguate cities with same name)
+            $countryCode = $request->get('country_code');  // e.g., HR, IT, SI
+            $regionCode = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
+            $islandCode = $request->get('island_code');    // e.g., krk, rab, hvar
+
+            // Find city by slug with optional filters
             $query = City::with('translations')
                 ->whereHas('translations', function ($q) use ($slug, $locale) {
                     $q->where('slug', $slug)
                       ->whereIn('locale', [$locale, 'en']);
                 });
 
-            // Filter by country if provided
+            // Apply filters if provided to disambiguate or validate
             if ($countryCode) {
-                $query->byCountry($countryCode);
+                $query->byCountry($countryCode);  // Ensure city is in specified country
+            }
+            if ($regionCode) {
+                $query->byRegion($regionCode);    // Ensure city is in specified region
+            }
+            if ($islandCode) {
+                $query->byIsland($islandCode);    // Ensure city is on specified island
             }
 
             $city = $query->first(['id', 'code', 'country_code', 'latitude', 'longitude']);

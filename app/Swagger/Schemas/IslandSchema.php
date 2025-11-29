@@ -7,7 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="Island",
  *     type="object",
  *     title="Island",
- *     description="Island model",
+ *     description="Island model. Can be filtered by country_code or region_code in list endpoints.",
  *     @OA\Property(
  *         property="id",
  *         type="integer",
@@ -31,6 +31,20 @@ namespace App\Swagger\Schemas;
  *         type="string",
  *         description="Localized URL-friendly slug",
  *         example="krk"
+ *     ),
+ *     @OA\Property(
+ *         property="country_code",
+ *         type="string",
+ *         maxLength=2,
+ *         description="Two-letter country code (can be used as filter parameter)",
+ *         example="HR"
+ *     ),
+ *     @OA\Property(
+ *         property="region_id",
+ *         type="integer",
+ *         nullable=true,
+ *         description="Region ID (use region_code parameter to filter)",
+ *         example=7
  *     ),
  *     @OA\Property(
  *         property="latitude",
@@ -60,6 +74,12 @@ namespace App\Swagger\Schemas;
  *         type="integer",
  *         description="Number of beaches on this island",
  *         example=15
+ *     ),
+ *     @OA\Property(
+ *         property="accommodation_count",
+ *         type="integer",
+ *         description="Number of accommodations on this island (hardcoded to 0 until booking integration)",
+ *         example=0
  *     ),
  *     @OA\Property(
  *         property="badges",

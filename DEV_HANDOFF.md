@@ -16,6 +16,176 @@ All technical documentation is organized in the **[docs/](./docs/README.md)** fo
 
 ---
 
+## 2025-11-29 – Islands API Region Filtering & Test Database Fix
+
+### 1. Overview
+
+**Context**
+- Added `region_code` filtering to Islands API (index, show, and weather endpoints)
+- Updated Island model with `scopeByRegion()` method supporting both region ID and code
+- Fixed test database setup issues with data-seeding migrations
+- Updated all Swagger/OpenAPI documentation
+- Ensured proper Redis cache key segmentation for all filter combinations
+
+**Benefits**
+- ✅ Islands can now be filtered by region (e.g., `?region_code=kvarner`)
+- ✅ Filters can be combined (e.g., `?country_code=HR&region_code=kvarner`)
+- ✅ Cache keys properly segmented to prevent collisions
+- ✅ All tests passing (7/7 Island API tests)
+- ✅ Consistent filtering across all geographic entity APIs
+
+---
+
+### 2. API Changes
+
+#### 2.1 Islands API - New Region Filtering
+
+**Endpoints Updated:**
+1. `GET /api/v1/islands` - List all islands
+2. `GET /api/v1/islands/{slug}` - Get single island
+3. `GET /api/v1/islands/{slug}/weather` - Get island weather
+
+**New Query Parameter:**
+- `region_code` (string, optional) - Filter islands by region code (e.g., `istria`, `kvarner`, `dalmatia-split`)
+
+**Examples:**
+```bash
+# Get all islands in Kvarner region
+GET /api/v1/islands?region_code=kvarner
+
+# Get all islands in Croatia's Kvarner region
+GET /api/v1/islands?country_code=HR&region_code=kvarner
+
+# Get Krk island details (only if in Kvarner region)
+GET /api/v1/islands/krk?region_code=kvarner
+
+# Get weather for Krk island (validate it's in Kvarner)
+GET /api/v1/islands/krk/weather?region_code=kvarner
+```
+
+**Filter Behavior:**
+- All filters are optional and can be combined
+- When `region_code` is provided on `show` endpoint, returns 404 if island doesn't match
+- Filters work with both region ID (numeric) and region code (string)
+
+---
+
+### 3. Model Changes
+
+#### 3.1 Island Model - New Scope
+
+**File:** `app/Models/Island.php`
+
+**New Method:**
+```php
+/**
+ * Scope to filter islands by region (accepts region ID or code)
+ *
+ * @param \Illuminate\Database\Eloquent\Builder $query
+ * @param int|string $regionIdOrCode Region ID (numeric) or region code (string, e.g., istria, kvarner)
+ * @return \Illuminate\Database\Eloquent\Builder
+ *
+ * @example Island::byRegion('kvarner')->get()  // Get all islands in Kvarner region
+ * @example Island::byRegion(7)->get()          // Get all islands in region ID 7
+ */
+public function scopeByRegion($query, $regionIdOrCode)
+{
+    if (is_numeric($regionIdOrCode)) {
+        return $query->where('region_id', $regionIdOrCode);
+    }
+    return $query->whereHas('region', function ($q) use ($regionIdOrCode) {
+        $q->where('code', $regionIdOrCode);
+    });
+}
+```
+
+---
+
+### 4. Cache Key Updates
+
+**Cache Key Format:**
+```
+islands:index:{locale}:country:{code}:region:{code}
+island:show:{locale}:{slug}:{country_code}:{region_code}
+island:weather:{locale}:{slug}:{country_code}:{region_code}
+```
+
+**Examples:**
+- `islands:index:en:all` - All islands, English
+- `islands:index:en:country:HR` - Croatian islands, English
+- `islands:index:en:country:HR:region:kvarner` - Kvarner islands, English
+- `island:show:en:krk:HR:kvarner` - Krk island with filters
+
+---
+
+### 5. Test Database Fix
+
+**Issue:**
+- Data-seeding migrations (`assign_badges_and_articles_to_regions` and `assign_badges_and_articles_to_cities`) were failing in test environment
+- Test database has no seeded badges/articles, causing foreign key violations
+
+**Solution:**
+Added environment check to skip data-seeding migrations in testing:
+
+```php
+public function up(): void
+{
+    // Skip this migration in testing environment (no seeded data)
+    if (app()->environment('testing')) {
+        return;
+    }
+
+    // ... rest of migration code
+}
+```
+
+**Files Modified:**
+- `database/migrations/2025_11_29_212833_assign_badges_and_articles_to_regions.php`
+- `database/migrations/2025_11_29_220741_assign_badges_and_articles_to_cities.php`
+
+**Impact:**
+- ✅ Migrations work correctly in development/production (have seeded data)
+- ✅ Migrations skip gracefully in testing environment (no seeded data)
+- ✅ All tests now passing (7/7 Island API tests)
+
+---
+
+### 6. Swagger Documentation Updates
+
+**Files Updated:**
+- `app/Http/Controllers/Api/V1/IslandController.php` - Added `region_code` parameter documentation
+- `app/Swagger/Schemas/IslandSchema.php` - Added `country_code` and `region_id` properties
+
+**Parameter Documentation:**
+```php
+@OA\Parameter(
+    name="region_code",
+    in="query",
+    description="Filter islands by region code (e.g., istria, kvarner, dalmatia-split). Can be combined with country_code.",
+    required=false,
+    @OA\Schema(type="string", example="kvarner")
+)
+```
+
+---
+
+### 7. Test Updates
+
+**File:** `tests/Feature/IslandApiTest.php`
+
+**Changes:**
+- Added `country_code` to island test data to support filtering tests
+- All 7 tests passing:
+  - ✅ can get all islands
+  - ✅ returns all islands with beaches
+  - ✅ can get single island by slug
+  - ✅ returns 404 for nonexistent island
+  - ✅ islands respect locale
+  - ✅ islands only return those with active beaches
+  - ✅ island includes beach count
+
+---
+
 ## 2025-11-29 – Geographic Entity Main Image Seeder & API Consistency
 
 ### 1. Overview

@@ -35,6 +35,9 @@ class RegionResource extends JsonResource
             $data['beaches_count'] = $this->beaches_count ?? $this->beaches->count();
         }
 
+        // Add accommodation_count (hardcoded to 0 until booking integration)
+        $data['accommodation_count'] = 0;
+
         // Add country only if loaded (for show endpoint)
         if ($this->relationLoaded('country')) {
             $data['country'] = new CountryResource($this->country);
