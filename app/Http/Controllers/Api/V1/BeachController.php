@@ -389,4 +389,154 @@ class BeachController extends Controller
 
         return new BeachResource($beach);
     }
+
+    /**
+     * Get most visited beaches with optional geographic filters.
+     *
+     * Returns beaches ordered by beach_views counter (descending). Only returns active beaches (status_id = 1).
+     * Supports filtering by continent, country, region, city, or island. Results are cached for 24 hours.
+     *
+     * @OA\Get(
+     *     path="/api/v1/beaches/most-visited",
+     *     operationId="getMostVisitedBeaches",
+     *     summary="Get most visited beaches",
+     *     description="Returns the most visited beaches ordered by beach_views counter. Supports filtering by continent, country, region, city, or island. Only returns active beaches (status_id = 1). Cached for 24 hours for optimal performance.",
+     *     tags={"Beaches"},
+     *     @OA\Parameter(
+     *         name="continent_code",
+     *         in="query",
+     *         description="Filter by continent code (e.g., EU, AS, AF, NA, SA, OC, AN)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="EU")
+     *     ),
+     *     @OA\Parameter(
+     *         name="country_code",
+     *         in="query",
+     *         description="Filter by ISO country code (e.g., HR, IT, SI, GR, ES, PT, FR)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="HR")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region_code",
+     *         in="query",
+     *         description="Filter by region code (e.g., dalmatia-split, kvarner, istra)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="dalmatia-split")
+     *     ),
+     *     @OA\Parameter(
+     *         name="city_code",
+     *         in="query",
+     *         description="Filter by city code (e.g., split, dubrovnik, zadar)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="split")
+     *     ),
+     *     @OA\Parameter(
+     *         name="island_code",
+     *         in="query",
+     *         description="Filter by island code (e.g., hvar, brac, krk)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="hvar")
+     *     ),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Maximum number of beaches to return (default: 20, max: 100)",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, maximum=100, default=20, example=20)
+     *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successfully retrieved most visited beaches",
+     *         @OA\JsonContent(ref="#/components/schemas/BeachMostVisitedResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request - invalid parameters"
+     *     )
+     * )
+     */
+    public function mostVisited(Request $request)
+    {
+        // Generate cache key based on filters and locale
+        $locale = app()->getLocale();
+        $limit = min((int) $request->input('limit', 20), 100); // Max 100
+
+        $cacheKeySuffix = collect([
+            'continent' => $request->input('continent_code'),
+            'country' => $request->input('country_code'),
+            'region' => $request->input('region_code'),
+            'city' => $request->input('city_code'),
+            'island' => $request->input('island_code'),
+            'limit' => $limit,
+        ])->filter()->map(fn($value, $key) => "{$key}:{$value}")->implode('_');
+
+        $cacheKey = "beaches:most_visited:{$locale}:" . ($cacheKeySuffix ?: 'all');
+
+        // Cache for 24 hours (86400 seconds)
+        $data = $this->cacheRemember($cacheKey, 86400, function () use ($request, $limit) {
+            $query = Beach::where('status_id', 1)
+                ->with([
+                    'translations',
+                    'continent.translations',
+                    'country.translations',
+                    'region.translations',
+                    'city.translations',
+                    'island.translations',
+                    'media' => function ($query) {
+                        $query->where('media_collection_id', 1)
+                              ->where('is_primary', true)
+                              ->where('status_id', 1);
+                    }
+                ]);
+
+            // Apply geographic filters
+            if ($request->has('continent_code')) {
+                $query->where('continent_code', strtoupper($request->input('continent_code')));
+            }
+
+            if ($request->has('country_code')) {
+                $query->where('country_code', strtoupper($request->input('country_code')));
+            }
+
+            if ($request->has('region_code')) {
+                $query->whereHas('region', function ($q) use ($request) {
+                    $q->where('code', $request->input('region_code'));
+                });
+            }
+
+            if ($request->has('city_code')) {
+                $query->whereHas('city', function ($q) use ($request) {
+                    $q->where('code', $request->input('city_code'));
+                });
+            }
+
+            if ($request->has('island_code')) {
+                $query->whereHas('island', function ($q) use ($request) {
+                    $q->where('code', $request->input('island_code'));
+                });
+            }
+
+            // Order by beach_views descending and limit results
+            $beaches = $query->orderBy('beach_views', 'desc')
+                ->limit($limit)
+                ->get();
+
+            return [
+                'beaches' => $beaches,
+                'total' => $beaches->count(),
+                'limit' => $limit,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => BeachResource::collection($data['beaches']),
+            'message' => 'Most visited beaches retrieved successfully',
+            'meta' => [
+                'total' => $data['total'],
+                'limit' => $data['limit'],
+            ],
+        ], 200);
+    }
 }

@@ -1125,6 +1125,99 @@
                 }
             }
         },
+        "/api/v1/beaches/most-visited": {
+            "get": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "Get most visited beaches",
+                "description": "Returns the most visited beaches ordered by beach_views counter. Supports filtering by continent, country, region, city, or island. Only returns active beaches (status_id = 1). Cached for 24 hours for optimal performance.",
+                "operationId": "getMostVisitedBeaches",
+                "parameters": [
+                    {
+                        "name": "continent_code",
+                        "in": "query",
+                        "description": "Filter by continent code (e.g., EU, AS, AF, NA, SA, OC, AN)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "EU"
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter by ISO country code (e.g., HR, IT, SI, GR, ES, PT, FR)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "HR"
+                        }
+                    },
+                    {
+                        "name": "region_code",
+                        "in": "query",
+                        "description": "Filter by region code (e.g., dalmatia-split, kvarner, istra)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "dalmatia-split"
+                        }
+                    },
+                    {
+                        "name": "city_code",
+                        "in": "query",
+                        "description": "Filter by city code (e.g., split, dubrovnik, zadar)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "split"
+                        }
+                    },
+                    {
+                        "name": "island_code",
+                        "in": "query",
+                        "description": "Filter by island code (e.g., hvar, brac, krk)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "hvar"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of beaches to return (default: 20, max: 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 20
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved most visited beaches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BeachMostVisitedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid parameters"
+                    }
+                }
+            }
+        },
         "/api/v1/beach-details/{identifier}": {
             "get": {
                 "tags": [
@@ -9503,6 +9596,56 @@
                         "description": "Total count of active beaches (status_id=1)",
                         "type": "integer",
                         "example": 1500
+                    }
+                },
+                "type": "object"
+            },
+            "BeachMostVisitedResponse": {
+                "title": "Beach Most Visited Response",
+                "description": "Response schema for most visited beaches endpoint - returns beaches ordered by beach_views counter with optional geographic filtering. Cached for 24 hours.",
+                "required": [
+                    "success",
+                    "data",
+                    "message",
+                    "meta"
+                ],
+                "properties": {
+                    "success": {
+                        "description": "Indicates if the request was successful",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "data": {
+                        "description": "Array of beach objects ordered by beach_views (descending)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachSchema"
+                        }
+                    },
+                    "message": {
+                        "description": "Success message",
+                        "type": "string",
+                        "example": "Most visited beaches retrieved successfully"
+                    },
+                    "meta": {
+                        "description": "Metadata about the response",
+                        "required": [
+                            "total",
+                            "limit"
+                        ],
+                        "properties": {
+                            "total": {
+                                "description": "Number of beaches returned in this response",
+                                "type": "integer",
+                                "example": 20
+                            },
+                            "limit": {
+                                "description": "Maximum number of beaches requested (default: 20, max: 100)",
+                                "type": "integer",
+                                "example": 20
+                            }
+                        },
+                        "type": "object"
                     }
                 },
                 "type": "object"

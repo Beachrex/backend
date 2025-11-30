@@ -16,6 +16,186 @@ All technical documentation is organized in the **[docs/](./docs/README.md)** fo
 
 ---
 
+## 2025-11-30 – Most Visited Beaches Endpoint
+
+### 1. Overview
+
+**Context**
+- Added new endpoint to fetch most visited beaches based on `beach_views` counter
+- Supports filtering by continent, country, region, city, or island
+- Returns up to 20 beaches by default (configurable, max 100)
+- Cached for 24 hours for optimal performance
+
+**Benefits**
+- ✅ Frontend can display "Most Visited" sections for any geographic entity
+- ✅ Reusable across continent, country, region, city, and island pages
+- ✅ Efficient caching reduces database load
+- ✅ Fully documented in Swagger/OpenAPI
+
+---
+
+### 2. API Endpoint
+
+**Endpoint:** `GET /api/v1/beaches/most-visited`
+
+**Query Parameters:**
+- `continent_code` (string, optional) - Filter by continent code (e.g., `EU`, `AS`)
+- `country_code` (string, optional) - Filter by country code (e.g., `HR`, `IT`, `SI`)
+- `region_code` (string, optional) - Filter by region code (e.g., `dalmatia`, `istria`)
+- `city_code` (string, optional) - Filter by city code (e.g., `split`, `dubrovnik`)
+- `island_code` (string, optional) - Filter by island code (e.g., `hvar`, `krk`)
+- `limit` (integer, optional) - Number of beaches to return (default: 20, max: 100)
+
+**Headers:**
+- `Accept-Language` (string, optional) - Locale for translations (e.g., `en`, `de`, `hr`, `sl`, `it`)
+
+**Examples:**
+```bash
+# Get top 20 most visited beaches globally
+GET /api/v1/beaches/most-visited
+
+# Get top 10 most visited beaches in Croatia
+GET /api/v1/beaches/most-visited?country_code=HR&limit=10
+
+# Get top 5 most visited beaches in Dalmatia region
+GET /api/v1/beaches/most-visited?region_code=dalmatia&limit=5
+
+# Get top 20 most visited beaches on Hvar island
+GET /api/v1/beaches/most-visited?island_code=hvar
+
+# Get top 15 most visited beaches in Split city
+GET /api/v1/beaches/most-visited?city_code=split&limit=15
+
+# Get top 20 most visited beaches in Europe
+GET /api/v1/beaches/most-visited?continent_code=EU
+```
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "name": "Paradise Beach",
+      "slug": "paradise-beach",
+      "latitude": "43.5081",
+      "longitude": "16.4402",
+      "country_code": "HR",
+      "country_name": "Croatia",
+      "country_slug": "croatia",
+      "continent_code": "EU",
+      "continent_slug": "europe",
+      "region_slug": "dalmatia-split",
+      "island_slug": "hvar",
+      "city_slug": "hvar",
+      "main_image": "img/beaches/paradise/main.jpg"
+    }
+  ],
+  "message": "Most visited beaches retrieved successfully",
+  "meta": {
+    "total": 20,
+    "limit": 20
+  }
+}
+```
+
+---
+
+### 3. Implementation Details
+
+**File:** `app/Http/Controllers/Api/V1/BeachController.php`
+
+**Method:** `mostVisited(Request $request)`
+
+**Key Features:**
+- Orders beaches by `beach_views` field (descending)
+- Only returns active beaches (`status_id = 1`)
+- Loads all necessary relationships (translations, geographic entities, media)
+- Generates cache key based on filters and locale
+- Cache TTL: 24 hours (86400 seconds)
+
+**Cache Key Format:**
+```
+beaches:most_visited:{locale}:{filters}
+```
+
+**Examples:**
+- `beaches:most_visited:en:all` - All beaches, English
+- `beaches:most_visited:en:country:HR_limit:10` - Top 10 Croatian beaches, English
+- `beaches:most_visited:hr:region:dalmatia_limit:5` - Top 5 Dalmatia beaches, Croatian
+- `beaches:most_visited:en:island:hvar_limit:20` - Top 20 Hvar beaches, English
+
+---
+
+### 4. Route Configuration
+
+**File:** `routes/api.php`
+
+**Route Added:**
+```php
+Route::get('/beaches/most-visited', [BeachController::class, 'mostVisited']);
+```
+
+**Important:** This route must be defined BEFORE the `beaches/{id}` route to prevent route conflicts.
+
+---
+
+### 5. Swagger Documentation
+
+**Fully documented in OpenAPI/Swagger:**
+- Operation ID: `getMostVisitedBeaches`
+- Tag: `Beaches`
+- All query parameters documented with examples
+- Response schema references `BeachSchema`
+- Includes meta information (total, limit)
+
+**Regenerate Swagger docs:**
+```bash
+./vendor/bin/sail artisan l5-swagger:generate
+```
+
+---
+
+### 6. Frontend Integration
+
+**Use Cases:**
+1. **Homepage:** Display "Most Visited Beaches" globally
+2. **Country Pages:** Show most visited beaches in that country
+3. **Region Pages:** Show most visited beaches in that region
+4. **City Pages:** Show most visited beaches in that city
+5. **Island Pages:** Show most visited beaches on that island
+
+**Example Frontend Code:**
+```typescript
+// Get most visited beaches in Croatia
+const response = await fetch('/api/v1/beaches/most-visited?country_code=HR&limit=10', {
+  headers: {
+    'Accept-Language': 'en'
+  }
+});
+const data = await response.json();
+const beaches = data.data; // Array of beach objects
+```
+
+---
+
+### 7. Testing
+
+**Test the endpoint:**
+```bash
+# Test globally
+curl http://localhost/api/v1/beaches/most-visited
+
+# Test with filters
+curl "http://localhost/api/v1/beaches/most-visited?country_code=HR&limit=5"
+
+# Test with locale
+curl -H "Accept-Language: hr" "http://localhost/api/v1/beaches/most-visited?region_code=dalmatia"
+```
+
+---
+
 ## 2025-11-29 – Islands API Region Filtering & Test Database Fix
 
 ### 1. Overview
