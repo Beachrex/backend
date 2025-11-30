@@ -17,6 +17,8 @@ class CacheService
     const BEACH_COUNT_TTL = 2592000; // 30 days (beaches added once, cache cleared on admin updates)
     const BEACH_DETAILS_TTL = 28800; // 8 hours (beach details can be updated, but not frequently)
 
+    const SHORT_TTL = 28800; // 8 hours search api. Meilisearch
+
     /**
      * Cache key prefixes
      */

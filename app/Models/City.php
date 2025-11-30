@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Scout\Searchable;
 
 class City extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $table = 'city';
 
@@ -184,5 +185,55 @@ class City extends Model
         return $query->whereHas('beaches', function ($q) {
             $q->where('status_id', 1);
         });
+    }
+
+    /**
+     * Get the indexable data array for the model (for Meilisearch)
+     *
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        // Load relationships if not already loaded
+        $this->loadMissing(['country', 'region', 'island', 'translations']);
+
+        // Get English translation
+        $enTranslation = $this->translations->where('locale', 'en')->first();
+
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $enTranslation?->name ?? $this->code,
+            'slug' => $enTranslation?->slug ?? $this->code,
+            'country_code' => $this->country_code,
+            'country_name' => $this->country?->name ?? '',
+            'region_name' => $this->region?->name ?? '',
+            'island_name' => $this->island?->name ?? '',
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'main_image' => $this->main_image,
+            'type' => 'city',
+        ];
+    }
+
+    /**
+     * Get the index name for the model
+     *
+     * @return string
+     */
+    public function searchableAs(): string
+    {
+        return 'cities';
+    }
+
+    /**
+     * Determine if the model should be searchable
+     *
+     * @return bool
+     */
+    public function shouldBeSearchable(): bool
+    {
+        // Only index cities with active beaches
+        return $this->status_id === 1 && $this->beaches()->where('status_id', 1)->exists();
     }
 }

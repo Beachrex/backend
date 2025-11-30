@@ -11,11 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Scout\Searchable;
 
 
 class Beach extends Model
 {
-    use HasFactory, Cacheable, HasMedia;
+    use HasFactory, Cacheable, HasMedia, Searchable;
     protected $table = 'beach';
 
     protected $fillable = [
@@ -341,5 +342,56 @@ class Beach extends Model
 
         // Clear beach count caches
         $this->cacheService()->clearBeachCountCache();
+    }
+
+    /**
+     * Get the indexable data array for the model (for Meilisearch)
+     *
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        // Load relationships if not already loaded
+        $this->loadMissing(['country', 'region', 'city', 'island', 'translations']);
+
+        // Get English translation for description
+        $enTranslation = $this->translations->where('locale', 'en')->first();
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $enTranslation?->slug ?? $this->name,
+            'description' => $enTranslation?->description ?? '',
+            'country_code' => $this->country_code,
+            'country_name' => $this->country?->name ?? '',
+            'region_name' => $this->region?->name ?? '',
+            'city_name' => $this->city?->name ?? '',
+            'island_name' => $this->island?->name ?? '',
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'main_image' => $this->main_image,
+            'type' => 'beach',
+        ];
+    }
+
+    /**
+     * Get the index name for the model
+     *
+     * @return string
+     */
+    public function searchableAs(): string
+    {
+        return 'beaches';
+    }
+
+    /**
+     * Determine if the model should be searchable
+     *
+     * @return bool
+     */
+    public function shouldBeSearchable(): bool
+    {
+        // Only index active beaches
+        return $this->status_id === 1;
     }
 }

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Laravel\Scout\Searchable;
 
 class Country extends Model
 {
+    use Searchable;
     protected $table = 'countries';
 
     // No timestamps in countries table
@@ -116,5 +118,55 @@ class Country extends Model
     public function scopeByContinent($query, $continentCode)
     {
         return $query->where('continent_code', strtoupper($continentCode));
+    }
+
+    /**
+     * Get the indexable data array for the model (for Meilisearch)
+     *
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        // Load relationships if not already loaded
+        $this->loadMissing(['continent', 'translations']);
+
+        // Get English translation
+        $enTranslation = $this->translations->where('locale', 'en')->first();
+
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'iso3' => $this->iso3,
+            'name' => $enTranslation?->name ?? $this->code,
+            'full_name' => $enTranslation?->full_name ?? $this->code,
+            'slug' => $enTranslation?->slug ?? $this->code,
+            'continent_code' => $this->continent_code,
+            'continent_name' => $this->continent?->name ?? '',
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'main_image' => $this->image_path,
+            'type' => 'country',
+        ];
+    }
+
+    /**
+     * Get the index name for the model
+     *
+     * @return string
+     */
+    public function searchableAs(): string
+    {
+        return 'countries';
+    }
+
+    /**
+     * Determine if the model should be searchable
+     *
+     * @return bool
+     */
+    public function shouldBeSearchable(): bool
+    {
+        // Only index countries with active beaches
+        return $this->beaches()->where('status_id', 1)->exists();
     }
 }

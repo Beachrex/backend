@@ -7247,6 +7247,326 @@
                 }
             }
         },
+        "/api/v1/search": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "summary": "Global search across all entities",
+                "description": "Search across beaches, cities, islands, regions, and countries with grouped results. Returns localized slugs based on Accept-Language header for URL building. Results are grouped by entity type with highlighting and typo tolerance.",
+                "operationId": "globalSearch",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Locale for localized slugs (e.g., en, si, de, hr). Defaults to 'en' if not provided or translation not available.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Search query string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "miami"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of results per entity type (default: 5, max: 20)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 20,
+                            "minimum": 1,
+                            "example": 5
+                        }
+                    },
+                    {
+                        "name": "country_code",
+                        "in": "query",
+                        "description": "Filter results by country code (e.g., US, HR)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "US"
+                        }
+                    },
+                    {
+                        "name": "types",
+                        "in": "query",
+                        "description": "Comma-separated list of entity types to search (beach,city,island,region,country). If not provided, searches all types.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "beach,city"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results grouped by entity type",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "beaches": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 123
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Miami Beach"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized beach slug",
+                                                                "type": "string",
+                                                                "example": "miami-beach"
+                                                            },
+                                                            "country_code": {
+                                                                "type": "string",
+                                                                "example": "US"
+                                                            },
+                                                            "country_name": {
+                                                                "type": "string",
+                                                                "example": "United States"
+                                                            },
+                                                            "region_name": {
+                                                                "type": "string",
+                                                                "example": "Florida"
+                                                            },
+                                                            "city_name": {
+                                                                "type": "string",
+                                                                "example": "Miami"
+                                                            },
+                                                            "island_name": {
+                                                                "type": "string",
+                                                                "example": ""
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "miami-beach.jpg"
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "beach"
+                                                            },
+                                                            "continent_slug": {
+                                                                "description": "Localized continent slug for URL building",
+                                                                "type": "string",
+                                                                "example": "north-america"
+                                                            },
+                                                            "country_slug": {
+                                                                "description": "Localized country slug for URL building",
+                                                                "type": "string",
+                                                                "example": "united-states"
+                                                            },
+                                                            "region_slug": {
+                                                                "description": "Localized region slug for URL building (nullable)",
+                                                                "type": "string",
+                                                                "example": "florida"
+                                                            },
+                                                            "city_slug": {
+                                                                "description": "Localized city slug for URL building (nullable)",
+                                                                "type": "string",
+                                                                "example": "miami"
+                                                            },
+                                                            "island_slug": {
+                                                                "description": "Localized island slug for URL building (nullable)",
+                                                                "type": "string",
+                                                                "example": null
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "cities": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 45
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "miami"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Miami"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized city slug",
+                                                                "type": "string",
+                                                                "example": "miami"
+                                                            },
+                                                            "country_code": {
+                                                                "type": "string",
+                                                                "example": "US"
+                                                            },
+                                                            "country_name": {
+                                                                "type": "string",
+                                                                "example": "United States"
+                                                            },
+                                                            "region_name": {
+                                                                "type": "string",
+                                                                "example": "Florida"
+                                                            },
+                                                            "island_name": {
+                                                                "type": "string",
+                                                                "example": ""
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "miami.jpg"
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "city"
+                                                            },
+                                                            "continent_slug": {
+                                                                "description": "Localized continent slug for URL building",
+                                                                "type": "string",
+                                                                "example": "north-america"
+                                                            },
+                                                            "country_slug": {
+                                                                "description": "Localized country slug for URL building",
+                                                                "type": "string",
+                                                                "example": "united-states"
+                                                            },
+                                                            "region_slug": {
+                                                                "description": "Localized region slug for URL building (nullable)",
+                                                                "type": "string",
+                                                                "example": "florida"
+                                                            },
+                                                            "island_slug": {
+                                                                "description": "Localized island slug for URL building (nullable)",
+                                                                "type": "string",
+                                                                "example": null
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "islands": {
+                                                    "description": "Island results with localized slugs for URL building",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "continent_slug": {
+                                                                "type": "string"
+                                                            },
+                                                            "country_slug": {
+                                                                "type": "string"
+                                                            },
+                                                            "region_slug": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "regions": {
+                                                    "description": "Region results with localized slugs for URL building",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "continent_slug": {
+                                                                "type": "string"
+                                                            },
+                                                            "country_slug": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "countries": {
+                                                    "description": "Country results with localized slugs for URL building",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "continent_slug": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "query": {
+                                                    "type": "string",
+                                                    "example": "miami"
+                                                },
+                                                "total_results": {
+                                                    "type": "integer",
+                                                    "example": 12
+                                                },
+                                                "results_by_type": {
+                                                    "properties": {
+                                                        "beaches": {
+                                                            "type": "integer",
+                                                            "example": 5
+                                                        },
+                                                        "cities": {
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        },
+                                                        "islands": {
+                                                            "type": "integer",
+                                                            "example": 0
+                                                        },
+                                                        "regions": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "countries": {
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Search completed successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - missing or invalid query parameter"
+                    }
+                }
+            }
+        },
         "/api/v1/resolve-slug/{slug}": {
             "get": {
                 "tags": [
@@ -11879,6 +12199,10 @@
         {
             "name": "Regions",
             "description": "API Endpoints for regions"
+        },
+        {
+            "name": "Search",
+            "description": "Global search API endpoints for searching across beaches, cities, islands, regions, and countries"
         },
         {
             "name": "Waterbodies",

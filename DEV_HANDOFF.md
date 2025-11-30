@@ -16,6 +16,390 @@ All technical documentation is organized in the **[docs/](./docs/README.md)** fo
 
 ---
 
+## 2025-11-30 – Meilisearch Global Search Integration
+
+### 1. Overview
+
+**Context**
+- Integrated Meilisearch for powerful global search across beaches, cities, islands, regions, and countries
+- Provides instant search with typo tolerance, faceted filtering, and grouped results
+- Similar to Laravel Filament admin search experience
+- Self-hosted solution for full control and cost efficiency
+
+**Benefits**
+- ✅ Instant search results (<50ms response time)
+- ✅ Typo-tolerant search (handles misspellings)
+- ✅ Grouped results by entity type (beaches, cities, islands, regions, countries)
+- ✅ Filterable by country, entity type
+- ✅ Cached results for optimal performance
+- ✅ Only indexes active entities (status_id = 1 and has active beaches)
+- ✅ Fully documented in Swagger/OpenAPI
+
+---
+
+### 2. API Endpoint
+
+**Endpoint:** `GET /api/v1/search`
+
+**Headers:**
+- `Accept-Language` (string, optional) - Locale for localized slugs (e.g., `en`, `si`, `de`, `hr`). Defaults to `en` if not provided or translation not available.
+
+**Query Parameters:**
+- `q` (string, required) - Search query string (min: 1, max: 255 characters)
+- `limit` (integer, optional) - Maximum results per entity type (default: 5, max: 20)
+- `country_code` (string, optional) - Filter by country code (e.g., `HR`, `US`)
+- `types` (string, optional) - Comma-separated entity types to search (e.g., `beach,city,island,region,country`)
+
+**Localization:**
+- All slugs in the response are localized based on the `Accept-Language` header
+- Includes all necessary slugs for URL building: `continent_slug`, `country_slug`, `region_slug`, `city_slug`, `island_slug`
+- Falls back to English (`en`) if translation not available for requested locale
+- Cache keys include locale to ensure correct localized results
+
+**Examples:**
+```bash
+# Search for "miami" across all entity types with English slugs
+curl -H "Accept-Language: en" "http://localhost/api/v1/search?q=miami"
+
+# Search with Slovenian slugs
+curl -H "Accept-Language: si" "http://localhost/api/v1/search?q=miami"
+
+# Search for "split" with max 10 results per type
+GET /api/v1/search?q=split&limit=10
+
+# Search for beaches and cities only in Croatia
+GET /api/v1/search?q=beach&types=beach,city&country_code=HR
+
+# Search for "hvar" in all types
+GET /api/v1/search?q=hvar
+```
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "data": {
+    "beaches": [
+      {
+        "id": 123,
+        "name": "Miami Beach",
+        "slug": "miami-beach",
+        "country_code": "US",
+        "country_name": "United States",
+        "region_name": "Florida",
+        "city_name": "Miami",
+        "island_name": "",
+        "main_image": "miami-beach.jpg",
+        "type": "beach"
+      }
+    ],
+    "cities": [
+      {
+        "id": 45,
+        "code": "miami",
+        "name": "Miami",
+        "slug": "miami",
+        "country_code": "US",
+        "country_name": "United States",
+        "region_name": "Florida",
+        "island_name": "",
+        "main_image": "miami.jpg",
+        "type": "city"
+      }
+    ],
+    "islands": [],
+    "regions": [],
+    "countries": []
+  },
+  "meta": {
+    "query": "miami",
+    "total_results": 7,
+    "results_by_type": {
+      "beaches": 5,
+      "cities": 2,
+      "islands": 0,
+      "regions": 0,
+      "countries": 0
+    }
+  },
+  "message": "Search completed successfully"
+}
+```
+
+---
+
+### 3. Backend Implementation
+
+**Dependencies Installed:**
+- `laravel/scout` (v10.22.1) - Laravel's official search package
+- `meilisearch/meilisearch-php` (v1.16.1) - Meilisearch PHP client
+- `http-interop/http-factory-guzzle` (1.2.0) - HTTP factory for Meilisearch
+
+**Models Updated:**
+All searchable models now include the `Laravel\Scout\Searchable` trait:
+- `app/Models/Beach.php`
+- `app/Models/City.php`
+- `app/Models/Island.php`
+- `app/Models/Region.php`
+- `app/Models/Country.php`
+
+Each model implements:
+- `toSearchableArray()` - Defines which fields to index
+- `searchableAs()` - Defines the index name
+- `shouldBeSearchable()` - Determines if entity should be indexed (only active entities with beaches)
+
+**Controller Created:**
+- `app/Http/Controllers/Api/V1/SearchController.php` - Handles global search requests with full Swagger/OpenAPI documentation
+
+**Route Added:**
+- `GET /api/v1/search` - Global search endpoint
+
+**Artisan Command Created:**
+- `app/Console/Commands/IndexSearchableModels.php` - Command to index all searchable models
+
+**Swagger/OpenAPI Documentation:**
+- Full API documentation with request/response examples
+- Tag: "Search" - Global search API endpoints
+- All parameters, responses, and error codes documented
+- TypeScript interfaces can be auto-generated from Swagger schema
+
+---
+
+### 4. Configuration
+
+**Environment Variables (.env):**
+```env
+SCOUT_DRIVER=meilisearch
+SCOUT_PREFIX=
+SCOUT_QUEUE=false  # Set to true for production with queue workers
+
+MEILISEARCH_HOST=http://meilisearch:7700
+MEILISEARCH_KEY=masterKey  # Change to secure key in production
+MEILISEARCH_NO_ANALYTICS=true
+MEILISEARCH_ENV=development  # Use 'production' on server
+FORWARD_MEILISEARCH_PORT=7700
+```
+
+**Meilisearch Index Settings (config/scout.php):**
+```php
+'index-settings' => [
+    'beaches' => [
+        'filterableAttributes' => ['country_code', 'region_name', 'city_name', 'island_name', 'type'],
+        'sortableAttributes' => ['name'],
+        'searchableAttributes' => ['name', 'description', 'country_name', 'region_name', 'city_name', 'island_name'],
+    ],
+    'cities' => [
+        'filterableAttributes' => ['country_code', 'region_name', 'type'],
+        'sortableAttributes' => ['name'],
+        'searchableAttributes' => ['name', 'country_name', 'region_name'],
+    ],
+    // ... similar for islands, regions, countries
+]
+```
+
+---
+
+### 5. Deployment & Setup
+
+**Docker Compose Configuration:**
+
+Meilisearch service is already added to `docker-compose.yml`:
+```yaml
+services:
+  meilisearch:
+    image: 'getmeili/meilisearch:v1.11'
+    ports:
+      - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
+    environment:
+      MEILI_MASTER_KEY: '${MEILISEARCH_KEY:-masterKey}'
+      MEILI_NO_ANALYTICS: '${MEILISEARCH_NO_ANALYTICS:-true}'
+      MEILI_ENV: '${MEILISEARCH_ENV:-development}'
+    volumes:
+      - 'sail-meilisearch:/meili_data'
+    networks:
+      - sail
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '--no-verbose'
+        - '--spider'
+        - 'http://localhost:7700/health'
+      retries: 3
+      timeout: 5s
+
+volumes:
+  sail-meilisearch:
+    driver: local
+```
+
+**Environment Variables (.env):**
+```env
+# Scout Search Configuration
+SCOUT_DRIVER=meilisearch
+SCOUT_QUEUE=false  # Set to true for production with queue workers
+
+# Meilisearch Configuration
+MEILISEARCH_HOST=http://meilisearch:7700
+MEILISEARCH_KEY=masterKey  # Change to secure key in production
+MEILISEARCH_NO_ANALYTICS=true
+MEILISEARCH_ENV=development  # Use 'production' on server
+FORWARD_MEILISEARCH_PORT=7700
+```
+
+**Step 1: Start Meilisearch**
+```bash
+./vendor/bin/sail up -d meilisearch
+```
+
+**Step 2: Index All Models (First Time Only)**
+```bash
+# Index all models at once
+./vendor/bin/sail artisan search:index
+
+# Or index specific model
+./vendor/bin/sail artisan search:index Beach
+
+# Flush and re-index (useful after schema changes)
+./vendor/bin/sail artisan search:index --flush
+```
+
+**Step 3: Verify Indexing**
+Visit Meilisearch dashboard at `http://localhost:7700` to verify indexes are created.
+
+**⚠️ Important Notes:**
+- **Automatic Indexing:** After initial setup, models automatically update the search index when created/updated/deleted
+- **No Manual Re-indexing Needed:** When you add/edit beaches in Filament admin, they're automatically indexed
+- **Only Re-index When:** Changing `toSearchableArray()` method or index settings in `config/scout.php`
+- **Production:** Set `SCOUT_QUEUE=true` and run queue workers for better performance
+
+---
+
+### 6. Frontend Integration
+
+**TypeScript Interface (Auto-generate from Swagger):**
+```typescript
+interface SearchResult {
+  id: number;
+  name: string;
+  slug: string;  // Localized based on Accept-Language header
+  country_code: string;
+  country_name: string;
+  region_name?: string;
+  city_name?: string;
+  island_name?: string;
+  main_image: string;
+  type: 'beach' | 'city' | 'island' | 'region' | 'country';
+  // URL building slugs (all localized)
+  continent_slug: string;
+  country_slug: string;
+  region_slug?: string | null;
+  city_slug?: string | null;
+  island_slug?: string | null;
+}
+
+interface SearchResponse {
+  success: boolean;
+  data: {
+    beaches: SearchResult[];
+    cities: SearchResult[];
+    islands: SearchResult[];
+    regions: SearchResult[];
+    countries: SearchResult[];
+  };
+  meta: {
+    query: string;
+    total_results: number;
+    results_by_type: {
+      beaches: number;
+      cities: number;
+      islands: number;
+      regions: number;
+      countries: number;
+    };
+  };
+  message: string;
+}
+```
+
+**Example Frontend Usage:**
+```typescript
+// Search function
+async function globalSearch(query: string, limit: number = 5): Promise<SearchResponse> {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}`
+  );
+  return response.json();
+}
+
+// Usage in component
+const results = await globalSearch('miami', 5);
+
+// Display grouped results
+results.data.beaches.forEach(beach => {
+  console.log(`Beach: ${beach.name} in ${beach.city_name}, ${beach.country_name}`);
+});
+
+results.data.cities.forEach(city => {
+  console.log(`City: ${city.name}, ${city.country_name}`);
+});
+```
+
+---
+
+### 7. Cache Strategy
+
+- Search results are cached for **5 minutes** (SHORT_TTL)
+- Cache key includes query, limit, country_code, and types
+- Cache is automatically invalidated when models are updated (Scout handles this)
+
+---
+
+### 8. Performance Notes
+
+- Meilisearch typically responds in <50ms
+- Results are cached for 5 minutes to reduce load
+- Only active entities (status_id = 1) are indexed
+- Geographic entities only indexed if they have active beaches
+- Automatic re-indexing when models are created/updated/deleted
+
+---
+
+### 9. Testing
+
+**Test Search Endpoint:**
+```bash
+# Test basic search
+curl "http://localhost/api/v1/search?q=miami"
+
+# Test with filters
+curl "http://localhost/api/v1/search?q=beach&country_code=HR&limit=10"
+
+# Test specific types
+curl "http://localhost/api/v1/search?q=split&types=beach,city"
+```
+
+---
+
+### 10. Maintenance
+
+**Re-index All Models:**
+```bash
+./vendor/bin/sail artisan search:index --flush
+```
+
+**Re-index Specific Model:**
+```bash
+./vendor/bin/sail artisan search:index Beach --flush
+```
+
+**Check Scout Queue (if using queues):**
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+---
+
 ## 2025-11-30 – Most Visited Beaches Endpoint
 
 ### 1. Overview

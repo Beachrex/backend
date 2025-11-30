@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\V1\FilterController;
 use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
+use App\Http\Controllers\Api\V1\SearchController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -56,6 +57,9 @@ Route::prefix('api/v1')
 
         // Public media routes
         Route::get('/media/{id}', [MediaController::class, 'show']);
+
+        // Global search route
+        Route::get('/search', [SearchController::class, 'search']);
 
         // Beach routes - filters, map-bounds, and most-visited must come before {id} route
         Route::get('/beaches/map-bounds', [BeachController::class, 'mapBounds']);
