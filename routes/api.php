@@ -82,8 +82,8 @@ Route::prefix('api/v1')
 
         // Country routes
         Route::get('/countries', [CountryController::class, 'index']);
-        Route::get('/countries/{code}', [CountryController::class, 'show']);
-        Route::get('/countries/{code}/weather', [CountryController::class, 'weather']);
+        Route::get('/countries/{codeOrSlug}', [CountryController::class, 'show']);
+        Route::get('/countries/{codeOrSlug}/weather', [CountryController::class, 'weather']);
 
         // Region routes
         Route::get('/regions', [RegionController::class, 'index']);

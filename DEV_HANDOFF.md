@@ -1,5 +1,32 @@
 # Development Handoff / Change Log
 
+## 2025-12-01 - Country endpoints: support for code or slug
+
+- Updated `CountryController@show` to accept either a 2–3 letter ISO country code (e.g. `it`, `IT`) or a localized slug (e.g. `italy`, `slovenia`).
+  - Detection: `/^[A-Za-z]{2,3}$/` is treated as a code (normalized to upper case); everything else is treated as a slug (normalized to lower case).
+  - Slug lookups use `country_translation.slug` with locale fallback: first the current `app()->getLocale()`, then English (`en`).
+  - Response continues to be shaped by `CountryResource`, including the localized `slug` field.
+  - Caching key now encodes identifier type and normalized value: `country:show:{locale}:{code|slug}:{normalized}` to avoid collisions.
+- Updated `CountryController@weather` to accept the same `codeOrSlug` identifier and reuse the same code/slug + locale-fallback lookup pattern before building the `WeatherConfigurationResponse`.
+- API routes were updated so both endpoints now use `{codeOrSlug}` instead of `{code}`:
+  - `GET /api/v1/countries/{codeOrSlug}`
+  - `GET /api/v1/countries/{codeOrSlug}/weather`
+- Swagger/OpenAPI annotations for both endpoints were updated:
+  - Path templates now use `{codeOrSlug}`.
+  - Path parameter description explicitly mentions "code or localized slug" and includes examples for both forms.
+  - Existing response schema (including `slug`, navigation block, and weather shape) remains unchanged.
+
+**Examples**
+
+- `GET /api/v1/countries/it` → lookup by ISO code (Italian country, any locale)
+- `GET /api/v1/countries/italy` → lookup by localized slug; with `Accept-Language: en`, uses `italy` in `en` translation; with `Accept-Language: de`, prefers `de` translation if available, otherwise falls back to `en`.
+- `GET /api/v1/countries/italy/weather` → same identifier handling as above, returns the country-centroid weather configuration.
+
+Notes:
+- Existing integrations that use codes (e.g. `/api/v1/countries/it`) keep working without changes.
+- For new frontend work, prefer using slugs in URLs for SEO-friendly paths, aligned with regions/cities behavior (`/countries/italy`, `/regions/istria`, etc.).
+
+
 This file tracks backend changes that are important for frontend integration and future development.
 
 ## 📚 Documentation
