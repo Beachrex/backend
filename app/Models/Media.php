@@ -133,20 +133,20 @@ class Media extends Model
 
     /**
      * Get the URL to the media file
-     * For admin panel: returns full DigitalOcean Spaces URL
-     * For API: frontend will use its own CDN endpoints
+     * For admin panel: returns full DigitalOcean Spaces direct URL
+     * For API: returns relative path for frontend to use its own CDN endpoints
      */
     public function getUrlAttribute(): string
     {
         // If accessed from admin panel (Filament), return full URL for image display
         if (app()->runningInConsole() === false && request()->is('admin/*')) {
-            $cdnEndpoint = config('filesystems.disks.spaces.url');
-            if ($cdnEndpoint && $this->file_path) {
-                // Remove 'public/' prefix if it exists in file_path since CDN endpoint already includes it
+            $adminEndpoint = config('filesystems.disks.spaces.admin_url');
+            if ($adminEndpoint && $this->file_path) {
+                // Remove 'public/' prefix if it exists since admin endpoint includes /public
                 $path = str_starts_with($this->file_path, 'public/')
                     ? substr($this->file_path, 7)
                     : $this->file_path;
-                return rtrim($cdnEndpoint, '/') . '/' . ltrim($path, '/');
+                return rtrim($adminEndpoint, '/') . '/' . ltrim($path, '/');
             }
         }
 
