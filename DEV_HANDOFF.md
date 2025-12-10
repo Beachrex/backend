@@ -1,5 +1,182 @@
 # Development Handoff / Change Log
 
+## 2025-12-01 - Meilisearch Hetzner Deployment Guide
+
+### Overview
+
+Created comprehensive deployment documentation for setting up Meilisearch on a dedicated Hetzner server, since Laravel Cloud doesn't support Meilisearch natively.
+
+### Why Separate Server?
+
+- ✅ **Dedicated Resources** - Search operations don't compete with API/database
+- ✅ **Independent Scaling** - Scale search independently from main infrastructure
+- ✅ **Better Security** - Isolated network, separate firewall rules
+- ✅ **Cost Efficient** - Hetzner pricing (~€8/month) vs managed services (€50+/month)
+- ✅ **High Availability** - Main API continues working if search is down
+
+### Documentation Created
+
+1. **Full Setup Guide** - `docs/deployment/MEILISEARCH_HETZNER_SETUP.md`
+   - Comprehensive step-by-step guide (300+ lines)
+   - Covers server creation, installation, SSL setup, security, monitoring, backups
+   - Detailed troubleshooting section
+   - Production-ready configuration
+
+2. **Quick Start Guide** - `docs/deployment/MEILISEARCH_QUICK_START.md`
+   - Condensed 30-minute setup checklist
+   - Essential commands only
+   - Quick reference for experienced users
+
+3. **Automated Setup Script** - `docs/deployment/scripts/setup-meilisearch-hetzner.sh`
+   - Bash script that automates entire setup
+   - Interactive prompts for domain and email
+   - Generates secure master key
+   - Configures systemd, nginx, SSL, firewall, backups
+   - ~5 minutes hands-on time
+
+4. **Deployment Summary** - `MEILISEARCH_DEPLOYMENT_SUMMARY.md`
+   - Overview of all documentation
+   - Quick reference guide
+   - Architecture diagram
+   - Cost breakdown
+   - Maintenance schedule
+
+### Server Specifications
+
+**Recommended (Production):**
+- Type: Hetzner CPX22 (or CPX21 if available)
+- vCPU: 2-3 cores
+- RAM: 4 GB
+- Storage: 80 GB SSD
+- Cost: €5-8/month
+- Location: Nuremberg, Germany
+
+**Note:** CPX22 (2 vCPU, 4GB RAM, 80GB SSD) is often the lowest available option and works perfectly.
+
+**Current Data Size:**
+- ~4,120 documents (beaches, cities, islands, regions, countries)
+- ~50-100 MB indexed data
+
+### Setup Process
+
+**Option 1: Automated Script (Recommended)**
+```bash
+ssh root@YOUR_SERVER_IP
+wget https://raw.githubusercontent.com/.../setup-meilisearch-hetzner.sh
+chmod +x setup-meilisearch-hetzner.sh
+sudo ./setup-meilisearch-hetzner.sh
+```
+
+**Option 2: Manual Setup**
+Follow `docs/deployment/MEILISEARCH_QUICK_START.md`
+
+### Configuration
+
+**On Hetzner Server:**
+- Domain: `search.beachrex.com`
+- SSL: Let's Encrypt (auto-renewing)
+- Port: 443 (HTTPS only)
+- Firewall: UFW (ports 22, 80, 443)
+- Service: Systemd (auto-start on boot)
+
+**On Laravel Cloud:**
+```env
+SCOUT_DRIVER=meilisearch
+SCOUT_QUEUE=true
+MEILISEARCH_HOST=https://search.beachrex.com
+MEILISEARCH_KEY=YOUR_MASTER_KEY_HERE
+```
+
+### Post-Deployment
+
+1. Index data: `php artisan search:index`
+2. Verify: `curl https://search.beachrex.com/health`
+3. Test search: `curl "https://api.beachrex.com/api/v1/search?q=miami"`
+
+### Maintenance
+
+- **Daily:** Automated backups (2 AM)
+- **Weekly:** Review logs, check disk space
+- **Monthly:** Test backup restoration, update packages
+
+### Security Features
+
+- ✅ Firewall configured (UFW)
+- ✅ SSL certificate (Let's Encrypt)
+- ✅ Master key authentication
+- ✅ Localhost-only binding
+- ✅ Nginx reverse proxy
+- ✅ Non-root service user
+- ✅ Strict file permissions
+
+### Cost
+
+- Hetzner CPX22: €5-8/month
+- Total yearly: ~€60-96
+- Bandwidth: Included (20TB)
+
+**Comparison:**
+- Algolia: ~€50-200/month
+- Elasticsearch Cloud: ~€50-100/month
+- **Hetzner + Meilisearch: €5-8/month** ✅
+
+### Important Setup Notes
+
+1. **Stay as root during installation** - Don't create or switch to non-root user until after Meilisearch is installed
+2. **Cloudflare DNS** - Set Proxy status to "DNS only" (gray cloud), not "Proxied" (orange cloud)
+3. **Nginx configuration** - Start with HTTP-only config, then let Certbot add SSL automatically to avoid certificate errors
+4. **Firewall order** - Allow SSH (port 22) BEFORE enabling UFW to avoid lockout
+
+### Local Development Configuration
+
+The local Meilisearch service has been **removed from docker-compose.yml**. Both local development and production now use the remote Hetzner Meilisearch server.
+
+**Benefits:**
+- ✅ Consistency between development and production
+- ✅ Shared indexed data across all developers
+- ✅ Less local resources needed
+- ✅ Faster setup for new developers
+
+**Configuration:**
+```env
+# Local .env
+SCOUT_DRIVER=meilisearch
+MEILISEARCH_HOST=https://search.beachrex.com
+MEILISEARCH_KEY=YOUR_MASTER_KEY
+SCOUT_QUEUE=false  # Immediate indexing for development
+```
+
+See `docs/deployment/MEILISEARCH_LOCAL_SETUP.md` for detailed configuration.
+
+---
+
+## 2025-12-01 - Country endpoints: support for code or slug
+
+- Updated `CountryController@show` to accept either a 2–3 letter ISO country code (e.g. `it`, `IT`) or a localized slug (e.g. `italy`, `slovenia`).
+  - Detection: `/^[A-Za-z]{2,3}$/` is treated as a code (normalized to upper case); everything else is treated as a slug (normalized to lower case).
+  - Slug lookups use `country_translation.slug` with locale fallback: first the current `app()->getLocale()`, then English (`en`).
+  - Response continues to be shaped by `CountryResource`, including the localized `slug` field.
+  - Caching key now encodes identifier type and normalized value: `country:show:{locale}:{code|slug}:{normalized}` to avoid collisions.
+- Updated `CountryController@weather` to accept the same `codeOrSlug` identifier and reuse the same code/slug + locale-fallback lookup pattern before building the `WeatherConfigurationResponse`.
+- API routes were updated so both endpoints now use `{codeOrSlug}` instead of `{code}`:
+  - `GET /api/v1/countries/{codeOrSlug}`
+  - `GET /api/v1/countries/{codeOrSlug}/weather`
+- Swagger/OpenAPI annotations for both endpoints were updated:
+  - Path templates now use `{codeOrSlug}`.
+  - Path parameter description explicitly mentions "code or localized slug" and includes examples for both forms.
+  - Existing response schema (including `slug`, navigation block, and weather shape) remains unchanged.
+
+**Examples**
+
+- `GET /api/v1/countries/it` → lookup by ISO code (Italian country, any locale)
+- `GET /api/v1/countries/italy` → lookup by localized slug; with `Accept-Language: en`, uses `italy` in `en` translation; with `Accept-Language: de`, prefers `de` translation if available, otherwise falls back to `en`.
+- `GET /api/v1/countries/italy/weather` → same identifier handling as above, returns the country-centroid weather configuration.
+
+Notes:
+- Existing integrations that use codes (e.g. `/api/v1/countries/it`) keep working without changes.
+- For new frontend work, prefer using slugs in URLs for SEO-friendly paths, aligned with regions/cities behavior (`/countries/italy`, `/regions/istria`, etc.).
+
+
 This file tracks backend changes that are important for frontend integration and future development.
 
 ## 📚 Documentation

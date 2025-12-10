@@ -2608,24 +2608,27 @@
                 }
             }
         },
-        "/api/v1/countries/{code}": {
+        "/api/v1/countries/{codeOrSlug}": {
             "get": {
                 "tags": [
                     "Countries"
                 ],
                 "summary": "Get a specific country",
-                "description": "Returns a specific country by code with its beaches count and continent information",
+                "description": "Returns a specific country by code or slug with its beaches count and continent information.",
                 "operationId": "getCountry",
                 "parameters": [
                     {
-                        "name": "code",
+                        "name": "codeOrSlug",
                         "in": "path",
-                        "description": "Country code (e.g., SI, US, DE)",
+                        "description": "Country code (e.g., SI, US, DE) or localized slug (e.g., italy, slovenia)",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "example": "SI"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
                     }
                 ],
                 "responses": {
@@ -2652,6 +2655,10 @@
                                                 "full_name": {
                                                     "type": "string",
                                                     "example": "Republic of Slovenia"
+                                                },
+                                                "slug": {
+                                                    "type": "string",
+                                                    "example": "slovenia"
                                                 },
                                                 "iso3": {
                                                     "type": "string",
@@ -2816,7 +2823,7 @@
                 }
             }
         },
-        "/api/v1/countries/{code}/weather": {
+        "/api/v1/countries/{codeOrSlug}/weather": {
             "get": {
                 "tags": [
                     "Countries"
@@ -2826,13 +2833,13 @@
                 "operationId": "getCountryWeather",
                 "parameters": [
                     {
-                        "name": "code",
+                        "name": "codeOrSlug",
                         "in": "path",
-                        "description": "Country code (e.g., HR, SI, IT)",
+                        "description": "Country code (e.g., HR, SI, IT) or localized slug (e.g., italy, slovenia)",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "example": "HR"
+                            "example": "italy"
                         }
                     },
                     {

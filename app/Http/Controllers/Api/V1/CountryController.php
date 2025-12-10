@@ -123,18 +123,19 @@ class CountryController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/countries/{code}",
+     *     path="/api/v1/countries/{codeOrSlug}",
      *     operationId="getCountry",
      *     tags={"Countries"},
      *     summary="Get a specific country",
-     *     description="Returns a specific country by code with its beaches count and continent information",
+     *     description="Returns a specific country by code or slug with its beaches count and continent information.",
      *     @OA\Parameter(
-     *         name="code",
+     *         name="codeOrSlug",
      *         in="path",
-     *         description="Country code (e.g., SI, US, DE)",
+     *         description="Country code (e.g., SI, US, DE) or localized slug (e.g., italy, slovenia)",
      *         required=true,
      *         @OA\Schema(type="string", example="SI")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -147,6 +148,7 @@ class CountryController extends Controller
      *                 @OA\Property(property="code", type="string", example="SI"),
      *                 @OA\Property(property="name", type="string", example="Slovenia"),
      *                 @OA\Property(property="full_name", type="string", example="Republic of Slovenia"),
+     *                 @OA\Property(property="slug", type="string", example="slovenia"),
      *                 @OA\Property(property="iso3", type="string", example="SVN"),
      *                 @OA\Property(property="continent_code", type="string", example="EU"),
      *                 @OA\Property(property="latitude", type="number", format="double", nullable=true, example=46.1512),
@@ -210,15 +212,21 @@ class CountryController extends Controller
      *     )
      * )
      */
-    public function show(string $code, Request $request): JsonResponse
+    public function show(string $codeOrSlug, Request $request): JsonResponse
     {
         try {
-            $code = strtoupper($code);
             $locale = app()->getLocale();
-            $cacheKey = "country:show:{$locale}:{$code}";
 
-            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($code, $locale, $request) {
-                $country = Country::with([
+            // Detect whether input looks like a country code (2-3 letters) or a slug
+            $isCode = preg_match('/^[A-Za-z]{2,3}$/', $codeOrSlug) === 1;
+
+            // Normalise cache key to avoid collisions between code/slug variants
+            $identifierType = $isCode ? 'code' : 'slug';
+            $normalizedIdentifier = $isCode ? strtoupper($codeOrSlug) : strtolower($codeOrSlug);
+            $cacheKey = "country:show:{$locale}:{$identifierType}:{$normalizedIdentifier}";
+
+            $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($isCode, $codeOrSlug, $locale, $request) {
+                $query = Country::with([
                         'continent.translations',
                         'translations',
                         'badges.translations',
@@ -228,14 +236,27 @@ class CountryController extends Controller
                     ])
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
-                    }])
-                    ->where('code', $code)
-                    ->first([
-                        'code',
-                        'iso3',
-                        'continent_code',
-                        'image_path'
-                    ]);
+                    }]);
+
+                if ($isCode) {
+                    // Lookup by country code (case-insensitive)
+                    $code = strtoupper($codeOrSlug);
+                    $query->where('code', $code);
+                } else {
+                    // Lookup by localized slug from translations, try requested locale first then English
+                    $slug = strtolower($codeOrSlug);
+                    $query->whereHas('translations', function ($q) use ($slug, $locale) {
+                        $q->where('slug', $slug)
+                          ->whereIn('locale', [$locale, 'en']);
+                    });
+                }
+
+                $country = $query->first([
+                    'code',
+                    'iso3',
+                    'continent_code',
+                    'image_path'
+                ]);
 
                 if (!$country) {
                     return null;
@@ -277,17 +298,17 @@ class CountryController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/countries/{code}/weather",
+     *     path="/api/v1/countries/{codeOrSlug}/weather",
      *     operationId="getCountryWeather",
      *     summary="Get current weather for a country",
      *     description="Returns real-time weather data from OpenWeatherMap for a specific country (typically capital or centroid coordinates). Weather data is cached for 1 hour.",
      *     tags={"Countries"},
      *     @OA\Parameter(
-     *         name="code",
+     *         name="codeOrSlug",
      *         in="path",
      *         required=true,
-     *         description="Country code (e.g., HR, SI, IT)",
-     *         @OA\Schema(type="string", example="HR")
+     *         description="Country code (e.g., HR, SI, IT) or localized slug (e.g., italy, slovenia)",
+     *         @OA\Schema(type="string", example="italy")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -361,13 +382,27 @@ class CountryController extends Controller
      *     )
      * )
      */
-    public function weather(string $code): JsonResponse
+    public function weather(string $codeOrSlug): JsonResponse
     {
         try {
-            // Find country by code
-            $country = Country::with('translations')
-                ->where('code', strtoupper($code))
-                ->first(['id', 'code', 'latitude', 'longitude']);
+            $locale = app()->getLocale();
+
+            // Detect whether input looks like a country code (2-3 letters) or a slug
+            $isCode = preg_match('/^[A-Za-z]{2,3}$/', $codeOrSlug) === 1;
+
+            $query = Country::with('translations');
+
+            if ($isCode) {
+                $query->where('code', strtoupper($codeOrSlug));
+            } else {
+                $slug = strtolower($codeOrSlug);
+                $query->whereHas('translations', function ($q) use ($slug, $locale) {
+                    $q->where('slug', $slug)
+                      ->whereIn('locale', [$locale, 'en']);
+                });
+            }
+
+            $country = $query->first(['id', 'code', 'latitude', 'longitude']);
 
             if (!$country) {
                 return response()->json([

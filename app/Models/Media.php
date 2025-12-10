@@ -132,17 +132,31 @@ class Media extends Model
     }
 
     /**
-     * Get the URL to the media file without CDN/domain prefix
-     * Returns the stored file_path so frontend can prepend its own base URL.
+     * Get the URL to the media file
+     * For admin panel: returns full DigitalOcean Spaces direct URL
+     * For API: returns relative path for frontend to use its own CDN endpoints
      */
     public function getUrlAttribute(): string
     {
+        // If accessed from admin panel (Filament), return full URL for image display
+        if (app()->runningInConsole() === false && request()->is('admin/*')) {
+            $adminEndpoint = config('filesystems.disks.spaces.admin_url');
+            if ($adminEndpoint && $this->file_path) {
+                // Remove 'public/' prefix if it exists since admin endpoint includes /public
+                $path = str_starts_with($this->file_path, 'public/')
+                    ? substr($this->file_path, 7)
+                    : $this->file_path;
+                return rtrim($adminEndpoint, '/') . '/' . ltrim($path, '/');
+            }
+        }
+
+        // For API responses, return relative path so frontend can use its own CDN
         return $this->file_path;
     }
 
     /**
      * Get the thumbnail URL (for images)
-     * Currently just returns the same relative path as the original file
+     * Returns the same URL as the original file (uses url attribute which handles admin vs API)
      */
     public function getThumbnailUrlAttribute(): ?string
     {
