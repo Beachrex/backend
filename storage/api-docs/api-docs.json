@@ -10118,6 +10118,92 @@
                         "type": "string",
                         "example": "img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg",
                         "nullable": true
+                    },
+                    "media": {
+                        "description": "Media collections for the beach. Only non-empty collections are included. Only essential fields to reduce response size.",
+                        "properties": {
+                            "gallery": {
+                                "description": "Beach gallery images (only if beach has gallery images)",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "url": {
+                                            "description": "Relative path to image file",
+                                            "type": "string",
+                                            "example": "img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg"
+                                        },
+                                        "is_primary": {
+                                            "description": "Whether this is the primary image",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "order": {
+                                            "description": "Display order",
+                                            "type": "integer",
+                                            "example": 1
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "videos": {
+                                "description": "Beach videos (only if beach has videos)",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "url": {
+                                            "description": "Relative path to video file",
+                                            "type": "string",
+                                            "example": "img/beaches/hr-69-o-pag/beach-video.mp4"
+                                        },
+                                        "is_primary": {
+                                            "description": "Whether this is the primary video",
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "order": {
+                                            "description": "Display order",
+                                            "type": "integer",
+                                            "example": 1
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "spheres_360": {
+                                "description": "360-degree sphere tours (only if beach has 360° spheres)",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "tour_url": {
+                                            "description": "URL to 360° virtual tour",
+                                            "type": "string",
+                                            "example": "img/beaches/hr-69-o-pag/vtour/tour.html"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "embeds": {
+                                "description": "External embeds for the beach",
+                                "properties": {
+                                    "video_url": {
+                                        "description": "YouTube video URL",
+                                        "type": "string",
+                                        "example": "https://youtu.be/k_pSc9aWyz0",
+                                        "nullable": true
+                                    },
+                                    "webcam": {
+                                        "description": "Webcam embed code",
+                                        "type": "string",
+                                        "example": "<iframe src='...'></iframe>",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object"
                     }
                 },
                 "type": "object"

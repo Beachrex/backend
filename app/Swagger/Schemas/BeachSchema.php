@@ -21,7 +21,50 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(property="region_slug", type="string", nullable=true, example="dalmatia", description="Region slug (translated based on Accept-Language header)"),
  *     @OA\Property(property="island_slug", type="string", nullable=true, example="island-hvar", description="Island slug (translated based on Accept-Language header)"),
  *     @OA\Property(property="city_slug", type="string", nullable=true, example="split", description="City slug (translated based on Accept-Language header)"),
- *     @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg", description="Primary beach image path (relative, without CDN/domain prefix). Frontend constructs Imagor URLs by prepending IMAGOR_ENDPOINT + transformation params (e.g., 'unsafe/fit-in/400x300/filters:quality(85)/') + main_image.")
+ *     @OA\Property(property="main_image", type="string", nullable=true, example="img/beaches/hr-779-k-jdalmacija/hr-779-k-jdalmacija-sl4.jpg", description="Primary beach image path (relative, without CDN/domain prefix). Frontend constructs Imagor URLs by prepending IMAGOR_ENDPOINT + transformation params (e.g., 'unsafe/fit-in/400x300/filters:quality(85)/') + main_image."),
+ *     @OA\Property(
+ *         property="media",
+ *         type="object",
+ *         description="Media collections for the beach. Only non-empty collections are included. Only essential fields to reduce response size.",
+ *         @OA\Property(
+ *             property="gallery",
+ *             type="array",
+ *             description="Beach gallery images (only if beach has gallery images)",
+ *             @OA\Items(
+ *                 type="object",
+ *                 @OA\Property(property="url", type="string", example="img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg", description="Relative path to image file"),
+ *                 @OA\Property(property="is_primary", type="boolean", example=true, description="Whether this is the primary image"),
+ *                 @OA\Property(property="order", type="integer", example=1, description="Display order")
+ *             )
+ *         ),
+ *         @OA\Property(
+ *             property="videos",
+ *             type="array",
+ *             description="Beach videos (only if beach has videos)",
+ *             @OA\Items(
+ *                 type="object",
+ *                 @OA\Property(property="url", type="string", example="img/beaches/hr-69-o-pag/beach-video.mp4", description="Relative path to video file"),
+ *                 @OA\Property(property="is_primary", type="boolean", example=false, description="Whether this is the primary video"),
+ *                 @OA\Property(property="order", type="integer", example=1, description="Display order")
+ *             )
+ *         ),
+ *         @OA\Property(
+ *             property="spheres_360",
+ *             type="array",
+ *             description="360-degree sphere tours (only if beach has 360° spheres)",
+ *             @OA\Items(
+ *                 type="object",
+ *                 @OA\Property(property="tour_url", type="string", example="img/beaches/hr-69-o-pag/vtour/tour.html", description="URL to 360° virtual tour")
+ *             )
+ *         ),
+ *         @OA\Property(
+ *             property="embeds",
+ *             type="object",
+ *             description="External embeds for the beach",
+ *             @OA\Property(property="video_url", type="string", nullable=true, example="https://youtu.be/k_pSc9aWyz0", description="YouTube video URL"),
+ *             @OA\Property(property="webcam", type="string", nullable=true, example="<iframe src='...'></iframe>", description="Webcam embed code")
+ *         )
+ *     )
  * )
  */
 class BeachSchema {}

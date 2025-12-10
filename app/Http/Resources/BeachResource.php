@@ -65,6 +65,60 @@ class BeachResource extends JsonResource
             }
         }
 
+        // Group media by collection
+        $mediaByCollection = $this->media->groupBy('mediaCollection.code');
+
+        // Format gallery images - only essential fields
+        $gallery = $mediaByCollection->get('beach_gallery', collect())->map(function ($media) {
+            return [
+                'url' => $media->url,
+                'is_primary' => $media->is_primary,
+                'order' => $media->order,
+            ];
+        })->values()->toArray();
+
+        // Format videos - only essential fields
+        $videos = $mediaByCollection->get('beach_videos', collect())->map(function ($media) {
+            return [
+                'url' => $media->url,
+                'is_primary' => $media->is_primary,
+                'order' => $media->order,
+            ];
+        })->values()->toArray();
+
+        // Format 360 spheres - only tour_url needed
+        $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
+        $vtourUrl = ($this->folder_name && $spheres360Collection->isNotEmpty())
+            ? "img/beaches/{$this->folder_name}/vtour/tour.html"
+            : null;
+
+        $spheres360 = [];
+        if ($vtourUrl) {
+            $spheres360 = $spheres360Collection->map(function ($media) use ($vtourUrl) {
+                return [
+                    'tour_url' => $vtourUrl,
+                ];
+            })->values()->toArray();
+        }
+
+        // Build media object - only include non-empty collections
+        $media = [];
+        if (!empty($gallery)) {
+            $media['gallery'] = $gallery;
+        }
+        if (!empty($videos)) {
+            $media['videos'] = $videos;
+        }
+        if (!empty($spheres360)) {
+            $media['spheres_360'] = $spheres360;
+        }
+
+        // Add embeds under media
+        $media['embeds'] = [
+            'video_url' => $this->video_url,
+            'webcam' => $this->webcam,
+        ];
+
         return [
             'id' => $this->id,
             'name' => $translation->name ?? $translationEn->name ?? $this->name,
@@ -81,6 +135,7 @@ class BeachResource extends JsonResource
             'island_slug' => $islandSlug,
             'city_slug' => $citySlug,
             'main_image' => $mainImage,
+            'media' => $media,
             // 'main_image_imagor' removed - frontend constructs Imagor URLs directly
         ];
     }

@@ -35,19 +35,28 @@ SCOUT_PREFIX=
 SCOUT_QUEUE=false
 
 # Meilisearch Configuration
-MEILISEARCH_HOST=http://meilisearch:7700
+# ⚠️ IMPORTANT: Use localhost/127.0.0.1 on production server, NOT "meilisearch"
+# Local dev (Docker Compose): http://meilisearch:7700
+# Production server: http://localhost:7700 or http://127.0.0.1:7700
+MEILISEARCH_HOST=http://localhost:7700
 MEILISEARCH_KEY=YOUR_SECURE_MASTER_KEY_HERE
 MEILISEARCH_NO_ANALYTICS=true
 MEILISEARCH_ENV=production
 FORWARD_MEILISEARCH_PORT=7700
 ```
 
-**⚠️ IMPORTANT:** Change `MEILISEARCH_KEY` to a secure random string in production!
+**⚠️ IMPORTANT Configuration Notes:**
 
-```bash
-# Generate a secure key:
-openssl rand -base64 32
-```
+1. **MEILISEARCH_HOST** differs between environments:
+   - **Local Development (Docker Compose):** `http://meilisearch:7700` (uses Docker service name)
+   - **Production Server:** `http://localhost:7700` or `http://127.0.0.1:7700` (uses actual hostname)
+   - If Meilisearch is on a separate server: `http://your-meilisearch-server.com:7700`
+
+2. **MEILISEARCH_KEY** must be a secure random string in production:
+   ```bash
+   # Generate a secure key:
+   openssl rand -base64 32
+   ```
 
 ### 3. Install Composer Dependencies
 
@@ -152,13 +161,23 @@ The models are configured to automatically update the search index when:
 ./vendor/bin/sail artisan search:index --flush
 ```
 
-### "Connection refused" errors
+### "Connection refused" or "Could not resolve host" errors
+
+**Error:** `cURL error 6: Could not resolve host: meilisearch`
+
+**Solution:** Update `MEILISEARCH_HOST` in `.env`:
 
 ```bash
-# Check MEILISEARCH_HOST in .env
-# Should be: http://meilisearch:7700 (Docker internal network)
-# NOT: http://localhost:7700
+# ❌ WRONG on production server (Docker service name only works in Docker Compose):
+MEILISEARCH_HOST=http://meilisearch:7700
+
+# ✅ CORRECT on production server:
+MEILISEARCH_HOST=http://localhost:7700
+# OR
+MEILISEARCH_HOST=http://127.0.0.1:7700
 ```
+
+**Note:** The hostname `meilisearch` only works in local Docker Compose environments where containers communicate via service names. On production servers, use `localhost` or the actual server IP/hostname.
 
 ## 📝 Summary of Commands for Deployment
 

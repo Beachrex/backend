@@ -42,6 +42,8 @@ class PostGISService
                 b.longitude,
                 b.country_code,
                 b.continent_code,
+                b.video_url,
+                b.webcam,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
@@ -129,6 +131,8 @@ class PostGISService
                 b.longitude,
                 b.country_code,
                 b.continent_code,
+                b.video_url,
+                b.webcam,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
@@ -213,6 +217,8 @@ class PostGISService
                 b.longitude,
                 b.country_code,
                 b.continent_code,
+                b.video_url,
+                b.webcam,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
@@ -473,9 +479,104 @@ class PostGISService
      */
     private function formatBeachResults(array $results)
     {
-        return collect($results)->map(function ($beach) {
+        // Get all beach IDs to load media
+        $beachIds = collect($results)->pluck('id')->toArray();
+
+        if (empty($beachIds)) {
+            return collect([]);
+        }
+
+        // Load all media for these beaches (gallery, videos, 360 spheres)
+        $allMedia = DB::select("
+            SELECT
+                m.mediable_id as beach_id,
+                m.id,
+                m.file_name,
+                m.file_path as url,
+                m.file_path as thumbnail_url,
+                m.mime_type,
+                m.width,
+                m.height,
+                m.duration,
+                m.is_primary,
+                m.order,
+                mc.code as collection_code,
+                b.folder_name
+            FROM media m
+            INNER JOIN media_collections mc ON m.media_collection_id = mc.id
+            INNER JOIN beach b ON m.mediable_id = b.id
+            WHERE m.mediable_id IN (" . implode(',', $beachIds) . ")
+              AND m.mediable_type = 'App\\\\Models\\\\Beach'
+              AND mc.code IN ('beach_gallery', 'beach_videos', 'beach_360_sphere')
+              AND m.status_id = 1
+            ORDER BY m.is_primary DESC, m.order, m.created_at
+        ");
+
+        // Group media by beach_id and collection
+        $mediaByBeach = collect($allMedia)->groupBy('beach_id');
+
+        return collect($results)->map(function ($beach) use ($mediaByBeach) {
             // Return main_image path as-is (relative path without leading slash)
             $mainImage = $beach->main_image_path ?? null;
+
+            // Get media for this beach
+            $beachMedia = $mediaByBeach->get($beach->id, collect());
+
+            // Group by collection
+            $mediaByCollection = $beachMedia->groupBy('collection_code');
+
+            // Format gallery - only essential fields
+            $gallery = $mediaByCollection->get('beach_gallery', collect())->map(function ($media) {
+                return [
+                    'url' => $media->url,
+                    'is_primary' => (bool) $media->is_primary,
+                    'order' => $media->order,
+                ];
+            })->values()->toArray();
+
+            // Format videos - only essential fields
+            $videos = $mediaByCollection->get('beach_videos', collect())->map(function ($media) {
+                return [
+                    'url' => $media->url,
+                    'is_primary' => (bool) $media->is_primary,
+                    'order' => $media->order,
+                ];
+            })->values()->toArray();
+
+            // Format 360 spheres - only tour_url needed
+            $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
+            $vtourUrl = null;
+            if ($spheres360Collection->isNotEmpty() && isset($spheres360Collection->first()->folder_name)) {
+                $folderName = $spheres360Collection->first()->folder_name;
+                $vtourUrl = "img/beaches/{$folderName}/vtour/tour.html";
+            }
+
+            $spheres360 = [];
+            if ($vtourUrl) {
+                $spheres360 = $spheres360Collection->map(function ($media) use ($vtourUrl) {
+                    return [
+                        'tour_url' => $vtourUrl,
+                    ];
+                })->values()->toArray();
+            }
+
+            // Build media object - only include non-empty collections
+            $media = [];
+            if (!empty($gallery)) {
+                $media['gallery'] = $gallery;
+            }
+            if (!empty($videos)) {
+                $media['videos'] = $videos;
+            }
+            if (!empty($spheres360)) {
+                $media['spheres_360'] = $spheres360;
+            }
+
+            // Add embeds under media
+            $media['embeds'] = [
+                'video_url' => $beach->video_url ?? null,
+                'webcam' => $beach->webcam ?? null,
+            ];
 
             return [
                 'id' => $beach->id,
@@ -493,6 +594,7 @@ class PostGISService
                 'island_slug' => $beach->island_slug ?? null,
                 'city_slug' => $beach->city_slug ?? null,
                 'main_image' => $mainImage,
+                'media' => $media,
                 'distance_km' => $beach->distance_km ?? null,
             ];
         });

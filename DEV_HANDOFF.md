@@ -173,6 +173,8 @@ SCOUT_DRIVER=meilisearch
 SCOUT_PREFIX=
 SCOUT_QUEUE=false  # Set to true for production with queue workers
 
+# Local dev (Docker Compose): http://meilisearch:7700
+# Production server: http://localhost:7700 or http://127.0.0.1:7700
 MEILISEARCH_HOST=http://meilisearch:7700
 MEILISEARCH_KEY=masterKey  # Change to secure key in production
 MEILISEARCH_NO_ANALYTICS=true
@@ -240,6 +242,9 @@ SCOUT_DRIVER=meilisearch
 SCOUT_QUEUE=false  # Set to true for production with queue workers
 
 # Meilisearch Configuration
+# ⚠️ IMPORTANT: Local dev uses "meilisearch", production uses "localhost" or server IP
+# Local dev (Docker Compose): http://meilisearch:7700
+# Production server: http://localhost:7700 or http://127.0.0.1:7700
 MEILISEARCH_HOST=http://meilisearch:7700
 MEILISEARCH_KEY=masterKey  # Change to secure key in production
 MEILISEARCH_NO_ANALYTICS=true

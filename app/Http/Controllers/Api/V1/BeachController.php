@@ -208,9 +208,11 @@ class BeachController extends Controller
                     'city.translations',
                     'island.translations',
                     'media' => function ($query) {
-                        $query->where('media_collection_id', 1)
-                              ->where('is_primary', true)
-                              ->where('status_id', 1);
+                        $query->where('status_id', 1)
+                              ->with('mediaCollection')
+                              ->orderBy('is_primary', 'desc')
+                              ->orderBy('order')
+                              ->orderBy('created_at');
                     }
                 ]);
 
@@ -331,9 +333,11 @@ class BeachController extends Controller
             'city.translations',
             'island.translations',
             'media' => function ($query) {
-                $query->where('media_collection_id', 1)
-                      ->where('is_primary', true)
-                      ->where('status_id', 1);
+                $query->where('status_id', 1)
+                      ->with('mediaCollection')
+                      ->orderBy('is_primary', 'desc')
+                      ->orderBy('order')
+                      ->orderBy('created_at');
             }
         ]));
     }
@@ -381,9 +385,11 @@ class BeachController extends Controller
                 'city.translations',
                 'island.translations',
                 'media' => function ($query) {
-                    $query->where('media_collection_id', 1)
-                          ->where('is_primary', true)
-                          ->where('status_id', 1);
+                    $query->where('status_id', 1)
+                          ->with('mediaCollection')
+                          ->orderBy('is_primary', 'desc')
+                          ->orderBy('order')
+                          ->orderBy('created_at');
                 }
             ])->findOrFail($id);
 
@@ -484,9 +490,11 @@ class BeachController extends Controller
                     'city.translations',
                     'island.translations',
                     'media' => function ($query) {
-                        $query->where('media_collection_id', 1)
-                              ->where('is_primary', true)
-                              ->where('status_id', 1);
+                        $query->where('status_id', 1)
+                              ->with('mediaCollection')
+                              ->orderBy('is_primary', 'desc')
+                              ->orderBy('order')
+                              ->orderBy('created_at');
                     }
                 ]);
 
