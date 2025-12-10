@@ -1,5 +1,193 @@
 # Development Handoff / Change Log
 
+## 2025-12-10 - Beach List APIs Media Structure Update
+
+### Overview
+
+Updated all beach list endpoints to include complete media structure with gallery, videos, 360° spheres, and embeds nested under a single `media` object.
+
+### API Endpoints Updated
+
+All beach list endpoints now return the same media structure:
+- `GET /api/v1/beaches` - Beach list with pagination
+- `GET /api/v1/beaches/most-visited` - Most visited beaches
+- `GET /api/v1/beaches/within-radius` - Beaches within radius (spatial query)
+- `GET /api/v1/beaches/bounding-box` - Beaches within bounding box (spatial query)
+
+### Response Structure
+
+**Media Object:**
+```json
+{
+  "media": {
+    "gallery": [
+      {
+        "url": "img/beaches/hr-69-o-pag/hr-69-o-pag-sl1.jpg",
+        "is_primary": true,
+        "order": 1
+      }
+    ],
+    "videos": [
+      {
+        "url": "img/beaches/hr-69-o-pag/beach-video.mp4",
+        "is_primary": false,
+        "order": 1
+      }
+    ],
+    "spheres_360": [
+      {
+        "tour_url": "img/beaches/hr-69-o-pag/vtour/tour.html"
+      }
+    ],
+    "embeds": {
+      "video_url": "https://youtu.be/k_pSc9aWyz0",
+      "webcam": null
+    }
+  }
+}
+```
+
+**Key Features:**
+- ✅ **Minimal Fields** - Only essential fields to reduce response size:
+  - Gallery/Videos: `url`, `is_primary`, `order`
+  - Spheres 360: `tour_url` only
+  - Embeds: `video_url`, `webcam`
+- ✅ **Empty Collections Excluded** - Only non-empty collections are included in response
+- ✅ **Embeds Nested Under Media** - `embeds` object is now nested under `media` (not top-level) for better organization
+- ✅ **Consistent Structure** - Same structure across all beach list endpoints (index, most-visited, spatial queries)
+- ✅ **Collection Codes** - Uses collection codes (`beach_gallery`, `beach_videos`, `beach_360_sphere`) instead of hardcoded IDs for environment independence
+
+**Excluded Fields (not in list endpoints):**
+- ❌ `water_temperature` - Not needed in list view
+- ❌ `weather` - Not needed in list view
+- ❌ `map_url` - Not needed in list view
+- ❌ `info_images`, `infrastructure_images`, `spot_images`, `parking_images` - Not needed in list view
+
+### Implementation Details
+
+**Files Modified:**
+1. **BeachResource.php** (`app/Http/Resources/BeachResource.php`)
+   - Groups media by collection code (`beach_gallery`, `beach_videos`, `beach_360_sphere`)
+   - Maps each collection to minimal fields
+   - Generates 360° tour URL from beach folder_name
+   - Nests embeds under media object
+   - Only includes non-empty collections
+
+2. **BeachController.php** (`app/Http/Controllers/Api/V1/BeachController.php`)
+   - Updated all methods to load media with `mediaCollection` relationship:
+     - `index()` - Beach list
+     - `show()` - Single beach
+     - `store()` - Beach search/filter
+     - `mostVisited()` - Most visited beaches
+   - Loads all media collections (not just gallery)
+
+3. **PostGISService.php** (`app/Services/PostGISService.php`)
+   - Updated spatial query methods to use collection codes instead of hardcoded IDs
+   - Uses `mc.code IN ('beach_gallery', 'beach_videos', 'beach_360_sphere')`
+   - Same minimal field structure as BeachResource
+   - Nests embeds under media object
+
+4. **BeachSchema.php** (`app/Swagger/Schemas/BeachSchema.php`)
+   - Updated Swagger documentation to reflect new structure
+   - Documents all media collections with minimal fields
+   - Shows embeds nested under media
+   - Notes that empty collections are excluded
+
+### 360° Sphere Tour URL Pattern
+
+The `tour_url` is generated dynamically based on beach `folder_name`:
+```
+img/beaches/{folder_name}/vtour/tour.html
+```
+
+Example:
+- Beach folder: `hr-69-o-pag`
+- Tour URL: `img/beaches/hr-69-o-pag/vtour/tour.html`
+
+Each sphere media item in the database gets mapped to this same tour URL (one tour per beach, multiple sphere media records possible).
+
+### Frontend Integration
+
+**TypeScript Interface:**
+```typescript
+interface BeachMedia {
+  gallery?: Array<{
+    url: string;
+    is_primary: boolean;
+    order: number;
+  }>;
+  videos?: Array<{
+    url: string;
+    is_primary: boolean;
+    order: number;
+  }>;
+  spheres_360?: Array<{
+    tour_url: string;
+  }>;
+  embeds: {
+    video_url: string | null;
+    webcam: string | null;
+  };
+}
+
+interface Beach {
+  id: number;
+  name: string;
+  slug: string;
+  // ... other fields
+  main_image: string;
+  media: BeachMedia;
+}
+```
+
+**Usage Example:**
+```typescript
+// Fetch beaches
+const response = await fetch('/api/v1/beaches?per_page=20');
+const data = await response.json();
+
+// Access media
+data.data.forEach(beach => {
+  // Gallery images
+  if (beach.media.gallery) {
+    beach.media.gallery.forEach(img => {
+      console.log(img.url, img.is_primary);
+    });
+  }
+
+  // 360° tour
+  if (beach.media.spheres_360) {
+    const tourUrl = beach.media.spheres_360[0].tour_url;
+  }
+
+  // YouTube video
+  if (beach.media.embeds.video_url) {
+    console.log(beach.media.embeds.video_url);
+  }
+});
+```
+
+### Cache Considerations
+
+- Beach list responses are cached using `CacheService::REFERENCE_DATA_TTL`
+- Cache keys include locale and filters
+- Clear cache after updating media: `php artisan cache:clear`
+
+### Testing
+
+```bash
+# Test beach list
+curl "http://localhost/api/v1/beaches?per_page=1" | jq '.data[0].media'
+
+# Test most visited
+curl "http://localhost/api/v1/beaches/most-visited?limit=1" | jq '.data[0].media'
+
+# Test spatial query
+curl "http://localhost/api/v1/beaches/within-radius?latitude=43.5&longitude=16.4&radius_km=100&limit=1" | jq '.data.beaches[0].media'
+```
+
+---
+
 ## 2025-12-01 - Meilisearch Hetzner Deployment Guide
 
 ### Overview
