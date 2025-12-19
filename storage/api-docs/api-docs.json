@@ -10169,6 +10169,12 @@
                         "example": "island-hvar",
                         "nullable": true
                     },
+                    "city_name": {
+                        "description": "City name (translated based on Accept-Language header, with English fallback)",
+                        "type": "string",
+                        "example": "Split",
+                        "nullable": true
+                    },
                     "city_slug": {
                         "description": "City slug (translated based on Accept-Language header)",
                         "type": "string",

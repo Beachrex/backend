@@ -40,11 +40,13 @@ class BeachResource extends JsonResource
             $regionSlug = $regionTranslation?->slug ?? $regionTranslationEn?->slug ?? null;
         }
 
-        // Get city slug
+        // Get city name and slug
+        $cityName = null;
         $citySlug = null;
         if ($this->city) {
             $cityTranslation = $this->city->translations->firstWhere('locale', $locale);
             $cityTranslationEn = $this->city->translations->firstWhere('locale', 'en');
+            $cityName = $cityTranslation?->name ?? $cityTranslationEn?->name ?? null;
             $citySlug = $cityTranslation?->slug ?? $cityTranslationEn?->slug ?? null;
         }
 
@@ -143,6 +145,7 @@ class BeachResource extends JsonResource
             'continent_slug' => $continentSlug,
             'region_slug' => $regionSlug,
             'island_slug' => $islandSlug,
+            'city_name' => $cityName,
             'city_slug' => $citySlug,
             'main_image' => $mainImage,
             'media' => $media,

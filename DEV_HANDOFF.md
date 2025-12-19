@@ -1,5 +1,163 @@
 # Development Handoff / Change Log
 
+## 📋 Documentation Rules
+
+**IMPORTANT:** This file MUST be updated whenever making changes to the API or codebase. Follow these rules:
+
+### When to Update This File:
+1. ✅ **API Changes** - Any modification to API endpoints, request/response structures, or parameters
+2. ✅ **New Features** - Any new functionality added to the application
+3. ✅ **Bug Fixes** - Significant bug fixes that affect API behavior or data structure
+4. ✅ **Database Changes** - Schema changes, new tables, or modified relationships
+5. ✅ **Breaking Changes** - Any change that could break existing integrations
+
+### Required Updates for API Changes:
+When modifying API responses or adding new fields, you MUST update:
+
+1. **Code Files:**
+   - ✅ Resource classes (`app/Http/Resources/*.php`)
+   - ✅ Service classes (`app/Services/*.php`)
+   - ✅ Controller classes (`app/Http/Controllers/Api/**/*.php`)
+
+2. **Swagger/OpenAPI Documentation:**
+   - ✅ Schema files (`app/Swagger/Schemas/*.php`)
+   - ✅ Controller annotations (`@OA\Response`, `@OA\Property`, etc.)
+   - ✅ Regenerate docs: `./vendor/bin/sail artisan l5-swagger:generate`
+
+3. **This Handoff File:**
+   - ✅ Add new dated section at the top
+   - ✅ Document what changed and why
+   - ✅ Include code examples
+   - ✅ List affected endpoints
+   - ✅ Add testing instructions
+
+### Documentation Format:
+```markdown
+## YYYY-MM-DD - Brief Title
+
+### Overview
+Brief description of the change
+
+### Changes Made
+- File 1: What changed
+- File 2: What changed
+
+### Affected Endpoints
+- `/api/v1/endpoint` - Description
+
+### Testing
+How to test the changes
+```
+
+---
+
+## 2025-12-19 - Added city_name to Beach List APIs
+
+### Overview
+
+Added `city_name` field to all beach list API responses. Previously, only `city_slug` was returned, but now both `city_name` (translated) and `city_slug` are included for consistency with other geographic entities (country, continent, region, island).
+
+### Changes Made
+
+**1. BeachResource.php** (`app/Http/Resources/BeachResource.php`)
+- Lines 43-51: Added `city_name` extraction from city translations with English fallback
+- Line 49: `$cityName = $cityTranslation?->name ?? $cityTranslationEn?->name ?? null;`
+- Line 147: Added `city_name` to response array
+
+**2. PostGISService.php** (`app/Services/PostGISService.php`)
+- Line 55: Added `COALESCE(city_t.name, city_t_en.name) as city_name` to `getBeachesWithinRadius` SQL query
+- Line 231: Added `COALESCE(city_t.name, city_t_en.name) as city_name` to `getBeachesInBoundingBox` SQL query
+- Line 606: Added `city_name` to `formatBeachResults` return array
+
+**3. BeachSchema.php** (`app/Swagger/Schemas/BeachSchema.php`)
+- Line 23: Added `city_name` property documentation
+
+**4. OpenAPI Documentation**
+- Regenerated `storage/api-docs/api-docs.json` with new `city_name` field
+
+### Response Structure
+
+```json
+{
+  "id": 123,
+  "name": "Beach Adriatic",
+  "slug": "beach-adriatic",
+  "country_code": "HR",
+  "country_name": "Croatia",
+  "country_slug": "croatia",
+  "continent_code": "EU",
+  "continent_slug": "europe",
+  "region_slug": "dalmatia-dubrovnik",
+  "island_slug": null,
+  "city_name": "Orebić",
+  "city_slug": "orebic",
+  "main_image": "img/beaches/...",
+  "media": { ... }
+}
+```
+
+### Affected Endpoints
+
+**Regular Beach List Endpoints** (use `BeachResource`):
+- ✅ `/api/v1/beaches` - Get beaches with filters
+- ✅ `/api/v1/beaches/most-visited` - Get most visited beaches
+
+**Spatial Endpoints** (use `PostGISService`):
+- ✅ `/api/v1/spatial/beaches/bounding-box` - Get beaches in bounding box
+- ✅ `/api/v1/spatial/beaches/within-radius` - Get beaches within radius
+- ✅ `/api/v1/spatial/beaches/nearest` - Get nearest beaches
+
+### Translation Behavior
+
+- `city_name` is translated based on the `Accept-Language` header
+- **Falls back to English** if translation not available for requested locale (same as `country_name`)
+- Returns `null` only if beach has no associated city
+- Consistent with other geographic entity name fields
+
+### Testing
+
+```bash
+# Test regular beach list endpoint (English)
+curl -H "Accept-Language: en" "http://localhost:8000/api/v1/beaches?limit=3" | jq '.data[0] | {city_name, city_slug}'
+# Expected: city_name in English
+
+# Test spatial endpoint with Croatian locale (should fallback to English if hr translation missing)
+curl -H "Accept-Language: hr" "http://localhost:8000/api/v1/spatial/beaches/bounding-box?min_lat=42&min_lon=17&max_lat=43&max_lon=18&limit=2" | jq '.data[0] | {city_name, city_slug}'
+# Expected: city_name falls back to English if Croatian translation not available
+
+# Test within-radius endpoint with German locale
+curl -H "Accept-Language: de" "http://localhost:8000/api/v1/spatial/beaches/within-radius?latitude=45.0&longitude=14.5&radius=50&limit=2" | jq '.data[0] | {city_name, city_slug}'
+# Expected: city_name falls back to English if German translation not available
+
+# Verify OpenAPI spec includes city_name
+cat storage/api-docs/api-docs.json | jq '.components.schemas.BeachSchema.properties.city_name'
+```
+
+**Test Results:**
+```json
+// Croatian locale with English fallback
+{
+  "id": 731,
+  "name": "Beach Adriatic",
+  "city_name": "Orebić",  // ✅ English fallback (not null)
+  "city_slug": "orebic"
+}
+
+// English locale
+{
+  "id": 1,
+  "name": "Beach Livade i Obatnice",
+  "city_name": "Povljana",  // ✅ English translation
+  "city_slug": "povljana"
+}
+```
+
+### Frontend Impact
+
+Frontend should regenerate TypeScript types from the updated OpenAPI spec to include the new `city_name` field.
+
+---
+
 ## 2025-12-19 - Spatial Bounding Box API Media Structure Fix
 
 ### Overview

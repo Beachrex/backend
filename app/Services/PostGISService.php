@@ -52,6 +52,7 @@ class PostGISService
                 COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
                 COALESCE(reg_t.slug, reg_t_en.slug) as region_slug,
                 COALESCE(isl_t.slug, isl_t_en.slug) as island_slug,
+                COALESCE(city_t.name, city_t_en.name) as city_name,
                 COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 m.file_path as main_image_path,
                 m.disk as main_image_disk,
@@ -227,6 +228,7 @@ class PostGISService
                 COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
                 COALESCE(reg_t.slug, reg_t_en.slug) as region_slug,
                 COALESCE(isl_t.slug, isl_t_en.slug) as island_slug,
+                COALESCE(city_t.name, city_t_en.name) as city_name,
                 COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 m.file_path as main_image_path,
                 m.disk as main_image_disk
@@ -602,6 +604,7 @@ class PostGISService
                 'continent_slug' => $beach->continent_slug ?? null,
                 'region_slug' => $beach->region_slug ?? null,
                 'island_slug' => $beach->island_slug ?? null,
+                'city_name' => $beach->city_name ?? null,
                 'city_slug' => $beach->city_slug ?? null,
                 'main_image' => $mainImage,
                 'media' => $media,
