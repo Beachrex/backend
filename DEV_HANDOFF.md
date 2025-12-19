@@ -158,6 +158,98 @@ Frontend should regenerate TypeScript types from the updated OpenAPI spec to inc
 
 ---
 
+## 2025-12-19 - Fixed Unicode Normalization Issue in CheckMissingBeachImages Command
+
+### Overview
+
+Fixed a critical bug in the `beaches:check-missing-images` command where images with special characters (č, š, ž, etc.) were incorrectly reported as missing even though they existed on DigitalOcean Spaces.
+
+### Issue
+
+The command was reporting all images as missing for beaches with special characters in folder names:
+
+```
+Folder Name: hr-6-o-korčula
+Total Images: 11
+Found: 0
+Missing: 11  ❌ FALSE POSITIVE!
+```
+
+The actual file exists on DigitalOcean Spaces:
+```
+https://beachrex.fra1.digitaloceanspaces.com/public/img/beaches/hr-6-o-korc%CC%8Cula/hr-6-o-korc%CC%8Cula-sl10.jpg
+```
+
+### Root Cause
+
+**Unicode Normalization Mismatch:**
+- Special characters like `č` can be stored in two different Unicode forms:
+  1. **NFC (Composed)**: `č` as a single character (U+010D)
+  2. **NFD (Decomposed)**: `c` + combining caron `̌` (U+0063 + U+030C, shows as `%CC%8C` in URLs)
+
+- The database might store paths in one normalization form (e.g., NFC)
+- DigitalOcean Spaces might store files in another form (e.g., NFD)
+- The `Storage::disk('spaces')->exists()` method was only checking the exact path without trying different normalization forms
+
+### Fix
+
+**File:** `app/Console/Commands/CheckMissingBeachImages.php` (lines 90-153)
+
+Added Unicode normalization handling to try both NFC and NFD forms:
+
+```php
+$fileExists = false;
+
+// Try the path as-is first
+if ($disk->exists($pathToCheck)) {
+    $fileExists = true;
+} else {
+    // Try NFC normalization (composed form: č as single character)
+    $pathNFC = \Normalizer::normalize($pathToCheck, \Normalizer::NFC);
+    if ($pathNFC !== $pathToCheck && $disk->exists($pathNFC)) {
+        $fileExists = true;
+    }
+
+    // Try NFD normalization (decomposed form: c + combining caron)
+    if (!$fileExists) {
+        $pathNFD = \Normalizer::normalize($pathToCheck, \Normalizer::NFD);
+        if ($pathNFD !== $pathToCheck && $disk->exists($pathNFD)) {
+            $fileExists = true;
+        }
+    }
+}
+```
+
+### Testing
+
+**Before Fix:**
+```bash
+./vendor/bin/sail artisan beaches:check-missing-images --folder-name="hr-6-o-korčula"
+# Result: Found: 0, Missing: 11 ❌
+```
+
+**After Fix:**
+```bash
+./vendor/bin/sail artisan beaches:check-missing-images --folder-name="hr-6-o-korčula"
+# Result: Found: 11, Missing: 0 ✅
+```
+
+### Impact
+
+- ✅ Correctly detects images with special characters (Croatian: č, š, ž, đ, ć)
+- ✅ Eliminates false positives for missing images
+- ✅ Works with all Unicode normalization forms
+- ✅ No changes needed to existing file paths or database
+
+### Affected Beaches
+
+This fix affects all beaches with special characters in folder names, particularly:
+- Croatian beaches with: č, š, ž, đ, ć
+- Slovenian beaches with: č, š, ž
+- Other languages with diacritical marks
+
+---
+
 ## 2025-12-19 - Spatial Bounding Box API Media Structure Fix
 
 ### Overview

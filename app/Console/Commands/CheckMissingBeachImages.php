@@ -24,7 +24,7 @@ class CheckMissingBeachImages extends Command
      *
      * @var string
      */
-    protected $description = 'Check for missing beach images in DigitalOcean Spaces and generate a report';
+    protected $description = 'Check for missing beach images in DigitalOcean Spaces and generate a report. Handles special characters (č, š, ž) with Unicode normalization.';
 
     /**
      * Execute the console command.
@@ -102,7 +102,31 @@ class CheckMissingBeachImages extends Command
                 $pathToCheck = 'public/' . ltrim($media->file_path, '/');
 
                 try {
+                    $fileExists = false;
+
+                    // Try the path as-is first
                     if ($disk->exists($pathToCheck)) {
+                        $fileExists = true;
+                    } else {
+                        // Special characters (č, š, ž, etc.) can be stored in different Unicode normalization forms
+                        // Try both NFC (composed) and NFD (decomposed) forms
+
+                        // Try NFC normalization (composed form: č as single character)
+                        $pathNFC = \Normalizer::normalize($pathToCheck, \Normalizer::NFC);
+                        if ($pathNFC !== $pathToCheck && $disk->exists($pathNFC)) {
+                            $fileExists = true;
+                        }
+
+                        // Try NFD normalization (decomposed form: c + combining caron)
+                        if (!$fileExists) {
+                            $pathNFD = \Normalizer::normalize($pathToCheck, \Normalizer::NFD);
+                            if ($pathNFD !== $pathToCheck && $disk->exists($pathNFD)) {
+                                $fileExists = true;
+                            }
+                        }
+                    }
+
+                    if ($fileExists) {
                         $foundImages++;
                         $totalFound++;
                     } else {
