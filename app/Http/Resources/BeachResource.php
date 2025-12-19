@@ -68,23 +68,33 @@ class BeachResource extends JsonResource
         // Group media by collection
         $mediaByCollection = $this->media->groupBy('mediaCollection.code');
 
-        // Format gallery images - only essential fields
-        $gallery = $mediaByCollection->get('beach_gallery', collect())->map(function ($media) {
-            return [
-                'url' => $media->url,
-                'is_primary' => $media->is_primary,
-                'order' => $media->order,
-            ];
-        })->values()->toArray();
+        // Format gallery images - only essential fields, sorted by is_primary DESC, then order ASC
+        $gallery = $mediaByCollection->get('beach_gallery', collect())
+            ->sortBy([
+                fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
+                fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
+            ])
+            ->map(function ($media) {
+                return [
+                    'url' => $media->url,
+                    'is_primary' => $media->is_primary,
+                    'order' => $media->order,
+                ];
+            })->values()->toArray();
 
-        // Format videos - only essential fields
-        $videos = $mediaByCollection->get('beach_videos', collect())->map(function ($media) {
-            return [
-                'url' => $media->url,
-                'is_primary' => $media->is_primary,
-                'order' => $media->order,
-            ];
-        })->values()->toArray();
+        // Format videos - only essential fields, sorted by is_primary DESC, then order ASC
+        $videos = $mediaByCollection->get('beach_videos', collect())
+            ->sortBy([
+                fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
+                fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
+            ])
+            ->map(function ($media) {
+                return [
+                    'url' => $media->url,
+                    'is_primary' => $media->is_primary,
+                    'order' => $media->order,
+                ];
+            })->values()->toArray();
 
         // Format 360 spheres - only tour_url needed
         $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());

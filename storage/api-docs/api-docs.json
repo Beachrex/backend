@@ -5994,7 +5994,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Nearest beaches found"
+                        "description": "Nearest beaches found, ordered by distance from reference point",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BeachNearestResponseSchema"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -9970,6 +9977,54 @@
                                 "description": "Maximum number of beaches requested (default: 20, max: 100)",
                                 "type": "integer",
                                 "example": 20
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "BeachNearestResponseSchema": {
+                "title": "Beach Nearest Response Schema",
+                "description": "Response schema for nearest beaches endpoint",
+                "properties": {
+                    "data": {
+                        "description": "Array of beaches ordered by distance from reference point",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BeachSchema"
+                        }
+                    },
+                    "meta": {
+                        "description": "Metadata about the response",
+                        "properties": {
+                            "reference_point": {
+                                "description": "The reference point used for distance calculation",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Reference point latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 46.0569
+                                    },
+                                    "longitude": {
+                                        "description": "Reference point longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 14.5058
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "limit": {
+                                "description": "Maximum number of beaches requested",
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "count": {
+                                "description": "Number of beaches returned",
+                                "type": "integer",
+                                "example": 10
                             }
                         },
                         "type": "object"

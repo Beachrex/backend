@@ -219,6 +219,38 @@ class CheckMissingBeachImages extends Command
             $report .= "{$beach['folder_name']}\n";
         }
 
+        // Add missing image file names list
+        $report .= "\n\nMISSING IMAGE FILE NAMES (for easy reference):\n";
+        $report .= str_repeat("-", 80) . "\n";
+        $allMissingFileNames = [];
+        foreach ($beachesWithMissing as $beach) {
+            foreach ($beach['missing_images'] as $missing) {
+                $allMissingFileNames[] = $missing['file_name'];
+            }
+        }
+        // Remove duplicates and sort
+        $allMissingFileNames = array_unique($allMissingFileNames);
+        sort($allMissingFileNames);
+        foreach ($allMissingFileNames as $fileName) {
+            $report .= "{$fileName}\n";
+        }
+
+        // Add missing image full paths list
+        $report .= "\n\nMISSING IMAGE FULL PATHS (for easy reference):\n";
+        $report .= str_repeat("-", 80) . "\n";
+        $allMissingPaths = [];
+        foreach ($beachesWithMissing as $beach) {
+            foreach ($beach['missing_images'] as $missing) {
+                $allMissingPaths[] = $missing['file_path'];
+            }
+        }
+        // Remove duplicates and sort
+        $allMissingPaths = array_unique($allMissingPaths);
+        sort($allMissingPaths);
+        foreach ($allMissingPaths as $path) {
+            $report .= "{$path}\n";
+        }
+
         return $report;
     }
 
@@ -232,7 +264,7 @@ class CheckMissingBeachImages extends Command
         $this->info("   Total beaches checked: {$totalBeaches}");
         $this->info("   Total images checked: {$totalImages}");
         $this->info("   Images found: {$totalFound}");
-        
+
         if ($totalMissing > 0) {
             $this->error("   Images missing: {$totalMissing}");
             $this->error("   Beaches with missing images: " . count($beachesWithMissing));

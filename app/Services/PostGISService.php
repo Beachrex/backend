@@ -506,7 +506,7 @@ class PostGISService
             INNER JOIN media_collections mc ON m.media_collection_id = mc.id
             INNER JOIN beach b ON m.mediable_id = b.id
             WHERE m.mediable_id IN (" . implode(',', $beachIds) . ")
-              AND m.mediable_type = 'App\\\\Models\\\\Beach'
+              AND m.mediable_type = 'App\\Models\\Beach'
               AND mc.code IN ('beach_gallery', 'beach_videos', 'beach_360_sphere')
               AND m.status_id = 1
             ORDER BY m.is_primary DESC, m.order, m.created_at
@@ -525,23 +525,33 @@ class PostGISService
             // Group by collection
             $mediaByCollection = $beachMedia->groupBy('collection_code');
 
-            // Format gallery - only essential fields
-            $gallery = $mediaByCollection->get('beach_gallery', collect())->map(function ($media) {
-                return [
-                    'url' => $media->url,
-                    'is_primary' => (bool) $media->is_primary,
-                    'order' => $media->order,
-                ];
-            })->values()->toArray();
+            // Format gallery - only essential fields, sorted by is_primary DESC, then order ASC
+            $gallery = $mediaByCollection->get('beach_gallery', collect())
+                ->sortBy([
+                    fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
+                    fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
+                ])
+                ->map(function ($media) {
+                    return [
+                        'url' => $media->url,
+                        'is_primary' => (bool) $media->is_primary,
+                        'order' => $media->order,
+                    ];
+                })->values()->toArray();
 
-            // Format videos - only essential fields
-            $videos = $mediaByCollection->get('beach_videos', collect())->map(function ($media) {
-                return [
-                    'url' => $media->url,
-                    'is_primary' => (bool) $media->is_primary,
-                    'order' => $media->order,
-                ];
-            })->values()->toArray();
+            // Format videos - only essential fields, sorted by is_primary DESC, then order ASC
+            $videos = $mediaByCollection->get('beach_videos', collect())
+                ->sortBy([
+                    fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
+                    fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
+                ])
+                ->map(function ($media) {
+                    return [
+                        'url' => $media->url,
+                        'is_primary' => (bool) $media->is_primary,
+                        'order' => $media->order,
+                    ];
+                })->values()->toArray();
 
             // Format 360 spheres - only tour_url needed
             $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());

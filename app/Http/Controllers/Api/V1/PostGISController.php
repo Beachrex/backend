@@ -316,7 +316,11 @@ class PostGISController extends Controller
      *         @OA\Schema(type="integer", minimum=1, maximum=50, example=10)
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
-     *     @OA\Response(response=200, description="Nearest beaches found")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Nearest beaches found, ordered by distance from reference point",
+     *         @OA\JsonContent(ref="#/components/schemas/BeachNearestResponseSchema")
+     *     )
      * )
      */
     public function nearestBeaches(Request $request): JsonResponse

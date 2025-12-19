@@ -1,5 +1,192 @@
 # Development Handoff / Change Log
 
+## 2025-12-19 - Spatial Bounding Box API Media Structure Fix
+
+### Overview
+
+Fixed missing media (gallery, videos, spheres_360) in the `/api/v1/spatial/beaches/bounding-box` endpoint. The endpoint was only returning embeds but not the full media structure.
+
+### Issue
+
+The bounding-box API was only returning:
+```json
+"media": {
+  "embeds": {
+    "video_url": "https://youtu.be/DSKrbNJ_y9c",
+    "webcam": null
+  }
+}
+```
+
+Missing: `gallery`, `videos`, `spheres_360` arrays.
+
+### Root Cause
+
+In `PostGISService::formatBeachResults()` method, the SQL query was using incorrect escaping for the `mediable_type` field:
+- **Incorrect:** `'App\\\\Models\\\\Beach'` (double backslashes)
+- **Correct:** `'App\\Models\\Beach'` (single backslashes)
+
+This caused the media query to return no results, so only the embeds (which come from beach table fields) were included.
+
+### Fix
+
+**File:** `app/Services/PostGISService.php`
+
+**1. Fixed mediable_type escaping (line 509):**
+
+Changed:
+```php
+AND m.mediable_type = 'App\\\\Models\\\\Beach'
+```
+
+To:
+```php
+AND m.mediable_type = 'App\\Models\\Beach'
+```
+
+**2. Added proper sorting for gallery and videos:**
+
+Added explicit sorting to ensure primary media appears first, then sorted by order number.
+
+**Files Updated:**
+- `app/Services/PostGISService.php` (lines 528-554) - Spatial endpoints
+- `app/Http/Resources/BeachResource.php` (lines 71-97) - Regular beach list endpoints
+
+```php
+// Gallery sorted by is_primary DESC, then order ASC
+$gallery = $mediaByCollection->get('beach_gallery', collect())
+    ->sortBy([
+        fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first
+        fn($a, $b) => $a->order <=> $b->order,             // Then by order 1,2,3...
+    ])
+    ->map(function ($media) {
+        return [
+            'url' => $media->url,
+            'is_primary' => (bool) $media->is_primary,
+            'order' => $media->order,
+        ];
+    })->values()->toArray();
+```
+
+Same sorting applied to videos collection in both files.
+
+### Result
+
+The bounding-box API now returns the complete media structure with proper ordering:
+
+**Gallery/Videos Ordering:**
+1. Primary image/video first (is_primary = true)
+2. Then remaining items sorted by order number (1, 2, 3, 4...)
+
+```json
+"media": {
+  "gallery": [
+    {
+      "url": "img/beaches/hr-79-k-istra/hr-79-k-istra-sl3.jpg",
+      "is_primary": true,
+      "order": 3
+    },
+    {
+      "url": "img/beaches/hr-79-k-istra/hr-79-k-istra-sl1.jpg",
+      "is_primary": false,
+      "order": 1
+    },
+    {
+      "url": "img/beaches/hr-79-k-istra/hr-79-k-istra-sl2.jpg",
+      "is_primary": false,
+      "order": 2
+    },
+    {
+      "url": "img/beaches/hr-79-k-istra/hr-79-k-istra-sl4.jpg",
+      "is_primary": false,
+      "order": 4
+    }
+  ],
+  "spheres_360": [
+    {
+      "tour_url": "img/beaches/hr-79-k-istra/vtour/tour.html"
+    }
+  ],
+  "embeds": {
+    "video_url": "https://youtu.be/p0kQ_jrnx4Y",
+    "webcam": null
+  }
+}
+```
+
+**Note:** The primary image (sl3.jpg with order=3) appears first in the array, followed by the rest sorted by order (sl1, sl2, sl4).
+
+### Affected Endpoints
+
+**Spatial Endpoints** (use `PostGISService::formatBeachResults()`):
+- ✅ `/api/v1/spatial/beaches/bounding-box` - Get beaches in bounding box
+- ✅ `/api/v1/spatial/beaches/within-radius` - Get beaches within radius
+- ✅ `/api/v1/spatial/beaches/nearest` - Get nearest beaches
+
+**Regular Beach List Endpoints** (use `BeachResource`):
+- ✅ `/api/v1/beaches` - Get beaches with filters
+- ✅ `/api/v1/beaches/most-visited` - Get most visited beaches
+
+All endpoints now return media with consistent ordering: primary first, then by order number.
+
+### Testing
+
+```bash
+# Test bounding-box with media
+curl "http://localhost/api/v1/spatial/beaches/bounding-box?min_lat=45.0&min_lon=13.5&max_lat=45.5&max_lon=14.0" \
+  -H "Accept-Language: en" | jq '.data[0].media'
+
+# Test within-radius with media
+curl "http://localhost/api/v1/spatial/beaches/within-radius?latitude=45.5&longitude=13.8&radius_km=50" \
+  -H "Accept-Language: en" | jq '.data.beaches[0].media'
+
+# Test nearest beaches with media
+curl "http://localhost/api/v1/spatial/beaches/nearest?latitude=45.5&longitude=13.8&limit=5" \
+  -H "Accept-Language: en" | jq '.data[0].media'
+```
+
+### Cache Clearing
+
+After deploying this fix, clear the cache:
+```bash
+# Development
+./vendor/bin/sail artisan cache:clear
+
+# Production
+php artisan cache:clear
+```
+
+### OpenAPI/Swagger Documentation Updates
+
+Updated Swagger annotations to properly document the media structure in spatial endpoints:
+
+**New Schema Created:**
+- `BeachNearestResponseSchema.php` - Response schema for nearest beaches endpoint
+
+**Updated Endpoints:**
+- `/api/v1/spatial/beaches/nearest` - Now references `BeachNearestResponseSchema`
+- `/api/v1/spatial/beaches/within-radius` - Already references `BeachRadiusResponseSchema`
+- `/api/v1/spatial/beaches/bounding-box` - Already references `BeachBoundingBoxResponseSchema`
+
+All three schemas reference `BeachSchema` which includes the complete media structure:
+- `gallery` - Array of beach images with url, is_primary, order
+- `videos` - Array of beach videos with url, is_primary, order
+- `spheres_360` - Array of 360° tours with tour_url
+- `embeds` - Object with video_url and webcam
+
+**Regenerate OpenAPI Docs:**
+```bash
+# Development
+./vendor/bin/sail artisan l5-swagger:generate
+
+# Production
+php artisan l5-swagger:generate
+```
+
+The generated `storage/api-docs/api-docs.json` file is used by the frontend to generate TypeScript types and API client code.
+
+---
+
 ## 2025-12-10 - Beach List APIs Media Structure Update
 
 ### Overview
@@ -185,6 +372,150 @@ curl "http://localhost/api/v1/beaches/most-visited?limit=1" | jq '.data[0].media
 # Test spatial query
 curl "http://localhost/api/v1/beaches/within-radius?latitude=43.5&longitude=16.4&radius_km=100&limit=1" | jq '.data.beaches[0].media'
 ```
+
+---
+
+## 2025-11-14 - Beach Images Verification Script
+
+### Overview
+
+Created an Artisan command to verify that all beach images stored in the database actually exist in DigitalOcean Spaces storage. This helps identify missing images that need to be re-uploaded.
+
+### Command
+
+**Command:** `php artisan beaches:check-missing-images`
+
+**Location:** `app/Console/Commands/CheckMissingBeachImages.php`
+
+### Features
+
+- ✅ **Comprehensive Check** - Verifies all active beach images against DigitalOcean Spaces
+- ✅ **Detailed Report** - Generates a text file with complete missing images information
+- ✅ **Flexible Filtering** - Can check all beaches or filter by specific beach ID or folder name
+- ✅ **Progress Tracking** - Shows progress bar during execution
+- ✅ **Summary Statistics** - Displays total beaches, images checked, found, and missing
+
+### Command Options
+
+```bash
+# Check all beaches (generates missing_images_report.txt)
+./vendor/bin/sail artisan beaches:check-missing-images
+
+# Check specific beach by ID
+./vendor/bin/sail artisan beaches:check-missing-images --beach-id=123
+
+# Check specific folder
+./vendor/bin/sail artisan beaches:check-missing-images --folder-name=hr-13-k-istra
+
+# Custom output file
+./vendor/bin/sail artisan beaches:check-missing-images --output=my_report.txt
+
+# Production
+php artisan beaches:check-missing-images
+```
+
+### Report Contents
+
+The generated report includes:
+
+1. **Summary Section:**
+   - Total beaches checked
+   - Total images checked
+   - Images found vs missing
+   - Number of beaches with missing images
+
+2. **Detailed Missing Images:**
+   - Beach ID and folder name
+   - Mobile upload flag
+   - Total images vs found images
+   - List of missing files with:
+     - Media ID
+     - File name
+     - Database file path
+     - Expected path in Spaces
+     - Primary image flag
+     - Error messages (if any)
+
+3. **Quick Reference:**
+   - List of all folder names with missing images
+
+### Example Output
+
+```
+MISSING BEACH IMAGES REPORT
+Generated: 2025-11-14 10:30:00
+================================================================================
+
+SUMMARY:
+  Total beaches checked: 1167
+  Total images checked: 4523
+  Images found: 4450
+  Images missing: 73
+  Beaches with missing images: 15
+================================================================================
+
+BEACHES WITH MISSING IMAGES:
+--------------------------------------------------------------------------------
+
+Beach ID: 123
+Folder Name: hr-13-k-istra
+Mobile Upload: No
+Total Images: 8
+Found: 6
+Missing: 2
+
+Missing Files:
+  - Media ID: 456
+    File: hr-13-k-istra-sl3.jpg
+    Path: img/beaches/hr-13-k-istra/hr-13-k-istra-sl3.jpg
+    Expected: public/img/beaches/hr-13-k-istra/hr-13-k-istra-sl3.jpg
+    Primary: No
+
+--------------------------------------------------------------------------------
+```
+
+### How It Works
+
+1. **Query Active Images:**
+   - Fetches all beaches with `folder_name` set
+   - Only checks media with `status_id = 1` (active)
+   - Only checks media type `image` (not videos or 360° spheres)
+
+2. **Path Resolution:**
+   - Database stores paths without `public/` prefix (e.g., `img/beaches/...`)
+   - DigitalOcean Spaces stores with `public/` prefix
+   - Script automatically prepends `public/` when checking existence
+
+3. **Storage Check:**
+   - Uses Laravel's `Storage::disk('spaces')` facade
+   - Calls `exists()` method for each image path
+   - Catches exceptions for connection errors
+
+4. **Report Generation:**
+   - Collects all missing images per beach
+   - Generates formatted text report
+   - Saves to file and displays console summary
+
+### Use Cases
+
+1. **After Migration** - Verify all images were successfully uploaded to Spaces
+2. **Regular Audits** - Periodic checks to ensure data integrity
+3. **Troubleshooting** - Identify specific missing images when users report issues
+4. **Bulk Re-upload** - Generate list of folders that need images re-uploaded
+
+### Notes
+
+- **Performance:** Checking thousands of images can take several minutes
+- **Network:** Requires active connection to DigitalOcean Spaces
+- **Credentials:** Ensure `.env` has correct `DO_SPACES_*` configuration
+- **Path Format:** Database paths should NOT include `public/` prefix (script adds it)
+
+### Related Files
+
+- Command: `app/Console/Commands/CheckMissingBeachImages.php`
+- Model: `app/Models/Beach.php`
+- Model: `app/Models/Media.php`
+- Config: `config/filesystems.php` (Spaces disk configuration)
 
 ---
 
