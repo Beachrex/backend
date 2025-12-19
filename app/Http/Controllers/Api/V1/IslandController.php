@@ -94,7 +94,12 @@ class IslandController extends Controller
             $cacheKey = "islands:index:{$locale}:" . (count($filterParts) > 0 ? implode(':', $filterParts) : "all");
 
             $islands = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter, $regionFilter) {
-                $query = Island::with('translations')
+                $query = Island::with([
+                        'country.continent.translations',
+                        'country.translations',
+                        'region.translations',
+                        'translations'
+                    ])
                     ->withBeaches()  // Only islands with active beaches (status_id = 1)
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
@@ -248,6 +253,9 @@ class IslandController extends Controller
 
             $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale, $request, $countryCode, $regionCode) {
                 $query = Island::with([
+                        'country.continent.translations',
+                        'country.translations',
+                        'region.translations',
                         'translations',
                         'badges.translations',
                         'badges.status',

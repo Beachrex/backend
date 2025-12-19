@@ -82,6 +82,24 @@ namespace App\Swagger\Schemas;
  *         example=0
  *     ),
  *     @OA\Property(
+ *         property="location",
+ *         type="object",
+ *         description="Location slugs for URL building (included when relationships are loaded)",
+ *         @OA\Property(property="continent_slug", type="string", example="europe"),
+ *         @OA\Property(property="country_slug", type="string", example="croatia"),
+ *         @OA\Property(property="region_slug", type="string", nullable=true, example="kvarner")
+ *     ),
+ *     @OA\Property(
+ *         property="country",
+ *         ref="#/components/schemas/Country",
+ *         description="Country information (when included)"
+ *     ),
+ *     @OA\Property(
+ *         property="region",
+ *         ref="#/components/schemas/Region",
+ *         description="Region information (when included)"
+ *     ),
+ *     @OA\Property(
  *         property="badges",
  *         type="array",
  *         description="Badges associated with this island (when included)",

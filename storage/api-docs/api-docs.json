@@ -10609,11 +10609,38 @@
                         "type": "integer",
                         "example": 0
                     },
+                    "location": {
+                        "description": "Location slugs for URL building (included when relationships are loaded)",
+                        "properties": {
+                            "continent_slug": {
+                                "type": "string",
+                                "example": "europe"
+                            },
+                            "country_slug": {
+                                "type": "string",
+                                "example": "croatia"
+                            },
+                            "region_slug": {
+                                "type": "string",
+                                "example": "dalmatia-split",
+                                "nullable": true
+                            },
+                            "island_slug": {
+                                "type": "string",
+                                "example": "hvar",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
                     "country": {
                         "$ref": "#/components/schemas/Country"
                     },
                     "region": {
                         "$ref": "#/components/schemas/Region"
+                    },
+                    "island": {
+                        "$ref": "#/components/schemas/Island"
                     },
                     "badges": {
                         "description": "Badges associated with this city (when included)",
@@ -11007,6 +11034,31 @@
                         "description": "Number of accommodations on this island (hardcoded to 0 until booking integration)",
                         "type": "integer",
                         "example": 0
+                    },
+                    "location": {
+                        "description": "Location slugs for URL building (included when relationships are loaded)",
+                        "properties": {
+                            "continent_slug": {
+                                "type": "string",
+                                "example": "europe"
+                            },
+                            "country_slug": {
+                                "type": "string",
+                                "example": "croatia"
+                            },
+                            "region_slug": {
+                                "type": "string",
+                                "example": "kvarner",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "country": {
+                        "$ref": "#/components/schemas/Country"
+                    },
+                    "region": {
+                        "$ref": "#/components/schemas/Region"
                     },
                     "badges": {
                         "description": "Badges associated with this island (when included)",

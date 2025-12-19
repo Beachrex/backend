@@ -103,7 +103,13 @@ class CityController extends Controller
             $cacheKey = "cities:index:{$locale}:" . (count($filterParts) > 0 ? implode(':', $filterParts) : "all");
 
             $cities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter, $regionFilter, $islandFilter) {
-                $query = City::with(['country.translations', 'translations'])
+                $query = City::with([
+                        'country.continent.translations',
+                        'country.translations',
+                        'region.translations',
+                        'island.translations',
+                        'translations'
+                    ])
                     ->withBeaches()  // Only cities with active beaches (status_id = 1)
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
@@ -272,8 +278,10 @@ class CityController extends Controller
 
             $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request, $slug, $locale, $countryCode, $regionCode, $islandCode) {
                 $query = City::with([
+                        'country.continent.translations',
                         'country.translations',
                         'region.translations',
+                        'island.translations',
                         'translations',
                         'badges.translations',
                         'badges.status',
