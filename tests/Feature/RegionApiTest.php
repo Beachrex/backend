@@ -268,6 +268,50 @@ class RegionApiTest extends TestCase
             ]);
     }
 
+    public function test_region_show_includes_country_with_continent()
+    {
+        $response = $this->getJson('/api/v1/regions/kvarner?country_code=HR', [
+            'Accept-Language' => 'en',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'code',
+                    'name',
+                    'slug',
+                    'country_code',
+                    'country' => [
+                        'code',
+                        'name',
+                        'slug',
+                        'continent_code',
+                        'continent' => [
+                            'code',
+                            'name',
+                            'slug',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertJson([
+                'data' => [
+                    'country' => [
+                        'code' => 'HR',
+                        'name' => 'Croatia',
+                        'slug' => 'croatia',
+                        'continent_code' => 'EU',
+                        'continent' => [
+                            'code' => 'EU',
+                            'name' => 'Europe',
+                            'slug' => 'europe',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
 
 }
 

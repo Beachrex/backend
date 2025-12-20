@@ -79,7 +79,7 @@ class RegionController extends Controller
             $cacheKey = "regions:index:{$locale}:" . ($countryFilter ? "country:{$countryFilter}" : "all");
 
             $regions = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter) {
-                $query = Region::with(['country.translations', 'translations'])
+                $query = Region::with(['country.continent.translations', 'country.translations', 'translations'])
                     ->withBeaches()
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
@@ -212,6 +212,7 @@ class RegionController extends Controller
 
             $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale, $countryCode, $request) {
                 $query = Region::with([
+                        'country.continent.translations',
                         'country.translations',
                         'translations',
                         'badges.translations',

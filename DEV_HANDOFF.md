@@ -51,6 +51,185 @@ How to test the changes
 
 ---
 
+## 2025-12-20 - Fixed Regions API to Include Full Continent Relationship
+
+### Overview
+
+Fixed the regions API endpoints to include the full continent relationship in the country object, matching the pattern used in other geographic entity endpoints (cities, countries, etc.).
+
+### Issue
+
+The `/api/v1/regions` and `/api/v1/regions/{slug}` endpoints were returning the country object without the nested continent relationship. This caused frontend issues when trying to access `region.country.continent` data for building URLs or displaying continent information.
+
+**Before (Missing Continent):**
+```json
+{
+  "data": {
+    "id": 1,
+    "code": "KV",
+    "name": "Kvarner",
+    "slug": "kvarner",
+    "country_code": "HR",
+    "country": {
+      "code": "HR",
+      "name": "Croatia",
+      "slug": "croatia",
+      "continent_code": "EU"
+      // ❌ Missing continent object
+    }
+  }
+}
+```
+
+**After (With Continent):**
+```json
+{
+  "data": {
+    "id": 1,
+    "code": "KV",
+    "name": "Kvarner",
+    "slug": "kvarner",
+    "country_code": "HR",
+    "country": {
+      "code": "HR",
+      "name": "Croatia",
+      "slug": "croatia",
+      "continent_code": "EU",
+      "continent": {
+        "code": "EU",
+        "name": "Europe",
+        "slug": "europe"
+      }
+    }
+  }
+}
+```
+
+### Changes Made
+
+**File:** `app/Http/Controllers/Api/V1/RegionController.php`
+
+**1. Updated `index()` method (line 82):**
+```php
+// Before
+$query = Region::with(['country.translations', 'translations'])
+
+// After
+$query = Region::with(['country.continent.translations', 'country.translations', 'translations'])
+```
+
+**2. Updated `show()` method (line 215):**
+```php
+// Before
+$query = Region::with([
+    'country.translations',
+    'translations',
+    // ...
+])
+
+// After
+$query = Region::with([
+    'country.continent.translations',
+    'country.translations',
+    'translations',
+    // ...
+])
+```
+
+### Affected Endpoints
+
+- ✅ `GET /api/v1/regions` - List all regions
+- ✅ `GET /api/v1/regions/{slug}` - Get single region by slug
+
+Both endpoints now include the full continent relationship when the country object is loaded.
+
+### Testing
+
+**New Test Added:** `test_region_show_includes_country_with_continent()`
+
+This test verifies that:
+- The region show endpoint includes the country object
+- The country object includes the continent object
+- All necessary fields are present (code, name, slug)
+
+**Test Results:**
+```bash
+./vendor/bin/sail artisan test --filter=RegionApiTest
+# ✅ 9 passed (58 assertions)
+```
+
+**Manual Testing:**
+```bash
+# Test regions list endpoint
+curl -H "Accept-Language: en" "http://localhost:8000/api/v1/regions" | jq '.data[0].country.continent'
+
+# Expected output:
+{
+  "code": "EU",
+  "name": "Europe",
+  "slug": "europe"
+}
+
+# Test single region endpoint
+curl -H "Accept-Language: en" "http://localhost:8000/api/v1/regions/kvarner?country_code=HR" | jq '.data.country.continent'
+
+# Expected output:
+{
+  "code": "EU",
+  "name": "Europe",
+  "slug": "europe"
+}
+```
+
+### Frontend Impact
+
+Frontend code can now safely access the continent relationship:
+
+```typescript
+// ✅ This now works without errors
+const continentSlug = region.country.continent.slug;
+const continentName = region.country.continent.name;
+
+// Build URLs with continent slug
+const url = `/${region.country.continent.slug}/${region.country.slug}/${region.slug}`;
+// Example: /europe/croatia/kvarner
+```
+
+### Cache Clearing
+
+After deploying this fix, clear the cache to ensure fresh data:
+```bash
+# Development
+./vendor/bin/sail artisan cache:clear
+
+# Production
+php artisan cache:clear
+```
+
+### Consistency
+
+This change ensures consistency across all geographic entity endpoints:
+- ✅ Countries endpoint: includes `continent` relationship
+- ✅ Cities endpoint: includes `country.continent` relationship
+- ✅ Regions endpoint: now includes `country.continent` relationship (FIXED)
+- ✅ Islands endpoint: includes `country.continent` relationship
+
+### Swagger/OpenAPI Documentation
+
+The Swagger schemas were already correctly configured with the nested relationships:
+- `RegionSchema` → references `CountrySchema`
+- `CountrySchema` → references `ContinentSchema`
+- `ContinentSchema` → includes all properties (code, name, slug)
+
+**Regenerated OpenAPI docs:**
+```bash
+./vendor/bin/sail artisan l5-swagger:generate
+```
+
+The generated `storage/api-docs/api-docs.json` now properly documents the full nested structure for frontend TypeScript type generation.
+
+---
+
 ## 2025-12-19 - Added city_name to Beach List APIs
 
 ### Overview
