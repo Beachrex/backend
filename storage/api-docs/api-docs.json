@@ -1082,21 +1082,28 @@
                 }
             }
         },
-        "/api/v1/beaches/{id}": {
+        "/api/v1/beaches/{identifier}": {
             "get": {
                 "tags": [
                     "Beaches"
                 ],
-                "summary": "Get a single beach by ID",
-                "operationId": "getBeachById",
+                "summary": "Get a single beach by ID or slug",
+                "operationId": "getBeachByIdentifier",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "identifier",
                         "in": "path",
-                        "description": "Beach ID",
+                        "description": "Beach ID (integer) or slug (string)",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "oneOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
                         }
                     },
                     {

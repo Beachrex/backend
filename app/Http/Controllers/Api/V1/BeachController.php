@@ -344,16 +344,21 @@ class BeachController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/beaches/{id}",
-     *     operationId="getBeachById",
-     *     summary="Get a single beach by ID",
+     *     path="/api/v1/beaches/{identifier}",
+     *     operationId="getBeachByIdentifier",
+     *     summary="Get a single beach by ID or slug",
      *     tags={"Beaches"},
      *     @OA\Parameter(
-     *         name="id",
+     *         name="identifier",
      *         in="path",
      *         required=true,
-     *         description="Beach ID",
-     *         @OA\Schema(type="integer")
+     *         description="Beach ID (integer) or slug (string)",
+     *         @OA\Schema(
+     *             oneOf={
+     *                 @OA\Schema(type="integer"),
+     *                 @OA\Schema(type="string")
+     *             }
+     *         )
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Response(
@@ -373,10 +378,10 @@ class BeachController extends Controller
      *     )
      * )
      */
-    public function show($id)
+    public function show($identifier)
     {
-        // Only load relationships that are actually used in BeachResource
-        $beach = Beach::where('status_id', 1)
+        // Build query with all necessary relationships
+        $query = Beach::where('status_id', 1)
             ->with([
                 'translations',
                 'continent.translations',
@@ -391,7 +396,17 @@ class BeachController extends Controller
                           ->orderBy('order')
                           ->orderBy('created_at');
                 }
-            ])->findOrFail($id);
+            ]);
+
+        // Check if identifier is numeric (ID) or string (slug)
+        if (is_numeric($identifier)) {
+            $beach = $query->findOrFail($identifier);
+        } else {
+            // Find by slug using translations table
+            $beach = $query->whereHas('translations', function ($q) use ($identifier) {
+                $q->where('slug', $identifier);
+            })->firstOrFail();
+        }
 
         return new BeachResource($beach);
     }
