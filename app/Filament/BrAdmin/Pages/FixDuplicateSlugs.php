@@ -39,10 +39,10 @@ class FixDuplicateSlugs extends Page
 
         foreach ($locales as $locale) {
             $duplicatesForLocale = DB::table('beach_translation')
-                ->select('slug', DB::raw('COUNT(*) as count'))
+                ->select('slug', DB::raw('COUNT(*) as slug_count'))
                 ->where('locale', $locale)
                 ->groupBy('slug')
-                ->having('count', '>', 1)
+                ->havingRaw('COUNT(*) > 1')
                 ->get();
 
             if ($duplicatesForLocale->isNotEmpty()) {
@@ -60,7 +60,7 @@ class FixDuplicateSlugs extends Page
         $this->output = '';
 
         try {
-            Artisan::call('beaches:fix-duplicate-slugs', ['--dry-run' => true]);
+            Artisan::call('beach:fix-duplicate-slugs', ['--dry-run' => true]);
             $this->output = Artisan::output();
 
             Notification::make()
@@ -85,7 +85,7 @@ class FixDuplicateSlugs extends Page
         $this->output = '';
 
         try {
-            Artisan::call('beaches:fix-duplicate-slugs');
+            Artisan::call('beach:fix-duplicate-slugs');
             $this->output = Artisan::output();
 
             // Clear cache after fixing
