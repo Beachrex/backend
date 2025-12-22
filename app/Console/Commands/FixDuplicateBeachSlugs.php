@@ -77,7 +77,7 @@ class FixDuplicateBeachSlugs extends Command
         $this->line("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         // Find duplicate slugs
-        $duplicates = DB::table('beach_translations')
+        $duplicates = DB::table('beach_translation')
             ->select('slug', DB::raw('COUNT(*) as count'))
             ->where('locale', $locale)
             ->groupBy('slug')

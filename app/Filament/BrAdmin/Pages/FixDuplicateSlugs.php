@@ -33,12 +33,12 @@ class FixDuplicateSlugs extends Page
     {
         // Check for duplicates across all locales
         $locales = ['en', 'si', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
-        
+
         $this->duplicates = [];
         $totalCount = 0;
 
         foreach ($locales as $locale) {
-            $duplicatesForLocale = DB::table('beach_translations')
+            $duplicatesForLocale = DB::table('beach_translation')
                 ->select('slug', DB::raw('COUNT(*) as count'))
                 ->where('locale', $locale)
                 ->groupBy('slug')
