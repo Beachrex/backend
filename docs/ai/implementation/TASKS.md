@@ -77,34 +77,66 @@
 
 ---
 
-### [ ] 1. AI Core Implementation (Foundation)
+### [/] 1. AI Core Implementation (Foundation)
 **Priority**: P0 (CRITICAL)
-**Status**: NOT_STARTED
+**Status**: IN_PROGRESS (Step 2/6 COMPLETE)
 **Estimated Effort**: 1 week
 **Revenue Impact**: Enables all AI features
 **Blockers**: None
 
 **Description**: Implement core AI infrastructure (controllers, services, middleware) based on architecture defined in `mvp-integration.md`.
 
-**Subtasks**:
-- [ ] 1.1. Create AI configuration file (`config/ai.php`)
-- [ ] 1.2. Add AI environment variables to `.env.example`
-- [ ] 1.3. Create `AI/ChatController` (POST /api/v1/ai/chat)
-- [ ] 1.4. Create `AI/SessionController` (GET/DELETE /api/v1/ai/session)
-- [ ] 1.5. Create `AI/LLMService` interface
-- [ ] 1.6. Create `AI/Providers/OpenAIProvider` implementation
-- [ ] 1.7. Create `AI/ContextAssemblyService`
-- [ ] 1.8. Create `AI/PromptService`
-- [ ] 1.9. Create `AI/CostTrackingService`
-- [ ] 1.10. Create `AI/RateLimitMiddleware`
-- [ ] 1.11. Create `AI/TokenBudgetMiddleware`
-- [ ] 1.12. Create `AI/CircuitBreakerMiddleware`
-- [ ] 1.13. Add AI routes to `routes/api.php`
-- [ ] 1.14. Create system prompts (`storage/prompts/system/en.txt`, `hr.txt`)
-- [ ] 1.15. Write unit tests (services)
-- [ ] 1.16. Write integration tests (controllers)
+**Implementation Steps** (in order):
+- [x] **Step 1: Database Layer** (COMPLETE 2025-12-22)
+  - Created 3 migrations: ai_sessions, ai_messages, ai_usage
+  - Created 3 models: AiSession, AiMessage, AiUsage
+  - Ran migrations successfully
+  - Verified tables and relationships
+- [x] **Step 2: Plan Enforcement + Rate Limiting** (COMPLETE 2025-12-22)
+  - Created config/ai.php with tier configuration (free, basic, premium, enterprise)
+  - Created 4 middleware: OptionalAuthMiddleware, CircuitBreakerMiddleware, RateLimitMiddleware, TokenBudgetMiddleware
+  - Created PlanEnforcementService for feature gating (402 responses)
+  - Created TestController for testing (temporary, will be replaced in Step 5)
+  - Added AI routes (/api/v1/ai/test) with middleware stack
+  - Tested 402 Payment Required responses (multi-day itineraries, accessibility reports, etc.)
+  - Tested 429 Rate Limit responses (100/hour anonymous, 500/hour authenticated)
+  - Tested rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining)
+  - Updated .env.example with AI configuration variables
+- [ ] **Step 3: LLM Provider Abstraction** (NEXT)
+  - Interface + OpenAI implementation stub
+  - Config via env
+  - Hard token budget enforcement
+- [ ] **Step 4: Context Assembly** (BLOCKED by Step 3)
+  - Fetch beaches/weather/search results
+  - Sanitize and cap context size
+- [ ] **Step 5: AI Endpoint Controller** (BLOCKED by Step 4)
+  - POST /api/v1/ai/chat
+  - Request validation
+  - Response schema
+- [ ] **Step 6: Logging & Observability** (BLOCKED by Step 5)
+  - Structured logs
+  - Store usage metrics
+  - Include request_id / session_id
 
-**Dependencies**: None (architecture is defined)
+**Original Subtasks** (mapped to steps above):
+- [ ] 1.1. Create AI configuration file (`config/ai.php`) - Step 2
+- [ ] 1.2. Add AI environment variables to `.env.example` - Step 2
+- [ ] 1.3. Create `AI/ChatController` (POST /api/v1/ai/chat) - Step 5
+- [ ] 1.4. Create `AI/SessionController` (GET/DELETE /api/v1/ai/session) - Step 5
+- [ ] 1.5. Create `AI/LLMService` interface - Step 3
+- [ ] 1.6. Create `AI/Providers/OpenAIProvider` implementation - Step 3
+- [ ] 1.7. Create `AI/ContextAssemblyService` - Step 4
+- [ ] 1.8. Create `AI/PromptService` - Step 4
+- [ ] 1.9. Create `AI/CostTrackingService` - Step 6
+- [ ] 1.10. Create `AI/RateLimitMiddleware` - Step 2
+- [ ] 1.11. Create `AI/TokenBudgetMiddleware` - Step 2
+- [ ] 1.12. Create `AI/CircuitBreakerMiddleware` - Step 2
+- [ ] 1.13. Add AI routes to `routes/api.php` - Step 5
+- [ ] 1.14. Create system prompts (`storage/prompts/system/en.txt`, `hr.txt`) - Step 4
+- [ ] 1.15. Write unit tests (services) - Step 6
+- [ ] 1.16. Write integration tests (controllers) - Step 6
+
+**Dependencies**: None (architecture is defined, Step 1 complete)
 
 **Acceptance Criteria**:
 - User can send message to `POST /api/v1/ai/chat` and get AI response

@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\AI\TestController;
 
 Route::prefix('api/v1')
     ->middleware('api')
@@ -197,4 +198,18 @@ Route::prefix('api/v1')
             Route::get('/beaches/statistics', [PostGISController::class, 'beachStatistics']);
             Route::get('/distance/calculate', [PostGISController::class, 'calculateDistance']);
         });
+
+        // AI routes (with middleware stack)
+        // Note: OptionalAuthMiddleware allows both anonymous and authenticated access
+        Route::prefix('ai')
+            ->middleware([
+                \App\Http\Middleware\AI\OptionalAuthMiddleware::class,
+                \App\Http\Middleware\AI\CircuitBreakerMiddleware::class,
+                \App\Http\Middleware\AI\RateLimitMiddleware::class,
+                \App\Http\Middleware\AI\TokenBudgetMiddleware::class,
+            ])
+            ->group(function () {
+                // Test endpoint (temporary - will be replaced by ChatController in Step 5)
+                Route::post('/test', [TestController::class, 'chat']);
+            });
     });
