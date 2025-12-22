@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
-**Last Updated**: 2025-12-22  
-**Current Phase**: MVP Implementation  
+**Last Updated**: 2025-12-22
+**Current Phase**: Architecture Complete → Implementation Ready
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -50,12 +50,78 @@
 
 ---
 
-### [ ] 1. Trip Itinerary Generation (PRIMARY REVENUE)
-**Priority**: P0 (CRITICAL)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 2-3 weeks  
-**Revenue Impact**: $1.08M/year  
-**Blockers**: None  
+### [x] 0. AI Architecture & API Contract Definition
+**Priority**: P0 (CRITICAL)
+**Status**: DONE
+**Completed**: 2025-12-22
+**Effort**: 1 day
+
+**Description**: Define minimal AI architecture and API contracts before implementation.
+
+**Deliverables**:
+- [x] Answer blocking questions (Q1-Q4)
+- [x] Create `mvp-integration.md` (minimal AI architecture)
+- [x] Create `api-contracts.md` (AI interaction API)
+- [x] Create `prompt-structure.md` (canonical prompt structure)
+- [x] Update `DECISIONS.md` (4 new architecture decisions)
+- [x] Update `STATE.md` (mark architecture phase complete)
+- [x] Update `TASKS.md` (this file)
+
+**Architecture Decisions**:
+1. AI service in existing Laravel API (not microservice) for MVP
+2. Provider-agnostic LLM abstraction layer (OpenAI initial implementation)
+3. Hybrid session management (anonymous for free, auth for paid)
+4. Synchronous request/response (not async) for MVP
+
+**Impact**: Architecture is defined, API contracts are stable, ready for implementation
+
+---
+
+### [ ] 1. AI Core Implementation (Foundation)
+**Priority**: P0 (CRITICAL)
+**Status**: NOT_STARTED
+**Estimated Effort**: 1 week
+**Revenue Impact**: Enables all AI features
+**Blockers**: None
+
+**Description**: Implement core AI infrastructure (controllers, services, middleware) based on architecture defined in `mvp-integration.md`.
+
+**Subtasks**:
+- [ ] 1.1. Create AI configuration file (`config/ai.php`)
+- [ ] 1.2. Add AI environment variables to `.env.example`
+- [ ] 1.3. Create `AI/ChatController` (POST /api/v1/ai/chat)
+- [ ] 1.4. Create `AI/SessionController` (GET/DELETE /api/v1/ai/session)
+- [ ] 1.5. Create `AI/LLMService` interface
+- [ ] 1.6. Create `AI/Providers/OpenAIProvider` implementation
+- [ ] 1.7. Create `AI/ContextAssemblyService`
+- [ ] 1.8. Create `AI/PromptService`
+- [ ] 1.9. Create `AI/CostTrackingService`
+- [ ] 1.10. Create `AI/RateLimitMiddleware`
+- [ ] 1.11. Create `AI/TokenBudgetMiddleware`
+- [ ] 1.12. Create `AI/CircuitBreakerMiddleware`
+- [ ] 1.13. Add AI routes to `routes/api.php`
+- [ ] 1.14. Create system prompts (`storage/prompts/system/en.txt`, `hr.txt`)
+- [ ] 1.15. Write unit tests (services)
+- [ ] 1.16. Write integration tests (controllers)
+
+**Dependencies**: None (architecture is defined)
+
+**Acceptance Criteria**:
+- User can send message to `POST /api/v1/ai/chat` and get AI response
+- Rate limiting enforced (100/hour for free tier)
+- Token budget enforced (4K tokens for free tier)
+- Circuit breakers active (disable at $500/day)
+- System prompts enforce business rules (multi-day itineraries NEVER free)
+- All tests passing
+
+---
+
+### [ ] 2. Trip Itinerary Generation (PRIMARY REVENUE)
+**Priority**: P0 (CRITICAL)
+**Status**: NOT_STARTED
+**Estimated Effort**: 2-3 weeks
+**Revenue Impact**: $1.08M/year
+**Blockers**: Task #1 (AI Core Implementation)
 
 **Description**: Generate optimized multi-day beach itineraries (3-7-14 days) with route optimization, weather-aware scheduling, and PDF delivery.
 
@@ -86,12 +152,12 @@
 
 ---
 
-### [ ] 2. Payment Integration (Stripe)
-**Priority**: P0 (CRITICAL)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 1 week  
-**Revenue Impact**: Enables all B2C revenue ($1.8M/year)  
-**Blockers**: None  
+### [ ] 3. Payment Integration (Stripe)
+**Priority**: P0 (CRITICAL)
+**Status**: NOT_STARTED
+**Estimated Effort**: 1 week
+**Revenue Impact**: Enables all B2C revenue ($1.8M/year)
+**Blockers**: Task #1 (AI Core Implementation)
 
 **Description**: Integrate Stripe for one-time payments (itineraries, reports, guides).
 
@@ -120,12 +186,12 @@
 
 ---
 
-### [ ] 3. Beach Search Analytics (B2B)
-**Priority**: P0 (CRITICAL)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 1-2 weeks  
-**Revenue Impact**: $100K/year  
-**Blockers**: None  
+### [ ] 4. Beach Search Analytics (B2B)
+**Priority**: P0 (CRITICAL)
+**Status**: NOT_STARTED
+**Estimated Effort**: 1-2 weeks
+**Revenue Impact**: $100K/year
+**Blockers**: Task #1 (AI Core Implementation)
 
 **Description**: Track AI search queries and provide analytics dashboard for B2B customers (DMOs, municipalities).
 
@@ -155,12 +221,12 @@
 
 ---
 
-### [ ] 4. Promoted Beach Listings (B2B)
-**Priority**: P0 (CRITICAL)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 1 week  
-**Revenue Impact**: $150K/year  
-**Blockers**: None  
+### [ ] 5. Promoted Beach Listings (B2B)
+**Priority**: P0 (CRITICAL)
+**Status**: NOT_STARTED
+**Estimated Effort**: 1 week
+**Revenue Impact**: $150K/year
+**Blockers**: Task #1 (AI Core Implementation), Task #4 (Beach Search Analytics)
 
 **Description**: Allow B2B customers to promote specific beaches in AI recommendations.
 
@@ -175,9 +241,9 @@
 - [ ] 4.8. Write unit tests (PromotionController)
 - [ ] 4.9. Write integration tests (AI recommendation algorithm)
 
-**Dependencies**: 
-- B2B tenant system (Task #7)
-- Beach search analytics (Task #3)
+**Dependencies**:
+- B2B tenant system (Task #8)
+- Beach search analytics (Task #4)
 
 **Acceptance Criteria**:
 - B2B customers can select beaches to promote (up to 200)
@@ -190,11 +256,11 @@
 
 ## P1: Important (Needed for MVP, Not Blocking)
 
-### [ ] 5. PDF Generation (Itineraries, Reports)
-**Priority**: P1  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 3-5 days  
-**Blockers**: None  
+### [ ] 6. PDF Generation (Itineraries, Reports)
+**Priority**: P1
+**Status**: NOT_STARTED
+**Estimated Effort**: 3-5 days
+**Blockers**: Task #2 (Trip Itinerary Generation)
 
 **Description**: Generate PDF documents for itineraries, accessibility reports, and activity guides.
 
@@ -219,19 +285,19 @@
 
 ---
 
-### [ ] 6. AI Agent Logging (Query Tracking)
-**Priority**: P1  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 2-3 days  
-**Blockers**: None  
+### [ ] 7. AI Agent Logging (Query Tracking)
+**Priority**: P1
+**Status**: NOT_STARTED
+**Estimated Effort**: 2-3 days
+**Blockers**: Task #1 (AI Core Implementation)
 
 **Description**: Log all AI queries for analytics, cost tracking, and debugging.
 
 **Subtasks**:
-- [ ] 6.1. Create `ai_usage` table and migration (if not created in Task #3)
-- [ ] 6.2. Log all AI queries (user_id, session_id, query, intent, beaches_returned)
-- [ ] 6.3. Log LLM API calls (tokens_used, cost, latency)
-- [ ] 6.4. Create cost tracking dashboard (admin only)
+- [ ] 7.1. Create `ai_usage` table and migration (if not created in Task #4)
+- [ ] 7.2. Log all AI queries (user_id, session_id, query, intent, beaches_returned)
+- [ ] 7.3. Log LLM API calls (tokens_used, cost, latency)
+- [ ] 7.4. Create cost tracking dashboard (admin only)
 - [ ] 6.5. Add cost alerts (email CTO if daily cost > $500)
 - [ ] 6.6. Write unit tests (logging service)
 
@@ -245,23 +311,23 @@
 
 ---
 
-### [ ] 7. B2B Tenant System (Multi-Tenancy)
-**Priority**: P1  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 1 week  
-**Blockers**: None  
+### [ ] 8. B2B Tenant System (Multi-Tenancy)
+**Priority**: P1
+**Status**: NOT_STARTED
+**Estimated Effort**: 1 week
+**Blockers**: None
 
 **Description**: Implement multi-tenancy for B2B customers (DMOs, hotels, municipalities).
 
 **Subtasks**:
-- [ ] 7.1. Create `tenants` table and migration
-- [ ] 7.2. Create `Tenant` model with relationships
-- [ ] 7.3. Add `tenant_id` to `users` table (B2B users belong to tenant)
-- [ ] 7.4. Add tenant scoping middleware (all queries scoped by tenant_id)
-- [ ] 7.5. Create tenant admin panel (Filament resource)
-- [ ] 7.6. Add tenant tier validation (Analytics, Promotion, White-Label, Enterprise)
-- [ ] 7.7. Write unit tests (tenant scoping)
-- [ ] 7.8. Write integration tests (multi-tenant isolation)
+- [ ] 8.1. Create `tenants` table and migration
+- [ ] 8.2. Create `Tenant` model with relationships
+- [ ] 8.3. Add `tenant_id` to `users` table (B2B users belong to tenant)
+- [ ] 8.4. Add tenant scoping middleware (all queries scoped by tenant_id)
+- [ ] 8.5. Create tenant admin panel (Filament resource)
+- [ ] 8.6. Add tenant tier validation (Analytics, Promotion, White-Label, Enterprise)
+- [ ] 8.7. Write unit tests (tenant scoping)
+- [ ] 8.8. Write integration tests (multi-tenant isolation)
 
 **Dependencies**: None
 
@@ -273,59 +339,59 @@
 
 ---
 
-### [ ] 8. AI Service Implementation (Microservice)
-**Priority**: P1  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 2-3 weeks  
-**Blockers**: None  
+### [ ] 9. AI Service Migration to Microservice (Phase 2)
+**Priority**: P1 (Phase 2 only, NOT MVP)
+**Status**: NOT_STARTED
+**Estimated Effort**: 2-3 weeks
+**Blockers**: Task #1 (AI Core Implementation), MVP launch, usage/cost signals
 
-**Description**: Implement AI service as dedicated microservice (separate Laravel app).
+**Description**: Migrate AI service from existing Laravel API to dedicated microservice (separate Laravel app). This is Phase 2 work, NOT needed for MVP.
 
 **Subtasks**:
-- [ ] 8.1. Create new Laravel app (`laravel new ai-service`)
-- [ ] 8.2. Configure shared database (PostgreSQL)
-- [ ] 8.3. Configure shared Redis (sessions, cache, rate limiting)
-- [ ] 8.4. Configure shared Meilisearch (search indexes)
-- [ ] 8.5. Create `ChatController` (handle chat requests)
-- [ ] 8.6. Create `AIAgentService` (LLM integration, context assembly)
-- [ ] 8.7. Implement session memory (Redis, 30-min TTL)
-- [ ] 8.8. Implement rate limiting (100/hour per IP for free tier)
-- [ ] 8.9. Implement token budget enforcement (4K tokens for free tier)
-- [ ] 8.10. Implement circuit breakers ($500/day → disable free tier)
-- [ ] 8.11. Write unit tests (AIAgentService)
-- [ ] 8.12. Write integration tests (ChatController)
+- [ ] 9.1. Create new Laravel app (`laravel new ai-service`)
+- [ ] 9.2. Configure shared database (PostgreSQL)
+- [ ] 9.3. Configure shared Redis (sessions, cache, rate limiting)
+- [ ] 9.4. Configure shared Meilisearch (search indexes)
+- [ ] 9.5. Extract AI controllers from main API to new app
+- [ ] 9.6. Extract AI services from main API to new app
+- [ ] 9.7. Extract AI middleware from main API to new app
+- [ ] 9.8. Update frontend to call new AI service URL
+- [ ] 9.9. Set up API gateway routing (optional)
+- [ ] 9.10. Deploy AI service to separate server/container
+- [ ] 9.11. Write unit tests (migration)
+- [ ] 9.12. Write integration tests (end-to-end)
 
-**Dependencies**: 
-- LLM API integration (OpenAI or Anthropic)
+**Dependencies**:
+- MVP launch (validate AI value first)
+- Usage/cost signals (determine if microservice is needed)
 
 **Acceptance Criteria**:
-- AI service runs on port 8001 (separate from main API on port 8000)
+- AI service runs as separate app (separate from main API)
 - AI service shares PostgreSQL, Redis, Meilisearch with main API
-- AI service handles chat requests (natural language queries)
-- AI service enforces rate limiting (100/hour per IP)
-- AI service enforces token budgets (4K tokens for free tier)
-- AI service implements circuit breakers (cost control)
+- Frontend sees no difference (API contracts unchanged)
+- AI service can scale independently
+- Migration is seamless (no downtime)
 
 ---
 
 ## P2: Nice-to-Have (Phase 2)
 
-### [ ] 9. Verified Accessibility Reports
-**Priority**: P2 (Phase 2)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 4-6 weeks  
-**Revenue Impact**: $450K/year  
-**Blockers**: Requires human verification process  
+### [ ] 10. Verified Accessibility Reports
+**Priority**: P2 (Phase 2)
+**Status**: NOT_STARTED
+**Estimated Effort**: 4-6 weeks
+**Revenue Impact**: $450K/year
+**Blockers**: Requires human verification process
 
 **Description**: Human-verified accessibility reports with photos and guarantees.
 
 **Subtasks**:
-- [ ] 9.1. Create `verified_accessibility_reports` table
-- [ ] 9.2. Create verification workflow (photographer network, QA)
-- [ ] 9.3. Create `AccessibilityReportController` (purchase, download)
-- [ ] 9.4. Create PDF template for accessibility reports
-- [ ] 9.5. Add money-back guarantee logic
-- [ ] 9.6. Write tests
+- [ ] 10.1. Create `verified_accessibility_reports` table
+- [ ] 10.2. Create verification workflow (photographer network, QA)
+- [ ] 10.3. Create `AccessibilityReportController` (purchase, download)
+- [ ] 10.4. Create PDF template for accessibility reports
+- [ ] 10.5. Add money-back guarantee logic
+- [ ] 10.6. Write tests
 
 **Dependencies**: 
 - Human verification process (not yet defined)
@@ -333,22 +399,22 @@
 
 ---
 
-### [ ] 10. Activity-Specific Guides
-**Priority**: P2 (Phase 2)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 6-8 weeks  
-**Revenue Impact**: $270K/year  
-**Blockers**: Requires expert curation  
+### [ ] 11. Activity-Specific Guides
+**Priority**: P2 (Phase 2)
+**Status**: NOT_STARTED
+**Estimated Effort**: 6-8 weeks
+**Revenue Impact**: $270K/year
+**Blockers**: Requires expert curation
 
 **Description**: Expert-curated top 10 beaches for specific activities (snorkeling, diving, surfing).
 
 **Subtasks**:
-- [ ] 10.1. Create `activity_guides` table
-- [ ] 10.2. Create expert curation workflow
-- [ ] 10.3. Create `ActivityGuideController` (purchase, download)
-- [ ] 10.4. Create PDF template for activity guides
-- [ ] 10.5. Add quarterly update process
-- [ ] 10.6. Write tests
+- [ ] 11.1. Create `activity_guides` table
+- [ ] 11.2. Create expert curation workflow
+- [ ] 11.3. Create `ActivityGuideController` (purchase, download)
+- [ ] 11.4. Create PDF template for activity guides
+- [ ] 11.5. Add quarterly update process
+- [ ] 11.6. Write tests
 
 **Dependencies**: 
 - Expert curation process (not yet defined)
@@ -356,45 +422,45 @@
 
 ---
 
-### [ ] 11. White-Label AI Agent
-**Priority**: P2 (Phase 2)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 4-6 weeks  
-**Revenue Impact**: $150K/year  
-**Blockers**: Requires multi-tenancy infrastructure  
+### [ ] 12. White-Label AI Agent
+**Priority**: P2 (Phase 2)
+**Status**: NOT_STARTED
+**Estimated Effort**: 4-6 weeks
+**Revenue Impact**: $150K/year
+**Blockers**: Requires multi-tenancy infrastructure
 
 **Description**: Branded AI agent for B2B customers (custom logo, colors, domain).
 
 **Subtasks**:
-- [ ] 11.1. Create tenant branding configuration (logo, colors, domain)
-- [ ] 11.2. Create isolated session storage (per tenant)
-- [ ] 11.3. Create custom domain routing
-- [ ] 11.4. Create white-label admin panel
-- [ ] 11.5. Write tests
+- [ ] 12.1. Create tenant branding configuration (logo, colors, domain)
+- [ ] 12.2. Create isolated session storage (per tenant)
+- [ ] 12.3. Create custom domain routing
+- [ ] 12.4. Create white-label admin panel
+- [ ] 12.5. Write tests
 
-**Dependencies**: 
-- B2B tenant system (Task #7)
+**Dependencies**:
+- B2B tenant system (Task #8)
 
 ---
 
-### [ ] 12. API Access (REST + GraphQL)
-**Priority**: P2 (Phase 2)  
-**Status**: NOT_STARTED  
-**Estimated Effort**: 2-3 weeks  
-**Revenue Impact**: Included in White-Label tier  
-**Blockers**: Requires rate limiting per tenant  
+### [ ] 13. API Access (REST + GraphQL)
+**Priority**: P2 (Phase 2)
+**Status**: NOT_STARTED
+**Estimated Effort**: 2-3 weeks
+**Revenue Impact**: Included in White-Label tier
+**Blockers**: Requires rate limiting per tenant
 
 **Description**: API access for B2B customers (integrate beach data into their platforms).
 
 **Subtasks**:
-- [ ] 12.1. Create API key management
-- [ ] 12.2. Create rate limiting per tenant (10,000/day)
-- [ ] 12.3. Create GraphQL endpoint (optional)
-- [ ] 12.4. Create API documentation (Swagger/OpenAPI)
-- [ ] 12.5. Write tests
+- [ ] 13.1. Create API key management
+- [ ] 13.2. Create rate limiting per tenant (10,000/day)
+- [ ] 13.3. Create GraphQL endpoint (optional)
+- [ ] 13.4. Create API documentation (Swagger/OpenAPI)
+- [ ] 13.5. Write tests
 
-**Dependencies**: 
-- B2B tenant system (Task #7)
+**Dependencies**:
+- B2B tenant system (Task #8)
 
 ---
 

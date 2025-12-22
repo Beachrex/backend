@@ -101,7 +101,7 @@ B2B pricing is based on **visitor acquisition value** (more tourists to their be
 
 ## [2025-12-22] AI Service as Dedicated Microservice (Not Monolith)
 
-**Status**: Accepted (CANONICAL)
+**Status**: Superseded by [2025-12-22] AI Service in Existing Laravel API for MVP
 
 **Context**:
 The AI agent could be integrated into the existing Laravel API (monolith) or deployed as a separate microservice. Monolith is simpler, but microservice provides isolation and independent scaling.
@@ -126,6 +126,8 @@ AI agent is a **dedicated microservice** (separate Laravel app on port 8001), is
 - **Business**: Better cost control, easier to scale, lower risk
 
 **Related**: `docs/ai/architecture/integration.md` (Section 1: Where AI Lives)
+
+**NOTE**: This decision was superseded for MVP. See next decision for MVP approach.
 
 ---
 
@@ -324,6 +326,151 @@ Create a **canonical AI governance system** with a single entry point (`AI_INDEX
 
 ---
 
+---
+
+## [2025-12-22] AI Service in Existing Laravel API for MVP
+
+**Status**: Accepted (CANONICAL for MVP)
+
+**Context**:
+During architecture phase, we need to decide between integrating AI into the existing Laravel API (monolith) or creating a separate microservice. Previous decision favored microservice, but for MVP we need to validate value and contracts first before adding infrastructure complexity.
+
+**Decision**:
+For MVP, AI agent is **part of the existing Laravel API** (same app, new routes under `/api/v1/ai/*`). Can be split into microservice in Phase 2 once we have real usage and cost signals.
+
+**Alternatives Considered**:
+1. **Dedicated microservice** (separate Laravel app on port 8001) - Rejected for MVP because adds infrastructure complexity, deployment overhead, and inter-service communication before validating product-market fit
+2. **Serverless** (AWS Lambda, Vercel Edge Functions) - Rejected because cold start latency (2-5s) is too high for real-time chat
+3. **Separate infrastructure** (different database, Redis) - Rejected because unnecessary for MVP
+
+**Reasoning**:
+- **Fastest to market**: No new infrastructure, no inter-service communication, no deployment complexity
+- **Simplest**: Single codebase, single deployment, single monitoring dashboard
+- **Lowest risk**: Validate AI value proposition before investing in microservice architecture
+- **Easy migration**: Can extract to microservice later (routes already namespaced under `/api/v1/ai/*`)
+- **Cost visibility**: Still track AI costs separately (middleware logging), just in same app
+
+**Impact**:
+- **Codebase**: New controllers/services in existing Laravel app under `app/Http/Controllers/AI/` and `app/Services/AI/`
+- **Users**: Transparent (same API domain, just new endpoints)
+- **Business**: Faster MVP launch, lower infrastructure costs, easier to iterate
+
+**Related**: `docs/ai/architecture/mvp-integration.md` (new file to be created)
+
+**Migration Path**: Phase 2 can extract AI routes to separate microservice without changing API contracts (frontend sees no difference)
+
+---
+
+## [2025-12-22] Provider-Agnostic LLM Abstraction Layer
+
+**Status**: Accepted (CANONICAL)
+
+**Context**:
+AI agent needs to call LLM APIs (OpenAI, Anthropic, etc.). We could integrate directly with one provider or create an abstraction layer. Direct integration is faster but creates vendor lock-in.
+
+**Decision**:
+Implement **provider-agnostic abstraction layer** with initial implementation for OpenAI. Design API contracts without provider-specific fields.
+
+**Alternatives Considered**:
+1. **Direct OpenAI integration** - Rejected because creates vendor lock-in, hard to switch providers if pricing changes or service degrades
+2. **Direct Anthropic integration** - Rejected for same reason as OpenAI
+3. **Multi-provider from day 1** (OpenAI + Anthropic + local models) - Rejected because over-engineering for MVP, adds complexity without immediate value
+
+**Reasoning**:
+- **Avoid lock-in**: Can switch providers if OpenAI raises prices or service degrades
+- **Future-proof**: Can add Anthropic, local models, or other providers without changing application code
+- **Cost optimization**: Can route queries to cheapest provider based on complexity
+- **Practical**: Start with OpenAI (most mature API), add others as needed
+
+**Impact**:
+- **Codebase**: `LLMService` interface with `OpenAIProvider` implementation, easy to add `AnthropicProvider` later
+- **Users**: Transparent (don't know or care which LLM is used)
+- **Business**: Lower risk of vendor lock-in, easier to optimize costs
+
+**Related**: `docs/ai/architecture/llm-abstraction.md` (new file to be created)
+
+**Interface Design**:
+```php
+interface LLMProvider {
+    public function chat(array $messages, array $options): LLMResponse;
+    public function streamChat(array $messages, array $options): Generator;
+}
+```
+
+---
+
+## [2025-12-22] Hybrid Session Management (Anonymous + Authenticated)
+
+**Status**: Accepted (CANONICAL)
+
+**Context**:
+AI agent needs to track sessions for conversation context. We could require authentication for all users, allow anonymous for all, or use a hybrid approach.
+
+**Decision**:
+Use **hybrid session management**:
+- **Anonymous allowed** for free tier (IP-based rate limiting, very limited)
+- **Authentication required** for paid features and higher limits (Laravel Sanctum)
+
+**Alternatives Considered**:
+1. **Authentication required for all** - Rejected because adds friction, most users won't create account for free search
+2. **Anonymous for all** - Rejected because can't enforce payment or track paid users
+3. **CAPTCHA-based** (show CAPTCHA after N queries) - Rejected because degrades UX
+
+**Reasoning**:
+- **Best conversion funnel**: Free users can try AI without signup (lower friction)
+- **Enforceable**: Paid features require auth (can validate payment)
+- **Abuse prevention**: IP-based rate limiting for anonymous (100/hour), user-based for authenticated (500/hour)
+- **Upgrade path**: Clear incentive to create account (higher limits, paid features)
+
+**Impact**:
+- **Codebase**: Middleware checks for auth token (optional for free tier, required for paid)
+- **Users**: Can use AI without signup (up to 100 queries/hour), must signup for paid features
+- **Business**: Lower friction for free tier, clear upgrade path to paid
+
+**Related**: `docs/ai/product/ai-business-rules.md` (Section 4.1: Rate Limiting)
+
+**Session Identification**:
+- Anonymous: `session_id` generated client-side, stored in Redis with IP validation
+- Authenticated: `session_id` tied to `user_id`, stored in Redis with auth token validation
+
+---
+
+## [2025-12-22] Synchronous Request/Response for MVP
+
+**Status**: Accepted (CANONICAL for MVP)
+
+**Context**:
+AI responses can be delivered synchronously (HTTP request/response) or asynchronously (job queue + webhook). Sync is simpler, async is better for long-running tasks.
+
+**Decision**:
+Use **synchronous request/response** for MVP, with optional streaming support (not required in v1). Async can be added in Phase 2 for long-running features (itineraries).
+
+**Alternatives Considered**:
+1. **Asynchronous** (job queue + webhook callback) - Rejected for MVP because adds complexity (job workers, webhook infrastructure, client polling)
+2. **Both** (sync for simple, async for complex) - Rejected because over-engineering for MVP
+3. **Streaming only** (SSE or WebSocket) - Rejected because not all clients support streaming (mobile apps, older browsers)
+
+**Reasoning**:
+- **Simplest UX**: User sends query, gets response (no polling, no webhooks)
+- **Simplest implementation**: Standard HTTP request/response, no job queue infrastructure
+- **Good enough for MVP**: Most queries complete in <2 seconds (acceptable for sync)
+- **Streaming optional**: Can add SSE streaming later for better UX (progressive response)
+
+**Impact**:
+- **Codebase**: Standard Laravel controllers (no job queue, no webhooks)
+- **Users**: Immediate response (no waiting for job to complete)
+- **Business**: Faster MVP launch, simpler infrastructure
+
+**Related**: `docs/ai/architecture/api-contracts.md` (new file to be created)
+
+**Timeout Handling**:
+- Client timeout: 30 seconds (if LLM takes longer, return error and suggest retry)
+- Server timeout: 25 seconds (fail fast, don't let client wait indefinitely)
+
+**Migration Path**: Phase 2 can add async endpoints (`POST /api/v1/ai/chat/async`) for long-running tasks without breaking existing sync endpoints
+
+---
+
 ## Template for Future Decisions
 
 **Copy this template when adding new decisions**:
@@ -355,7 +502,7 @@ Create a **canonical AI governance system** with a single entry point (`AI_INDEX
 
 **End of DECISIONS.md**
 
-This file is updated by: All AI agents making architectural decisions  
-This file must be updated: When making any significant design decision  
+This file is updated by: All AI agents making architectural decisions
+This file must be updated: When making any significant design decision
 This file is read by: All new AI agents to understand past decisions
 
