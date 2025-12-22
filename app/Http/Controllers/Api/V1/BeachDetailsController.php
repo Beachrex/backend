@@ -12,6 +12,7 @@ use App\Traits\ProvidesWeather;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @OA\Tag(
@@ -117,6 +118,32 @@ class BeachDetailsController extends Controller
                 $query->where('status_id', 1); // Only active beaches
             })
             ->first();
+
+        // If not found, check if there's a redirect for this slug
+        if (!$translation) {
+            try {
+                // Check if beach_slug_redirects table exists (it may not exist in tests or before migration)
+                if (Schema::hasTable('beach_slug_redirects')) {
+                    $locale = app()->getLocale();
+                    $redirect = DB::table('beach_slug_redirects')
+                        ->where('old_slug', $identifier)
+                        ->where('locale', $locale)
+                        ->first();
+
+                    if ($redirect) {
+                        // Find beach by new slug
+                        $translation = BeachTranslation::where('slug', $redirect->new_slug)
+                            ->whereHas('beach', function ($query) {
+                                $query->where('status_id', 1);
+                            })
+                            ->first();
+                    }
+                }
+            } catch (\Exception $e) {
+                // Silently fail if table doesn't exist - this is for backward compatibility
+                // The beach simply won't be found, which is the expected behavior
+            }
+        }
 
         if (!$translation) {
             return null;

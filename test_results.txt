@@ -1,0 +1,277 @@
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true                                                    0.03s  
+
+   PASS  Tests\Feature\AccessibilityApiTest
+  ✓ can get all accessibilities                                         12.84s  
+  ✓ can get specific accessibilitie                                      1.35s  
+  ✓ returns 404 for nonexistent accessibilitie                           0.53s  
+  ✓ only returns active accessibilities                                  0.73s  
+  ✓ respects accept language header                                      2.00s  
+  ✓ cache headers are present                                            0.49s  
+
+   PASS  Tests\Feature\AccommodationAroundApiTest
+  ✓ can get all accommodation around                                     0.66s  
+  ✓ can get specific accommodation around                                0.63s  
+  ✓ returns 404 for nonexistent accommodation around                     0.46s  
+  ✓ only returns active accommodation around                             0.68s  
+  ✓ respects accept language header                                      0.52s  
+  ✓ cache headers are present                                            0.53s  
+
+   PASS  Tests\Feature\AreaDescriptionApiTest
+  ✓ can get all area descriptions                                        0.61s  
+  ✓ can get specific area description                                    0.91s  
+  ✓ returns 404 for nonexistent area description                         0.63s  
+  ✓ only returns active area descriptions                                1.02s  
+  ✓ respects accept language header                                      1.39s  
+  ✓ cache headers are present                                            1.08s  
+
+   PASS  Tests\Feature\AuthTest
+  ✓ registers a user                                                    16.07s  
+
+   PASS  Tests\Feature\BayLengthApiTest
+  ✓ can get all bay lengths                                             10.55s  
+  ✓ can get specific bay length                                          1.01s  
+  ✓ returns 404 for nonexistent bay length                               0.85s  
+  ✓ only returns active bay lengths                                      0.72s  
+  ✓ respects accept language header                                      0.62s  
+  ✓ cache headers are present                                            0.65s  
+
+   PASS  Tests\Feature\BeachDetailsApiTest
+  ✓ can get beach details by slug                                        3.73s  
+  ✓ can get beach details by id                                          1.41s  
+  ✓ beach details returns 404 for nonexistent beach                      0.98s  
+  ✓ beach details returns 404 for inactive beach                         1.28s  
+  ✓ beach details includes navigation                                    1.69s  
+  ✓ beach details respects locale                                        1.70s  
+
+   PASS  Tests\Feature\BeachInclinationApiTest
+  ✓ can get all beach inclinations                                       0.83s  
+  ✓ can get specific beach inclination                                   0.84s  
+  ✓ returns 404 for nonexistent beach inclination                        0.87s  
+  ✓ only returns active beach inclinations                               0.51s  
+  ✓ respects accept language header                                      0.60s  
+  ✓ cache headers are present                                            0.67s  
+
+   PASS  Tests\Feature\BeachSlugRedirectTest
+  ✓ beach details works with new slug                                    4.36s  
+  ✓ beach details redirects from old slug                                3.37s  
+  ✓ redirect respects locale                                             2.66s  
+  ✓ returns 404 when no redirect exists                                  0.94s  
+
+   PASS  Tests\Feature\BeachTypeApiTest
+  ✓ can get all beach types                                              0.54s  
+  ✓ can get specific beach type                                          0.74s  
+  ✓ returns 404 for nonexistent beach type                               0.50s  
+  ✓ only returns active beach types                                      0.46s  
+  ✓ respects accept language header                                      0.43s  
+  ✓ cache headers are present                                            0.42s  
+
+   PASS  Tests\Feature\CityApiTest
+  ✓ can get all cities                                                   0.96s  
+  ✓ can filter cities by country                                         1.39s  
+  ✓ can get single city by slug                                          0.87s  
+  ✓ city show works without country code                                 0.89s  
+  ✓ returns 404 for nonexistent city                                     0.60s  
+  ✓ cities respect locale                                                0.80s  
+  ✓ cities only return those with active beaches                         1.18s  
+  ✓ city includes beach count                                            1.48s  
+
+   PASS  Tests\Feature\ContinentApiTest
+  ✓ can get continents with beaches                                      0.88s  
+  ✓ can get specific continent                                           1.04s  
+  ✓ returns 404 for nonexistent continent                                0.46s  
+  ✓ returns continent with zero beaches                                  0.70s  
+
+   PASS  Tests\Feature\CountryApiTest
+  ✓ can get countries with beaches                                       2.56s  
+  ✓ can filter countries by continent                                    0.52s  
+  ✓ can get specific country with continent                              0.48s  
+  ✓ returns 404 for nonexistent country                                  0.33s  
+  ✓ returns country with zero beaches                                    0.43s  
+
+   PASS  Tests\Feature\CountrySlugSupportTest
+  ✓ show endpoint accepts slug in default locale                         1.55s  
+  ✓ show endpoint accepts slug with accept language header               0.96s  
+  ✓ show endpoint still accepts country code case insensitive            1.84s  
+  ✓ weather endpoint accepts slug                                        1.83s  
+  ✓ weather endpoint accepts country code                                0.96s  
+  ✓ show endpoint returns 404 for unknown slug                           0.96s  
+
+   PASS  Tests\Feature\CulinaryOfferApiTest
+  ✓ can get all culinary offers                                          0.67s  
+  ✓ can get specific culinary offer                                      0.51s  
+  ✓ returns 404 for nonexistent culinary offer                           1.79s  
+  ✓ only returns active culinary offers                                  0.86s  
+  ✓ respects accept language header                                      0.96s  
+  ✓ cache headers are present                                            0.72s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                        0.45s  
+
+   PASS  Tests\Feature\IslandApiTest
+  ✓ can get all islands                                                  0.77s  
+  ✓ returns all islands with beaches                                     1.71s  
+  ✓ can get single island by slug                                        1.34s  
+  ✓ returns 404 for nonexistent island                                   1.30s  
+  ✓ islands respect locale                                               2.99s  
+  ✓ islands only return those with active beaches                        1.10s  
+  ✓ island includes beach count                                          0.90s  
+
+   PASS  Tests\Feature\LocationInfrastructureApiTest
+  ✓ can get all location infrastructure                                  0.64s  
+  ✓ can get specific location infrastructure                             0.40s  
+  ✓ returns 404 for nonexistent location infrastructure                  0.40s  
+  ✓ only returns active location infrastructure                          0.37s  
+  ✓ respects accept language header                                      0.47s  
+  ✓ cache headers are present                                            0.54s  
+
+   PASS  Tests\Feature\LocationLengthApiTest
+  ✓ can get all location lengths                                         0.92s  
+  ✓ can get specific location length                                     0.73s  
+  ✓ returns 404 for nonexistent location length                          0.51s  
+  ✓ only returns active location lengths                                 0.50s  
+  ✓ returns localized translation                                        0.53s  
+  ✓ includes translations when requested                                 1.21s  
+  ✓ fallback to english when translation not found                       0.49s  
+
+   PASS  Tests\Feature\MediaApiTest
+  ✓ can upload media                                                     3.31s  
+  ✓ cannot upload media without authentication                           1.24s  
+  ✓ validates required fields on upload                                  1.18s  
+  ✓ rejects invalid file type                                            1.47s  
+  ✓ rejects file exceeding size limit                                    0.87s  
+  ✓ can get media by id                                                  0.93s  
+  ✓ returns 404 for nonexistent media                                    0.87s  
+  ✓ can update media metadata                                            0.90s  
+  ✓ can set media as primary                                             1.13s  
+  ✓ can delete media                                                     1.07s  
+  ✓ can reorder media                                                    1.50s  
+  ✓ beach has media relationship                                         0.74s  
+
+   PASS  Tests\Feature\NaturalLocationConditionApiTest
+  ✓ can get all natural location conditions                              0.79s  
+  ✓ can get specific natural location condition                          0.42s  
+  ✓ returns 404 for nonexistent natural location condition               0.39s  
+  ✓ only returns active natural location conditions                      0.52s  
+  ✓ respects accept language header                                      0.82s  
+  ✓ cache headers are present                                            0.82s  
+
+   PASS  Tests\Feature\OccupancyRateApiTest
+  ✓ can get all occupancy rates                                          0.87s  
+  ✓ can get specific occupancy rate                                      0.82s  
+  ✓ returns 404 for nonexistent occupancy rate                           0.66s  
+  ✓ only returns active occupancy rates                                  0.50s  
+  ✓ respects accept language header                                      0.42s  
+  ✓ cache headers are present                                            0.37s  
+
+   PASS  Tests\Feature\ParkingBeachDistanceApiTest
+  ✓ can get all parking beach distances                                  0.42s  
+  ✓ can get specific parking beach distance                              1.38s  
+  ✓ returns 404 for nonexistent parking beach distance                   0.75s  
+  ✓ only returns active parking beach distances                          0.67s  
+  ✓ respects accept language header                                      0.69s  
+  ✓ cache headers are present                                            0.50s  
+
+   PASS  Tests\Feature\ParkingBeachHeightApiTest
+  ✓ can get all parking beach heights                                    0.61s  
+  ✓ can get specific parking beach height                                0.40s  
+  ✓ returns 404 for nonexistent parking beach height                     1.15s  
+  ✓ only returns active parking beach heights                            0.58s  
+  ✓ respects accept language header                                      0.55s  
+  ✓ cache headers are present                                            0.57s  
+
+   PASS  Tests\Feature\ParkingCapacityApiTest
+  ✓ can get all parking capacities                                       2.20s  
+  ✓ can get specific parking capacitie                                   0.69s  
+  ✓ returns 404 for nonexistent parking capacitie                        0.84s  
+  ✓ only returns active parking capacities                               0.69s  
+  ✓ respects accept language header                                      0.77s  
+  ✓ cache headers are present                                            0.70s  
+
+   PASS  Tests\Feature\RecommendedTransportTypeApiTest
+  ✓ can get all recommended transport types                              0.64s  
+  ✓ can get specific recommended transport type                          0.53s  
+  ✓ returns 404 for nonexistent recommended transport type               0.63s  
+  ✓ only returns active recommended transport types                      0.91s  
+  ✓ respects accept language header                                      1.01s  
+  ✓ cache headers are present                                            0.50s  
+
+   PASS  Tests\Feature\RegionApiTest
+  ✓ can get all regions                                                  1.23s  
+  ✓ can filter regions by country                                        0.96s  
+  ✓ can get single region by slug                                        1.77s  
+  ✓ region show works without country code                               0.73s  
+  ✓ returns 404 for nonexistent region                                   0.65s  
+  ✓ regions respect locale                                               1.23s  
+  ✓ regions only return those with active beaches                        1.09s  
+  ✓ region includes beach count                                          0.81s  
+  ✓ region show includes country with continent                          1.06s  
+
+   PASS  Tests\Feature\RoadToParkingTypeApiTest
+  ✓ can get all road to parking types                                    0.96s  
+  ✓ can get specific road to parking type                                0.54s  
+  ✓ returns 404 for nonexistent road to parking type                     0.60s  
+  ✓ only returns active road to parking types                            0.72s  
+  ✓ respects accept language header                                      0.48s  
+  ✓ cache headers are present                                            0.43s  
+
+   PASS  Tests\Feature\SlugResolverApiTest
+  ✓ can resolve beach slug                                               0.83s  
+  ✓ can resolve region slug                                              0.62s  
+  ✓ can resolve island slug                                              0.63s  
+  ✓ can resolve city slug                                                0.60s  
+  ✓ returns 404 for nonexistent slug                                     0.79s  
+  ✓ works without country code                                           1.71s  
+  ✓ uses segment count for optimization                                  1.08s  
+  ✓ respects locale                                                      2.40s  
+  ✓ ignores inactive beaches                                             1.05s  
+  ✓ can use parent slug for context                                      0.72s  
+
+   PASS  Tests\Feature\SportingActivitiesApiTest
+  ✓ can get all sporting activities                                      0.88s  
+  ✓ can get specific sporting activitie                                  0.64s  
+  ✓ returns 404 for nonexistent sporting activitie                       0.91s  
+  ✓ only returns active sporting activities                              1.06s  
+  ✓ respects accept language header                                      0.75s  
+  ✓ cache headers are present                                            0.45s  
+
+   PASS  Tests\Feature\SwimmingDepthOfOneMApiTest
+  ✓ can get all swimming depths                                          0.58s  
+  ✓ can get specific swimming depth                                      0.62s  
+  ✓ returns 404 for nonexistent swimming depth                           0.48s  
+  ✓ only returns active swimming depths                                  0.44s  
+  ✓ respects accept language header                                      0.48s  
+  ✓ cache headers are present                                            0.44s  
+
+   PASS  Tests\Feature\UnderwaterCharacteristicApiTest
+  ✓ can get all underwater characteristics                               0.50s  
+  ✓ can get specific underwater characteristic                           1.12s  
+  ✓ returns 404 for nonexistent underwater characteristic                0.86s  
+  ✓ only returns active underwater characteristics                       0.79s  
+  ✓ respects accept language header                                      0.79s  
+  ✓ cache headers are present                                            0.53s  
+
+   PASS  Tests\Feature\UserTypeApiTest
+  ✓ can get all user types                                               0.77s  
+  ✓ can get specific user type                                           0.39s  
+  ✓ returns 404 for nonexistent user type                                0.36s  
+  ✓ only returns active user types                                       0.33s  
+  ✓ respects accept language header                                      0.32s  
+  ✓ cache headers are present                                            0.33s  
+
+   PASS  Tests\Feature\WaterbodyApiTest
+  ✓ can get all waterbodies                                              0.34s  
+  ✓ can filter waterbodies by show filter                                0.55s  
+  ✓ can get specific waterbody                                           0.59s  
+  ✓ returns 404 for nonexistent waterbody                                0.60s  
+  ✓ only returns active waterbodies                                      0.71s  
+  ✓ respects accept language header                                      0.64s  
+  ✓ cache headers are present on first request                           1.14s  
+  ✓ cache headers show hit on second request                             0.64s  
+  ✓ cache keys are locale aware                                          0.78s  
+  ✓ show endpoint has cache headers                                      0.59s  
+
+  Tests:    205 passed (896 assertions)
+  Duration: 221.72s
+

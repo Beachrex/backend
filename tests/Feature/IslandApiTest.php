@@ -70,6 +70,7 @@ class IslandApiTest extends TestCase
             [
                 'latitude' => '44.9522',
                 'longitude' => '14.4606',
+                'continent_code' => 'EU',
                 'country_code' => 'HR',
                 'island_id' => 1,
                 'status_id' => 1,
@@ -81,6 +82,7 @@ class IslandApiTest extends TestCase
             [
                 'latitude' => '45.0408',
                 'longitude' => '14.5733',
+                'continent_code' => 'EU',
                 'country_code' => 'HR',
                 'island_id' => 2,
                 'status_id' => 1,
@@ -92,6 +94,7 @@ class IslandApiTest extends TestCase
             [
                 'latitude' => '35.2401',
                 'longitude' => '24.8093',
+                'continent_code' => 'EU',
                 'country_code' => 'GR',
                 'island_id' => 3,
                 'status_id' => 1,
@@ -211,6 +214,7 @@ class IslandApiTest extends TestCase
             [
                 'latitude' => '44.9522',
                 'longitude' => '14.4606',
+                'continent_code' => 'EU',
                 'country_code' => 'HR',
                 'island_id' => 1,
                 'status_id' => 1,
@@ -222,6 +226,7 @@ class IslandApiTest extends TestCase
             [
                 'latitude' => '44.9600',
                 'longitude' => '14.4700',
+                'continent_code' => 'EU',
                 'country_code' => 'HR',
                 'island_id' => 1,
                 'status_id' => 1,
@@ -233,6 +238,7 @@ class IslandApiTest extends TestCase
             [
                 'latitude' => '44.9700',
                 'longitude' => '14.4800',
+                'continent_code' => 'EU',
                 'country_code' => 'HR',
                 'island_id' => 1,
                 'status_id' => 2, // inactive - should not count
