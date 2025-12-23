@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
 **Last Updated**: 2025-12-23
-**Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation (Step 3/6 COMPLETE)
+**Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation (Step 4/6 COMPLETE)
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -79,7 +79,7 @@
 
 ### [/] 1. AI Core Implementation (Foundation)
 **Priority**: P0 (CRITICAL)
-**Status**: IN_PROGRESS (Step 3/6 COMPLETE)
+**Status**: IN_PROGRESS (Step 4/6 COMPLETE)
 **Estimated Effort**: 1 week
 **Revenue Impact**: Enables all AI features
 **Blockers**: None
@@ -113,10 +113,18 @@
   - Updated TestController to use real LLM integration
   - Created 6 automated tests (100% pass rate)
   - Tested real LLM API calls (successful responses with token/cost tracking)
-- [ ] **Step 4: Context Assembly** (NEXT)
-  - Fetch beaches/weather/search results
-  - Sanitize and cap context size
-- [ ] **Step 5: AI Endpoint Controller** (BLOCKED by Step 4)
+- [x] **Step 4: Context Assembly** (COMPLETE 2025-12-23)
+  - Created ContextBuilderService with strict capping and sanitization
+  - Implemented tier-based beach limits (free: 5, basic: 10, premium: 20, enterprise: 50)
+  - Implemented tier-based token limits (free: 1K, basic: 2K, premium: 4K, enterprise: 8K)
+  - Implemented beach data sanitization (HTML stripping, description truncation to 200 chars)
+  - Implemented weather data inclusion (only if tier allows)
+  - Implemented deterministic ordering (same input => same context)
+  - Implemented context truncation strategy (remove beaches from end until fits)
+  - Created formatContextAsText() method for prompt injection
+  - Created 10 automated tests (100% pass rate)
+  - Updated docs/ai/architecture/prompt-structure.md with capping policies
+- [ ] **Step 5: AI Endpoint Controller** (NEXT)
   - POST /api/v1/ai/chat
   - Request validation
   - Response schema

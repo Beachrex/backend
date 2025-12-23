@@ -229,48 +229,66 @@ Zapamtite: NIKADA ne generirajte višednevne itinerare besplatno. Ovo je neprego
 
 ### 3.1 Context Assembly
 
-**File**: `app/Services/AI/ContextAssemblyService.php`
+**File**: `app/Services/AI/ContextBuilderService.php`
 
-**Method**: `assembleContext(string $userQuery, ?string $sessionId): array`
+**Method**: `buildContext(array $params): array`
 
 **Context Components**:
 
-1. **Available Beaches** (if search intent detected)
+1. **Available Beaches** (if location provided, tier-based limits)
 2. **Available Filters** (always included)
-3. **Session History** (last 5 messages, if session exists)
-4. **Current Weather** (if weather query detected)
+3. **Current Weather** (if requested and allowed by tier)
+4. **Metadata** (tier, locale, truncation status)
+
+**Capping Policy** (HARD LIMITS):
+
+| Tier       | Max Beaches | Max Context Tokens | Max Description Chars |
+|------------|-------------|--------------------|-----------------------|
+| Free       | 5           | 1,000 (~4KB)       | 200                   |
+| Basic      | 10          | 2,000 (~8KB)       | 200                   |
+| Premium    | 20          | 4,000 (~16KB)      | 200                   |
+| Enterprise | 50          | 8,000 (~32KB)      | 200                   |
+
+**Truncation Strategy**:
+- If context exceeds max tokens for tier, remove beaches from the end until it fits
+- Record `context_truncated: true` in metadata
+- Log warning with before/after beach counts
 
 ---
 
 ### 3.2 Beach Data Injection
 
+**Sanitization Rules**:
+- Strip all HTML tags from descriptions
+- Truncate descriptions to 200 characters max
+- Include only essential fields (no PII, no reviews, no user data)
+- Normalize encoding to UTF-8
+
+**Fields Included** (per beach):
+- `id` - Beach ID
+- `name` - Beach name (translated)
+- `slug` - Beach slug (for URL generation)
+- `location` - Object with: country_code, country_name, latitude, longitude, distance_km
+- `description` - Sanitized description (max 200 chars, HTML stripped)
+- `main_image` - Main image path (relative)
+
 **Format**:
 ```
-AVAILABLE BEACHES (matching your query):
+AVAILABLE BEACHES (nearest to your location):
 
 Beach 1:
 - ID: 123
 - Name: Bačvice Beach
-- Location: Split, Croatia (HR)
-- Surface: Sand
-- Facilities: Parking, Showers, Playground, Lifeguard
-- Accessibility: Wheelchair accessible, Ramp available
-- Family-friendly: Yes
-- Current weather: Sunny, 28°C, Light winds (5 km/h)
+- Location: Croatia (43.5 km away)
+- Description: Beautiful sandy beach in the heart of Split...
 
 Beach 2:
 - ID: 456
 - Name: Zlatni Rat
-- Location: Bol, Croatia (HR)
-- Surface: Pebble
-- Facilities: Parking, Showers, Water sports
-- Accessibility: Partial wheelchair access
-- Family-friendly: Yes
-- Current weather: Sunny, 27°C, Moderate winds (15 km/h)
+- Location: Croatia (67.2 km away)
+- Description: Famous pebble beach on the island of Brač...
 
-[... up to 20 beaches max to stay within token budget ...]
-
-If user asks about a beach not in this list, search again with updated filters.
+[... up to 5/10/20/50 beaches depending on tier ...]
 ```
 
 ---
