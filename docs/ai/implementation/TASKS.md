@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
 **Last Updated**: 2025-12-23
-**Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation (Step 5/6 COMPLETE)
+**Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation (Step 6/6 COMPLETE)
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -77,9 +77,10 @@
 
 ---
 
-### [/] 1. AI Core Implementation (Foundation)
+### [x] 1. AI Core Implementation (Foundation)
 **Priority**: P0 (CRITICAL)
-**Status**: IN_PROGRESS (Step 4/6 COMPLETE)
+**Status**: DONE (Step 6/6 COMPLETE)
+**Completed**: 2025-12-23
 **Estimated Effort**: 1 week
 **Revenue Impact**: Enables all AI features
 **Blockers**: None
@@ -134,10 +135,16 @@
   - Implemented observability (request_id, session_id, logging)
   - Created 9 automated tests (100% pass rate, 65 assertions)
   - Fixed database schema (ip_address column length)
-- [ ] **Step 6: Logging & Observability** (NEXT)
-  - Structured logs
-  - Store usage metrics
-  - Include request_id / session_id
+- [x] **Step 6: Logging & Observability** (DONE 2025-12-23)
+  - Created LoggingService with GDPR-compliant structured logging
+  - Created AiRequestCompleted and AiRequestFailed events
+  - Created TrackAiMetrics listener for real-time metrics (cache-based, 7-day TTL)
+  - Registered event listeners in AppServiceProvider
+  - Created data-retention-policy.md (90/30/365 day retention, GDPR compliance)
+  - Created operational-controls.md (kill switches, circuit breakers, emergency procedures)
+  - Integrated LoggingService into ChatController
+  - All tests pass (9 tests, 65 assertions, 100% pass rate)
+  - Metrics tracked: requests, success/error counts, latency, cost, tier distribution
 
 **Original Subtasks** (mapped to steps above):
 - [ ] 1.1. Create AI configuration file (`config/ai.php`) - Step 2

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\AI;
 
+use App\Events\AI\AiRequestCompleted;
+use App\Events\AI\AiRequestFailed;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AI\ChatRequest;
 use App\Models\AiMessage;
@@ -11,6 +13,7 @@ use App\Services\AI\ContextBuilderService;
 use App\Services\AI\DTOs\ChatCompletionRequest;
 use App\Services\AI\DTOs\ChatMessage;
 use App\Services\AI\LLMService;
+use App\Services\AI\LoggingService;
 use App\Services\AI\PlanEnforcementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +39,7 @@ class ChatController extends Controller
         private readonly ContextBuilderService $contextBuilder,
         private readonly LLMService $llmService,
         private readonly PlanEnforcementService $planEnforcement,
+        private readonly LoggingService $loggingService,
     ) {}
 
     /**
@@ -116,6 +120,7 @@ class ChatController extends Controller
                 context: $context,
                 requestId: $requestId,
                 latencyMs: (int) ((microtime(true) - $startTime) * 1000),
+                intent: $intent,
             );
 
             // Build response
@@ -465,8 +470,10 @@ class ChatController extends Controller
         $llmResponse,
         array $context,
         string $requestId,
-        int $latencyMs
+        int $latencyMs,
+        string $intent
     ): void {
+        // Create usage record in database
         AiUsage::create([
             'user_id' => $user?->id,
             'session_id' => $session->id,
@@ -489,14 +496,38 @@ class ChatController extends Controller
             'request_id' => $requestId,
         ]);
 
-        Log::info('AI chat completed', [
-            'request_id' => $requestId,
-            'session_id' => $session->id,
-            'tier' => $session->tier,
-            'tokens_used' => $llmResponse->totalTokens,
-            'cost_usd' => $llmResponse->costUsd,
-            'latency_ms' => $latencyMs,
-            'context_truncated' => $context['metadata']['context_truncated'] ?? false,
-        ]);
+        // Build log context
+        $logContext = $this->loggingService->buildContext(
+            requestId: $requestId,
+            sessionId: $session->id,
+            tier: $session->tier,
+            locale: $session->locale,
+            latencyMs: $latencyMs,
+            llmResponse: $llmResponse,
+            context: $context
+        );
+        $logContext['intent'] = $intent;
+
+        // Log success
+        $this->loggingService->logSuccess($logContext);
+
+        // Fire event for metrics
+        event(new AiRequestCompleted(
+            requestId: $requestId,
+            sessionId: $session->id,
+            tier: $session->tier,
+            locale: $session->locale,
+            latencyMs: $latencyMs,
+            tokensInput: $llmResponse->inputTokens,
+            tokensOutput: $llmResponse->outputTokens,
+            tokensTotal: $llmResponse->totalTokens,
+            costUsd: $llmResponse->costUsd,
+            contextTruncated: $context['metadata']['context_truncated'] ?? false,
+            beachesFetched: $context['metadata']['beaches_fetched'] ?? 0,
+            beachesReturned: $context['metadata']['beaches_returned'] ?? 0,
+            intent: $intent,
+            llmProvider: $llmResponse->provider,
+            llmModel: $llmResponse->model,
+        ));
     }
 }
