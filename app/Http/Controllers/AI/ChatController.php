@@ -47,6 +47,114 @@ class ChatController extends Controller
      *
      * POST /api/v1/ai/chat
      *
+     * @OA\Post(
+     *     path="/api/v1/ai/chat",
+     *     summary="Send message to AI agent",
+     *     description="Send a message to the AI agent and get a response with beach recommendations. Authentication is optional - anonymous users can use free tier features, authenticated users can access paid features.",
+     *     operationId="aiChat",
+     *     tags={"AI Agent"},
+     *     security={{"sanctum": {}}, {}},
+     *     @OA\Parameter(
+     *         ref="#/components/parameters/AcceptLanguage"
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Chat request with user message and optional context",
+     *         @OA\JsonContent(ref="#/components/schemas/AiChatRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful response with AI recommendations",
+     *         @OA\JsonContent(ref="#/components/schemas/AiChatResponse"),
+     *         @OA\Header(
+     *             header="X-Request-ID",
+     *             description="Unique request identifier for tracking",
+     *             @OA\Schema(type="string", format="uuid")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad Request - Invalid input",
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/AiErrorResponse",
+     *             example={
+     *                 "error": "invalid_request",
+     *                 "message": "Message is required"
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=402,
+     *         description="Payment Required - Paid feature requested",
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/AiPaymentRequiredError",
+     *             example={
+     *                 "error": "payment_required",
+     *                 "message": "Multi-day itineraries require payment",
+     *                 "product": {
+     *                     "type": "itinerary",
+     *                     "duration_days": 7,
+     *                     "price": 39,
+     *                     "currency": "USD"
+     *                 },
+     *                 "purchase_url": "https://beachrex.com/purchase/itinerary/xyz789"
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=413,
+     *         description="Payload Too Large - Token budget exceeded",
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/AiTokenBudgetError",
+     *             example={
+     *                 "error": "token_budget_exceeded",
+     *                 "message": "Your query is too complex for the free tier",
+     *                 "estimated_tokens": 5200,
+     *                 "max_tokens": 4000,
+     *                 "suggestion": "Simplify your query or upgrade to paid tier"
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=429,
+     *         description="Too Many Requests - Rate limit exceeded",
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/AiRateLimitError",
+     *             example={
+     *                 "error": "rate_limit_exceeded",
+     *                 "message": "You have exceeded the rate limit for free tier",
+     *                 "limit": 100,
+     *                 "reset_at": "2025-12-22T15:00:00Z",
+     *                 "upgrade_url": "https://beachrex.com/pricing"
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal Server Error",
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/AiErrorResponse",
+     *             example={
+     *                 "error": "internal_error",
+     *                 "message": "An unexpected error occurred"
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=503,
+     *         description="Service Unavailable - AI service temporarily disabled",
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/AiServiceUnavailableError",
+     *             example={
+     *                 "error": "service_unavailable",
+     *                 "message": "AI service is temporarily unavailable due to high costs",
+     *                 "retry_after": 3600,
+     *                 "fallback_url": "https://beachrex.com/search"
+     *             }
+     *         )
+     *     )
+     * )
+     *
      * @param ChatRequest $request
      * @return JsonResponse
      */

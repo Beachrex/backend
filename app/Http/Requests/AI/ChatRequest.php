@@ -4,6 +4,12 @@ namespace App\Http\Requests\AI;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * AI Chat Request
+ *
+ * Validates incoming chat requests to the AI agent.
+ * See: docs/ai/architecture/api-contracts.md
+ */
 class ChatRequest extends FormRequest
 {
     /**

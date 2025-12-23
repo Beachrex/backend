@@ -1,8 +1,8 @@
 # Beachrex AI Agent - API Contracts
 
-**Version**: 1.0  
-**Last Updated**: 2025-12-22  
-**Status**: CANONICAL  
+**Version**: 1.0
+**Last Updated**: 2025-12-23
+**Status**: CANONICAL
 **Purpose**: Defines AI interaction API endpoints, request/response schemas, authentication
 
 ---
@@ -13,6 +13,29 @@ This document defines the **contract** between frontend and AI backend. These co
 - ✅ **Provider-agnostic**: No OpenAI/Anthropic-specific fields
 - ✅ **Version-stable**: Breaking changes require new API version
 - ✅ **Language-agnostic**: Support all 14 locales
+
+---
+
+## OpenAPI as Canonical Contract
+
+**This document is mirrored in the OpenAPI specification.**
+
+### Requirements
+
+**All endpoints defined here MUST have equivalent OpenAPI annotations**:
+- ✅ Schema names must be reusable and stable (frontend depends on them)
+- ✅ Error responses must use shared schemas (e.g. oneOf / discriminated unions)
+- ✅ All enums must be explicitly defined in OpenAPI
+- ✅ Security schemes must be documented (optional authentication)
+- ✅ Examples must be provided for success and error cases
+
+**If a discrepancy exists between this document and OpenAPI, OpenAPI is considered incomplete and must be updated.**
+
+**OpenAPI Location**: `storage/api-docs/api-docs.json` (generated from annotations)
+
+**Swagger UI**: `http://localhost/api/documentation`
+
+**See**: `docs/ai/implementation/OPENAPI_COVERAGE_REPORT.md` for current coverage
 
 ---
 

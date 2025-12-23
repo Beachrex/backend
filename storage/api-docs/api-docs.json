@@ -12,6 +12,158 @@
         }
     ],
     "paths": {
+        "/api/v1/ai/chat": {
+            "post": {
+                "tags": [
+                    "AI Agent"
+                ],
+                "summary": "Send message to AI agent",
+                "description": "Send a message to the AI agent and get a response with beach recommendations. Authentication is optional - anonymous users can use free tier features, authenticated users can access paid features.",
+                "operationId": "aiChat",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "requestBody": {
+                    "description": "Chat request with user message and optional context",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AiChatRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful response with AI recommendations",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Unique request identifier for tracking",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiChatResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid input",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiErrorResponse"
+                                },
+                                "example": {
+                                    "error": "invalid_request",
+                                    "message": "Message is required"
+                                }
+                            }
+                        }
+                    },
+                    "402": {
+                        "description": "Payment Required - Paid feature requested",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiPaymentRequiredError"
+                                },
+                                "example": {
+                                    "error": "payment_required",
+                                    "message": "Multi-day itineraries require payment",
+                                    "product": {
+                                        "type": "itinerary",
+                                        "duration_days": 7,
+                                        "price": 39,
+                                        "currency": "USD"
+                                    },
+                                    "purchase_url": "https://beachrex.com/purchase/itinerary/xyz789"
+                                }
+                            }
+                        }
+                    },
+                    "413": {
+                        "description": "Payload Too Large - Token budget exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiTokenBudgetError"
+                                },
+                                "example": {
+                                    "error": "token_budget_exceeded",
+                                    "message": "Your query is too complex for the free tier",
+                                    "estimated_tokens": 5200,
+                                    "max_tokens": 4000,
+                                    "suggestion": "Simplify your query or upgrade to paid tier"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiRateLimitError"
+                                },
+                                "example": {
+                                    "error": "rate_limit_exceeded",
+                                    "message": "You have exceeded the rate limit for free tier",
+                                    "limit": 100,
+                                    "reset_at": "2025-12-22T15:00:00Z",
+                                    "upgrade_url": "https://beachrex.com/pricing"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiErrorResponse"
+                                },
+                                "example": {
+                                    "error": "internal_error",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable - AI service temporarily disabled",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiServiceUnavailableError"
+                                },
+                                "example": {
+                                    "error": "service_unavailable",
+                                    "message": "AI service is temporarily unavailable due to high costs",
+                                    "retry_after": 3600,
+                                    "fallback_url": "https://beachrex.com/search"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {}
+                ]
+            }
+        },
         "/api/v1/accessibilities": {
             "get": {
                 "tags": [
@@ -8583,6 +8735,526 @@
     },
     "components": {
         "schemas": {
+            "AiBeachRecommendation": {
+                "title": "AI Beach Recommendation",
+                "description": "Beach recommendation from AI agent",
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "country_code",
+                    "surface",
+                    "facilities",
+                    "match_score"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Beach ID",
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "name": {
+                        "description": "Beach name",
+                        "type": "string",
+                        "example": "Bačvice Beach"
+                    },
+                    "slug": {
+                        "description": "Beach slug for URL",
+                        "type": "string",
+                        "example": "bacvice-beach"
+                    },
+                    "country_code": {
+                        "description": "ISO 3166-1 alpha-2 country code",
+                        "type": "string",
+                        "example": "HR"
+                    },
+                    "city": {
+                        "description": "City name",
+                        "type": "string",
+                        "example": "Split",
+                        "nullable": true
+                    },
+                    "surface": {
+                        "description": "Beach surface type",
+                        "type": "string",
+                        "example": "sand"
+                    },
+                    "facilities": {
+                        "description": "Available facilities",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "parking",
+                            "playground",
+                            "showers"
+                        ]
+                    },
+                    "distance_km": {
+                        "description": "Distance from user location in kilometers (if location provided)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12.5,
+                        "nullable": true
+                    },
+                    "match_score": {
+                        "description": "Relevance score (0-1)",
+                        "type": "number",
+                        "format": "float",
+                        "maximum": 1,
+                        "minimum": 0,
+                        "example": 0.95
+                    }
+                },
+                "type": "object"
+            },
+            "AiChatRequest": {
+                "title": "AI Chat Request",
+                "description": "Request schema for AI chat endpoint",
+                "required": [
+                    "message"
+                ],
+                "properties": {
+                    "message": {
+                        "description": "User message to send to AI agent",
+                        "type": "string",
+                        "maxLength": 500,
+                        "example": "Show me family-friendly beaches in Croatia with parking"
+                    },
+                    "session_id": {
+                        "description": "Optional session ID. Auto-generated if not provided",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "abc123-def456-ghi789",
+                        "nullable": true
+                    },
+                    "context": {
+                        "description": "Optional context for the request",
+                        "properties": {
+                            "location": {
+                                "description": "User's current location",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Latitude coordinate",
+                                        "type": "number",
+                                        "format": "float",
+                                        "maximum": 90,
+                                        "minimum": -90,
+                                        "example": 45.815
+                                    },
+                                    "longitude": {
+                                        "description": "Longitude coordinate",
+                                        "type": "number",
+                                        "format": "float",
+                                        "maximum": 180,
+                                        "minimum": -180,
+                                        "example": 15.9819
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "preferences": {
+                                "description": "User preferences for beach search",
+                                "properties": {
+                                    "max_distance_km": {
+                                        "description": "Maximum distance from user location in kilometers",
+                                        "type": "integer",
+                                        "maximum": 500,
+                                        "minimum": 1,
+                                        "example": 50,
+                                        "nullable": true
+                                    },
+                                    "surface_types": {
+                                        "description": "Preferred beach surface types",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "sand",
+                                                "pebble",
+                                                "rock",
+                                                "concrete"
+                                            ]
+                                        },
+                                        "example": [
+                                            "sand",
+                                            "pebble"
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "facilities": {
+                                        "description": "Required facilities",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "parking",
+                                            "showers",
+                                            "playground"
+                                        ],
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "AiChatResponse": {
+                "title": "AI Chat Response",
+                "description": "Successful response from AI chat endpoint",
+                "required": [
+                    "session_id",
+                    "message",
+                    "intent",
+                    "metadata"
+                ],
+                "properties": {
+                    "session_id": {
+                        "description": "Session identifier",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "abc123-def456-ghi789"
+                    },
+                    "message": {
+                        "description": "AI response message",
+                        "type": "string",
+                        "example": "I found 15 family-friendly beaches in Croatia with parking. Here are the top 5 matches:"
+                    },
+                    "intent": {
+                        "description": "Detected user intent",
+                        "type": "string",
+                        "enum": [
+                            "beach_search",
+                            "beach_comparison",
+                            "weather_query",
+                            "itinerary_request",
+                            "accessibility_query",
+                            "general_question",
+                            "unknown"
+                        ],
+                        "example": "beach_search"
+                    },
+                    "beaches": {
+                        "description": "Beach results (if applicable)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AiBeachRecommendation"
+                        },
+                        "nullable": true
+                    },
+                    "filters_applied": {
+                        "description": "Filters used in search",
+                        "properties": {
+                            "country": {
+                                "type": "string",
+                                "example": "HR",
+                                "nullable": true
+                            },
+                            "region": {
+                                "type": "string",
+                                "example": "Dalmatia",
+                                "nullable": true
+                            },
+                            "city": {
+                                "type": "string",
+                                "example": "Split",
+                                "nullable": true
+                            },
+                            "surface": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "example": [
+                                    "sand",
+                                    "pebble"
+                                ],
+                                "nullable": true
+                            },
+                            "facilities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "example": [
+                                    "parking"
+                                ],
+                                "nullable": true
+                            },
+                            "family_friendly": {
+                                "type": "boolean",
+                                "example": true,
+                                "nullable": true
+                            },
+                            "wheelchair_accessible": {
+                                "type": "boolean",
+                                "example": false,
+                                "nullable": true
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "suggestions": {
+                        "description": "Follow-up suggestions",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "Show me beaches with playgrounds",
+                            "Which one has the best weather today?",
+                            "Compare the top 3 beaches"
+                        ],
+                        "nullable": true
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/AiResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "AiErrorResponse": {
+                "title": "AI Error Response",
+                "description": "Error response from AI endpoints",
+                "required": [
+                    "error",
+                    "message"
+                ],
+                "properties": {
+                    "error": {
+                        "description": "Machine-readable error code",
+                        "type": "string",
+                        "enum": [
+                            "payment_required",
+                            "rate_limit_exceeded",
+                            "token_budget_exceeded",
+                            "service_unavailable",
+                            "invalid_request",
+                            "unauthorized",
+                            "forbidden",
+                            "session_expired",
+                            "internal_error"
+                        ],
+                        "example": "rate_limit_exceeded"
+                    },
+                    "message": {
+                        "description": "Human-readable error message",
+                        "type": "string",
+                        "example": "You have exceeded the rate limit for free tier"
+                    }
+                },
+                "type": "object"
+            },
+            "AiPaymentRequiredError": {
+                "title": "AI Payment Required Error (402)",
+                "description": "Error response when paid feature is requested",
+                "required": [
+                    "error",
+                    "message",
+                    "product",
+                    "purchase_url"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "enum": [
+                            "payment_required"
+                        ],
+                        "example": "payment_required"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Multi-day itineraries require payment"
+                    },
+                    "product": {
+                        "description": "Product information",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "example": "itinerary"
+                            },
+                            "duration_days": {
+                                "type": "integer",
+                                "example": 7
+                            },
+                            "price": {
+                                "type": "number",
+                                "format": "float",
+                                "example": 39
+                            },
+                            "currency": {
+                                "type": "string",
+                                "example": "USD"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "purchase_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://beachrex.com/purchase/itinerary/xyz789"
+                    }
+                },
+                "type": "object"
+            },
+            "AiRateLimitError": {
+                "title": "AI Rate Limit Error (429)",
+                "description": "Error response when rate limit is exceeded",
+                "required": [
+                    "error",
+                    "message",
+                    "limit",
+                    "reset_at",
+                    "upgrade_url"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "enum": [
+                            "rate_limit_exceeded"
+                        ],
+                        "example": "rate_limit_exceeded"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "You have exceeded the rate limit for free tier"
+                    },
+                    "limit": {
+                        "description": "Rate limit threshold",
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "reset_at": {
+                        "description": "When the rate limit resets (ISO 8601)",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-12-22T15:00:00Z"
+                    },
+                    "upgrade_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://beachrex.com/pricing"
+                    }
+                },
+                "type": "object"
+            },
+            "AiTokenBudgetError": {
+                "title": "AI Token Budget Error (413)",
+                "description": "Error response when token budget is exceeded",
+                "required": [
+                    "error",
+                    "message",
+                    "estimated_tokens",
+                    "max_tokens",
+                    "suggestion"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "enum": [
+                            "token_budget_exceeded"
+                        ],
+                        "example": "token_budget_exceeded"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Your query is too complex for the free tier"
+                    },
+                    "estimated_tokens": {
+                        "description": "Estimated tokens required",
+                        "type": "integer",
+                        "example": 5200
+                    },
+                    "max_tokens": {
+                        "description": "Maximum tokens allowed",
+                        "type": "integer",
+                        "example": 4000
+                    },
+                    "suggestion": {
+                        "type": "string",
+                        "example": "Simplify your query or upgrade to paid tier"
+                    }
+                },
+                "type": "object"
+            },
+            "AiServiceUnavailableError": {
+                "title": "AI Service Unavailable Error (503)",
+                "description": "Error response when AI service is temporarily unavailable",
+                "required": [
+                    "error",
+                    "message",
+                    "retry_after",
+                    "fallback_url"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "enum": [
+                            "service_unavailable"
+                        ],
+                        "example": "service_unavailable"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "AI service is temporarily unavailable due to high costs"
+                    },
+                    "retry_after": {
+                        "description": "Seconds until retry",
+                        "type": "integer",
+                        "example": 3600
+                    },
+                    "fallback_url": {
+                        "description": "Fallback URL for regular search",
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://beachrex.com/search"
+                    }
+                },
+                "type": "object"
+            },
+            "AiResponseMetadata": {
+                "title": "AI Response Metadata",
+                "description": "Metadata about the AI response",
+                "required": [
+                    "tokens_used",
+                    "model",
+                    "response_time_ms",
+                    "cached"
+                ],
+                "properties": {
+                    "tokens_used": {
+                        "description": "LLM tokens consumed",
+                        "type": "integer",
+                        "example": 1250
+                    },
+                    "model": {
+                        "description": "LLM model used",
+                        "type": "string",
+                        "example": "gpt-3.5-turbo"
+                    },
+                    "response_time_ms": {
+                        "description": "Response time in milliseconds",
+                        "type": "integer",
+                        "example": 850
+                    },
+                    "cached": {
+                        "description": "Was response cached?",
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "type": "object"
+            },
             "Accessibility": {
                 "title": "Accessibility",
                 "description": "Accessibility option model (easy, medium, difficult)",
@@ -12420,6 +13092,10 @@
         {
             "name": "Waterbodies",
             "description": "API Endpoints for waterbody types (sea, lake, river, pool)"
+        },
+        {
+            "name": "AI Agent",
+            "description": "AI Agent"
         },
         {
             "name": "Accessibility",

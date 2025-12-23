@@ -1,7 +1,7 @@
 # Beachrex AI Agent - System Prompts
 
-**Last Updated**: 2025-12-22  
-**Purpose**: Canonical system prompts for the AI agent  
+**Last Updated**: 2025-12-23
+**Purpose**: Canonical system prompts for the AI agent
 **Audience**: AI service implementation, LLM API calls
 
 ---
@@ -13,6 +13,35 @@
 **Context Injection**: Additional context added to each query (user session, beach data, weather, etc.)
 
 **Output Formatting**: Rules for how the AI agent formats responses (structured, concise, actionable)
+
+---
+
+## Mandatory OpenAPI Updates
+
+**For any implementation task involving API changes:**
+
+### You MUST:
+- ✅ Add or update Swagger/OpenAPI annotations
+- ✅ Define request + response schemas in `app/Swagger/Schemas/`
+- ✅ Define all error responses (400, 402, 413, 429, 500, 503)
+- ✅ Add examples where applicable
+- ✅ Document security schemes (optional authentication)
+- ✅ Verify endpoint appears in Swagger UI
+
+### You may NOT:
+- ❌ Implement endpoints without OpenAPI coverage
+- ❌ Defer OpenAPI updates to a later task
+- ❌ Rely on implicit or inferred schemas
+- ❌ Skip error response documentation
+
+### Definition of Done includes:
+- [ ] Runtime logic implemented
+- [ ] Tests passing (100% pass rate)
+- [ ] OpenAPI annotations added/updated
+- [ ] Swagger UI renders endpoint correctly (`http://localhost/api/documentation`)
+- [ ] Frontend client generation verified (no manual fixes required)
+
+**See**: `docs/ai/implementation/OPENAPI_COVERAGE_REPORT.md` for current coverage
 
 ---
 

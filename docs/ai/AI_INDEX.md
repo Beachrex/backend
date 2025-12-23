@@ -164,15 +164,53 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 
 ### Architectural Constraints
 
-**AI Service**: Dedicated microservice (separate Laravel app, port 8001)  
-**Main API**: Existing Laravel app (port 8000)  
+**AI Service**: Dedicated microservice (separate Laravel app, port 8001)
+**Main API**: Existing Laravel app (port 8000)
 **Shared**: PostgreSQL, Redis, Meilisearch
 
-**Data Access**: Read-only (AI never writes to beach database)  
-**Session Memory**: Redis, 30-minute TTL, max 10 messages  
+**Data Access**: Read-only (AI never writes to beach database)
+**Session Memory**: Redis, 30-minute TTL, max 10 messages
 **No Long-Term Memory**: Privacy-first, no user profiling
 
 **See**: `docs/ai/architecture/integration.md` for integration design
+
+---
+
+## OpenAPI / Swagger Requirement (NON-NEGOTIABLE)
+
+This project uses OpenAPI as a **single source of truth** for frontend integration.
+
+### Rules
+
+**Every API endpoint MUST be fully documented using OpenAPI / Swagger annotations**:
+- ✅ No endpoint is considered "implemented" unless it appears correctly in the OpenAPI spec
+- ✅ Request schemas, response schemas, and error responses MUST be explicitly defined
+- ✅ Frontend API clients are generated from OpenAPI – undocumented behavior is forbidden
+- ✅ All enums (tier, intent, error_code) must be explicitly defined
+- ✅ Security schemes (authentication) must be documented
+
+### AI Agent Rules
+
+**If you add or modify an endpoint, you MUST update OpenAPI annotations in the same task**:
+- ❌ Do NOT implement endpoints without OpenAPI coverage
+- ❌ Do NOT defer OpenAPI updates to a later task
+- ❌ Do NOT rely on implicit or inferred schemas
+- ✅ Add Swagger annotations to controller methods
+- ✅ Define reusable schemas in `app/Swagger/Schemas/`
+- ✅ Verify endpoint appears in Swagger UI before marking task complete
+
+### Definition of Done (API Tasks)
+
+For any task involving API changes, ALL of these must be complete:
+- [ ] Runtime logic implemented
+- [ ] Tests passing (100% pass rate)
+- [ ] OpenAPI annotations added/updated
+- [ ] Swagger UI renders endpoint correctly (`http://localhost/api/documentation`)
+- [ ] Frontend client generation verified (no manual fixes required)
+
+**Failure to comply blocks task completion.**
+
+**See**: `docs/ai/implementation/OPENAPI_COVERAGE_REPORT.md` for current coverage
 
 ---
 
