@@ -209,7 +209,10 @@ Route::prefix('api/v1')
                 \App\Http\Middleware\AI\TokenBudgetMiddleware::class,
             ])
             ->group(function () {
-                // Test endpoint (temporary - will be replaced by ChatController in Step 5)
+                // Chat endpoint (primary AI interaction)
+                Route::post('/chat', [\App\Http\Controllers\AI\ChatController::class, 'chat']);
+
+                // Test endpoint (for testing middleware stack)
                 Route::post('/test', [TestController::class, 'chat']);
             });
     });

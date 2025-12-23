@@ -2,7 +2,7 @@
 
 **Last Updated**: 2025-12-23
 **Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation
-**Overall Progress**: 80% platform complete, AI architecture defined, database + enforcement + LLM abstraction + context assembly complete (Step 4/6)
+**Overall Progress**: 80% platform complete, AI architecture defined, database + enforcement + LLM abstraction + context assembly + AI endpoint controller complete (Step 5/6)
 
 ---
 
@@ -133,8 +133,18 @@
   - Created formatContextAsText() method for prompt injection
   - Created 10 automated tests (100% pass rate)
   - Updated docs/ai/architecture/prompt-structure.md with capping policies
-- ⏳ **Step 5: AI Endpoint Controller** (NEXT)
-- ⏳ **Step 6: Logging & Observability** (BLOCKED by Step 5)
+- ✅ **Step 5: AI Endpoint Controller** (COMPLETE 2025-12-23)
+  - Created ChatRequest FormRequest with validation (message max 500 chars, session_id UUID, context validation)
+  - Created ChatController with full request/response cycle (session management, context assembly, LLM call, response shaping)
+  - Implemented POST /api/v1/ai/chat endpoint with middleware stack (OptionalAuth → CircuitBreaker → RateLimit → TokenBudget)
+  - Implemented intent detection (6 intents: itinerary_request, accessibility_query, weather_query, beach_comparison, beach_search, general_question)
+  - Implemented output shaping (JSON validation, 1-3 beach recommendations, 2-3 suggestions, safe fallback on invalid JSON)
+  - Implemented error handling (400, 402, 413, 429, 503, 500 with contract-defined payloads)
+  - Implemented observability (request_id, session_id, latency/tokens/cost/tier/context_truncated logging)
+  - Created 9 automated tests (100% pass rate, 65 assertions)
+  - Fixed database schema (ip_address column length from varchar(45) to varchar(64) for SHA-256 hashes)
+  - All middleware gating checks enforced before LLM call (auth/plan/feature/rate/token/circuit breaker)
+- ⏳ **Step 6: Logging & Observability** (NEXT)
 
 ---
 

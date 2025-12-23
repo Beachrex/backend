@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
 **Last Updated**: 2025-12-23
-**Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation (Step 4/6 COMPLETE)
+**Current Phase**: Implementation (IN PROGRESS) - Task #1: AI Core Implementation (Step 5/6 COMPLETE)
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -124,11 +124,17 @@
   - Created formatContextAsText() method for prompt injection
   - Created 10 automated tests (100% pass rate)
   - Updated docs/ai/architecture/prompt-structure.md with capping policies
-- [ ] **Step 5: AI Endpoint Controller** (NEXT)
-  - POST /api/v1/ai/chat
-  - Request validation
-  - Response schema
-- [ ] **Step 6: Logging & Observability** (BLOCKED by Step 5)
+- [x] **Step 5: AI Endpoint Controller** (DONE 2025-12-23)
+  - Created ChatRequest FormRequest with validation
+  - Created ChatController with full request/response cycle
+  - Implemented POST /api/v1/ai/chat endpoint with middleware stack
+  - Implemented intent detection (6 intents)
+  - Implemented output shaping (JSON validation, safe fallback)
+  - Implemented error handling (400, 402, 413, 429, 503, 500)
+  - Implemented observability (request_id, session_id, logging)
+  - Created 9 automated tests (100% pass rate, 65 assertions)
+  - Fixed database schema (ip_address column length)
+- [ ] **Step 6: Logging & Observability** (NEXT)
   - Structured logs
   - Store usage metrics
   - Include request_id / session_id
