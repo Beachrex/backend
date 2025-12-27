@@ -187,7 +187,7 @@ class ChatController extends Controller
         }
 
         // Build context
-        $context = $this->buildContext($request, $session);
+        $context = $this->buildContext($request, $session, $intent);
 
         // Get conversation history (last 5 messages)
         $conversationHistory = $this->getConversationHistory($session);
@@ -322,6 +322,22 @@ class ChatController extends Controller
             return 'accessibility_query';
         }
 
+        // Popularity query (does NOT require location)
+        if (str_contains($message, 'popular') ||
+            str_contains($message, 'top') ||
+            str_contains($message, 'best') ||
+            str_contains($message, 'most viewed') ||
+            str_contains($message, 'frequently visited')) {
+            return 'popularity_query';
+        }
+
+        // Proximity query (REQUIRES location)
+        if (str_contains($message, 'near me') ||
+            str_contains($message, 'nearby') ||
+            str_contains($message, 'closest')) {
+            return 'proximity_query';
+        }
+
         // Weather query
         if (str_contains($message, 'weather') ||
             str_contains($message, 'temperature') ||
@@ -374,7 +390,7 @@ class ChatController extends Controller
     /**
      * Build context for LLM.
      */
-    private function buildContext(ChatRequest $request, AiSession $session): array
+    private function buildContext(ChatRequest $request, AiSession $session, string $intent): array
     {
         $location = $request->input('context.location');
         $preferences = $request->input('context.preferences', []);
@@ -383,6 +399,7 @@ class ChatController extends Controller
             'tier' => $session->tier,
             'locale' => $session->locale,
             'include_weather' => false, // Only include weather if explicitly requested
+            'intent' => $intent, // Pass intent to context builder
         ];
 
         // Add location if provided

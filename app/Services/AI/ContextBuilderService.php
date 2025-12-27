@@ -69,6 +69,7 @@ class ContextBuilderService
         $radius = $params['radius'] ?? 50; // km
         $filters = $params['filters'] ?? [];
         $includeWeather = $params['include_weather'] ?? false;
+        $intent = $params['intent'] ?? 'beach_search';
 
         $context = [
             'beaches' => [],
@@ -82,12 +83,21 @@ class ContextBuilderService
                 'beaches_fetched' => 0,
                 'beaches_returned' => 0,
                 'location_provided' => $latitude !== null && $longitude !== null,
+                'intent' => $intent,
             ],
         ];
 
-        // Fetch beaches ONLY if location provided
-        // RULE: Without location, AI should ask for location or provide general guidance
-        if ($latitude !== null && $longitude !== null) {
+        // RULE: Popularity queries do NOT require location
+        // Fetch beaches by popularity (beach_views) if intent is popularity_query
+        if ($intent === 'popularity_query') {
+            $beaches = $this->fetchPopularBeaches($tier, $filters, $locale);
+            $context['beaches'] = $beaches;
+            $context['metadata']['beaches_fetched'] = count($beaches);
+            $context['metadata']['beaches_returned'] = count($beaches);
+        }
+        // RULE: Proximity queries REQUIRE location
+        // Fetch beaches ONLY if location provided for proximity/distance-based queries
+        elseif ($latitude !== null && $longitude !== null) {
             $beaches = $this->fetchBeaches($latitude, $longitude, $radius, $tier, $filters, $locale);
             $context['beaches'] = $beaches;
             $context['metadata']['beaches_fetched'] = count($beaches);
@@ -140,6 +150,75 @@ class ContextBuilderService
         return $beaches->map(function ($beach) use ($locale) {
             return $this->sanitizeBeach($beach, $locale);
         })->toArray();
+    }
+
+    /**
+     * Fetch popular beaches ordered by beach_views (without location requirement).
+     *
+     * RULE: Popularity queries do NOT require location.
+     * Returns top 1-3 beaches ordered by beach_views DESC.
+     */
+    private function fetchPopularBeaches(
+        string $tier,
+        array $filters,
+        string $locale
+    ): array {
+        // For popularity queries, return max 3 beaches (even for higher tiers)
+        $limit = min(self::MAX_BEACHES[$tier], 3);
+
+        // Set locale
+        app()->setLocale($locale);
+
+        // Fetch beaches ordered by beach_views
+        $query = Beach::query()
+            ->where('status_id', 1)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->orderBy('beach_views', 'desc')
+            ->limit($limit);
+
+        // Apply country filter if present in filters
+        if (!empty($filters['country'])) {
+            $query->where('country_code', $filters['country']);
+        }
+
+        $beaches = $query->get();
+
+        // Format beaches (without distance_km)
+        return $beaches->map(function ($beach) use ($locale) {
+            return $this->sanitizeBeachForPopularity($beach, $locale);
+        })->toArray();
+    }
+
+    /**
+     * Sanitize beach data for popularity queries (no distance_km).
+     */
+    private function sanitizeBeachForPopularity($beach, string $locale): array
+    {
+        $beachArray = $beach->toArray();
+
+        $description = $beachArray['description'] ?? '';
+
+        // Strip HTML tags
+        $description = strip_tags($description);
+
+        // Truncate to max length
+        if (strlen($description) > self::MAX_DESCRIPTION_CHARS) {
+            $description = substr($description, 0, self::MAX_DESCRIPTION_CHARS) . '...';
+        }
+
+        return [
+            'id' => $beachArray['id'] ?? null,
+            'name' => $beachArray['name'] ?? null,
+            'slug' => $beachArray['slug'] ?? null,
+            'country_code' => $beachArray['country_code'] ?? null,
+            'city' => $beachArray['city'] ?? null,
+            'description' => $description,
+            'surface' => $beachArray['surface'] ?? null,
+            'facilities' => $beachArray['facilities'] ?? [],
+            'distance_km' => null, // ALWAYS null for popularity queries
+            'beach_views' => $beachArray['beach_views'] ?? 0,
+        ];
     }
 
     /**
@@ -279,9 +358,21 @@ class ContextBuilderService
     {
         $text = "AVAILABLE CONTEXT:\n\n";
 
+        $intent = $context['metadata']['intent'] ?? 'beach_search';
+        $locationProvided = $context['metadata']['location_provided'] ?? false;
+
         // Beaches
         if (!empty($context['beaches'])) {
-            $text .= "BEACHES (nearest to your location):\n\n";
+            // Different header based on intent
+            if ($intent === 'popularity_query') {
+                $text .= "BEACHES (ordered by popularity - beach_views):\n";
+                $text .= "IMPORTANT: Use transparent language like 'frequently viewed' or 'based on visitor interest'.\n";
+                $text .= "Do NOT claim 'highest rated' or 'best reviewed' (we don't have verified ratings).\n\n";
+            } elseif ($locationProvided) {
+                $text .= "BEACHES (nearest to your location):\n\n";
+            } else {
+                $text .= "BEACHES:\n\n";
+            }
 
             foreach ($context['beaches'] as $index => $beach) {
                 $num = $index + 1;
@@ -289,28 +380,42 @@ class ContextBuilderService
                 $text .= "- ID: {$beach['id']}\n";
                 $text .= "- Name: {$beach['name']}\n";
 
-                if ($beach['location']['country_name']) {
+                if (isset($beach['location']['country_name'])) {
                     $text .= "- Location: {$beach['location']['country_name']}";
-                    if ($beach['location']['distance_km'] !== null) {
+                    if (isset($beach['location']['distance_km']) && $beach['location']['distance_km'] !== null) {
                         $text .= " ({$beach['location']['distance_km']} km away)";
                     }
                     $text .= "\n";
                 }
 
-                if ($beach['description']) {
+                // Show beach_views for popularity queries
+                if ($intent === 'popularity_query' && isset($beach['beach_views'])) {
+                    $text .= "- Views: {$beach['beach_views']}\n";
+                }
+
+                if (isset($beach['description']) && $beach['description']) {
                     $text .= "- Description: {$beach['description']}\n";
                 }
 
                 $text .= "\n";
             }
         } else {
-            // No location provided - AI should ask for location or provide general guidance
-            $text .= "NO LOCATION PROVIDED:\n";
-            $text .= "User has not provided their location. You should either:\n";
-            $text .= "1. Ask the user to share their location for personalized recommendations\n";
-            $text .= "2. Provide general guidance about beaches in the requested area\n";
-            $text .= "3. Suggest popular beaches if user asks for 'best' or 'popular' beaches\n\n";
-            $text .= "IMPORTANT: Do NOT compute or mention distance without user location.\n\n";
+            // No beaches - different message based on intent
+            if ($intent === 'proximity_query') {
+                // Proximity query requires location
+                $text .= "NO LOCATION PROVIDED:\n";
+                $text .= "User asked for beaches 'near me' but has not provided their location.\n";
+                $text .= "You MUST ask the user to share their location.\n\n";
+                $text .= "IMPORTANT: Do NOT compute or mention distance without user location.\n\n";
+            } else {
+                // General query without location
+                $text .= "NO LOCATION PROVIDED:\n";
+                $text .= "User has not provided their location. You should either:\n";
+                $text .= "1. Ask the user to share their location for personalized recommendations\n";
+                $text .= "2. Provide general guidance about beaches in the requested area\n";
+                $text .= "3. Suggest popular beaches if user asks for 'best' or 'popular' beaches\n\n";
+                $text .= "IMPORTANT: Do NOT compute or mention distance without user location.\n\n";
+            }
         }
 
         // Weather

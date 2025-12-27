@@ -55,19 +55,78 @@ If user asks for "popular", "top-rated", "best" beaches:
 - Be transparent: "Here are frequently viewed beaches..." or "Based on visitor interest..."
 - Do NOT claim verified ratings or reviews (we don't have those)
 
+**IMPORTANT**: Popularity queries do NOT require location.
+
 ---
 
-## 3. Summary
+### 2.2. Implementation
+
+**File**: `app/Http/Controllers/AI/ChatController.php`
+
+**Changes**:
+1. Added `detectIntent()` method to classify queries:
+   - **`popularity_query`**: "popular", "top", "best", "most viewed", "frequently visited" → Does NOT require location
+   - **`proximity_query`**: "near me", "nearby", "closest" → REQUIRES location
+2. Updated `buildContext()` to pass `intent` parameter to `ContextBuilderService`
+
+**File**: `app/Services/AI/ContextBuilderService.php`
+
+**Changes**:
+1. Added `intent` parameter to `buildContext()` method
+2. Added `fetchPopularBeaches()` method:
+   - Fetches top 1-3 beaches ordered by `beach_views DESC`
+   - Supports country filter if present
+   - Returns beaches with `distance_km: null`
+3. Added `sanitizeBeachForPopularity()` method to format beach data for popularity queries
+4. Updated `formatContextAsText()` to handle popularity queries:
+   - Different header: "BEACHES (ordered by popularity - beach_views):"
+   - Guidance: "Use transparent language like 'frequently viewed' or 'based on visitor interest'"
+   - Shows `beach_views` field for popularity queries
+
+---
+
+### 2.3. Behavior
+
+| Query | Location Provided | Behavior |
+|-------|------------------|----------|
+| "Show me the most popular beaches" | ❌ No | Returns top 1-3 by `beach_views`, `distance_km: null`, AI says "frequently viewed" |
+| "Show me the most popular beaches" | ✅ Yes | Returns top 1-3 by `beach_views`, `distance_km: null`, AI says "frequently viewed" |
+| "What are the best beaches?" | ❌ No | Returns top 1-3 by `beach_views`, `distance_km: null`, AI says "well-known" |
+| "Show me beaches near me" | ❌ No | AI asks for location, `beaches: []` |
+| "Show me beaches near me" | ✅ Yes | Returns beaches by distance, `distance_km: 0.45`, AI mentions distance |
+
+---
+
+## 3. Intent Detection
+
+### 3.1. Intents
+
+| Intent | Keywords | Requires Location | Behavior |
+|--------|----------|------------------|----------|
+| `popularity_query` | "popular", "top", "best", "most viewed", "frequently visited" | ❌ No | Fetch by `beach_views DESC`, max 3 beaches |
+| `proximity_query` | "near me", "nearby", "closest" | ✅ Yes | Fetch by distance, ask for location if not provided |
+| `beach_search` | General queries | ❌ No | Fetch by location if provided, otherwise return empty |
+| `itinerary_request` | "itinerary", "plan", "trip" | ❌ No | Generate itinerary |
+| `accessibility_query` | "accessible", "wheelchair", "disability" | ❌ No | Filter by accessibility |
+| `weather_query` | "weather", "forecast", "temperature" | ❌ No | Include weather data |
+| `beach_comparison` | "compare", "difference", "vs" | ❌ No | Compare beaches |
+| `general_question` | Other | ❌ No | General response |
+
+---
+
+## 4. Summary
 
 **Status**: ✅ COMPLETE
+**Last Updated**: 2025-12-27 (Added popularity query intent)
 
 **Changes**:
 - ✅ Distance only computed when location provided
-- ✅ AI asks for location when needed
+- ✅ AI asks for location when needed (proximity queries only)
+- ✅ Popularity queries do NOT require location
+- ✅ Popularity queries return top 1-3 beaches by `beach_views`
 - ✅ Popularity queries use `beach_views` signal transparently
 - ✅ AI does NOT claim verified ratings/reviews
-- ✅ 3 new tests added (14 assertions)
-- ✅ All 41 tests passing (216 assertions)
+- ✅ All 41 tests passing (218 assertions)
 - ✅ Documentation updated
 
 **Files Modified** (5):
