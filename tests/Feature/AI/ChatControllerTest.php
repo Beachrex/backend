@@ -418,13 +418,13 @@ class ChatControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function popular_beaches_without_location_returns_top_by_views()
     {
-        // Mock LLM response for popularity query
+        // Mock LLM response for popularity query (LLM might include distance_km, but it should be stripped)
         $this->mockLLMResponse([
             'intent' => 'popularity_query',
             'message' => 'Here are some of the most frequently viewed beaches in Croatia based on visitor interest.',
             'beaches' => [
-                ['id' => 1, 'name' => 'Popular Beach 1', 'match_score' => 0.95],
-                ['id' => 2, 'name' => 'Popular Beach 2', 'match_score' => 0.85],
+                ['id' => 1, 'name' => 'Popular Beach 1', 'match_score' => 0.95, 'distance_km' => 10.5], // LLM might add this
+                ['id' => 2, 'name' => 'Popular Beach 2', 'match_score' => 0.85, 'distance_km' => 5.2],  // LLM might add this
             ],
             'filters_applied' => ['country' => 'HR', 'sort' => 'popularity'],
             'suggestions' => ['Share your location for personalized recommendations'],
@@ -440,8 +440,15 @@ class ChatControllerTest extends TestCase
         // Verify beaches are returned (not empty) - popularity queries should work without location
         $beaches = $response->json('beaches');
         $this->assertIsArray($beaches);
-        // Note: beaches array might be empty if no beaches in DB, but that's OK for this test
-        // The important part is that the request succeeds and doesn't require location
+        $this->assertNotEmpty($beaches, 'Popularity query should return beaches without location');
+
+        // CRITICAL: Verify distance_km is null for ALL beaches when no location provided
+        foreach ($beaches as $beach) {
+            $this->assertNull(
+                $beach['distance_km'] ?? null,
+                "Beach '{$beach['name']}' has distance_km={$beach['distance_km']}, but it should be null for popularity queries without location"
+            );
+        }
 
         // Verify AI message is transparent about data source
         $message = $response->json('message');

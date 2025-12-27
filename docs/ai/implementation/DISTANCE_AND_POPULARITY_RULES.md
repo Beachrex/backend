@@ -68,6 +68,16 @@ If user asks for "popular", "top-rated", "best" beaches:
    - **`popularity_query`**: "popular", "top", "best", "most viewed", "frequently visited" → Does NOT require location
    - **`proximity_query`**: "near me", "nearby", "closest" → REQUIRES location
 2. Updated `buildContext()` to pass `intent` parameter to `ContextBuilderService`
+3. **Added post-processing** after LLM response to ensure `distance_km` is null for popularity queries without location:
+   ```php
+   // Post-process beaches to ensure distance_km is null for popularity queries without location
+   if ($intent === 'popularity_query' && !$request->has('context.location')) {
+       $parsedResponse['beaches'] = array_map(function ($beach) {
+           $beach['distance_km'] = null;
+           return $beach;
+       }, $parsedResponse['beaches']);
+   }
+   ```
 
 **File**: `app/Services/AI/ContextBuilderService.php`
 
@@ -117,17 +127,24 @@ If user asks for "popular", "top-rated", "best" beaches:
 ## 4. Summary
 
 **Status**: ✅ COMPLETE
-**Last Updated**: 2025-12-27 (Added popularity query intent)
+**Last Updated**: 2025-12-27 (Fixed distance_km bug for popularity queries)
 
 **Changes**:
 - ✅ Distance only computed when location provided
 - ✅ AI asks for location when needed (proximity queries only)
 - ✅ Popularity queries do NOT require location
 - ✅ Popularity queries return top 1-3 beaches by `beach_views`
+- ✅ **Popularity queries ALWAYS return `distance_km: null` (post-processed after LLM response)**
 - ✅ Popularity queries use `beach_views` signal transparently
 - ✅ AI does NOT claim verified ratings/reviews
-- ✅ All 41 tests passing (218 assertions)
+- ✅ All 41 tests passing (221 assertions)
 - ✅ Documentation updated
+
+**Bug Fix** (2025-12-27):
+- **Issue**: LLM was returning `distance_km` values for popularity queries even without location
+- **Root Cause**: LLM response was not post-processed to enforce `distance_km: null`
+- **Solution**: Added post-processing in `ChatController` to strip `distance_km` for popularity queries without location
+- **Test**: Updated `popular_beaches_without_location_returns_top_by_views` to assert all beaches have `distance_km: null`
 
 **Files Modified** (5):
 1. `app/Services/AI/ContextBuilderService.php`

@@ -209,6 +209,14 @@ class ChatController extends Controller
             // Parse and validate LLM response
             $parsedResponse = $this->parseLLMResponse($llmResponse->content);
 
+            // Post-process beaches to ensure distance_km is null for popularity queries without location
+            if ($intent === 'popularity_query' && !$request->has('context.location')) {
+                $parsedResponse['beaches'] = array_map(function ($beach) {
+                    $beach['distance_km'] = null;
+                    return $beach;
+                }, $parsedResponse['beaches']);
+            }
+
             // Save user message
             $this->saveMessage($session, 'user', $userMessage, $intent, $context, $llmResponse->inputTokens, 0);
 
