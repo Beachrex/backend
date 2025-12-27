@@ -20,25 +20,47 @@ If no location is provided:
   2. Provide general guidance about beaches in requested area
   3. Suggest well-known beaches if user asks for "best" or "popular"
 
+### 1.2. Behavior by Query Type & Intent
+
+| Query Type | Intent | Location? | Distance? | Beaches? | AI Behavior |
+|------------|--------|-----------|-----------|----------|-------------|
+| "beaches in Croatia" | `beach_search` | ❌ No | ❌ No | ✅ Yes (1-3) | Returns default suggestions by `beach_views`, may ask follow-up |
+| "beaches in Croatia" | `beach_search` | ✅ Yes | ✅ Yes | ✅ Yes | Returns beaches sorted by distance |
+| "beaches near me" | `proximity_query` | ❌ No | ❌ No | ❌ No | **MUST** ask for location |
+| "beaches near me" | `proximity_query` | ✅ Yes | ✅ Yes | ✅ Yes | Returns beaches sorted by distance |
+| "popular beaches" | `popularity_query` | ❌ No | ❌ No | ✅ Yes (1-3) | Returns top beaches by `beach_views` |
+| "popular beaches in Croatia" | `popularity_query` | ❌ No | ❌ No | ✅ Yes (1-3) | Returns top beaches by `beach_views` (country filtered) |
+
+**Key Rules**:
+- `proximity_query` (near me, nearby, closest) → REQUIRES location, returns empty if no location
+- `popularity_query` (popular, top, best) → Does NOT require location, returns by `beach_views`
+- `beach_search` with country/region filter → Does NOT require location, returns default suggestions by `beach_views`
+- `beach_search` without filters and without location → Returns empty, asks for location or filters
+
 ---
 
-### 1.2. Implementation
+### 1.3. Implementation
 
 **File**: `app/Services/AI/ContextBuilderService.php`
 
 **Changes**:
 1. Added `location_provided` flag to metadata
-2. Only fetch beaches if `latitude` and `longitude` are both provided
+2. Fetch beaches logic based on intent:
+   - `popularity_query` → Fetch by `beach_views DESC` (no location required)
+   - `beach_search` with filters (country/region) → Fetch by `beach_views DESC` (no location required)
+   - `proximity_query` or location provided → Fetch by distance (PostGIS)
 3. Added context message when no location provided
 
 **File**: `app/Http/Controllers/AI/ChatController.php`
 
 **Changes**:
 1. Added `location_provided` to response metadata
+2. Added `parseCountryFromMessage()` method to extract country from user message (simple keyword matching)
+3. Pass country filter to context builder if detected
 
 ---
 
-### 1.3. Examples
+### 1.4. Examples
 
 See full examples in the complete documentation.
 
@@ -127,28 +149,44 @@ If user asks for "popular", "top-rated", "best" beaches:
 ## 4. Summary
 
 **Status**: ✅ COMPLETE
-**Last Updated**: 2025-12-27 (Fixed distance_km bug for popularity queries)
+**Last Updated**: 2025-12-27 (Fixed beach_search behavior for country queries)
 
 **Changes**:
 - ✅ Distance only computed when location provided
 - ✅ AI asks for location when needed (proximity queries only)
 - ✅ Popularity queries do NOT require location
 - ✅ Popularity queries return top 1-3 beaches by `beach_views`
+- ✅ **beach_search with country filter returns 1-3 beaches (not empty array)**
 - ✅ **Popularity queries ALWAYS return `distance_km: null` (post-processed after LLM response)**
+- ✅ **filters_applied is null (not []) when no filters applied**
 - ✅ Popularity queries use `beach_views` signal transparently
 - ✅ AI does NOT claim verified ratings/reviews
-- ✅ All 41 tests passing (221 assertions)
+- ✅ All 13 ChatController tests passing (95 assertions)
 - ✅ Documentation updated
 
-**Bug Fix** (2025-12-27):
-- **Issue**: LLM was returning `distance_km` values for popularity queries even without location
-- **Root Cause**: LLM response was not post-processed to enforce `distance_km: null`
-- **Solution**: Added post-processing in `ChatController` to strip `distance_km` for popularity queries without location
-- **Test**: Updated `popular_beaches_without_location_returns_top_by_views` to assert all beaches have `distance_km: null`
+**Bug Fixes** (2025-12-27):
+
+1. **distance_km values in popularity queries**:
+   - **Issue**: LLM was returning `distance_km` values for popularity queries even without location
+   - **Root Cause**: LLM response was not post-processed to enforce `distance_km: null`
+   - **Solution**: Added post-processing in `ChatController` to strip `distance_km` for popularity queries without location
+   - **Test**: Updated `popular_beaches_without_location_returns_top_by_views` to assert all beaches have `distance_km: null`
+
+2. **Empty beaches array for country queries**:
+   - **Issue**: "beaches in Croatia" without location returned `beaches: []` and only asked follow-up question
+   - **Root Cause**: `beach_search` intent without location was not fetching beaches
+   - **Solution**: Added logic to fetch beaches by `beach_views` for `beach_search` with filters (country/region)
+   - **Test**: Added `country_query_without_location_returns_default_beaches` test
+
+3. **filters_applied type mismatch**:
+   - **Issue**: Could return `[]` instead of `null` when no filters applied
+   - **Root Cause**: No validation of LLM response
+   - **Solution**: Added post-processing to convert `[]` to `null` for `filters_applied`
+   - **Test**: Added `filters_applied_is_null_when_no_filters_used` test
 
 **Files Modified** (5):
-1. `app/Services/AI/ContextBuilderService.php`
-2. `app/Http/Controllers/AI/ChatController.php`
-3. `tests/Feature/AI/ChatControllerTest.php`
+1. `app/Services/AI/ContextBuilderService.php` - Added beach fetching for `beach_search` with filters
+2. `app/Http/Controllers/AI/ChatController.php` - Added country parsing, post-processing for distance_km and filters_applied
+3. `tests/Feature/AI/ChatControllerTest.php` - Added 3 new tests
 4. `docs/ai/architecture/api-contracts.md`
 5. `docs/ai/architecture/prompt-structure.md`

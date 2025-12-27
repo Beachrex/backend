@@ -217,6 +217,11 @@ class ChatController extends Controller
                 }, $parsedResponse['beaches']);
             }
 
+            // Ensure filters_applied is null (not []) when empty - matches OpenAPI schema (type="object" nullable)
+            if (isset($parsedResponse['filters_applied']) && $parsedResponse['filters_applied'] === []) {
+                $parsedResponse['filters_applied'] = null;
+            }
+
             // Save user message
             $this->saveMessage($session, 'user', $userMessage, $intent, $context, $llmResponse->inputTokens, 0);
 
@@ -402,6 +407,7 @@ class ChatController extends Controller
     {
         $location = $request->input('context.location');
         $preferences = $request->input('context.preferences', []);
+        $userMessage = $request->input('message');
 
         $params = [
             'tier' => $session->tier,
@@ -426,7 +432,41 @@ class ChatController extends Controller
             $params['filters']['facilities'] = $preferences['facilities'];
         }
 
+        // Parse country from message (simple keyword matching for MVP)
+        $country = $this->parseCountryFromMessage($userMessage);
+        if ($country) {
+            $params['filters']['country'] = $country;
+        }
+
         return $this->contextBuilder->buildContext($params);
+    }
+
+    /**
+     * Parse country code from user message (simple keyword matching for MVP).
+     */
+    private function parseCountryFromMessage(string $message): ?string
+    {
+        $messageLower = strtolower($message);
+
+        // Country keyword mapping
+        $countryMap = [
+            'croatia' => 'HR',
+            'croatian' => 'HR',
+            'hrvatska' => 'HR',
+            'slovenia' => 'SI',
+            'slovenian' => 'SI',
+            'slovenija' => 'SI',
+            'montenegro' => 'ME',
+            'crna gora' => 'ME',
+        ];
+
+        foreach ($countryMap as $keyword => $code) {
+            if (str_contains($messageLower, $keyword)) {
+                return $code;
+            }
+        }
+
+        return null;
     }
 
     /**

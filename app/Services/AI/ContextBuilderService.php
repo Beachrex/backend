@@ -103,6 +103,14 @@ class ContextBuilderService
             $context['metadata']['beaches_fetched'] = count($beaches);
             $context['metadata']['beaches_returned'] = count($beaches);
         }
+        // RULE: beach_search without location but WITH filters (country/region/city)
+        // Return default suggestions (1-3 beaches) ordered by beach_views
+        elseif ($intent === 'beach_search' && !empty($filters)) {
+            $beaches = $this->fetchPopularBeaches($tier, $filters, $locale);
+            $context['beaches'] = $beaches;
+            $context['metadata']['beaches_fetched'] = count($beaches);
+            $context['metadata']['beaches_returned'] = count($beaches);
+        }
 
         // Fetch weather if allowed by tier and requested
         if ($includeWeather && $this->canAccessWeather($tier)) {
@@ -370,6 +378,10 @@ class ContextBuilderService
                 $text .= "Do NOT claim 'highest rated' or 'best reviewed' (we don't have verified ratings).\n\n";
             } elseif ($locationProvided) {
                 $text .= "BEACHES (nearest to your location):\n\n";
+            } elseif ($intent === 'beach_search') {
+                $text .= "BEACHES (default suggestions ordered by popularity - beach_views):\n";
+                $text .= "IMPORTANT: These are suggestions based on visitor interest. You may ask follow-up questions,\n";
+                $text .= "but you MUST include these beaches in your response (do NOT return empty beaches array).\n\n";
             } else {
                 $text .= "BEACHES:\n\n";
             }

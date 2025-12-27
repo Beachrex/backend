@@ -379,16 +379,21 @@ class ChatControllerTest extends TestCase
     }
 
     /**
-     * Test country-level query without location does NOT return distance_km.
+     * Test country-level query without location returns default beaches (not empty array).
+     * MVP requirement: beach_search with country filter must return 1-3 beaches as suggestions.
      */
     #[\PHPUnit\Framework\Attributes\Test]
-    public function country_query_without_location_does_not_return_distance()
+    public function country_query_without_location_returns_default_beaches()
     {
-        // Mock LLM response for country-level query
+        // Mock LLM response for country-level query with beaches
+        // The LLM should receive beaches from context and include them in response
         $this->mockLLMResponse([
             'intent' => 'beach_search',
-            'message' => 'Here are some well-known beaches in Croatia.',
-            'beaches' => [],
+            'message' => 'Here are some popular beaches in Croatia based on visitor interest.',
+            'beaches' => [
+                ['id' => 1, 'name' => 'Zlatni Rat', 'match_score' => 0.95, 'distance_km' => null],
+                ['id' => 2, 'name' => 'Bačvice', 'match_score' => 0.85, 'distance_km' => null],
+            ],
             'filters_applied' => ['country' => 'HR'],
             'suggestions' => ['Share your location for personalized recommendations'],
         ]);
@@ -399,6 +404,22 @@ class ChatControllerTest extends TestCase
         ]);
 
         $response->assertStatus(200);
+
+        // CRITICAL: Beaches array must NOT be empty for country queries
+        // This is the MVP requirement - beach_search with country must return suggestions
+        $beaches = $response->json('beaches');
+        $this->assertIsArray($beaches);
+        $this->assertNotEmpty($beaches, 'beach_search with country filter must return beaches (not empty array)');
+        $this->assertGreaterThanOrEqual(1, count($beaches), 'Should return at least 1 beach');
+        $this->assertLessThanOrEqual(3, count($beaches), 'Should return at most 3 beaches');
+
+        // Verify distance_km is null for all beaches (no location provided)
+        foreach ($beaches as $beach) {
+            $this->assertNull(
+                $beach['distance_km'] ?? null,
+                "Beach '{$beach['name']}' should have distance_km=null when no location provided"
+            );
+        }
 
         // Verify metadata indicates no location was provided
         $metadata = $response->json('metadata');
@@ -506,6 +527,40 @@ class ChatControllerTest extends TestCase
         // Verify no beaches returned (can't compute "near me" without location)
         $beaches = $response->json('beaches');
         $this->assertEmpty($beaches);
+    }
+
+    /**
+     * Test filters_applied is null (not empty array) when no filters are applied.
+     * This locks the behavior to match OpenAPI schema: filters_applied is type "object" nullable, not array.
+     */
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function filters_applied_is_null_when_no_filters_used()
+    {
+        // Mock LLM response with NO filters applied
+        $this->mockLLMResponse([
+            'intent' => 'general_question',
+            'message' => 'Beaches are coastal areas where land meets water, typically featuring sand, pebbles, or rocks.',
+            'beaches' => [],
+            'filters_applied' => null, // Explicitly null, not []
+            'suggestions' => ['Search for beaches in Croatia', 'Find beaches near you'],
+        ]);
+
+        $response = $this->postJson('/api/v1/ai/chat', [
+            'message' => 'What is a beach?',
+        ]);
+
+        $response->assertStatus(200);
+
+        // CRITICAL: filters_applied must be null (not []) when no filters are applied
+        // This matches OpenAPI schema: type="object", nullable=true
+        $filtersApplied = $response->json('filters_applied');
+        $this->assertNull(
+            $filtersApplied,
+            'filters_applied should be null (not empty array []) when no filters are applied. OpenAPI schema defines it as type="object" nullable=true.'
+        );
+
+        // Verify it's not an empty array
+        $this->assertNotSame([], $filtersApplied, 'filters_applied should be null, not []');
     }
 }
 
