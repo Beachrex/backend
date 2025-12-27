@@ -39,6 +39,23 @@ use App\Http\Controllers\Api\V1\SlugResolverController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\AI\TestController;
 
+// Public OpenAPI spec endpoint (no authentication required)
+Route::get('/openapi.json', function () {
+    $path = storage_path('api-docs/api-docs.json');
+
+    if (!file_exists($path)) {
+        return response()->json([
+            'error' => 'OpenAPI specification not found',
+            'message' => 'Run: php artisan l5-swagger:generate'
+        ], 404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'application/json',
+        'Access-Control-Allow-Origin' => '*', // Allow CORS for frontend
+    ]);
+});
+
 Route::prefix('api/v1')
     ->middleware('api')
     ->group(function () {
