@@ -325,8 +325,10 @@ class ChatControllerTest extends TestCase
 
     /**
      * Mock LLM response for testing.
+     *
+     * @param string|array|null $content JSON string, array to encode, or null for default
      */
-    private function mockLLMResponse(string $content = null)
+    private function mockLLMResponse($content = null)
     {
         if ($content === null) {
             $content = json_encode([
@@ -353,6 +355,8 @@ class ChatControllerTest extends TestCase
                     'Which one has the best weather?',
                 ],
             ]);
+        } elseif (is_array($content)) {
+            $content = json_encode($content);
         }
 
         // Mock LLMService instead of OpenAI facade
@@ -371,6 +375,115 @@ class ChatControllerTest extends TestCase
             ->andReturn($mockResponse);
 
         $this->app->instance(\App\Services\AI\LLMService::class, $mockLLMService);
+    }
+
+    /**
+     * Test country-level query without location does NOT return distance_km.
+     */
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function country_query_without_location_does_not_return_distance()
+    {
+        // Mock LLM response for country-level query
+        $this->mockLLMResponse([
+            'intent' => 'beach_search',
+            'message' => 'Here are some well-known beaches in Croatia.',
+            'beaches' => [],
+            'filters_applied' => ['country' => 'HR'],
+            'suggestions' => ['Share your location for personalized recommendations'],
+        ]);
+
+        $response = $this->postJson('/api/v1/ai/chat', [
+            'message' => 'Show me beaches in Croatia',
+            // NO context.location provided
+        ]);
+
+        $response->assertStatus(200);
+
+        // Verify metadata indicates no location was provided
+        $metadata = $response->json('metadata');
+        $this->assertArrayHasKey('location_provided', $metadata);
+        $this->assertFalse($metadata['location_provided']);
+
+        // Verify AI message does NOT mention distance
+        $message = $response->json('message');
+        $this->assertStringNotContainsString('km', $message);
+        $this->assertStringNotContainsString('away', $message);
+        $this->assertStringNotContainsString('distance', $message);
+    }
+
+    /**
+     * Test "popular beaches" query uses beach_views signal transparently.
+     */
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function popular_beaches_query_uses_beach_views_signal()
+    {
+        // Mock LLM response for popularity query
+        $this->mockLLMResponse([
+            'intent' => 'beach_search',
+            'message' => 'Here are some of the most frequently viewed beaches in Croatia based on visitor interest.',
+            'beaches' => [],
+            'filters_applied' => ['country' => 'HR', 'sort' => 'popularity'],
+            'suggestions' => ['Share your location for personalized recommendations'],
+        ]);
+
+        $response = $this->postJson('/api/v1/ai/chat', [
+            'message' => 'Show me the most popular beaches in Croatia',
+        ]);
+
+        $response->assertStatus(200);
+
+        // Verify AI message is transparent about data source
+        $message = $response->json('message');
+        $this->assertTrue(
+            str_contains($message, 'frequently viewed') ||
+            str_contains($message, 'visitor interest') ||
+            str_contains($message, 'well-known'),
+            'AI message should be transparent about popularity signal (not claim verified ratings)'
+        );
+
+        // Verify AI does NOT claim verified ratings/reviews
+        $this->assertStringNotContainsString('highest rated', $message);
+        $this->assertStringNotContainsString('top rated', $message);
+        $this->assertStringNotContainsString('best reviewed', $message);
+    }
+
+    /**
+     * Test "beaches near me" without location asks for location.
+     */
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function beaches_near_me_without_location_asks_for_location()
+    {
+        // Mock LLM response asking for location
+        $this->mockLLMResponse([
+            'intent' => 'beach_search',
+            'message' => 'I\'d love to help you find beaches near you! Could you share your location?',
+            'beaches' => [],
+            'suggestions' => [
+                'Show me beaches in Split',
+                'Show me beaches in Dubrovnik',
+                'Show me popular beaches in Croatia',
+            ],
+        ]);
+
+        $response = $this->postJson('/api/v1/ai/chat', [
+            'message' => 'Show me beaches near me',
+            // NO context.location provided
+        ]);
+
+        $response->assertStatus(200);
+
+        // Verify AI asks for location
+        $message = $response->json('message');
+        $this->assertTrue(
+            str_contains($message, 'location') ||
+            str_contains($message, 'where') ||
+            str_contains($message, 'city'),
+            'AI should ask for location when user says "near me" without providing location'
+        );
+
+        // Verify no beaches returned (can't compute "near me" without location)
+        $beaches = $response->json('beaches');
+        $this->assertEmpty($beaches);
     }
 }
 

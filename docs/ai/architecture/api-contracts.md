@@ -267,9 +267,32 @@ interface Beach {
   city: string;
   surface: string;
   facilities: string[];
-  distance_km?: number;                       // If user location provided
+  distance_km?: number;                       // NULLABLE: Only if user location provided in request context
   match_score: number;                        // 0-1, relevance to query
 }
+
+/**
+ * DISTANCE HANDLING RULES:
+ *
+ * 1. distance_km is ONLY computed when user provides location (latitude/longitude) in request context
+ * 2. If no location provided:
+ *    - distance_km MUST be null (not returned in response)
+ *    - AI message MUST NOT mention distance
+ *    - AI should either:
+ *      a) Ask user to share location for personalized recommendations
+ *      b) Provide general guidance about beaches in requested area
+ *      c) Suggest well-known beaches if user asks for "best" or "popular"
+ *
+ * 3. Country-level queries (e.g., "Show me beaches in Croatia") without location:
+ *    - Return beaches based on other criteria (popularity, facilities, etc.)
+ *    - Do NOT compute distance
+ *    - Do NOT sort by distance
+ *
+ * Example:
+ * Request: { "message": "Show me beaches in Croatia" }  // No context.location
+ * Response: { "beaches": [{ "id": 123, "name": "Bačvice", "distance_km": null, ... }] }
+ * AI Message: "Here are some well-known beaches in Croatia..." (NO distance mentioned)
+ */
 
 interface FilterSet {
   country?: string;

@@ -81,10 +81,12 @@ class ContextBuilderService
                 'context_truncated' => false,
                 'beaches_fetched' => 0,
                 'beaches_returned' => 0,
+                'location_provided' => $latitude !== null && $longitude !== null,
             ],
         ];
 
-        // Fetch beaches if location provided
+        // Fetch beaches ONLY if location provided
+        // RULE: Without location, AI should ask for location or provide general guidance
         if ($latitude !== null && $longitude !== null) {
             $beaches = $this->fetchBeaches($latitude, $longitude, $radius, $tier, $filters, $locale);
             $context['beaches'] = $beaches;
@@ -301,6 +303,14 @@ class ContextBuilderService
 
                 $text .= "\n";
             }
+        } else {
+            // No location provided - AI should ask for location or provide general guidance
+            $text .= "NO LOCATION PROVIDED:\n";
+            $text .= "User has not provided their location. You should either:\n";
+            $text .= "1. Ask the user to share their location for personalized recommendations\n";
+            $text .= "2. Provide general guidance about beaches in the requested area\n";
+            $text .= "3. Suggest popular beaches if user asks for 'best' or 'popular' beaches\n\n";
+            $text .= "IMPORTANT: Do NOT compute or mention distance without user location.\n\n";
         }
 
         // Weather

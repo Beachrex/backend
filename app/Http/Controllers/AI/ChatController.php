@@ -245,6 +245,7 @@ class ChatController extends Controller
                     'response_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
                     'cached' => false,
                     'request_id' => $requestId,
+                    'location_provided' => $request->has('context.location'),
                 ],
             ]);
 

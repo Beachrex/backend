@@ -155,6 +155,25 @@
   - All tests pass (9 tests, 65 assertions, 100% pass rate)
   - Metrics tracked: total requests, success/error counts, latency, cost, tier distribution
 
+### Frontend Testing Infrastructure (100% Complete) ✅ NEW
+- ✅ **OpenAPI Client Generation** (2025-12-27)
+  - Generated TypeScript client from OpenAPI spec using `@hey-api/openapi-ts`
+  - All AI endpoint types fully typed (AiChatRequest, AiChatResponse, error types)
+  - No `any` or `unknown` types required
+  - Command: `yarn generate:api` (requires Node 20+)
+  - Location: `src/lib/api-client/` (types.gen.ts, sdk.gen.ts, client.gen.ts)
+- ✅ **Internal AI Playground** (2025-12-27)
+  - DEV/STAGING-only testing UI at `/internal/ai-playground`
+  - Production guard: Returns 404 if `NEXT_PUBLIC_BASE_URL` contains 'beachrex.com' without 'dev.'
+  - Uses ONLY generated OpenAPI client (no manual fetch)
+  - Features: Message input, optional location context (lat/long/radius), session persistence
+  - Success display: AI message, beach recommendations (1-3), session_id, intent, metadata
+  - Error display: HTTP status, error code, message, specific details for 402/429/413/503
+  - Debug tooling: "Copy Debug Info" button (copies request_id, session_id, status, error details to clipboard)
+  - Location: `src/app/internal/ai-playground/page.tsx`
+  - Layout: `src/app/internal/layout.tsx` (minimal, no header/footer, bypasses i18n)
+  - Middleware: `src/middleware.ts` updated to skip i18n for `/internal` routes
+
 ---
 
 ## What is IN PROGRESS (Current Work) 🚧
