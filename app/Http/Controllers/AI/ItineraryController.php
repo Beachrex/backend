@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  * AI Itinerary Controller
  *
  * Handles trip itinerary generation (PRIMARY REVENUE FEATURE).
- * 
+ *
  * Source: docs/ai/implementation/PHASE_1_PROPOSAL.md
  *
  * Enforcement order (from middleware + controller):
@@ -62,14 +62,25 @@ class ItineraryController extends Controller
      *         )
      *     ),
      *     @OA\Response(
-     *         response=400,
-     *         description="Bad Request - Invalid input (missing destination, invalid duration, etc.)",
+     *         response=422,
+     *         description="Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
      *         @OA\JsonContent(
-     *             ref="#/components/schemas/AiErrorResponse",
-     *             example={
-     *                 "error": "invalid_request",
-     *                 "message": "Duration must be 3, 7, or 14 days"
-     *             }
+     *             type="object",
+     *             required={"message", "errors"},
+     *             @OA\Property(
+     *                 property="message",
+     *                 type="string",
+     *                 example="The duration days field must be one of: 3, 7, 14."
+     *             ),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 description="Field-specific validation errors",
+     *                 example={
+     *                     "duration_days": {"The duration days field must be one of: 3, 7, 14."},
+     *                     "destination.country_code": {"The destination.country code field is required."}
+     *                 }
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -98,9 +109,9 @@ class ItineraryController extends Controller
      *             example={
      *                 "error": "token_budget_exceeded",
      *                 "message": "Request exceeds token budget for free tier",
-     *                 "limit": 4000,
-     *                 "estimated": 5200,
-     *                 "upgrade_url": "https://beachrex.com/pricing"
+     *                 "estimated_tokens": 5200,
+     *                 "max_tokens": 4000,
+     *                 "suggestion": "Simplify your query or upgrade to paid tier"
      *             }
      *         )
      *     ),

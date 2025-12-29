@@ -208,16 +208,34 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Bad Request - Invalid input (missing destination, invalid duration, etc.)",
+                    "422": {
+                        "description": "Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AiErrorResponse"
-                                },
-                                "example": {
-                                    "error": "invalid_request",
-                                    "message": "Duration must be 3, 7, or 14 days"
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ],
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The duration days field must be one of: 3, 7, 14."
+                                        },
+                                        "errors": {
+                                            "description": "Field-specific validation errors",
+                                            "type": "object",
+                                            "example": {
+                                                "duration_days": [
+                                                    "The duration days field must be one of: 3, 7, 14."
+                                                ],
+                                                "destination.country_code": [
+                                                    "The destination.country code field is required."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -253,9 +271,9 @@
                                 "example": {
                                     "error": "token_budget_exceeded",
                                     "message": "Request exceeds token budget for free tier",
-                                    "limit": 4000,
-                                    "estimated": 5200,
-                                    "upgrade_url": "https://beachrex.com/pricing"
+                                    "estimated_tokens": 5200,
+                                    "max_tokens": 4000,
+                                    "suggestion": "Simplify your query or upgrade to paid tier"
                                 }
                             }
                         }

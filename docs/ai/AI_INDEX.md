@@ -188,6 +188,7 @@ This project uses OpenAPI as a **single source of truth** for frontend integrati
 - ✅ Frontend API clients are generated from OpenAPI – undocumented behavior is forbidden
 - ✅ All enums (tier, intent, error_code) must be explicitly defined
 - ✅ Security schemes (authentication) must be documented
+- ✅ Validation errors return `422 Unprocessable Entity` (Laravel standard), not `400 Bad Request`
 
 ### AI Agent Rules
 

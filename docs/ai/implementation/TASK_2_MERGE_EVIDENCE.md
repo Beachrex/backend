@@ -43,14 +43,25 @@
      *         )
      *     ),
      *     @OA\Response(
-     *         response=400,
-     *         description="Bad Request - Invalid input (missing destination, invalid duration, etc.)",
+     *         response=422,
+     *         description="Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
      *         @OA\JsonContent(
-     *             ref="#/components/schemas/AiErrorResponse",
-     *             example={
-     *                 "error": "invalid_request",
-     *                 "message": "Duration must be 3, 7, or 14 days"
-     *             }
+     *             type="object",
+     *             required={"message", "errors"},
+     *             @OA\Property(
+     *                 property="message",
+     *                 type="string",
+     *                 example="The duration days field must be one of: 3, 7, 14."
+     *             ),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 description="Field-specific validation errors",
+     *                 example={
+     *                     "duration_days": {"The duration days field must be one of: 3, 7, 14."},
+     *                     "destination.country_code": {"The destination.country code field is required."}
+     *                 }
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -79,9 +90,9 @@
      *             example={
      *                 "error": "token_budget_exceeded",
      *                 "message": "Request exceeds token budget for free tier",
-     *                 "limit": 4000,
-     *                 "estimated": 5200,
-     *                 "upgrade_url": "https://beachrex.com/pricing"
+     *                 "estimated_tokens": 5200,
+     *                 "max_tokens": 4000,
+     *                 "suggestion": "Simplify your query or upgrade to paid tier"
      *             }
      *         )
      *     ),
@@ -133,7 +144,7 @@
 **Schema References**:
 - Request: `#/components/schemas/AiItineraryRequest`
 - Response 200: `#/components/schemas/AiItineraryResponse`
-- Response 400: `#/components/schemas/AiErrorResponse`
+- Response 422: Laravel validation error (inline schema)
 - Response 402: `#/components/schemas/AiPaymentRequiredError`
 - Response 413: `#/components/schemas/AiTokenBudgetError`
 - Response 429: `#/components/schemas/AiRateLimitError`
@@ -725,9 +736,9 @@ jq '.paths."/api/v1/ai/itineraries".post.responses | keys' storage/api-docs/api-
 ```json
 [
   "200",
-  "400",
   "402",
   "413",
+  "422",
   "429",
   "500",
   "503"
@@ -771,7 +782,7 @@ jq '.paths."/api/v1/ai/itineraries".post.responses."200".content."application/js
 
 ## I) Merge Approval Checklist
 
-- [x] OpenAPI annotations complete (all 7 response codes documented)
+- [x] OpenAPI annotations complete (all 7 response codes documented: 200, 402, 413, 422, 429, 500, 503)
 - [x] Schemas registered in api-docs.json (4 schemas)
 - [x] Request validation implemented (ItineraryRequest)
 - [x] Plan enforcement implemented (402 for non-entitled users)
@@ -785,6 +796,9 @@ jq '.paths."/api/v1/ai/itineraries".post.responses."200".content."application/js
 - [x] All error codes tested (402, 422, 429, 503)
 - [x] JSON response structure validated
 - [x] Database tracking (ai_sessions, ai_messages, ai_usage)
+- [x] Validation errors return 422 (not 400) - aligned with Laravel standard
+- [x] Token budget error schema matches runtime payload (estimated_tokens, max_tokens, suggestion)
+- [x] Itinerary item type enum matches PHASE_1_PROPOSAL.md (beach, activity, food, viewpoint)
 
 **Status**: READY FOR MERGE ✅
 
