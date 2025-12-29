@@ -229,6 +229,9 @@ Route::prefix('api/v1')
                 // Chat endpoint (primary AI interaction)
                 Route::post('/chat', [\App\Http\Controllers\AI\ChatController::class, 'chat']);
 
+                // Itinerary endpoint (PRIMARY REVENUE - multi-day trip planning)
+                Route::post('/itineraries', [\App\Http\Controllers\AI\ItineraryController::class, 'generate']);
+
                 // Test endpoint (for testing middleware stack)
                 Route::post('/test', [TestController::class, 'chat']);
             });

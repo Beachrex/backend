@@ -471,6 +471,53 @@ Use **synchronous request/response** for MVP, with optional streaming support (n
 
 ---
 
+## [2025-12-29] Dedicated Endpoint for Trip Itineraries (POST /api/v1/ai/itineraries)
+
+**Status**: Accepted (CANONICAL)
+
+**Context**:
+Task #2 (Trip Itinerary Generation - PRIMARY REVENUE) requires an API endpoint. Two options were considered: (1) extend existing `POST /api/v1/ai/chat` with `intent=itinerary_request`, or (2) create dedicated endpoint `POST /api/v1/ai/itineraries`.
+
+**Decision**:
+Create **dedicated endpoint `POST /api/v1/ai/itineraries`** for trip itinerary generation, separate from the chat endpoint.
+
+**Alternatives Considered**:
+1. **Extend POST /api/v1/ai/chat** with `intent=itinerary_request` - Rejected because:
+   - Mixes two very different response models (conversational chat vs structured itinerary)
+   - Increases risk of leaking paid content through chat responses
+   - Makes OpenAPI typing and frontend client generation more complex
+   - Blurs monetization boundary (chat is free, itineraries are paid)
+2. **Separate microservice** - Rejected for MVP because adds infrastructure complexity (can extract later if needed)
+
+**Reasoning**:
+- **Clear monetization boundary**: Dedicated endpoint makes it explicit that itineraries are paid (always 402 unless entitled)
+- **Easier OpenAPI typing**: Request/response schemas are completely different from chat (structured itinerary vs conversational message)
+- **Better frontend DX**: Generated TypeScript client has clear separation between `chatWithAI()` and `generateItinerary()`
+- **Reduced risk**: No chance of accidentally returning paid itinerary content through free chat endpoint
+- **Reuses AI core**: Still uses same middleware stack (OptionalAuth, CircuitBreaker, RateLimit, TokenBudget), same LLM abstraction, same session/message/usage tables
+
+**Impact**:
+- **Codebase**: New route `POST /api/v1/ai/itineraries`, new controller `ItineraryController`, new service `ItineraryService`, new request/response schemas
+- **Users**: Clear separation between free chat (discovery, Q&A) and paid itineraries (trip planning)
+- **Business**: Protects primary revenue source ($1.08M/year) with explicit payment gate
+
+**Related**:
+- `docs/ai/implementation/PHASE_1_PROPOSAL.md` (Section 1: Endpoint Decision)
+- `docs/ai/implementation/TASKS.md` (Task #2: Trip Itinerary Generation)
+
+**OpenAPI Schemas**:
+- `AiItineraryRequest` - Request schema with destination, duration_days, preferences, constraints
+- `AiItineraryResponse` - Response schema with structured day-by-day itinerary
+- Error responses: 400, 402, 413, 429, 500, 503
+
+**Middleware Stack** (reused from AI Core):
+1. `OptionalAuth` - Allow anonymous for free tier, require auth for paid
+2. `CircuitBreaker` - Protect against cost spikes
+3. `RateLimit` - Tier-based limits (100/hour free, 500/hour paid)
+4. `TokenBudget` - Prevent oversized requests (4K free, 16K paid)
+
+---
+
 ## Template for Future Decisions
 
 **Copy this template when adding new decisions**:

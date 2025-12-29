@@ -231,6 +231,7 @@ Read:
 1. `docs/ai/implementation/STATE.md` - What is done, what is next
 2. `docs/ai/implementation/TASKS.md` - Prioritized task list
 3. `docs/ai/implementation/DECISIONS.md` - Past decisions and rationale
+4. `docs/ai/implementation/PHASE_1_PROPOSAL.md` - Task #2 Phase 1 Architecture & API Contracts (CANONICAL)
 
 ### Step 4: Understand Technical Architecture
 Read:
@@ -430,6 +431,7 @@ Api/
 │   │   │   ├── DECISIONS.md               ← ADR log
 │   │   │   ├── TASKS.md                   ← Prioritized task list
 │   │   │   ├── PROMPTS.md                 ← System prompts
+│   │   │   ├── PHASE_1_PROPOSAL.md        ← Task #2 Phase 1 (CANONICAL)
 │   │   ├── canonical-documentation.md     ← Platform architecture
 │   │   ├── agents/
 │   │       ├── project-brain.md

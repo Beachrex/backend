@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
 **Last Updated**: 2025-12-29
-**Current Phase**: Implementation (IN PROGRESS) - Task #2: Trip Itinerary Generation (Task #1.5 COMPLETE)
+**Current Phase**: Implementation (IN PROGRESS) - Task #2 Phase 2 COMPLETE ✅
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -225,39 +225,59 @@
 
 ---
 
-### [ ] 2. Trip Itinerary Generation (PRIMARY REVENUE)
+### [/] 2. Trip Itinerary Generation (PRIMARY REVENUE)
 **Priority**: P0 (CRITICAL)
-**Status**: NOT_STARTED
+**Status**: IN_PROGRESS (Phase 2 COMPLETE ✅)
 **Estimated Effort**: 2-3 weeks
 **Revenue Impact**: $1.08M/year
 **Blockers**: None (Task #1.5 COMPLETE ✅)
 
 **Description**: Generate optimized multi-day beach itineraries (3-7-14 days) with route optimization, weather-aware scheduling, and PDF delivery.
 
-**Subtasks**:
-- [ ] 1.1. Create `ItineraryController` (generate, show, download endpoints)
-- [ ] 1.2. Create `ItineraryService` (optimization algorithm)
-- [ ] 1.3. Create `itineraries` database table and migration
-- [ ] 1.4. Implement route optimization (PostGIS distance calculations)
-- [ ] 1.5. Integrate multi-day weather forecast (OpenWeatherMap API)
-- [ ] 1.6. Create PDF generation (Laravel DomPDF)
-- [ ] 1.7. Add watermarking (user email + date)
-- [ ] 1.8. Add download limit enforcement (max 5 downloads)
-- [ ] 1.9. Add payment validation (check purchase before generation)
-- [ ] 1.10. Write unit tests (ItineraryService)
-- [ ] 1.11. Write integration tests (ItineraryController)
+**Phase 1 - Architecture & API Contracts**: ✅ COMPLETE (2025-12-29)
+- [x] 1.1. Decide endpoint structure (dedicated vs extending /ai/chat)
+- [x] 1.2. Define request schema (destination, duration_days, preferences, constraints)
+- [x] 1.3. Define response schema (day-by-day structure with beaches, logistics, assumptions)
+- [x] 1.4. Define guardrails (limits, caps, error cases)
+- [x] 1.5. Add ADR to DECISIONS.md
 
-**Dependencies**: 
-- Payment integration (Task #2)
-- PDF generation (Task #5)
+**Phase 2 - Implementation**: ✅ COMPLETE (2025-12-29)
+- [x] 2.1. Create route + controller skeleton (`ItineraryController`)
+- [x] 2.2. Create request validation (`ItineraryRequest`)
+- [x] 2.3. Implement plan enforcement + pricing lookup (402 response)
+- [x] 2.4. Create itinerary context builder (`ItineraryContextBuilderService`)
+- [x] 2.5. Create LLM prompt for itinerary generation (`ItineraryService`)
+- [x] 2.6. Implement JSON output validation
+- [x] 2.7. Write tests (200, 402, 422, 429, 503) - 6/6 passing
+- [x] 2.8. Add OpenAPI annotations + schema definitions (4 schemas)
+- [x] 2.9. Generate Swagger docs and verify
+- [x] 2.10. Update STATE.md and TASKS.md
 
-**Acceptance Criteria**:
-- User can request 3-day, 7-day, or 14-day itinerary
-- System generates optimized route (minimize driving, maximize beach time)
-- System includes weather forecast for each day
-- System generates PDF with watermark
-- System enforces payment ($19/$39/$59)
-- System limits downloads to 5 per purchase
+**Phase 3 - Frontend Integration**: NOT_STARTED
+- [ ] 3.1. Frontend type generation (`yarn generate:api`)
+- [ ] 3.2. Itinerary purchase flow UI
+- [ ] 3.3. Itinerary display component
+- [ ] 3.4. PDF download functionality
+
+**Phase 4 - Advanced Features**: NOT_STARTED
+- [ ] 4.1. Route optimization (Google Maps API or PostGIS distance calculations)
+- [ ] 4.2. Multi-day weather forecast integration
+- [ ] 4.3. PDF generation (Laravel DomPDF)
+- [ ] 4.4. Watermarking (user email + date)
+- [ ] 4.5. Download limit enforcement (max 5 downloads)
+
+**Dependencies**:
+- Payment integration (Task #3) - required for Phase 3
+- PDF generation (Task #6) - required for Phase 4
+
+**Acceptance Criteria** (Phase 2 - COMPLETE ✅):
+- [x] User can request 3-day, 7-day, or 14-day itinerary via API
+- [x] System enforces payment ($19/$39/$59) with 402 response
+- [x] System generates day-by-day itinerary with beaches and logistics
+- [x] System validates input (duration_days enum, destination.country_code required)
+- [x] System handles all error cases (402, 422, 429, 503)
+- [x] All tests passing (6/6)
+- [x] OpenAPI documentation complete
 
 ---
 
