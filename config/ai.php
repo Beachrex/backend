@@ -76,7 +76,7 @@ return [
                 'requests_per_day' => 2000,
             ],
             'token_budget' => [
-                'max_tokens_per_request' => 5,
+                'max_tokens_per_request' => 16000,
                 'max_tokens_per_session' => 64000,
             ],
             'features' => [
