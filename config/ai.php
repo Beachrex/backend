@@ -204,9 +204,51 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Stripe Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Stripe product and price mapping for itinerary purchases.
+    | Price IDs are stored in environment variables for security.
+    |
+    */
+
+    'stripe' => [
+        'enabled' => env('STRIPE_ENABLED', false),
+        'secret_key' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+
+        'products' => [
+            'itinerary_3day' => [
+                'price_id' => env('STRIPE_PRICE_ITINERARY_3DAY'),
+                'amount' => 19.00,
+                'currency' => 'USD',
+                'credits' => 1,
+                'name' => '3-Day Beach Itinerary',
+            ],
+            'itinerary_7day' => [
+                'price_id' => env('STRIPE_PRICE_ITINERARY_7DAY'),
+                'amount' => 39.00,
+                'currency' => 'USD',
+                'credits' => 1,
+                'name' => '7-Day Beach Itinerary',
+            ],
+            'itinerary_14day' => [
+                'price_id' => env('STRIPE_PRICE_ITINERARY_14DAY'),
+                'amount' => 59.00,
+                'currency' => 'USD',
+                'credits' => 1,
+                'name' => '14-Day Beach Itinerary',
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Feature Flags
     |--------------------------------------------------------------------------
     */
+
+    'payments_enabled' => env('AI_PAYMENTS_ENABLED', false),
 
     'features' => [
         'enabled' => env('AI_ENABLED', true),

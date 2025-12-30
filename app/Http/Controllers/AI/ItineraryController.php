@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AI\ItineraryRequest;
 use App\Services\AI\PlanEnforcementService;
 use App\Services\AI\ItineraryService;
+use App\Services\Payment\EntitlementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
@@ -29,6 +30,7 @@ class ItineraryController extends Controller
     public function __construct(
         private readonly PlanEnforcementService $planEnforcement,
         private readonly ItineraryService $itineraryService,
+        private readonly EntitlementService $entitlementService,
     ) {}
 
     /**
@@ -177,6 +179,21 @@ class ItineraryController extends Controller
 
             // Generate itinerary using ItineraryService
             $itinerary = $this->itineraryService->generate($request, $requestId);
+
+            // Decrement credits AFTER successful generation (multi-day only)
+            if ($durationDays >= 2 && $user && config('ai.payments_enabled')) {
+                $productType = $this->entitlementService->mapDaysToProductType($durationDays);
+                $decremented = $this->entitlementService->decrementCredits($user, $productType);
+
+                if (!$decremented) {
+                    // This should never happen (enforcement already checked), but log it
+                    \Log::warning('Failed to decrement credits after successful generation', [
+                        'user_id' => $user->id,
+                        'product_type' => $productType,
+                        'request_id' => $requestId,
+                    ]);
+                }
+            }
 
             // Add request ID header
             return response()->json($itinerary, 200)

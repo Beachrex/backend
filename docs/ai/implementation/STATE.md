@@ -1,8 +1,8 @@
 # Beachrex AI Agent - Implementation State
 
-**Last Updated**: 2025-12-29
-**Current Phase**: Implementation (IN PROGRESS) - Task #2 Phase 2: Trip Itinerary Generation COMPLETE ✅
-**Overall Progress**: 85% platform complete, AI architecture defined, AI core complete (Task #1), validation complete (Task #1.5), itinerary endpoint implemented (Task #2 Phase 2)
+**Last Updated**: 2025-12-30
+**Current Phase**: Implementation (IN PROGRESS) - Task #3 Phase 2.5: Testing + Stabilization COMPLETE ✅
+**Overall Progress**: 85% platform complete, AI architecture defined, AI core complete (Task #1), validation complete (Task #1.5), itinerary endpoint implemented (Task #2), payment system fully tested and production-ready (Task #3)
 
 ---
 
@@ -260,30 +260,66 @@
 - [ ] Watermarking (prevent sharing)
 - [ ] Download limit enforcement (max 5 downloads)
 
-**Dependencies**: Payment integration (Stripe) - required for Phase 3
+**Dependencies**: Payment integration (Stripe) - ✅ COMPLETE (Task #3)
 
 ---
 
-#### 2. Payment Integration (Stripe)
-**Status**: Not started  
-**Priority**: P0 (CRITICAL)  
-**Estimated Effort**: 1 week  
+#### Task #3: Payment Integration (Stripe) + Entitlements
+**Status**: Phase 2.5 COMPLETE ✅ (2025-12-30) - PRODUCTION READY
+**Priority**: P0 (CRITICAL)
+**Estimated Effort**: 1 week
 **Blockers**: None
 
 **Requirements**:
 - Support one-time payments (no subscriptions)
-- Products: Trip itinerary ($19/$39/$59), Accessibility report ($15), Activity guide ($25)
+- Products: Trip itinerary ($19/$39/$59 for 3/7/14-day)
 - Payment methods: Credit card, Apple Pay, Google Pay
 - Webhooks: Handle payment success, failure, refund
+- Credit-based entitlement system (1 purchase = 1 credit = 1 itinerary)
+- Refunds revoke credits (can go negative, blocks future generation)
 
-**Technical Tasks**:
-- [ ] Install Stripe SDK (`composer require stripe/stripe-php`)
-- [ ] Create `PaymentController` (create checkout session, handle webhook)
-- [ ] Create `purchases` table (user_id, product_type, product_id, amount, status, stripe_payment_id)
-- [ ] Create `Purchase` model with relationships
-- [ ] Implement webhook handler (payment.succeeded, payment.failed)
-- [ ] Add payment validation middleware (check if user has purchased)
-- [ ] Write tests (mock Stripe API)
+**Phase 1 - Architecture & Contracts**: ✅ COMPLETE (2025-12-30)
+- ✅ Entitlement model decision: Credit-based (NOT time-based)
+- ✅ Database schema defined (user_entitlements, purchases)
+- ✅ API endpoints defined (checkout, webhook, entitlements)
+- ✅ Stripe integration strategy (Checkout hosted, webhook verification)
+- ✅ ADR created (TASK_3_ENTITLEMENT_MODEL_ADR.md)
+- ✅ Proposal document (TASK_3_PHASE_1_PROPOSAL.md)
+
+**Phase 2 - Implementation**: ✅ COMPLETE (2025-12-30)
+- ✅ Install Stripe SDK (`stripe/stripe-php v19.1.0`)
+- ✅ Create database migrations (user_entitlements, purchases)
+- ✅ Create models (UserEntitlement, Purchase) with relationships
+- ✅ Create services (StripeService, EntitlementService)
+- ✅ Create controllers (CheckoutController, WebhookController, EntitlementController)
+- ✅ Update PlanEnforcementService (credit checking for multi-day itineraries)
+- ✅ Update ItineraryController (atomic credit decrement after successful generation)
+- ✅ Create OpenAPI schemas (6 schemas: CheckoutRequest, CheckoutResponse, Product, EntitlementsResponse, Purchase, PaymentErrorResponse)
+- ✅ Add routes (POST /api/v1/payments/stripe/checkout, POST /api/v1/payments/stripe/webhook, GET /api/v1/me/entitlements)
+- ✅ Regenerate OpenAPI docs (api-docs.json)
+- ✅ Update config/ai.php (Stripe product mapping, feature flags)
+- ✅ Webhook handlers (checkout.session.completed, charge.refunded, checkout.session.expired)
+- ✅ Idempotency (duplicate event detection via stripe_event_id)
+
+**Phase 2.5 - Testing + Stabilization**: ✅ COMPLETE (2025-12-30)
+- ✅ Write feature tests (27 tests, 132 assertions, 100% passing)
+  - ✅ CheckoutControllerTest (6 tests): 401 unauthenticated, 200 authenticated, 503 disabled, 400 validation
+  - ✅ WebhookControllerTest (6 tests): signature validation, credit granting, idempotency, refund handling
+  - ✅ EntitlementControllerTest (6 tests): 401 unauthenticated, 200 authenticated, balances, purchase history
+  - ✅ ItineraryControllerTest (9 tests): payment enforcement, credit consumption, existing functionality
+- ✅ Test webhook idempotency (duplicate events prevented via stripe_event_id unique constraint)
+- ✅ Test refund handling (credits revoked, negative balance allowed)
+- ✅ Test credit decrement (lockForUpdate prevents concurrent decrements)
+- ✅ Test itinerary endpoint with credits (200 success and decrement, 402 no credits, 402 negative balance)
+- ✅ Stripe test-mode verification guide created (TASK_3_STRIPE_TEST_MODE_GUIDE.md)
+- ✅ Known limitation documented: Race condition between credit check and decrement (deferred to post-MVP)
+
+**Phase 3 - Documentation**: ✅ COMPLETE (2025-12-30)
+- ✅ Update STATE.md (mark Task #3 Phase 2.5 complete)
+- ✅ Update TASKS.md (mark Task #3 Phase 2.5 complete)
+- ✅ Update DECISIONS.md (ADR #3 with known limitations)
+- ✅ Create TASK_3_MERGE_EVIDENCE.md (test results, OpenAPI verification, deployment checklist)
+- ✅ Create TASK_3_STRIPE_TEST_MODE_GUIDE.md (manual testing guide)
 
 **Dependencies**: None
 

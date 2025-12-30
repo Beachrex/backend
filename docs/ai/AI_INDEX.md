@@ -215,6 +215,89 @@ For any task involving API changes, ALL of these must be complete:
 
 ---
 
+## Payment & Entitlement System
+
+### Overview
+
+The payment system enables users to purchase itinerary generation credits via Stripe. The entitlement system tracks credits and enforces access control.
+
+**Model**: Credit-based (NOT time-based)
+- Purchase $19 → 1 three-day itinerary credit
+- Purchase $39 → 1 seven-day itinerary credit
+- Purchase $59 → 1 fourteen-day itinerary credit
+
+**Flow**:
+1. User requests itinerary → `PlanEnforcementService` checks credits
+2. If no credits → 402 Payment Required with purchase URL
+3. User purchases via Stripe Checkout → Webhook grants credits
+4. User requests itinerary again → Credits checked, itinerary generated, credits decremented
+
+### API Endpoints
+
+**POST /api/v1/payments/stripe/checkout** (authenticated)
+- Create Stripe Checkout session for itinerary purchase
+- Request: `{ "product_type": "itinerary_7day" }`
+- Response: `{ "checkout_url": "https://checkout.stripe.com/...", "session_id": "cs_..." }`
+
+**POST /api/v1/payments/stripe/webhook** (Stripe signature verification)
+- Receive Stripe webhook events (payment confirmation)
+- Grants credits on `checkout.session.completed`
+- Idempotent (uses `stripe_event_id`)
+
+**GET /api/v1/me/entitlements** (authenticated)
+- Query current user's credit balance
+- Response: `{ "entitlements": { "itinerary_3day_credits": 0, "itinerary_7day_credits": 1, ... }, "purchases": [...] }`
+
+### Database Schema
+
+**user_entitlements** table:
+- `user_id` (unique, foreign key to users)
+- `itinerary_3day_credits` (integer, default 0)
+- `itinerary_7day_credits` (integer, default 0)
+- `itinerary_14day_credits` (integer, default 0)
+
+**purchases** table:
+- `user_id`, `product_type`, `amount`, `currency`, `status`
+- `stripe_session_id`, `stripe_payment_intent_id`, `stripe_event_id`
+- `purchased_at`, `created_at`, `updated_at`
+
+### PlanEnforcementService Integration
+
+**Before** (Task #2):
+```php
+// All users get 402 (no payment system)
+if (!$this->canAccessFeature($user, 'multi_day_itineraries')) {
+    return $this->paymentRequiredResponse(...); // 402
+}
+```
+
+**After** (Task #3):
+```php
+// Check if user has credits
+$productType = $this->mapDaysToProductType($days); // 3→itinerary_3day, etc.
+if (!$this->hasEntitlement($user, $productType)) {
+    return $this->paymentRequiredResponse(...); // 402 with purchase URL
+}
+// Credits decremented in ItineraryController after successful generation
+```
+
+### Security
+
+- **Checkout**: Laravel Sanctum authentication required
+- **Webhook**: Stripe signature verification (mandatory)
+- **Entitlements**: User can only view their own credits
+- **GDPR**: No card data stored (Stripe handles), purchases retained 7 years (accounting)
+
+### Feature Flags
+
+- `AI_PAYMENTS_ENABLED` - Enable/disable payment system (kill switch)
+- `STRIPE_ENABLED` - Enable/disable Stripe integration
+
+**See**: `docs/ai/implementation/TASK_3_PHASE_1_PROPOSAL.md` for full architecture
+**See**: `docs/ai/implementation/TASK_3_ENTITLEMENT_MODEL_ADR.md` for entitlement model decision
+
+---
+
 ## Instructions for New AI Agents
 
 ### Step 1: Read This File First

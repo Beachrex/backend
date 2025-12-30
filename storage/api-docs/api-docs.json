@@ -8901,6 +8901,157 @@
                     }
                 }
             }
+        },
+        "/api/v1/payments/stripe/checkout": {
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Create Stripe Checkout session for itinerary purchase",
+                "operationId": "a957abdc0a1f026bb8b6f4d5ec975b8e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout session created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid product type",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Payment gateway error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/entitlements": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Get current user's entitlements and purchase history",
+                "operationId": "e3a9c3c756b5255539aa1ab9f3a2a6a8",
+                "responses": {
+                    "200": {
+                        "description": "Entitlements retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EntitlementsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/payments/stripe/webhook": {
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Receive Stripe webhook events",
+                "description": "Handle Stripe webhook events.",
+                "operationId": "a5f92f332537a406934c0832a0a08a7f",
+                "requestBody": {
+                    "description": "Stripe webhook payload",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Webhook received successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "received": {
+                                            "type": "boolean",
+                                            "example": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid signature or webhook data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -13013,6 +13164,209 @@
                 },
                 "type": "object"
             },
+            "CheckoutRequest": {
+                "required": [
+                    "product_type"
+                ],
+                "properties": {
+                    "product_type": {
+                        "description": "Type of product to purchase",
+                        "type": "string",
+                        "enum": [
+                            "itinerary_3day",
+                            "itinerary_7day",
+                            "itinerary_14day"
+                        ],
+                        "example": "itinerary_7day"
+                    }
+                },
+                "type": "object"
+            },
+            "CheckoutResponse": {
+                "required": [
+                    "checkout_url",
+                    "session_id",
+                    "product"
+                ],
+                "properties": {
+                    "checkout_url": {
+                        "description": "Stripe Checkout session URL to redirect user to",
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://checkout.stripe.com/c/pay/cs_test_..."
+                    },
+                    "session_id": {
+                        "description": "Stripe Checkout session ID",
+                        "type": "string",
+                        "example": "cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/Product"
+                    }
+                },
+                "type": "object"
+            },
+            "EntitlementsResponse": {
+                "required": [
+                    "entitlements",
+                    "purchases"
+                ],
+                "properties": {
+                    "entitlements": {
+                        "required": [
+                            "itinerary_3day_credits",
+                            "itinerary_7day_credits",
+                            "itinerary_14day_credits"
+                        ],
+                        "properties": {
+                            "itinerary_3day_credits": {
+                                "description": "Number of 3-day itinerary credits available",
+                                "type": "integer",
+                                "example": 2
+                            },
+                            "itinerary_7day_credits": {
+                                "description": "Number of 7-day itinerary credits available",
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "itinerary_14day_credits": {
+                                "description": "Number of 14-day itinerary credits available",
+                                "type": "integer",
+                                "example": 0
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "purchases": {
+                        "description": "User's purchase history",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Purchase"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "PaymentErrorResponse": {
+                "required": [
+                    "error",
+                    "message"
+                ],
+                "properties": {
+                    "error": {
+                        "description": "Error code",
+                        "type": "string",
+                        "example": "invalid_product"
+                    },
+                    "message": {
+                        "description": "Human-readable error message",
+                        "type": "string",
+                        "example": "Invalid product type. Must be one of: itinerary_3day, itinerary_7day, itinerary_14day"
+                    },
+                    "errors": {
+                        "description": "Validation errors (if applicable)",
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object"
+            },
+            "Product": {
+                "required": [
+                    "type",
+                    "price",
+                    "currency",
+                    "credits",
+                    "name"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "Product type identifier",
+                        "type": "string",
+                        "example": "itinerary_7day"
+                    },
+                    "price": {
+                        "description": "Price in the specified currency",
+                        "type": "number",
+                        "format": "float",
+                        "example": 39
+                    },
+                    "currency": {
+                        "description": "ISO 4217 currency code",
+                        "type": "string",
+                        "example": "USD"
+                    },
+                    "credits": {
+                        "description": "Number of credits granted upon purchase",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "Human-readable product name",
+                        "type": "string",
+                        "example": "7-Day Beach Itinerary"
+                    }
+                },
+                "type": "object"
+            },
+            "Purchase": {
+                "required": [
+                    "id",
+                    "product_type",
+                    "amount",
+                    "currency",
+                    "status"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Purchase ID",
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "product_type": {
+                        "description": "Product type purchased",
+                        "type": "string",
+                        "example": "itinerary_7day"
+                    },
+                    "amount": {
+                        "description": "Purchase amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 39
+                    },
+                    "currency": {
+                        "description": "ISO 4217 currency code",
+                        "type": "string",
+                        "example": "USD"
+                    },
+                    "status": {
+                        "description": "Purchase status",
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "completed",
+                            "failed",
+                            "refunded"
+                        ],
+                        "example": "completed"
+                    },
+                    "purchased_at": {
+                        "description": "ISO 8601 timestamp of purchase completion",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-12-30T14:30:00Z",
+                        "nullable": true
+                    },
+                    "stripe_session_id": {
+                        "description": "Stripe Checkout session ID",
+                        "type": "string",
+                        "example": "cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "RecommendedTransportType": {
                 "title": "Recommended Transport Type",
                 "description": "Recommended transport type model (walk, bike, vehicle, etc.)",
@@ -13851,6 +14205,10 @@
         {
             "name": "User Types",
             "description": "User Types"
+        },
+        {
+            "name": "Payments",
+            "description": "Payments"
         }
     ]
 }

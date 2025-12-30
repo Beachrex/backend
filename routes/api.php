@@ -235,4 +235,16 @@ Route::prefix('api/v1')
                 // Test endpoint (for testing middleware stack)
                 Route::post('/test', [TestController::class, 'chat']);
             });
+
+        // Payment routes (Stripe integration)
+        Route::prefix('payments/stripe')->group(function () {
+            // Checkout endpoint (requires authentication)
+            Route::middleware('auth:sanctum')->post('/checkout', [\App\Http\Controllers\Payment\CheckoutController::class, 'create']);
+
+            // Webhook endpoint (no authentication - uses Stripe signature verification)
+            Route::post('/webhook', [\App\Http\Controllers\Payment\WebhookController::class, 'handle']);
+        });
+
+        // User entitlements endpoint (requires authentication)
+        Route::middleware('auth:sanctum')->get('/me/entitlements', [\App\Http\Controllers\Payment\EntitlementController::class, 'index']);
     });

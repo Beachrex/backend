@@ -3,23 +3,27 @@
 namespace App\Services\AI;
 
 use App\Models\User;
+use App\Services\Payment\EntitlementService;
 use Illuminate\Http\JsonResponse;
 
 /**
  * Plan Enforcement Service
- * 
+ *
  * Enforces tier-based feature access and returns 402 Payment Required
  * when users attempt to access paid features without proper entitlement.
- * 
+ *
  * Source: docs/ai/architecture/api-contracts.md Section 3.2
  */
 class PlanEnforcementService
 {
+    public function __construct(
+        private EntitlementService $entitlementService
+    ) {}
     /**
      * Determine user's tier.
-     * 
+     *
      * For MVP: All users are 'free' tier until payment system is implemented.
-     * 
+     *
      * @param User|null $user
      * @return string Tier name ('free', 'basic', 'premium', 'enterprise')
      */
@@ -28,18 +32,18 @@ class PlanEnforcementService
         if (!$user) {
             return 'free';
         }
-        
+
         // TODO: Once payment system is implemented, check user's actual tier
         // For now, all authenticated users are 'free' tier
         // Future implementation:
         // return $user->ai_tier ?? 'free';
-        
+
         return 'free';
     }
-    
+
     /**
      * Check if user can access a specific feature.
-     * 
+     *
      * @param User|null $user
      * @param string $feature Feature name (e.g., 'multi_day_itineraries')
      * @return bool
@@ -48,14 +52,14 @@ class PlanEnforcementService
     {
         $tier = $this->determineTier($user);
         $features = config("ai.tiers.{$tier}.features", []);
-        
+
         return $features[$feature] ?? false;
     }
-    
+
     /**
      * Check if user can request multi-day itinerary.
      * Returns 402 Payment Required response if not allowed.
-     * 
+     *
      * @param User|null $user
      * @param int $days Number of days
      * @return JsonResponse|null Returns JsonResponse if blocked, null if allowed
@@ -66,12 +70,12 @@ class PlanEnforcementService
         if ($days < 2) {
             return null;
         }
-        
-        // Check if user can access multi-day itineraries
-        if (!$this->canAccessFeature($user, 'multi_day_itineraries')) {
+
+        // Multi-day itineraries require authentication
+        if (!$user) {
             return $this->paymentRequiredResponse(
                 'multi_day_itineraries',
-                'Multi-day itineraries require payment',
+                'Multi-day itineraries require authentication and payment',
                 [
                     'type' => 'itinerary',
                     'duration_days' => $days,
@@ -80,17 +84,48 @@ class PlanEnforcementService
                 ]
             );
         }
-        
-        // TODO: Once payment system is implemented, check if user has purchased this specific itinerary
-        // For now, if user has access to the feature, allow it
-        
+
+        // Check if payments are enabled
+        if (!config('ai.payments_enabled')) {
+            // If payments disabled, deny access (payment system not ready)
+            return $this->paymentRequiredResponse(
+                'multi_day_itineraries',
+                'Multi-day itineraries require payment (payment system coming soon)',
+                [
+                    'type' => 'itinerary',
+                    'duration_days' => $days,
+                    'price' => $this->calculateItineraryPrice($days),
+                    'currency' => 'USD',
+                ]
+            );
+        }
+
+        // Map duration to product type
+        $productType = $this->entitlementService->mapDaysToProductType($days);
+
+        // Check if user has credits
+        if (!$this->entitlementService->hasCredits($user, $productType)) {
+            return $this->paymentRequiredResponse(
+                'multi_day_itineraries',
+                'You do not have credits for this itinerary. Please purchase credits to continue.',
+                [
+                    'type' => 'itinerary',
+                    'duration_days' => $days,
+                    'price' => $this->calculateItineraryPrice($days),
+                    'currency' => 'USD',
+                    'product_type' => $productType,
+                ]
+            );
+        }
+
+        // User has credits, allow request
         return null;
     }
-    
+
     /**
      * Check if user can request accessibility report.
      * Returns 402 Payment Required response if not allowed.
-     * 
+     *
      * @param User|null $user
      * @return JsonResponse|null Returns JsonResponse if blocked, null if allowed
      */
@@ -107,14 +142,14 @@ class PlanEnforcementService
                 ]
             );
         }
-        
+
         return null;
     }
-    
+
     /**
      * Check if user can request activity guide.
      * Returns 402 Payment Required response if not allowed.
-     * 
+     *
      * @param User|null $user
      * @return JsonResponse|null Returns JsonResponse if blocked, null if allowed
      */
@@ -131,14 +166,14 @@ class PlanEnforcementService
                 ]
             );
         }
-        
+
         return null;
     }
-    
+
     /**
      * Check if user can request multi-day weather forecast.
      * Returns 402 Payment Required response if not allowed.
-     * 
+     *
      * @param User|null $user
      * @return JsonResponse|null Returns JsonResponse if blocked, null if allowed
      */
@@ -154,14 +189,14 @@ class PlanEnforcementService
                 ]
             );
         }
-        
+
         return null;
     }
-    
+
     /**
      * Check beach comparison limit.
      * Returns 402 Payment Required response if limit exceeded.
-     * 
+     *
      * @param User|null $user
      * @param int $beachCount Number of beaches to compare
      * @return JsonResponse|null Returns JsonResponse if blocked, null if allowed
@@ -170,7 +205,7 @@ class PlanEnforcementService
     {
         $tier = $this->determineTier($user);
         $maxBeaches = config("ai.tiers.{$tier}.features.beach_comparison_max", 3);
-        
+
         if ($beachCount > $maxBeaches) {
             return $this->paymentRequiredResponse(
                 'beach_comparison',
@@ -183,13 +218,13 @@ class PlanEnforcementService
                 ]
             );
         }
-        
+
         return null;
     }
-    
+
     /**
      * Generate 402 Payment Required response.
-     * 
+     *
      * @param string $feature Feature name
      * @param string $message Error message
      * @param array $product Product details
@@ -204,17 +239,17 @@ class PlanEnforcementService
             'purchase_url' => 'https://beachrex.com/pricing', // TODO: Generate specific purchase URL
         ], 402);
     }
-    
+
     /**
      * Calculate itinerary price based on duration.
-     * 
+     *
      * @param int $days Number of days
      * @return float Price in USD
      */
     private function calculateItineraryPrice(int $days): float
     {
         $pricing = config('ai.pricing.itinerary');
-        
+
         // Find closest pricing tier
         if ($days <= 3) {
             return $pricing[3];

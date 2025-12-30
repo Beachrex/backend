@@ -101,7 +101,7 @@ class ChatControllerTest extends TestCase
         $response->assertStatus(402);
         $response->assertJson([
             'error' => 'payment_required',
-            'message' => 'Multi-day itineraries require payment',
+            'message' => 'Multi-day itineraries require authentication and payment',
         ]);
 
         $response->assertJsonStructure([

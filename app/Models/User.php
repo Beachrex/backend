@@ -95,6 +95,22 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get the user's entitlements.
+     */
+    public function entitlements(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserEntitlement::class);
+    }
+
+    /**
+     * Get all purchases made by this user.
+     */
+    public function purchases(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    /**
      * Determine if the user can access the Filament admin panel.
      */
     public function canAccessPanel(Panel $panel): bool

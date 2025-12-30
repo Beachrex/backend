@@ -547,6 +547,52 @@ Create **dedicated endpoint `POST /api/v1/ai/itineraries`** for trip itinerary g
 
 ---
 
+## [2025-12-30] Credit-Based Entitlement Model for Itinerary Purchases
+
+**Status**: Accepted
+
+**Context**:
+Task #3 (Payment Integration) required a decision on how to manage user entitlements for purchased itineraries. Two primary models were considered: time-based access (purchase grants access for X days) vs credit-based (purchase grants N credits, each itinerary consumes 1 credit).
+
+**Decision**:
+Implement a **credit-based entitlement model** where:
+- Each purchase grants 1 credit for a specific itinerary type (3-day, 7-day, or 14-day)
+- Each itinerary generation consumes 1 credit
+- Credits do not expire (MVP)
+- Refunds revoke credits (can go negative, blocking future generation until balance >= 0)
+
+**Alternatives Considered**:
+1. **Time-based access** (e.g., purchase grants 30-day access to generate unlimited itineraries)
+   - Rejected because: Revenue leakage risk (users could generate unlimited itineraries for one payment), difficult to price fairly, abuse potential
+2. **Subscription model** (monthly/annual recurring payments)
+   - Rejected because: Adds complexity (billing cycles, cancellations, prorations), not aligned with one-time purchase pricing strategy for MVP
+
+**Reasoning**:
+- **Revenue protection**: One purchase = one itinerary prevents abuse and revenue leakage
+- **Pricing alignment**: Directly maps to existing pricing ($19/$39/$59 per itinerary)
+- **Simplicity**: Easy to understand for users ("buy 1 credit, get 1 itinerary")
+- **Scalability**: Can add bundles/promotions later ("buy 5, get 1 free") without changing core model
+- **Refund handling**: Clear policy (revoke unused credits first, allow negative balance if consumed)
+
+**Impact**:
+- **Database**: Two new tables (`user_entitlements`, `purchases`)
+- **Services**: EntitlementService for credit management (grant, check, decrement, revoke)
+- **Enforcement**: PlanEnforcementService checks credits before allowing itinerary generation
+- **Atomicity**: Credit decrement happens AFTER successful generation (prevents double-charge on retry)
+- **User experience**: Clear credit balance display, transparent pricing
+
+**Known Limitations** (MVP):
+- **Race condition**: There is a small window between credit check (in `PlanEnforcementService`) and credit decrement (in `ItineraryController`) where two concurrent requests could both pass the check before either decrements. The `decrementCredits` method uses `lockForUpdate()` to prevent concurrent decrements, but the check itself is not locked. In practice, this is unlikely due to LLM generation latency (5-10 seconds). Post-MVP: Implement atomic check-and-decrement using database-level locking or move both operations into a single transaction.
+
+**Related**:
+- ADR document: `docs/ai/implementation/TASK_3_ENTITLEMENT_MODEL_ADR.md`
+- Proposal: `docs/ai/implementation/TASK_3_PHASE_1_PROPOSAL.md`
+- Implementation: Task #3 Phase 2.5 (COMPLETE - PRODUCTION READY)
+- Test evidence: `docs/ai/implementation/TASK_3_MERGE_EVIDENCE.md`
+- Stripe guide: `docs/ai/implementation/TASK_3_STRIPE_TEST_MODE_GUIDE.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions
