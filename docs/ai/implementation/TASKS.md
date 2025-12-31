@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
-**Last Updated**: 2025-12-30
-**Current Phase**: Implementation (IN PROGRESS) - Task #3 Phase 2.5 COMPLETE ✅ (PRODUCTION READY)
+**Last Updated**: 2025-12-31
+**Current Phase**: Implementation (IN PROGRESS) - Task #4 COMPLETE ✅
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -349,7 +349,41 @@
 
 ---
 
-### [ ] 4. Beach Search Analytics (B2B)
+### [x] 4. Frontend Internal Tooling (Payment System Testing)
+**Priority**: P0 (CRITICAL - enables payment system testing)
+**Status**: DONE
+**Completed**: 2025-12-31
+**Estimated Effort**: 2-3 hours
+**Actual Effort**: 2 hours
+**Revenue Impact**: Enables testing of $1.08M/year itinerary revenue
+**Blockers**: None
+
+**Description**: Create internal-only frontend pages for testing the payment system integration (Task #3). Enable manual testing of the full payment flow: viewing credits, purchasing itineraries, and handling 402 Payment Required responses.
+
+**Subtasks**:
+- [x] 4.1. Run `yarn generate:api` and verify payment endpoints
+- [x] 4.2. Create `/internal/ai-entitlements` page (credit balances + purchase history)
+- [x] 4.3. Create `/internal/ai-purchase-itinerary` page (purchase buttons + Stripe redirect)
+- [x] 4.4. Update `/internal/ai-playground` page (402 error handler + Buy CTA)
+- [x] 4.5. Verify production guard (404 in production)
+- [x] 4.6. Update STATE.md and TASKS.md
+
+**Dependencies**: 
+- Task #3 (Payment Integration) - ✅ COMPLETE
+
+**Acceptance Criteria**:
+- ✅ All 3 payment endpoints present in generated TypeScript client
+- ✅ `/internal/ai-entitlements` displays credit balances and purchase history
+- ✅ `/internal/ai-purchase-itinerary` triggers Stripe Checkout redirect
+- ✅ `/internal/ai-playground` shows "Buy itinerary" CTA on 402 responses
+- ✅ All pages return 404 in production (beachrex.com without dev.)
+- ✅ No Stripe.js, no Stripe public key, no Elements (pure redirect flow)
+
+**Reference**: `docs/ai/implementation/TASK_4_COMPLETE.md`
+
+---
+
+### [ ] 5. Beach Search Analytics (B2B)
 **Priority**: P0 (CRITICAL)
 **Status**: NOT_STARTED
 **Estimated Effort**: 1-2 weeks
@@ -384,7 +418,7 @@
 
 ---
 
-### [ ] 5. Promoted Beach Listings (B2B)
+### [ ] 6. Promoted Beach Listings (B2B)
 **Priority**: P0 (CRITICAL)
 **Status**: NOT_STARTED
 **Estimated Effort**: 1 week
@@ -419,7 +453,7 @@
 
 ## P1: Important (Needed for MVP, Not Blocking)
 
-### [ ] 6. PDF Generation (Itineraries, Reports)
+### [ ] 7. PDF Generation (Itineraries, Reports)
 **Priority**: P1
 **Status**: NOT_STARTED
 **Estimated Effort**: 3-5 days
@@ -448,7 +482,7 @@
 
 ---
 
-### [ ] 7. AI Agent Logging (Query Tracking)
+### [ ] 8. AI Agent Logging (Query Tracking)
 **Priority**: P1
 **Status**: NOT_STARTED
 **Estimated Effort**: 2-3 days
@@ -474,7 +508,7 @@
 
 ---
 
-### [ ] 8. B2B Tenant System (Multi-Tenancy)
+### [ ] 9. B2B Tenant System (Multi-Tenancy)
 **Priority**: P1
 **Status**: NOT_STARTED
 **Estimated Effort**: 1 week
@@ -502,7 +536,7 @@
 
 ---
 
-### [ ] 9. AI Service Migration to Microservice (Phase 2)
+### [ ] 10. AI Service Migration to Microservice (Phase 2)
 **Priority**: P1 (Phase 2 only, NOT MVP)
 **Status**: NOT_STARTED
 **Estimated Effort**: 2-3 weeks
@@ -539,7 +573,7 @@
 
 ## P2: Nice-to-Have (Phase 2)
 
-### [ ] 10. Verified Accessibility Reports
+### [ ] 11. Verified Accessibility Reports
 **Priority**: P2 (Phase 2)
 **Status**: NOT_STARTED
 **Estimated Effort**: 4-6 weeks
@@ -562,7 +596,7 @@
 
 ---
 
-### [ ] 11. Activity-Specific Guides
+### [ ] 12. Activity-Specific Guides
 **Priority**: P2 (Phase 2)
 **Status**: NOT_STARTED
 **Estimated Effort**: 6-8 weeks
@@ -585,7 +619,7 @@
 
 ---
 
-### [ ] 12. White-Label AI Agent
+### [ ] 13. White-Label AI Agent
 **Priority**: P2 (Phase 2)
 **Status**: NOT_STARTED
 **Estimated Effort**: 4-6 weeks
@@ -606,7 +640,7 @@
 
 ---
 
-### [ ] 13. API Access (REST + GraphQL)
+### [ ] 14. API Access (REST + GraphQL)
 **Priority**: P2 (Phase 2)
 **Status**: NOT_STARTED
 **Estimated Effort**: 2-3 weeks

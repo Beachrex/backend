@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Implementation State
 
-**Last Updated**: 2025-12-30
-**Current Phase**: Implementation (IN PROGRESS) - Task #3 Phase 2.5: Testing + Stabilization COMPLETE ✅
+**Last Updated**: 2025-12-31
+**Current Phase**: Implementation (IN PROGRESS) - Task #4: Frontend Internal Tooling COMPLETE ✅
 **Overall Progress**: 85% platform complete, AI architecture defined, AI core complete (Task #1), validation complete (Task #1.5), itinerary endpoint implemented (Task #2), payment system fully tested and production-ready (Task #3)
 
 ---
@@ -325,7 +325,59 @@
 
 ---
 
-#### 3. Beach Search Analytics (B2B - $100K/year)
+#### Task #4: Frontend Internal Tooling (Payment System Testing)
+**Status**: COMPLETE ✅ (2025-12-31)
+**Priority**: P0 (CRITICAL - enables payment system testing)
+**Estimated Effort**: 2-3 hours
+**Blockers**: None
+
+**Requirements**:
+- Internal-only pages for testing payment system integration
+- Production guard (404 in production)
+- No styling polish (functional only)
+- Use ONLY generated OpenAPI client
+
+**Implementation**: ✅ COMPLETE (2025-12-31)
+- ✅ Run `yarn generate:api` - Verified 3 payment endpoints present and fully typed
+  - `POST /api/v1/payments/stripe/checkout` → `a957Abdc0A1F026Bb8B6F4D5Ec975B8E()`
+  - `GET /api/v1/me/entitlements` → `e3A9C3C756B5255539Aa1Ab9F3A2A6A8()`
+  - `POST /api/v1/payments/stripe/webhook` (not needed for frontend)
+- ✅ Created `/internal/ai-entitlements` page
+  - Displays credit balances (3/7/14-day itinerary credits)
+  - Displays purchase history table
+  - Uses same production guard as ai-playground
+  - Location: `src/app/internal/ai-entitlements/page.tsx`
+- ✅ Created `/internal/ai-purchase-itinerary` page
+  - 3 purchase buttons (3-day $19, 7-day $39, 14-day $59)
+  - Calls backend checkout endpoint
+  - Redirects to Stripe Checkout (window.location.href)
+  - No Stripe.js, no Stripe public key, no Elements
+  - Location: `src/app/internal/ai-purchase-itinerary/page.tsx`
+- ✅ Updated `/internal/ai-playground` page
+  - Enhanced 402 Payment Required error display
+  - Added "Buy itinerary" CTA button
+  - Button triggers checkout flow and redirects to Stripe
+  - Shows product details (type, duration, price)
+  - Location: `src/app/internal/ai-playground/page.tsx`
+
+**Testing Flow**:
+1. Visit `/internal/ai-entitlements` to view current credit balances
+2. Visit `/internal/ai-purchase-itinerary` to purchase credits
+3. Complete Stripe Checkout (test mode: card 4242 4242 4242 4242)
+4. Webhook grants credits to account
+5. Refresh `/internal/ai-entitlements` to verify credits
+6. Visit `/internal/ai-playground` and request itinerary
+7. If no credits: See 402 error with "Buy itinerary" CTA
+8. Click CTA to purchase and redirect to Stripe
+
+**Dependencies**: Task #3 (Payment Integration) - ✅ COMPLETE
+
+**Reference**: `docs/ai/implementation/TASK_4_COMPLETE.md`, `docs/ai/implementation/INTERNAL_TOOLING_AUTH.md`
+
+---
+
+#### 5. Beach Search Analytics (B2B - $100K/year)
+
 **Status**: Not started  
 **Priority**: P0 (CRITICAL)  
 **Estimated Effort**: 1-2 weeks  
@@ -352,7 +404,7 @@
 
 ---
 
-#### 4. Promoted Beach Listings (B2B - $150K/year)
+#### 6. Promoted Beach Listings (B2B - $150K/year)
 **Status**: Not started  
 **Priority**: P0 (CRITICAL)  
 **Estimated Effort**: 1 week  
@@ -380,7 +432,7 @@
 
 ### P1: Supporting Features (IMPORTANT)
 
-#### 5. PDF Generation (Itineraries, Reports)
+#### 7. PDF Generation (Itineraries, Reports)
 **Status**: Not started  
 **Priority**: P1  
 **Estimated Effort**: 3-5 days  
@@ -395,7 +447,7 @@
 
 ---
 
-#### 6. AI Agent Logging (Query Tracking)
+#### 8. AI Agent Logging (Query Tracking)
 **Status**: Not started  
 **Priority**: P1  
 **Estimated Effort**: 2-3 days  
