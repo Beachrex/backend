@@ -35,6 +35,10 @@ class User extends Authenticatable implements FilamentUser
         'country_code',
         'status_id',
         'register_type',
+        'google_id',
+        'avatar_url',
+        'locale',
+        'last_login_at',
     ];
 
     /**
@@ -59,6 +63,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'date_of_birth' => 'date',
+            'last_login_at' => 'datetime',
         ];
     }
 

@@ -64,8 +64,8 @@ Route::prefix('api/v1')
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
 
-        // Google OAuth routes (public)
-        Route::prefix('auth/google')->group(function () {
+        // Google OAuth routes (public, rate limited)
+        Route::prefix('auth/google')->middleware('throttle:10,1')->group(function () {
             Route::get('/redirect', [GoogleAuthController::class, 'redirect']);
             Route::get('/callback', [GoogleAuthController::class, 'callback']);
         });

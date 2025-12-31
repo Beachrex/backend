@@ -3,7 +3,12 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
 /**
  * Google OAuth Authentication Controller
@@ -43,11 +48,37 @@ class GoogleAuthController extends Controller
      */
     public function redirect(Request $request)
     {
-        // Implementation in Phase 2
-        return response()->json([
-            'error' => 'not_implemented',
-            'message' => 'Google OAuth redirect endpoint not yet implemented'
-        ], 501);
+        try {
+            // Generate secure state for CSRF protection
+            $state = Str::random(40);
+
+            // Store state in cache with 10-minute TTL
+            Cache::put("google_oauth_state:{$state}", [
+                'created_at' => now()->toIso8601String(),
+                'ip' => $request->ip(),
+            ], now()->addMinutes(10));
+
+            // Generate Google OAuth URL with state
+            $url = Socialite::driver('google')
+                ->stateless()
+                ->with(['state' => $state])
+                ->redirect()
+                ->getTargetUrl();
+
+            return response()->json([
+                'url' => $url,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Google OAuth redirect error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'server_error',
+                'message' => 'Failed to generate Google OAuth URL. Contact support.',
+            ], 500);
+        }
     }
 
     /**
@@ -135,11 +166,117 @@ class GoogleAuthController extends Controller
      */
     public function callback(Request $request)
     {
-        // Implementation in Phase 2
-        return response()->json([
-            'error' => 'not_implemented',
-            'message' => 'Google OAuth callback endpoint not yet implemented'
-        ], 501);
+        // Check for Google error
+        if ($request->has('error')) {
+            return response()->json([
+                'error' => 'google_api_error',
+                'message' => 'User denied access to Google account',
+            ], 400);
+        }
+
+        // Validate required parameters
+        if (!$request->has('code')) {
+            return response()->json([
+                'error' => 'invalid_code',
+                'message' => 'Authorization code is required',
+            ], 400);
+        }
+
+        if (!$request->has('state')) {
+            return response()->json([
+                'error' => 'invalid_state',
+                'message' => 'State parameter is required',
+            ], 400);
+        }
+
+        $state = $request->input('state');
+
+        // Validate state (CSRF protection)
+        $cacheKey = "google_oauth_state:{$state}";
+        if (!Cache::has($cacheKey)) {
+            return response()->json([
+                'error' => 'invalid_state',
+                'message' => 'Invalid or expired state parameter. Please try again.',
+            ], 401);
+        }
+
+        // Delete state to prevent reuse
+        Cache::forget($cacheKey);
+
+        try {
+            // Exchange code for Google user
+            $googleUser = Socialite::driver('google')->stateless()->user();
+
+            // Find or create user
+            $user = User::where('google_id', $googleUser->getId())->first();
+
+            if (!$user) {
+                // Check if user exists with same email
+                $user = User::where('email', $googleUser->getEmail())->first();
+
+                if ($user) {
+                    // Link Google account to existing user
+                    $user->update([
+                        'google_id' => $googleUser->getId(),
+                        'avatar_url' => $googleUser->getAvatar(),
+                        'last_login_at' => now(),
+                    ]);
+                } else {
+                    // Create new user
+                    $user = User::create([
+                        'name' => $googleUser->getName(),
+                        'email' => $googleUser->getEmail(),
+                        'google_id' => $googleUser->getId(),
+                        'avatar_url' => $googleUser->getAvatar(),
+                        'email_verified_at' => now(),
+                        'last_login_at' => now(),
+                        'status_id' => 1, // Active status
+                    ]);
+                }
+            } else {
+                // Update last login
+                $user->update([
+                    'last_login_at' => now(),
+                    'avatar_url' => $googleUser->getAvatar(),
+                ]);
+            }
+
+            // Create Sanctum token
+            $token = $user->createToken('google-oauth')->plainTextToken;
+
+            return response()->json([
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'expires_in' => 0, // Sanctum PAT doesn't expire by default
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar_url' => $user->avatar_url,
+                    'locale' => $user->locale,
+                    'created_at' => $user->created_at->toIso8601String(),
+                ],
+            ]);
+        } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
+            Log::error('Google OAuth invalid state exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'invalid_state',
+                'message' => 'Invalid state parameter. Please try again.',
+            ], 401);
+        } catch (\Exception $e) {
+            Log::error('Google OAuth callback error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'user_creation_failed',
+                'message' => 'Failed to authenticate with Google. Please try again.',
+            ], 500);
+        }
     }
 
     /**
@@ -167,11 +304,12 @@ class GoogleAuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Implementation in Phase 2
+        // Revoke the current token only
+        $request->user()->currentAccessToken()->delete();
+
         return response()->json([
-            'error' => 'not_implemented',
-            'message' => 'Logout endpoint not yet implemented'
-        ], 501);
+            'success' => true,
+        ]);
     }
 
     /**
@@ -199,11 +337,16 @@ class GoogleAuthController extends Controller
      */
     public function me(Request $request)
     {
-        // Implementation in Phase 2
+        $user = $request->user();
+
         return response()->json([
-            'error' => 'not_implemented',
-            'message' => 'Get current user endpoint not yet implemented'
-        ], 501);
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'avatar_url' => $user->avatar_url,
+            'locale' => $user->locale,
+            'created_at' => $user->created_at->toIso8601String(),
+        ]);
     }
 }
 
