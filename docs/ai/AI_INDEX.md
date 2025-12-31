@@ -164,7 +164,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 
 ### Architectural Constraints
 
-**AI Service**: Dedicated microservice (separate Laravel app, port 8001)
+**AI Service**: Integrated into main Laravel API (not microservice for MVP)
 **Main API**: Existing Laravel app (port 8000)
 **Shared**: PostgreSQL, Redis, Meilisearch
 
@@ -172,7 +172,15 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 **Session Memory**: Redis, 30-minute TTL, max 10 messages
 **No Long-Term Memory**: Privacy-first, no user profiling
 
+**Auth Model**: Google OAuth 2.0 → Sanctum Bearer Token
+- Frontend: Next.js 14 (different domain than backend)
+- Backend: Laravel 11 API (Sanctum Personal Access Tokens)
+- Flow: Authorization Code Flow with PKCE
+- Token: Bearer token (cross-domain compatible)
+- Storage: Frontend stores token (memory/localStorage)
+
 **See**: `docs/ai/architecture/integration.md` for integration design
+**See**: `docs/ai/implementation/AUTH_GOOGLE_SETUP.md` for auth setup
 
 ---
 

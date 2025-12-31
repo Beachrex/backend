@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
 use App\Http\Controllers\Api\V1\ContinentController;
@@ -59,11 +60,21 @@ Route::get('/openapi.json', function () {
 Route::prefix('api/v1')
     ->middleware('api')
     ->group(function () {
+        // Traditional email/password auth
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
 
+        // Google OAuth routes (public)
+        Route::prefix('auth/google')->group(function () {
+            Route::get('/redirect', [GoogleAuthController::class, 'redirect']);
+            Route::get('/callback', [GoogleAuthController::class, 'callback']);
+        });
+
         Route::middleware('auth:sanctum')->group(function () {
+            // Auth routes (require authentication)
             Route::post('/logout', [AuthController::class, 'logout']);
+            Route::post('/auth/logout', [GoogleAuthController::class, 'logout']);
+            Route::get('/me', [GoogleAuthController::class, 'me']);
             Route::get('/user', [UserController::class, 'show']);
 
             // Media routes (authenticated)

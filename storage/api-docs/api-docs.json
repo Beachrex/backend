@@ -833,6 +833,266 @@
                 }
             }
         },
+        "/api/v1/auth/google/redirect": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get Google OAuth authorization URL",
+                "description": "Returns the Google OAuth URL to redirect the user to for authentication. The URL includes a state parameter for CSRF protection.",
+                "operationId": "googleRedirect",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Google OAuth URL generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoogleRedirectResponse"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RateLimitErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error (e.g., missing Google OAuth configuration)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "server_error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Google OAuth is not configured. Contact support."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/google/callback": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Handle Google OAuth callback",
+                "description": "Exchanges the authorization code for a Google access token, fetches user profile, creates or updates the user in the database, and returns a Sanctum Bearer token. The state parameter is validated for CSRF protection.",
+                "operationId": "googleCallback",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "description": "Authorization code from Google OAuth",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "4/0AeanS0..."
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "description": "CSRF protection state parameter (must match the state sent in redirect)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "abc123xyz..."
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "description": "Error code from Google (if user denied access or other error occurred)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "access_denied"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication successful, user logged in",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoogleCallbackResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (missing code/state, or Google returned error)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoogleCallbackErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (invalid or expired state parameter)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoogleCallbackErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RateLimitErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error (e.g., failed to create user, Google API error)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "user_creation_failed"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to create user account. Please try again."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user and revoke token",
+                "description": "Revokes the current Sanctum Bearer token. The user must be authenticated.",
+                "operationId": "logout",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logout successful, token revoked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get current authenticated user profile",
+                "description": "Returns the profile of the currently authenticated user. Requires a valid Sanctum Bearer token.",
+                "operationId": "getMe",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/register": {
             "post": {
                 "tags": [
@@ -10312,6 +10572,165 @@
                         "type": "string",
                         "example": "<p>The island of Krk has a long and fascinating history...</p>",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "GoogleCallbackErrorResponse": {
+                "required": [
+                    "error",
+                    "message"
+                ],
+                "properties": {
+                    "error": {
+                        "description": "Error code",
+                        "type": "string",
+                        "enum": [
+                            "invalid_state",
+                            "invalid_code",
+                            "google_api_error",
+                            "user_creation_failed"
+                        ],
+                        "example": "invalid_state"
+                    },
+                    "message": {
+                        "description": "Human-readable error message",
+                        "type": "string",
+                        "example": "Invalid or expired state parameter. Please try again."
+                    },
+                    "details": {
+                        "description": "Additional error details (only in development mode)",
+                        "type": "object",
+                        "example": {
+                            "google_error": "invalid_grant"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "GoogleCallbackResponse": {
+                "required": [
+                    "token",
+                    "token_type",
+                    "expires_in",
+                    "user"
+                ],
+                "properties": {
+                    "token": {
+                        "description": "Sanctum personal access token (Bearer token)",
+                        "type": "string",
+                        "example": "1|8C05td6vuOSBLDMvWjg2EpxumuSO9h4h5tP4GGEe63440ff9"
+                    },
+                    "token_type": {
+                        "description": "Token type (always 'Bearer')",
+                        "type": "string",
+                        "example": "Bearer"
+                    },
+                    "expires_in": {
+                        "description": "Token expiration time in seconds. 0 means token does not expire (Sanctum PAT default behavior)",
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                },
+                "type": "object"
+            },
+            "GoogleRedirectResponse": {
+                "required": [
+                    "url"
+                ],
+                "properties": {
+                    "url": {
+                        "description": "Google OAuth authorization URL to redirect the user to",
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&response_type=code&scope=openid%20profile%20email&state=..."
+                    }
+                },
+                "type": "object"
+            },
+            "LogoutResponse": {
+                "required": [
+                    "success"
+                ],
+                "properties": {
+                    "success": {
+                        "description": "Indicates successful token revocation",
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "type": "object"
+            },
+            "MeResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "created_at"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "User ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "User's full name",
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "description": "User's email address",
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.doe@gmail.com"
+                    },
+                    "avatar_url": {
+                        "description": "User's avatar/profile picture URL (from Google)",
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://lh3.googleusercontent.com/a/...",
+                        "nullable": true
+                    },
+                    "locale": {
+                        "description": "User's preferred locale (ISO 639-1 language code)",
+                        "type": "string",
+                        "example": "en",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Account creation timestamp",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-12-31T10:30:00.000000Z"
+                    }
+                },
+                "type": "object"
+            },
+            "RateLimitErrorResponse": {
+                "required": [
+                    "error",
+                    "message"
+                ],
+                "properties": {
+                    "error": {
+                        "description": "Error code",
+                        "type": "string",
+                        "example": "rate_limit_exceeded"
+                    },
+                    "message": {
+                        "description": "Human-readable error message",
+                        "type": "string",
+                        "example": "Too many authentication attempts. Please try again later."
+                    },
+                    "retry_after": {
+                        "description": "Seconds until rate limit resets",
+                        "type": "integer",
+                        "example": 60
                     }
                 },
                 "type": "object"

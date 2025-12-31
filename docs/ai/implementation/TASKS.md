@@ -1,7 +1,7 @@
 # Beachrex AI Agent - Task List
 
 **Last Updated**: 2025-12-31
-**Current Phase**: Implementation (IN PROGRESS) - Task #4 COMPLETE ✅
+**Current Phase**: Implementation (IN PROGRESS) - Task #5 Phase 1 COMPLETE ✅ (Awaiting approval for Phase 2)
 **Priority**: P0 (Critical) → P1 (Important) → P2 (Nice-to-have)
 
 ---
@@ -383,7 +383,89 @@
 
 ---
 
-### [ ] 5. Beach Search Analytics (B2B)
+### [/] 5. Google OAuth Authentication (Bearer Token)
+**Priority**: P0 (CRITICAL - production auth requirement)
+**Status**: IN_PROGRESS (Phase 1 COMPLETE ✅, awaiting approval for Phase 2)
+**Started**: 2025-12-31
+**Estimated Effort**: 1-2 weeks
+**Revenue Impact**: Enables production launch of $1.08M/year itinerary revenue
+**Blockers**: None
+
+**Description**: Replace internal Bearer token authentication with production-ready Google OAuth 2.0. Use Authorization Code Flow with Sanctum Personal Access Tokens (Bearer token approach) for cross-domain compatibility.
+
+**Phase 1 - OpenAPI Contracts** (COMPLETE ✅):
+- [x] 5.1. Create OpenAPI schemas (6 schemas):
+  - [x] GoogleRedirectResponse (url)
+  - [x] GoogleCallbackResponse (token, token_type, expires_in, user)
+  - [x] LogoutResponse (success)
+  - [x] MeResponse (id, name, email, avatar_url, locale, created_at)
+  - [x] GoogleCallbackErrorResponse (error, message, details)
+  - [x] RateLimitErrorResponse (error, message, retry_after)
+- [x] 5.2. Create controller stub with full Swagger annotations:
+  - [x] GET /api/v1/auth/google/redirect
+  - [x] GET /api/v1/auth/google/callback
+  - [x] POST /api/v1/auth/logout
+  - [x] GET /api/v1/me
+- [x] 5.3. Update routes (api.php) to register endpoints
+- [x] 5.4. Verify existing endpoints have proper security annotations
+- [x] 5.5. Create AUTH_GOOGLE_SETUP.md documentation
+- [x] 5.6. Update AI_INDEX.md (auth model section)
+- [x] 5.7. Update STATE.md and TASKS.md
+
+**Phase 2 - Backend Implementation** (NOT STARTED - awaiting approval):
+- [ ] 5.8. Install Laravel Socialite package
+- [ ] 5.9. Add database migration (google_id, google_email, avatar_url, last_login_at)
+- [ ] 5.10. Implement GoogleAuthController::redirect (generate Google OAuth URL with state)
+- [ ] 5.11. Implement GoogleAuthController::callback (exchange code, create/update user, issue token)
+- [ ] 5.12. Implement GoogleAuthController::logout (revoke token)
+- [ ] 5.13. Implement GoogleAuthController::me (return user profile)
+- [ ] 5.14. Add state validation (CSRF protection, 5-minute expiration)
+- [ ] 5.15. Add rate limiting to auth endpoints (60 requests/hour per IP)
+- [ ] 5.16. Write feature tests (redirect, callback, logout, me)
+- [ ] 5.17. Regenerate OpenAPI docs (api-docs.json)
+
+**Phase 3 - Frontend Implementation** (NOT STARTED - awaiting approval):
+- [ ] 5.18. Generate OpenAPI types (yarn generate:api)
+- [ ] 5.19. Create "Continue with Google" button component
+- [ ] 5.20. Implement auth flow (redirect → callback → store token)
+- [ ] 5.21. Update API client to inject Bearer token
+- [ ] 5.22. Create user profile component (avatar, name, email)
+- [ ] 5.23. Create logout button
+- [ ] 5.24. Update public AI pages to use real auth
+- [ ] 5.25. Remove internal Bearer token approach from public flows
+
+**Phase 4 - Testing & Polish** (NOT STARTED - awaiting approval):
+- [ ] 5.26. Test end-to-end flow (local dev)
+- [ ] 5.27. Test with production Google credentials
+- [ ] 5.28. Fix all TypeScript errors (yarn build)
+- [ ] 5.29. Fix all lint errors (yarn lint)
+- [ ] 5.30. Verify no compile errors
+
+**Dependencies**: None (all prerequisites complete)
+
+**Acceptance Criteria** (Phase 1 - COMPLETE ✅):
+- ✅ OpenAPI schemas defined for all auth endpoints
+- ✅ Controller stubs created with full Swagger annotations
+- ✅ Routes registered in api.php
+- ✅ Existing endpoints have proper security annotations
+- ✅ Documentation created (AUTH_GOOGLE_SETUP.md)
+- ✅ AI_INDEX.md updated with auth model
+- ✅ STATE.md and TASKS.md updated
+
+**Acceptance Criteria** (Phase 2 - NOT STARTED):
+- [ ] User can click "Continue with Google" and authenticate
+- [ ] Backend exchanges code for token and returns user profile
+- [ ] Frontend stores token and uses for subsequent requests
+- [ ] User can logout and token is revoked
+- [ ] State parameter is validated (CSRF protection)
+- [ ] Rate limiting prevents brute force attacks
+- [ ] All tests passing (100% pass rate)
+
+**Reference**: `docs/ai/implementation/AUTH_GOOGLE_SETUP.md`
+
+---
+
+### [ ] 6. Beach Search Analytics (B2B)
 **Priority**: P0 (CRITICAL)
 **Status**: NOT_STARTED
 **Estimated Effort**: 1-2 weeks
