@@ -219,21 +219,21 @@ return [
 
         'products' => [
             'itinerary_3day' => [
-                'price_id' => env('STRIPE_PRICE_ITINERARY_3DAY'),
+                'price_id' => env('STRIPE_PRICE_ITINERARY_3DAY', env('STRIPE_PRODUCT_ITINERARY_3DAY_PRICE_ID')),
                 'amount' => 19.00,
                 'currency' => 'USD',
                 'credits' => 1,
                 'name' => '3-Day Beach Itinerary',
             ],
             'itinerary_7day' => [
-                'price_id' => env('STRIPE_PRICE_ITINERARY_7DAY'),
+                'price_id' => env('STRIPE_PRICE_ITINERARY_7DAY', env('STRIPE_PRODUCT_ITINERARY_7DAY_PRICE_ID')),
                 'amount' => 39.00,
                 'currency' => 'USD',
                 'credits' => 1,
                 'name' => '7-Day Beach Itinerary',
             ],
             'itinerary_14day' => [
-                'price_id' => env('STRIPE_PRICE_ITINERARY_14DAY'),
+                'price_id' => env('STRIPE_PRICE_ITINERARY_14DAY', env('STRIPE_PRODUCT_ITINERARY_14DAY_PRICE_ID')),
                 'amount' => 59.00,
                 'currency' => 'USD',
                 'credits' => 1,
