@@ -264,6 +264,7 @@ class ContextBuilderService
             'facilities' => $beachArray['facilities'] ?? [],
             'distance_km' => null, // ALWAYS null for popularity queries
             'beach_views' => $beachArray['beach_views'] ?? 0,
+            'main_image' => $beachArray['main_image'] ?? null,
             // Location slugs for frontend URL building
             'continent_slug' => $continentSlug,
             'country_slug' => $countrySlug,

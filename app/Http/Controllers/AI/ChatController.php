@@ -209,6 +209,9 @@ class ChatController extends Controller
             // Parse and validate LLM response
             $parsedResponse = $this->parseLLMResponse($llmResponse->content);
 
+            // Enrich beaches with full data from context (includes location slugs, main_image, etc.)
+            $parsedResponse['beaches'] = $this->enrichBeaches($parsedResponse['beaches'], $context);
+
             // Post-process beaches to ensure distance_km is null for popularity queries without location
             if ($intent === 'popularity_query' && !$request->has('context.location')) {
                 $parsedResponse['beaches'] = array_map(function ($beach) {
@@ -581,6 +584,45 @@ class ChatController extends Controller
             'suggestions' => array_slice($json['suggestions'] ?? [], 0, 3), // Max 3 suggestions
         ];
     }
+    /**
+     * Enrich beaches from LLM response with full data from context.
+     *
+     * The LLM only returns basic beach info (id, name, slug, etc.).
+     * We need to enrich with location slugs, main_image, and other fields from the context.
+     */
+    private function enrichBeaches(array $llmBeaches, array $context): array
+    {
+        // Get beaches from context (these have full data with location slugs)
+        $contextBeaches = $context['beaches'] ?? [];
+
+        // Create a map of beach ID => full beach data
+        $beachMap = [];
+        foreach ($contextBeaches as $beach) {
+            $beachMap[$beach['id']] = $beach;
+        }
+
+        // Enrich LLM beaches with full data
+        $enrichedBeaches = [];
+        foreach ($llmBeaches as $llmBeach) {
+            $beachId = $llmBeach['id'] ?? null;
+
+            if ($beachId && isset($beachMap[$beachId])) {
+                // Merge LLM beach data with context beach data
+                // LLM data takes precedence for match_score
+                $enrichedBeach = array_merge(
+                    $beachMap[$beachId], // Full data from context
+                    $llmBeach // LLM data (includes match_score)
+                );
+                $enrichedBeaches[] = $enrichedBeach;
+            } else {
+                // Fallback: use LLM beach data as-is
+                $enrichedBeaches[] = $llmBeach;
+            }
+        }
+
+        return $enrichedBeaches;
+    }
+
     /**
      * Extract JSON from LLM response (handles markdown code blocks).
      */

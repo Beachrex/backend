@@ -9384,6 +9384,11 @@
                         "example": "Split",
                         "nullable": true
                     },
+                    "surface": {
+                        "description": "Beach surface type",
+                        "type": "string",
+                        "example": "sand"
+                    },
                     "continent_slug": {
                         "description": "Continent slug for URL building",
                         "type": "string",
@@ -9419,11 +9424,6 @@
                         "type": "string",
                         "example": "img/beaches/hr-315-k-zadar/hr-315-k-zadar-sl1.jpg",
                         "nullable": true
-                    },
-                    "surface": {
-                        "description": "Beach surface type",
-                        "type": "string",
-                        "example": "sand"
                     },
                     "facilities": {
                         "description": "Available facilities",
