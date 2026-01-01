@@ -182,6 +182,7 @@ class ContextBuilderService
             ->where('status_id', 1)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->with(['continent.translations', 'country.translations', 'region.translations', 'island.translations', 'city.translations'])
             ->orderBy('beach_views', 'desc')
             ->limit($limit);
 
@@ -215,6 +216,43 @@ class ContextBuilderService
             $description = substr($description, 0, self::MAX_DESCRIPTION_CHARS) . '...';
         }
 
+        // Get location slugs from relationships
+        $continentSlug = null;
+        $countrySlug = null;
+        $regionSlug = null;
+        $islandSlug = null;
+        $citySlug = null;
+
+        if ($beach->continent && $beach->continent->translations) {
+            $continentTranslation = $beach->continent->translations->where('locale', $locale)->first()
+                ?? $beach->continent->translations->where('locale', 'en')->first();
+            $continentSlug = $continentTranslation?->slug ?? null;
+        }
+
+        if ($beach->country && $beach->country->translations) {
+            $countryTranslation = $beach->country->translations->where('locale', $locale)->first()
+                ?? $beach->country->translations->where('locale', 'en')->first();
+            $countrySlug = $countryTranslation?->slug ?? null;
+        }
+
+        if ($beach->region && $beach->region->translations) {
+            $regionTranslation = $beach->region->translations->where('locale', $locale)->first()
+                ?? $beach->region->translations->where('locale', 'en')->first();
+            $regionSlug = $regionTranslation?->slug ?? null;
+        }
+
+        if ($beach->island && $beach->island->translations) {
+            $islandTranslation = $beach->island->translations->where('locale', $locale)->first()
+                ?? $beach->island->translations->where('locale', 'en')->first();
+            $islandSlug = $islandTranslation?->slug ?? null;
+        }
+
+        if ($beach->city && $beach->city->translations) {
+            $cityTranslation = $beach->city->translations->where('locale', $locale)->first()
+                ?? $beach->city->translations->where('locale', 'en')->first();
+            $citySlug = $cityTranslation?->slug ?? null;
+        }
+
         return [
             'id' => $beachArray['id'] ?? null,
             'name' => $beachArray['name'] ?? null,
@@ -226,6 +264,12 @@ class ContextBuilderService
             'facilities' => $beachArray['facilities'] ?? [],
             'distance_km' => null, // ALWAYS null for popularity queries
             'beach_views' => $beachArray['beach_views'] ?? 0,
+            // Location slugs for frontend URL building
+            'continent_slug' => $continentSlug,
+            'country_slug' => $countrySlug,
+            'region_slug' => $regionSlug,
+            'island_slug' => $islandSlug,
+            'city_slug' => $citySlug,
         ];
     }
 
