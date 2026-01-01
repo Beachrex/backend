@@ -86,7 +86,7 @@ class GoogleAuthController extends Controller
      *     path="/api/v1/auth/google/callback",
      *     operationId="googleCallback",
      *     summary="Handle Google OAuth callback",
-     *     description="Exchanges the authorization code for a Google access token, fetches user profile, creates or updates the user in the database, and returns a Sanctum Bearer token. The state parameter is validated for CSRF protection.",
+     *     description="Exchanges the authorization code for a Google access token, fetches user profile, creates or updates the user in the database, and redirects to frontend with one-time exchange code. The state parameter is validated for CSRF protection.",
      *     tags={"Auth"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
@@ -111,82 +111,37 @@ class GoogleAuthController extends Controller
      *         @OA\Schema(type="string", example="access_denied")
      *     ),
      *     @OA\Response(
-     *         response=200,
-     *         description="Authentication successful, user logged in",
-     *         @OA\JsonContent(ref="#/components/schemas/GoogleCallbackResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Bad request (missing code/state, or Google returned error)",
-     *         @OA\JsonContent(ref="#/components/schemas/GoogleCallbackErrorResponse"),
-     *         @OA\Examples(
-     *             example="missing_code",
-     *             summary="Missing authorization code",
-     *             value={
-     *                 "error": "invalid_code",
-     *                 "message": "Authorization code is required"
-     *             }
-     *         ),
-     *         @OA\Examples(
-     *             example="google_error",
-     *             summary="User denied access",
-     *             value={
-     *                 "error": "google_api_error",
-     *                 "message": "User denied access to Google account"
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized (invalid or expired state parameter)",
-     *         @OA\JsonContent(ref="#/components/schemas/GoogleCallbackErrorResponse"),
-     *         @OA\Examples(
-     *             example="invalid_state",
-     *             summary="Invalid CSRF state",
-     *             value={
-     *                 "error": "invalid_state",
-     *                 "message": "Invalid or expired state parameter. Please try again."
-     *             }
+     *         response=302,
+     *         description="Redirects to frontend callback page with one-time exchange code or error",
+     *         @OA\Header(
+     *             header="Location",
+     *             description="Frontend callback URL with exchange code or error parameters",
+     *             @OA\Schema(type="string", example="https://beachrex.com/en/auth/callback?code=...")
      *         )
      *     ),
      *     @OA\Response(
      *         response=429,
      *         description="Rate limit exceeded",
      *         @OA\JsonContent(ref="#/components/schemas/RateLimitErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error (e.g., failed to create user, Google API error)",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="user_creation_failed"),
-     *             @OA\Property(property="message", type="string", example="Failed to create user account. Please try again.")
-     *         )
      *     )
      * )
      */
     public function callback(Request $request)
     {
+        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+
         // Check for Google error
         if ($request->has('error')) {
-            return response()->json([
-                'error' => 'google_api_error',
-                'message' => 'User denied access to Google account',
-            ], 400);
+            return redirect("{$frontendUrl}/en/auth/callback?error=google_api_error&message=" . urlencode('User denied access to Google account'));
         }
 
         // Validate required parameters
         if (!$request->has('code')) {
-            return response()->json([
-                'error' => 'invalid_code',
-                'message' => 'Authorization code is required',
-            ], 400);
+            return redirect("{$frontendUrl}/en/auth/callback?error=invalid_code&message=" . urlencode('Authorization code is required'));
         }
 
         if (!$request->has('state')) {
-            return response()->json([
-                'error' => 'invalid_state',
-                'message' => 'State parameter is required',
-            ], 400);
+            return redirect("{$frontendUrl}/en/auth/callback?error=invalid_state&message=" . urlencode('State parameter is required'));
         }
 
         $state = $request->input('state');
@@ -194,10 +149,7 @@ class GoogleAuthController extends Controller
         // Validate state (CSRF protection)
         $cacheKey = "google_oauth_state:{$state}";
         if (!Cache::has($cacheKey)) {
-            return response()->json([
-                'error' => 'invalid_state',
-                'message' => 'Invalid or expired state parameter. Please try again.',
-            ], 401);
+            return redirect("{$frontendUrl}/en/auth/callback?error=invalid_state&message=" . urlencode('Invalid or expired state parameter. Please try again.'));
         }
 
         // Delete state to prevent reuse
@@ -244,47 +196,120 @@ class GoogleAuthController extends Controller
             // Create Sanctum token
             $token = $user->createToken('google-oauth')->plainTextToken;
 
-            return response()->json([
+            // Generate one-time exchange code (secure, short-lived)
+            $exchangeCode = Str::random(64);
+
+            // Store token in cache with 5-minute TTL (one-time use)
+            Cache::put("google_oauth_exchange:{$exchangeCode}", [
                 'token' => $token,
-                'token_type' => 'Bearer',
-                'expires_in' => 0, // Sanctum PAT doesn't expire by default
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'avatar_url' => $user->avatar_url,
-                    'locale' => $user->locale,
-                    'created_at' => $user->created_at->toIso8601String(),
-                ],
-            ]);
+                'user_id' => $user->id,
+                'created_at' => now()->toIso8601String(),
+            ], now()->addMinutes(5));
+
+            // Redirect to frontend callback with one-time exchange code
+            return redirect("{$frontendUrl}/en/auth/callback?code={$exchangeCode}");
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
             Log::error('Google OAuth invalid state exception', [
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'error' => 'invalid_state',
-                'message' => 'Invalid state parameter. Please try again.',
-            ], 401);
+            return redirect("{$frontendUrl}/en/auth/callback?error=invalid_state&message=" . urlencode('Invalid state parameter. Please try again.'));
         } catch (\Exception $e) {
             Log::error('Google OAuth callback error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json([
-                'error' => 'user_creation_failed',
-                'message' => 'Failed to authenticate with Google. Please try again.',
-            ], 500);
+            return redirect("{$frontendUrl}/en/auth/callback?error=user_creation_failed&message=" . urlencode('Failed to authenticate with Google. Please try again.'));
         }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/auth/google/exchange",
+     *     operationId="googleExchange",
+     *     summary="Exchange one-time code for Sanctum token",
+     *     description="Exchanges a one-time code (received from OAuth callback redirect) for a Sanctum Bearer token and user profile. The code is single-use and expires after 5 minutes.",
+     *     tags={"Auth"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"code"},
+     *             @OA\Property(property="code", type="string", description="One-time exchange code from OAuth callback", example="abc123xyz...")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Token exchange successful",
+     *         @OA\JsonContent(ref="#/components/schemas/GoogleCallbackResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid or expired code",
+     *         @OA\JsonContent(ref="#/components/schemas/GoogleCallbackErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=429,
+     *         description="Rate limit exceeded",
+     *         @OA\JsonContent(ref="#/components/schemas/RateLimitErrorResponse")
+     *     )
+     * )
+     */
+    public function exchange(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        $code = $request->input('code');
+        $cacheKey = "google_oauth_exchange:{$code}";
+
+        // Check if code exists in cache
+        if (!Cache::has($cacheKey)) {
+            return response()->json([
+                'error' => 'invalid_code',
+                'message' => 'Invalid or expired exchange code',
+            ], 400);
+        }
+
+        // Get token data from cache
+        $data = Cache::get($cacheKey);
+
+        // Delete code to prevent reuse (one-time use)
+        Cache::forget($cacheKey);
+
+        // Get user
+        $user = User::find($data['user_id']);
+
+        if (!$user) {
+            return response()->json([
+                'error' => 'user_not_found',
+                'message' => 'User not found',
+            ], 400);
+        }
+
+        return response()->json([
+            'token' => $data['token'],
+            'token_type' => 'Bearer',
+            'expires_in' => 0, // Sanctum tokens don't expire by default
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar_url' => $user->avatar_url,
+                'locale' => $user->locale,
+                'created_at' => $user->created_at->toIso8601String(),
+            ],
+        ]);
     }
 
     /**
      * @OA\Post(
      *     path="/api/v1/auth/logout",
      *     operationId="logout",
-     *     summary="Logout user and revoke token",
-     *     description="Revokes the current Sanctum Bearer token. The user must be authenticated.",
+     *     summary="Logout current user",
+     *     description="Revokes the current Sanctum Bearer token. The user will need to re-authenticate to access protected endpoints.",
      *     tags={"Auth"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
@@ -349,4 +374,3 @@ class GoogleAuthController extends Controller
         ]);
     }
 }
-

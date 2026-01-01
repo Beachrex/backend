@@ -896,7 +896,7 @@
                     "Auth"
                 ],
                 "summary": "Handle Google OAuth callback",
-                "description": "Exchanges the authorization code for a Google access token, fetches user profile, creates or updates the user in the database, and returns a Sanctum Bearer token. The state parameter is validated for CSRF protection.",
+                "description": "Exchanges the authorization code for a Google access token, fetches user profile, creates or updates the user in the database, and redirects to frontend with one-time exchange code. The state parameter is validated for CSRF protection.",
                 "operationId": "googleCallback",
                 "parameters": [
                     {
@@ -934,8 +934,67 @@
                     }
                 ],
                 "responses": {
+                    "302": {
+                        "description": "Redirects to frontend callback page with one-time exchange code or error",
+                        "headers": {
+                            "Location": {
+                                "description": "Frontend callback URL with exchange code or error parameters",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "https://beachrex.com/en/auth/callback?code=..."
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RateLimitErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/google/exchange": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Exchange one-time code for Sanctum token",
+                "description": "Exchanges a one-time code (received from OAuth callback redirect) for a Sanctum Bearer token and user profile. The code is single-use and expires after 5 minutes.",
+                "operationId": "googleExchange",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code"
+                                ],
+                                "properties": {
+                                    "code": {
+                                        "description": "One-time exchange code from OAuth callback",
+                                        "type": "string",
+                                        "example": "abc123xyz..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
                     "200": {
-                        "description": "Authentication successful, user logged in",
+                        "description": "Token exchange successful",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -945,17 +1004,7 @@
                         }
                     },
                     "400": {
-                        "description": "Bad request (missing code/state, or Google returned error)",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GoogleCallbackErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized (invalid or expired state parameter)",
+                        "description": "Invalid or expired code",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -973,26 +1022,6 @@
                                 }
                             }
                         }
-                    },
-                    "500": {
-                        "description": "Internal server error (e.g., failed to create user, Google API error)",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "user_creation_failed"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Failed to create user account. Please try again."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -1002,8 +1031,8 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Logout user and revoke token",
-                "description": "Revokes the current Sanctum Bearer token. The user must be authenticated.",
+                "summary": "Logout current user",
+                "description": "Revokes the current Sanctum Bearer token. The user will need to re-authenticate to access protected endpoints.",
                 "operationId": "logout",
                 "parameters": [
                     {

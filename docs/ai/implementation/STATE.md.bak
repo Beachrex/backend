@@ -1,8 +1,8 @@
 # Beachrex AI Agent - Implementation State
 
-**Last Updated**: 2025-12-30
-**Current Phase**: Implementation (IN PROGRESS) - Task #3 Phase 2.5: Testing + Stabilization COMPLETE ✅
-**Overall Progress**: 85% platform complete, AI architecture defined, AI core complete (Task #1), validation complete (Task #1.5), itinerary endpoint implemented (Task #2), payment system fully tested and production-ready (Task #3)
+**Last Updated**: 2025-12-31
+**Current Phase**: Implementation (IN PROGRESS) - Task #5: Google OAuth Authentication (Phase 2 COMPLETE ✅)
+**Overall Progress**: 85% platform complete, AI architecture defined, AI core complete (Task #1), validation complete (Task #1.5), itinerary endpoint implemented (Task #2), payment system fully tested and production-ready (Task #3), frontend internal tooling complete (Task #4), Google OAuth backend implementation complete (Task #5 Phase 2)
 
 ---
 
@@ -325,7 +325,145 @@
 
 ---
 
-#### 3. Beach Search Analytics (B2B - $100K/year)
+#### Task #4: Frontend Internal Tooling (Payment System Testing)
+**Status**: COMPLETE ✅ (2025-12-31)
+**Priority**: P0 (CRITICAL - enables payment system testing)
+**Estimated Effort**: 2-3 hours
+**Blockers**: None
+
+**Requirements**:
+- Internal-only pages for testing payment system integration
+- Production guard (404 in production)
+- No styling polish (functional only)
+- Use ONLY generated OpenAPI client
+
+**Implementation**: ✅ COMPLETE (2025-12-31)
+- ✅ Run `yarn generate:api` - Verified 3 payment endpoints present and fully typed
+  - `POST /api/v1/payments/stripe/checkout` → `a957Abdc0A1F026Bb8B6F4D5Ec975B8E()`
+  - `GET /api/v1/me/entitlements` → `e3A9C3C756B5255539Aa1Ab9F3A2A6A8()`
+  - `POST /api/v1/payments/stripe/webhook` (not needed for frontend)
+- ✅ Created `/internal/ai-entitlements` page
+  - Displays credit balances (3/7/14-day itinerary credits)
+  - Displays purchase history table
+  - Uses same production guard as ai-playground
+  - Location: `src/app/internal/ai-entitlements/page.tsx`
+- ✅ Created `/internal/ai-purchase-itinerary` page
+  - 3 purchase buttons (3-day $19, 7-day $39, 14-day $59)
+  - Calls backend checkout endpoint
+  - Redirects to Stripe Checkout (window.location.href)
+  - No Stripe.js, no Stripe public key, no Elements
+  - Location: `src/app/internal/ai-purchase-itinerary/page.tsx`
+- ✅ Updated `/internal/ai-playground` page
+  - Enhanced 402 Payment Required error display
+  - Added "Buy itinerary" CTA button
+  - Button triggers checkout flow and redirects to Stripe
+  - Shows product details (type, duration, price)
+  - Location: `src/app/internal/ai-playground/page.tsx`
+
+**Testing Flow**:
+1. Visit `/internal/ai-entitlements` to view current credit balances
+2. Visit `/internal/ai-purchase-itinerary` to purchase credits
+3. Complete Stripe Checkout (test mode: card 4242 4242 4242 4242)
+4. Webhook grants credits to account
+5. Refresh `/internal/ai-entitlements` to verify credits
+6. Visit `/internal/ai-playground` and request itinerary
+7. If no credits: See 402 error with "Buy itinerary" CTA
+8. Click CTA to purchase and redirect to Stripe
+
+**Dependencies**: Task #3 (Payment Integration) - ✅ COMPLETE
+
+**Reference**: `docs/ai/implementation/TASK_4_COMPLETE.md`, `docs/ai/implementation/INTERNAL_TOOLING_AUTH.md`
+
+---
+
+#### Task #5: Google OAuth Authentication (Bearer Token)
+**Status**: Phase 2 COMPLETE ✅ (2025-12-31) - AWAITING APPROVAL FOR PHASE 3
+**Priority**: P0 (CRITICAL)
+**Estimated Effort**: 1-2 weeks
+**Blockers**: None
+
+**Requirements**:
+- Replace internal Bearer token auth with production Google OAuth
+- Support cross-domain authentication (frontend on different domain than backend)
+- Use Sanctum Personal Access Tokens (Bearer token approach)
+- Integrate with existing AI entitlements, Stripe checkout, and itinerary generation
+
+**Phase 1 - OpenAPI Contracts**: ✅ COMPLETE (2025-12-31)
+- ✅ Created OpenAPI schemas (6 schemas):
+  - GoogleRedirectResponse (url)
+  - GoogleCallbackResponse (token, token_type, expires_in, user)
+  - LogoutResponse (success)
+  - MeResponse (id, name, email, avatar_url, locale, created_at)
+  - GoogleCallbackErrorResponse (error, message, details)
+  - RateLimitErrorResponse (error, message, retry_after)
+- ✅ Created controller stub with full Swagger annotations:
+  - GET /api/v1/auth/google/redirect (returns Google OAuth URL)
+  - GET /api/v1/auth/google/callback (exchanges code for token)
+  - POST /api/v1/auth/logout (revokes token, requires auth)
+  - GET /api/v1/me (returns user profile, requires auth)
+- ✅ Updated routes (api.php) to register new endpoints
+- ✅ Verified existing endpoints have proper security annotations:
+  - POST /api/v1/payments/stripe/checkout (security={{"sanctum":{}}})
+  - GET /api/v1/me/entitlements (security={{"sanctum":{}}})
+  - POST /api/v1/ai/itineraries (security={{"sanctum": {}}, {}})
+- ✅ Created documentation:
+  - AUTH_GOOGLE_SETUP.md (env vars, Google Cloud setup, flow, troubleshooting)
+  - Updated AI_INDEX.md (added auth model section)
+  - Updated STATE.md (this file)
+
+**Phase 2 - Backend Implementation**: ✅ COMPLETE (2025-12-31)
+- ✅ Installed Laravel Socialite v5.24.0
+- ✅ Added database migration (google_id, avatar_url, locale, last_login_at)
+  - Made password nullable for OAuth users
+  - Added unique index on google_id
+- ✅ Configured Socialite in config/services.php
+- ✅ Updated User model (fillable fields, casts)
+- ✅ Implemented GoogleAuthController methods:
+  - redirect(): Generates state, stores in cache (10-min TTL), returns Google OAuth URL
+  - callback(): Validates state, exchanges code for user, creates/links user, returns Sanctum token
+  - logout(): Revokes current token only
+  - me(): Returns authenticated user profile
+- ✅ Added state validation (CSRF protection via cache)
+- ✅ Added rate limiting (10 requests/minute on auth endpoints)
+- ✅ Wrote 11 feature tests (all passing):
+  - redirect returns url + state stored
+  - callback with invalid state returns 401
+  - callback with missing code/state returns 400
+  - callback with Google error returns 400
+  - callback creates new user + returns token
+  - callback links Google to existing user with same email
+  - me requires authentication
+  - me returns authenticated user profile
+  - logout revokes current token
+  - logout requires authentication
+- ✅ Regenerated OpenAPI docs (verified in api-docs.json)
+
+**Phase 3 - Frontend Implementation**: NOT STARTED (awaiting approval)
+- [ ] Generate OpenAPI types (yarn generate:api)
+- [ ] Create "Continue with Google" button component
+- [ ] Implement auth flow (redirect → callback → store token)
+- [ ] Update API client to inject Bearer token
+- [ ] Create user profile component
+- [ ] Create logout button
+- [ ] Update public AI pages to use real auth
+- [ ] Remove internal Bearer token approach
+
+**Phase 4 - Testing & Polish**: NOT STARTED (awaiting approval)
+- [ ] Test end-to-end flow (local dev)
+- [ ] Test with production Google credentials
+- [ ] Fix all TypeScript errors
+- [ ] Fix all lint errors
+- [ ] Run frontend build (yarn build)
+- [ ] Verify no compile errors
+
+**Dependencies**: None (all prerequisites complete)
+
+**Reference**: `docs/ai/implementation/AUTH_GOOGLE_SETUP.md`, `docs/ai/implementation/TASK_5_PHASE_2_COMPLETE.md`
+
+---
+
+#### 6. Beach Search Analytics (B2B - $100K/year)
+
 **Status**: Not started  
 **Priority**: P0 (CRITICAL)  
 **Estimated Effort**: 1-2 weeks  
@@ -352,7 +490,7 @@
 
 ---
 
-#### 4. Promoted Beach Listings (B2B - $150K/year)
+#### 6. Promoted Beach Listings (B2B - $150K/year)
 **Status**: Not started  
 **Priority**: P0 (CRITICAL)  
 **Estimated Effort**: 1 week  
@@ -380,7 +518,7 @@
 
 ### P1: Supporting Features (IMPORTANT)
 
-#### 5. PDF Generation (Itineraries, Reports)
+#### 7. PDF Generation (Itineraries, Reports)
 **Status**: Not started  
 **Priority**: P1  
 **Estimated Effort**: 3-5 days  
@@ -395,7 +533,7 @@
 
 ---
 
-#### 6. AI Agent Logging (Query Tracking)
+#### 8. AI Agent Logging (Query Tracking)
 **Status**: Not started  
 **Priority**: P1  
 **Estimated Effort**: 2-3 days  

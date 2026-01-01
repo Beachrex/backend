@@ -41,54 +41,42 @@ class GoogleAuthTest extends TestCase
         $this->assertTrue(Cache::has("google_oauth_state:{$state}"));
     }
 
-    public function test_callback_with_invalid_state_returns_401(): void
+    public function test_callback_with_invalid_state_redirects_with_error(): void
     {
-        $response = $this->getJson('/api/v1/auth/google/callback?code=test_code&state=invalid_state');
+        $response = $this->get('/api/v1/auth/google/callback?code=test_code&state=invalid_state');
 
-        $response->assertStatus(401)
-            ->assertJson([
-                'error' => 'invalid_state',
-                'message' => 'Invalid or expired state parameter. Please try again.',
-            ]);
+        $response->assertStatus(302);
+        $this->assertStringContainsString('error=invalid_state', $response->headers->get('Location'));
     }
 
-    public function test_callback_with_missing_code_returns_400(): void
+    public function test_callback_with_missing_code_redirects_with_error(): void
     {
         $state = 'test_state';
         Cache::put("google_oauth_state:{$state}", ['created_at' => now()->toIso8601String()], 600);
 
-        $response = $this->getJson("/api/v1/auth/google/callback?state={$state}");
+        $response = $this->get("/api/v1/auth/google/callback?state={$state}");
 
-        $response->assertStatus(400)
-            ->assertJson([
-                'error' => 'invalid_code',
-                'message' => 'Authorization code is required',
-            ]);
+        $response->assertStatus(302);
+        $this->assertStringContainsString('error=invalid_code', $response->headers->get('Location'));
     }
 
-    public function test_callback_with_missing_state_returns_400(): void
+    public function test_callback_with_missing_state_redirects_with_error(): void
     {
-        $response = $this->getJson('/api/v1/auth/google/callback?code=test_code');
+        $response = $this->get('/api/v1/auth/google/callback?code=test_code');
 
-        $response->assertStatus(400)
-            ->assertJson([
-                'error' => 'invalid_state',
-                'message' => 'State parameter is required',
-            ]);
+        $response->assertStatus(302);
+        $this->assertStringContainsString('error=invalid_state', $response->headers->get('Location'));
     }
 
-    public function test_callback_with_google_error_returns_400(): void
+    public function test_callback_with_google_error_redirects_with_error(): void
     {
-        $response = $this->getJson('/api/v1/auth/google/callback?error=access_denied');
+        $response = $this->get('/api/v1/auth/google/callback?error=access_denied');
 
-        $response->assertStatus(400)
-            ->assertJson([
-                'error' => 'google_api_error',
-                'message' => 'User denied access to Google account',
-            ]);
+        $response->assertStatus(302);
+        $this->assertStringContainsString('error=google_api_error', $response->headers->get('Location'));
     }
 
-    public function test_callback_creates_new_user_and_returns_token(): void
+    public function test_callback_creates_new_user_and_redirects_with_code(): void
     {
         $state = 'test_state';
         Cache::put("google_oauth_state:{$state}", ['created_at' => now()->toIso8601String()], 600);
@@ -102,25 +90,20 @@ class GoogleAuthTest extends TestCase
 
         Socialite::shouldReceive('driver->stateless->user')->andReturn($socialiteUser);
 
-        $response = $this->getJson("/api/v1/auth/google/callback?code=test_code&state={$state}");
+        $response = $this->get("/api/v1/auth/google/callback?code=test_code&state={$state}");
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'token',
-                'token_type',
-                'expires_in',
-                'user' => ['id', 'name', 'email', 'avatar_url', 'locale', 'created_at'],
-            ])
-            ->assertJson([
-                'token_type' => 'Bearer',
-                'expires_in' => 0,
-                'user' => [
-                    'name' => 'Test User',
-                    'email' => 'test@example.com',
-                    'avatar_url' => 'https://example.com/avatar.jpg',
-                ],
-            ]);
+        $response->assertStatus(302);
 
+        // Extract exchange code from redirect URL
+        $location = $response->headers->get('Location');
+        $this->assertStringContainsString('/en/auth/callback?code=', $location);
+
+        // Extract code parameter
+        parse_str(parse_url($location, PHP_URL_QUERY), $query);
+        $exchangeCode = $query['code'] ?? null;
+        $this->assertNotNull($exchangeCode);
+
+        // Verify user was created
         $this->assertDatabaseHas('users', [
             'email' => 'test@example.com',
             'google_id' => 'google_123',
@@ -128,6 +111,9 @@ class GoogleAuthTest extends TestCase
 
         // Verify state was deleted
         $this->assertFalse(Cache::has("google_oauth_state:{$state}"));
+
+        // Verify exchange code exists in cache
+        $this->assertTrue(Cache::has("google_oauth_exchange:{$exchangeCode}"));
     }
 
     public function test_callback_links_google_to_existing_user_with_same_email(): void
@@ -149,15 +135,77 @@ class GoogleAuthTest extends TestCase
 
         Socialite::shouldReceive('driver->stateless->user')->andReturn($socialiteUser);
 
-        $response = $this->getJson("/api/v1/auth/google/callback?code=test_code&state={$state}");
+        $response = $this->get("/api/v1/auth/google/callback?code=test_code&state={$state}");
 
-        $response->assertStatus(200);
+        $response->assertStatus(302);
 
         $this->assertDatabaseHas('users', [
             'id' => $existingUser->id,
             'email' => 'test@example.com',
             'google_id' => 'google_123',
         ]);
+    }
+
+    public function test_exchange_with_valid_code_returns_token(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+
+        $token = $user->createToken('test-token')->plainTextToken;
+        $exchangeCode = 'test_exchange_code';
+
+        Cache::put("google_oauth_exchange:{$exchangeCode}", [
+            'token' => $token,
+            'user_id' => $user->id,
+            'created_at' => now()->toIso8601String(),
+        ], 300);
+
+        $response = $this->postJson('/api/v1/auth/google/exchange', [
+            'code' => $exchangeCode,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'token',
+                'token_type',
+                'expires_in',
+                'user' => ['id', 'name', 'email', 'avatar_url', 'locale', 'created_at'],
+            ])
+            ->assertJson([
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'expires_in' => 0,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => 'Test User',
+                    'email' => 'test@example.com',
+                ],
+            ]);
+
+        // Verify code was deleted (one-time use)
+        $this->assertFalse(Cache::has("google_oauth_exchange:{$exchangeCode}"));
+    }
+
+    public function test_exchange_with_invalid_code_returns_400(): void
+    {
+        $response = $this->postJson('/api/v1/auth/google/exchange', [
+            'code' => 'invalid_code',
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJson([
+                'error' => 'invalid_code',
+                'message' => 'Invalid or expired exchange code',
+            ]);
+    }
+
+    public function test_exchange_with_missing_code_returns_422(): void
+    {
+        $response = $this->postJson('/api/v1/auth/google/exchange', []);
+
+        $response->assertStatus(422);
     }
 
     public function test_me_requires_authentication(): void
