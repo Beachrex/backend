@@ -41,6 +41,48 @@ namespace App\Swagger\Schemas\AI;
  *         example="Split"
  *     ),
  *     @OA\Property(
+ * property="continent_slug",
+ * type="string",
+ * nullable=true,
+ * description="Continent slug for URL building",
+ * example="europe"
+ * ),
+ * @OA\Property(
+ * property="country_slug",
+ * type="string",
+ * nullable=true,
+ * description="Country slug for URL building",
+ * example="croatia"
+ * ),
+ * @OA\Property(
+ * property="region_slug",
+ * type="string",
+ * nullable=true,
+ * description="Region slug for URL building (optional)",
+ * example="dalmatia"
+ * ),
+ * @OA\Property(
+ * property="island_slug",
+ * type="string",
+ * nullable=true,
+ * description="Island slug for URL building (optional)",
+ * example="island-hvar"
+ * ),
+ * @OA\Property(
+ * property="city_slug",
+ * type="string",
+ * nullable=true,
+ * description="City slug for URL building (optional)",
+ * example="zadar"
+ * ),
+ * @OA\Property(
+ * property="main_image",
+ * type="string",
+ * nullable=true,
+ * description="Primary beach image path (relative, without CDN/domain prefix)",
+ * example="img/beaches/hr-315-k-zadar/hr-315-k-zadar-sl1.jpg"
+ * ),
+ *     @OA\Property(
  *         property="surface",
  *         type="string",
  *         description="Beach surface type",

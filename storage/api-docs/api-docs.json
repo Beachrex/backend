@@ -9384,6 +9384,42 @@
                         "example": "Split",
                         "nullable": true
                     },
+                    "continent_slug": {
+                        "description": "Continent slug for URL building",
+                        "type": "string",
+                        "example": "europe",
+                        "nullable": true
+                    },
+                    "country_slug": {
+                        "description": "Country slug for URL building",
+                        "type": "string",
+                        "example": "croatia",
+                        "nullable": true
+                    },
+                    "region_slug": {
+                        "description": "Region slug for URL building (optional)",
+                        "type": "string",
+                        "example": "dalmatia",
+                        "nullable": true
+                    },
+                    "island_slug": {
+                        "description": "Island slug for URL building (optional)",
+                        "type": "string",
+                        "example": "island-hvar",
+                        "nullable": true
+                    },
+                    "city_slug": {
+                        "description": "City slug for URL building (optional)",
+                        "type": "string",
+                        "example": "zadar",
+                        "nullable": true
+                    },
+                    "main_image": {
+                        "description": "Primary beach image path (relative, without CDN/domain prefix)",
+                        "type": "string",
+                        "example": "img/beaches/hr-315-k-zadar/hr-315-k-zadar-sl1.jpg",
+                        "nullable": true
+                    },
                     "surface": {
                         "description": "Beach surface type",
                         "type": "string",
