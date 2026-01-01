@@ -10662,7 +10662,7 @@
                         "example": 0
                     },
                     "user": {
-                        "$ref": "#/components/schemas/User"
+                        "$ref": "#/components/schemas/MeResponse"
                     }
                 },
                 "type": "object"

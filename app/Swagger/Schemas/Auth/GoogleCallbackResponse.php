@@ -27,7 +27,7 @@ namespace App\Swagger\Schemas\Auth;
  *     ),
  *     @OA\Property(
  *         property="user",
- *         ref="#/components/schemas/User",
+ *         ref="#/components/schemas/MeResponse",
  *         description="Authenticated user profile"
  *     )
  * )
