@@ -30,9 +30,9 @@ class OptionalAuthMiddleware
             // Attempt to authenticate via Sanctum
             $user = Auth::guard('sanctum')->user();
 
-            // Set the authenticated user on the request
+            // Set the authenticated user on the auth guard
             if ($user) {
-                $request->setUser($user);
+                Auth::setUser($user);
             }
         }
 
