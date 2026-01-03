@@ -589,6 +589,9 @@ class ChatController extends Controller
      *
      * The LLM only returns basic beach info (id, name, slug, etc.).
      * We need to enrich with location slugs, main_image, and other fields from the context.
+     *
+     * CRITICAL: Only return beaches that exist in the context (status_id = 1).
+     * NEVER use LLM-hallucinated beach data.
      */
     private function enrichBeaches(array $llmBeaches, array $context): array
     {
@@ -603,6 +606,8 @@ class ChatController extends Controller
 
         // Enrich LLM beaches with full data
         $enrichedBeaches = [];
+        $hallucinatedBeaches = [];
+
         foreach ($llmBeaches as $llmBeach) {
             $beachId = $llmBeach['id'] ?? null;
 
@@ -615,9 +620,33 @@ class ChatController extends Controller
                 );
                 $enrichedBeaches[] = $enrichedBeach;
             } else {
-                // Fallback: use LLM beach data as-is
-                $enrichedBeaches[] = $llmBeach;
+                // CRITICAL: LLM hallucinated a beach ID that doesn't exist in context
+                // This means either:
+                // 1. Beach doesn't exist in database
+                // 2. Beach has status_id != 1 (inactive)
+                // 3. Beach doesn't match filters
+                //
+                // NEVER use hallucinated data - skip this beach entirely
+                $hallucinatedBeaches[] = [
+                    'id' => $beachId,
+                    'name' => $llmBeach['name'] ?? 'unknown',
+                ];
+
+                Log::warning('LLM hallucinated beach not in context', [
+                    'beach_id' => $beachId,
+                    'beach_name' => $llmBeach['name'] ?? 'unknown',
+                    'context_beach_ids' => array_column($contextBeaches, 'id'),
+                ]);
             }
+        }
+
+        // Log summary if any hallucinations occurred
+        if (!empty($hallucinatedBeaches)) {
+            Log::warning('LLM hallucinated beaches filtered out', [
+                'hallucinated_count' => count($hallucinatedBeaches),
+                'hallucinated_beaches' => $hallucinatedBeaches,
+                'returned_count' => count($enrichedBeaches),
+            ]);
         }
 
         return $enrichedBeaches;

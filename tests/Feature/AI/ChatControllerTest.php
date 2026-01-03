@@ -29,6 +29,118 @@ class ChatControllerTest extends TestCase
 
         // Enable AI features
         Config::set('ai.features.enabled', true);
+
+        // Create test beaches for context
+        // The enrichBeaches() method requires beaches to exist in the context
+        // to prevent LLM hallucination issues
+        $this->createTestBeaches();
+    }
+
+    /**
+     * Create test beaches with required relationships for context building.
+     *
+     * IMPORTANT: This method is called in setUp() for EVERY test.
+     * RefreshDatabase clears the database between tests, so we need to recreate all data.
+     */
+    private function createTestBeaches(): void
+    {
+        // CRITICAL: Reset auto-increment sequences to ensure consistent IDs across tests
+        // RefreshDatabase rolls back transactions, but doesn't reset sequences
+        // Use pg_get_serial_sequence to get the correct sequence name
+        \DB::statement("SELECT setval(pg_get_serial_sequence('beach', 'id'), 1, false)");
+        \DB::statement("SELECT setval(pg_get_serial_sequence('region', 'id'), 1, false)");
+        \DB::statement("SELECT setval(pg_get_serial_sequence('city', 'id'), 1, false)");
+
+        // CRITICAL: Create Status FIRST (required by foreign keys in Region, City, Beach)
+        // Use DB::table()->updateOrInsert() to handle RefreshDatabase clearing between tests
+        \DB::table('status')->updateOrInsert(
+            ['id' => 1],
+            ['name' => 'Active']
+        );
+
+        // Create required reference data
+        $continent = \App\Models\Continent::updateOrCreate(
+            ['code' => 'EU']
+        );
+
+        // Create continent translation (required by ContextBuilderService)
+        \App\Models\ContinentTranslation::updateOrCreate(
+            ['continent_code' => 'EU', 'locale' => 'en'],
+            ['name' => 'Europe', 'slug' => 'europe']
+        );
+
+        $country = \App\Models\Country::updateOrCreate(
+            ['code' => 'HR']
+        );
+
+        // Create country translation (required by ContextBuilderService)
+        \App\Models\CountryTranslation::updateOrCreate(
+            ['country_code' => 'HR', 'locale' => 'en'],
+            ['name' => 'Croatia', 'slug' => 'croatia']
+        );
+
+        $region = \App\Models\Region::updateOrCreate(
+            ['code' => 'TEST_REGION'],
+            [
+                'country_code' => 'HR',
+                'status_id' => 1,
+            ]
+        );
+
+        // Create region translation (required by ContextBuilderService)
+        \App\Models\RegionTranslation::updateOrCreate(
+            ['region_id' => $region->id, 'locale' => 'en'],
+            ['name' => 'Test Region', 'slug' => 'test-region']
+        );
+
+        $city = \App\Models\City::updateOrCreate(
+            ['code' => 'TEST_CITY'],
+            [
+                'country_code' => 'HR',
+                'region_id' => $region->id,
+                'status_id' => 1,
+            ]
+        );
+
+        // Create city translation (required by ContextBuilderService)
+        \App\Models\CityTranslation::updateOrCreate(
+            ['city_id' => $city->id, 'locale' => 'en'],
+            ['name' => 'Test City', 'slug' => 'test-city']
+        );
+
+        // Create test beaches with IDs 1 and 2 (used in test mocks)
+        // Use updateOrCreate to handle RefreshDatabase
+        Beach::updateOrCreate(
+            ['id' => 1],
+            [
+                'name' => 'Zlatni Rat',
+                'slug' => 'zlatni-rat',
+                'status_id' => 1,
+                'continent_code' => 'EU',
+                'country_code' => 'HR',
+                'region_id' => $region->id,
+                'city_id' => $city->id,
+                'latitude' => 43.2565,
+                'longitude' => 16.6345,
+                'beach_views' => 1000,
+            ]
+        );
+
+        Beach::updateOrCreate(
+            ['id' => 2],
+            [
+                'name' => 'Bačvice',
+                'slug' => 'bacvice',
+                'status_id' => 1,
+                'continent_code' => 'EU',
+                'country_code' => 'HR',
+                'region_id' => $region->id,
+                'city_id' => $city->id,
+                'latitude' => 43.5051,
+                'longitude' => 16.4402,
+                'beach_views' => 800,
+            ]
+        );
     }
 
     /**

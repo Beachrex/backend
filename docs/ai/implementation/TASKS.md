@@ -424,22 +424,33 @@
 - [x] 5.16. Write feature tests (11 tests, all passing)
 - [x] 5.17. Regenerate OpenAPI docs (api-docs.json)
 
-**Phase 3 - Frontend Implementation** (NOT STARTED - awaiting approval):
-- [ ] 5.18. Generate OpenAPI types (yarn generate:api)
-- [ ] 5.19. Create "Continue with Google" button component
-- [ ] 5.20. Implement auth flow (redirect → callback → store token)
-- [ ] 5.21. Update API client to inject Bearer token
-- [ ] 5.22. Create user profile component (avatar, name, email)
-- [ ] 5.23. Create logout button
-- [ ] 5.24. Update public AI pages to use real auth
-- [ ] 5.25. Remove internal Bearer token approach from public flows
+**Phase 3 - Frontend Implementation** (COMPLETE ✅ - 2026-01-02):
+- [x] 5.18. Generate OpenAPI types (yarn generate:api)
+- [x] 5.19. Create "Continue with Google" button component (GoogleLoginButton.tsx)
+- [x] 5.20. Implement auth flow (redirect → callback → store token)
+  - [x] 5.20.1. Fix OAuth security vulnerability (one-time exchange codes)
+  - [x] 5.20.2. Implement `/api/v1/auth/google/exchange` endpoint
+  - [x] 5.20.3. Update callback page to call exchange endpoint
+- [x] 5.21. Update API client to inject Bearer token (ApiClientProvider.tsx)
+- [x] 5.22. Create user profile component (UserProfile.tsx - avatar, name, email)
+- [x] 5.23. Create logout button (LogoutButton.tsx)
+- [x] 5.24. Update public AI pages to use real auth (/ai/chat, /ai/itinerary)
+- [x] 5.25. Remove internal Bearer token approach from public flows (deleted /internal folder)
+- [x] 5.26. Fix OpenAPI schema (GoogleCallbackResponse.user → MeResponse)
+- [x] 5.27. Integrate generated SDK methods (replaced placeholders: me() → getMe())
+- [x] 5.28. Fix OptionalAuthMiddleware (Auth::setUser() to set user on request)
+- [x] 5.29. Fix AI chat hallucination prevention (only return beaches from context)
+- [x] 5.30. Fix payment success page 404 errors (updated links to /ai/*)
+- [x] 5.31. Fix itinerary page (entitlements API, structured itinerary display)
 
-**Phase 4 - Testing & Polish** (NOT STARTED - awaiting approval):
-- [ ] 5.26. Test end-to-end flow (local dev)
-- [ ] 5.27. Test with production Google credentials
-- [ ] 5.28. Fix all TypeScript errors (yarn build)
-- [ ] 5.29. Fix all lint errors (yarn lint)
-- [ ] 5.30. Verify no compile errors
+**Phase 4 - Testing & Polish** (COMPLETE ✅ - 2026-01-02):
+- [x] 5.32. Test end-to-end flow (local dev) - SUCCESS
+- [x] 5.33. Fix all TypeScript errors (yarn build) - SUCCESS
+- [x] 5.34. Fix all lint errors (yarn lint) - SUCCESS
+- [x] 5.35. Verify no compile errors - SUCCESS
+- [x] 5.36. Fix build errors (added `export const dynamic = 'force-dynamic'` to auth pages)
+- [ ] 5.37. Test with production Google credentials (PENDING - need to update Google Cloud Console)
+- [ ] 5.38. Deploy to dev server (PENDING)
 
 **Dependencies**: None (all prerequisites complete)
 
@@ -460,7 +471,30 @@
 - [x] All tests passing (11/11 tests, 38 assertions, 100% pass rate)
 - [x] OpenAPI docs regenerated and verified
 
-**Reference**: `docs/ai/implementation/AUTH_GOOGLE_SETUP.md`, `docs/ai/implementation/TASK_5_PHASE_2_COMPLETE.md`
+**Acceptance Criteria** (Phase 3 - COMPLETE ✅):
+- [x] Frontend can initiate Google OAuth flow
+- [x] Frontend can exchange code for token (secure one-time exchange pattern)
+- [x] Frontend stores token in localStorage and injects in API requests
+- [x] User profile displays after login (avatar, name, email)
+- [x] User can logout and token is cleared
+- [x] Public AI pages use real auth (not internal Bearer token)
+- [x] OpenAPI schema matches backend response structure
+- [x] Generated SDK methods integrated (no placeholders)
+- [x] OptionalAuthMiddleware correctly sets user on request
+- [x] AI chat returns only active beaches with correct location slugs
+- [x] Payment success page links work (no 404 errors)
+- [x] Itinerary page displays structured itinerary correctly
+
+**Acceptance Criteria** (Phase 4 - COMPLETE ✅):
+- [x] End-to-end OAuth flow works (local dev)
+- [x] Frontend build succeeds (yarn build)
+- [x] No TypeScript errors
+- [x] No lint errors
+- [x] Auth pages render correctly (no hydration errors)
+- [ ] Production Google credentials tested (PENDING)
+- [ ] Deployed to dev server (PENDING)
+
+**Reference**: `docs/ai/implementation/AUTH_GOOGLE_SETUP.md`, `docs/ai/implementation/TASK_5_PHASE_2_COMPLETE.md`, `docs/ai/implementation/POST_CHANGE_SUMMARY.md`
 
 ---
 

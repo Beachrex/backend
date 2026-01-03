@@ -593,6 +593,161 @@ Implement a **credit-based entitlement model** where:
 
 ---
 
+## [2026-01-02] Bearer Tokens (Sanctum) Instead of Cookies for Frontend Auth
+
+**Status**: Accepted
+
+**Context**:
+Task #5 (Google OAuth Authentication) required a decision on how to authenticate frontend requests to the Laravel API. Two primary approaches were considered: cookie-based authentication (Laravel's default with Sanctum SPA authentication) vs Bearer token authentication (Sanctum Personal Access Tokens).
+
+**Decision**:
+Use **Bearer tokens (Sanctum Personal Access Tokens)** stored in browser localStorage and sent via `Authorization: Bearer {token}` header for all authenticated API requests.
+
+**Alternatives Considered**:
+1. **Cookie-based authentication (Sanctum SPA mode)**
+   - Rejected because:
+     - Requires same-domain or complex CORS configuration
+     - Requires CSRF token management
+     - More complex setup for separate frontend/backend domains
+     - Harder to debug (cookies are opaque in network inspector)
+2. **Session-based authentication (Laravel sessions)**
+   - Rejected because:
+     - Not suitable for stateless API architecture
+     - Requires sticky sessions in load-balanced environments
+     - Poor mobile app compatibility (future requirement)
+
+**Reasoning**:
+- **Simplicity**: Bearer tokens are straightforward to implement and debug
+- **Cross-domain**: Works seamlessly with separate frontend (localhost:3000) and backend (localhost:8000) domains
+- **Mobile-ready**: Same token approach works for future mobile apps
+- **Stateless**: No server-side session storage required (tokens are self-contained)
+- **Debugging**: Tokens visible in network inspector, easy to test with curl/Postman
+- **Standard**: Industry-standard approach for SPA + API architecture
+
+**Impact**:
+- **Frontend**: Store token in localStorage (`beachrex_auth_token` key)
+- **API Client**: Inject `Authorization: Bearer {token}` header on all requests
+- **Backend**: Use `auth:sanctum` middleware for protected routes
+- **Security**: Tokens are revocable (logout deletes token from database)
+- **XSS Risk**: Tokens in localStorage are vulnerable to XSS attacks (mitigated by CSP headers and input sanitization)
+
+**Trade-offs**:
+- ✅ **Pros**: Simple, debuggable, cross-domain, mobile-ready, stateless
+- ⚠️ **Cons**: Vulnerable to XSS (but so are cookies without httpOnly flag), requires manual token refresh logic (future)
+
+**Related**:
+- Implementation: `src/contexts/AuthContext.tsx`, `src/components/ApiClientProvider.tsx`
+- Backend: `app/Http/Controllers/Api/V1/Auth/GoogleAuthController.php`
+- Documentation: `docs/ai/implementation/AUTH_GOOGLE_SETUP.md`
+
+---
+
+## [2026-01-02] OAuth One-Time Exchange Codes Instead of Tokens in URL
+
+**Status**: Accepted
+
+**Context**:
+During Task #5 Phase 3 implementation, a **critical security vulnerability** was discovered: the OAuth callback was passing Sanctum tokens via URL parameters (`?token=...`). This exposes tokens in browser history, server logs, and analytics tools.
+
+**Decision**:
+Implement a **one-time exchange code pattern** where:
+1. Backend generates a random 64-character exchange code
+2. Backend stores the token in cache with 5-minute TTL (key: `google_oauth_exchange:{code}`)
+3. Backend redirects to frontend with exchange code (not token): `/auth/callback?code={code}`
+4. Frontend calls `/api/v1/auth/google/exchange` with the code
+5. Backend returns the token and deletes the code from cache (one-time use)
+
+**Alternatives Considered**:
+1. **Pass token in URL fragment** (`#token=...`)
+   - Rejected because: Still visible in browser, not sent to server, but can be logged by client-side analytics
+2. **Use POST redirect with token in body**
+   - Rejected because: Browsers don't support POST redirects from server-side (would require intermediate page with form submission)
+3. **Use encrypted token in URL**
+   - Rejected because: Still logged in server access logs, encryption adds complexity, doesn't solve the root problem
+
+**Reasoning**:
+- **Security**: Tokens never appear in URLs (not logged anywhere)
+- **One-time use**: Exchange codes can only be used once (deleted after exchange)
+- **Short-lived**: Exchange codes expire after 5 minutes (reduces attack window)
+- **Standard pattern**: Used by OAuth 2.0 Authorization Code flow (industry best practice)
+- **Auditability**: Can log exchange code usage without exposing tokens
+
+**Impact**:
+- **Backend**: New endpoint `POST /api/v1/auth/google/exchange`
+- **Frontend**: Must call exchange endpoint after OAuth callback
+- **Security**: Eliminates token exposure in URLs, browser history, and server logs
+- **User experience**: No visible change (redirect flow is transparent)
+
+**Attack Vectors Mitigated**:
+- ✅ **Browser history**: Tokens no longer stored in browser history
+- ✅ **Server logs**: Tokens no longer logged in access logs
+- ✅ **Analytics**: Tokens no longer sent to Google Analytics, Mixpanel, etc.
+- ✅ **Referrer headers**: Tokens no longer leaked via Referer header
+- ✅ **Shoulder surfing**: Tokens no longer visible in address bar
+
+**Related**:
+- Implementation: `app/Http/Controllers/Api/V1/Auth/GoogleAuthController.php` (lines 199-210)
+- Frontend: `src/app/[locale]/auth/callback/page.tsx`
+- Documentation: `docs/ai/implementation/SECURITY_FIX_OAUTH_TOKEN.md`
+- ADR: This decision supersedes any previous decision to pass tokens in URLs
+
+---
+
+## [2026-01-02] Stripe Checkout (Hosted) Instead of Stripe.js for Payment Integration
+
+**Status**: Accepted
+
+**Context**:
+Task #3 (Payment Integration) required a decision on how to integrate Stripe for itinerary purchases. Two primary approaches were considered: Stripe Checkout (hosted payment page) vs Stripe.js (embedded payment form).
+
+**Decision**:
+Use **Stripe Checkout (hosted payment page)** where:
+1. Backend creates a Checkout Session via Stripe API
+2. Backend returns the session URL to frontend
+3. Frontend redirects user to Stripe-hosted payment page
+4. User completes payment on Stripe's domain
+5. Stripe redirects back to frontend success/cancel page
+6. Backend receives webhook event (`checkout.session.completed`) to grant credits
+
+**Alternatives Considered**:
+1. **Stripe.js (embedded payment form)**
+   - Rejected because:
+     - Requires PCI compliance (even with Stripe Elements)
+     - More complex frontend implementation (card validation, error handling)
+     - Requires custom payment form UI design
+     - More maintenance burden (Stripe.js version updates)
+2. **Stripe Payment Links (no-code solution)**
+   - Rejected because:
+     - Less control over user experience (can't customize branding)
+     - Can't pass custom metadata (user_id, product_type)
+     - Can't programmatically create links (requires manual setup)
+
+**Reasoning**:
+- **Security**: Stripe handles all payment data (no PCI compliance required)
+- **Simplicity**: Minimal frontend code (just redirect to URL)
+- **Reliability**: Stripe's hosted page is battle-tested and optimized
+- **Mobile-optimized**: Stripe Checkout works seamlessly on mobile
+- **Conversion-optimized**: Stripe's UX is optimized for conversion (A/B tested by millions of merchants)
+- **Maintenance**: No need to update payment form UI when Stripe changes
+
+**Impact**:
+- **Backend**: Create Checkout Session endpoint (`POST /api/v1/payments/stripe/checkout`)
+- **Frontend**: Redirect to Stripe Checkout URL (no payment form UI needed)
+- **Webhooks**: Handle `checkout.session.completed` event to grant credits
+- **User experience**: User leaves site briefly to complete payment (industry-standard flow)
+
+**Trade-offs**:
+- ✅ **Pros**: Secure, simple, reliable, mobile-optimized, conversion-optimized, low maintenance
+- ⚠️ **Cons**: User leaves site (but this is standard for payment flows), less UI customization
+
+**Related**:
+- Implementation: `app/Http/Controllers/Api/V1/Payments/StripeController.php`
+- Frontend: `src/app/[locale]/ai/itinerary/page.tsx` (handlePurchase function)
+- Webhooks: `app/Http/Controllers/Api/V1/Webhooks/StripeWebhookController.php`
+- Documentation: `docs/ai/implementation/TASK_3_STRIPE_TEST_MODE_GUIDE.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions
