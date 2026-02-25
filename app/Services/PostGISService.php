@@ -474,6 +474,145 @@ class PostGISService
     }
 
     /**
+     * Reverse geocode a point to find the nearest city and its geographic hierarchy.
+     *
+     * Finds the nearest active city (with active beaches) to the given coordinates
+     * and returns its full geographic hierarchy with localized names and slugs.
+     *
+     * @param float $lat Latitude of the point
+     * @param float $lng Longitude of the point
+     * @return object|null Object with city_name, city_slug, region_slug, country_name, country_slug, country_code, continent_slug, or null if none found within 100km
+     */
+    public function reverseGeocodePoint(float $lat, float $lng): ?object
+    {
+        $locale = app()->getLocale();
+
+        $result = DB::selectOne("
+            SELECT
+                COALESCE(city_t.name, city_t_en.name) as city_name,
+                COALESCE(city_t.slug, city_t_en.slug) as city_slug,
+                COALESCE(reg_t.slug, reg_t_en.slug) as region_slug,
+                COALESCE(ct.name, ct_en.name) as country_name,
+                COALESCE(ct.slug, ct_en.slug) as country_slug,
+                c.code as country_code,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                ST_Distance(
+                    ST_SetSRID(ST_MakePoint(city.longitude, city.latitude), 4326)::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+                ) / 1000.0 as distance_km
+            FROM city
+            LEFT JOIN city_translation city_t ON city.id = city_t.city_id AND city_t.locale = ?
+            LEFT JOIN city_translation city_t_en ON city.id = city_t_en.city_id AND city_t_en.locale = 'en'
+            LEFT JOIN region reg ON city.region_id = reg.id
+            LEFT JOIN region_translation reg_t ON reg.id = reg_t.region_id AND reg_t.locale = ?
+            LEFT JOIN region_translation reg_t_en ON reg.id = reg_t_en.region_id AND reg_t_en.locale = 'en'
+            LEFT JOIN countries c ON city.country_code = c.code
+            LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
+            LEFT JOIN country_translation ct_en ON c.code = ct_en.country_code AND ct_en.locale = 'en'
+            LEFT JOIN continents cont ON c.continent_code = cont.code
+            LEFT JOIN continent_translation cont_t ON cont.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON cont.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            WHERE city.status_id = 1
+              AND city.latitude IS NOT NULL
+              AND city.longitude IS NOT NULL
+              AND EXISTS (
+                  SELECT 1 FROM beach b
+                  WHERE b.city_id = city.id AND b.status_id = 1
+              )
+              AND ST_Distance(
+                  ST_SetSRID(ST_MakePoint(city.longitude, city.latitude), 4326)::geography,
+                  ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+              ) <= 100000
+            ORDER BY ST_Distance(
+                ST_SetSRID(ST_MakePoint(city.longitude, city.latitude), 4326)::geography,
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+            )
+            LIMIT 1
+        ", [$lng, $lat, $locale, $locale, $locale, $locale, $lng, $lat, $lng, $lat]);
+
+        return $result;
+    }
+
+    /**
+     * Find nearby cities to a given point, ordered by distance
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @param float $radiusKm
+     * @param int $limit
+     * @return \Illuminate\Support\Collection
+     */
+    public function getNearbyCities(float $latitude, float $longitude, float $radiusKm = 50, int $limit = 10)
+    {
+        $locale = app()->getLocale();
+
+        $results = DB::select("
+            SELECT
+                c.id,
+                COALESCE(ct.name, ct_en.name) as name,
+                COALESCE(ct.slug, ct_en.slug) as slug,
+                c.country_code,
+                COALESCE(co_t.name, co_t_en.name) as country_name,
+                COALESCE(co_t.slug, co_t_en.slug) as country_slug,
+                COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
+                COALESCE(reg_t.slug, reg_t_en.slug) as region_slug,
+                COALESCE(isl_t.slug, isl_t_en.slug) as island_slug,
+                c.latitude,
+                c.longitude,
+                (SELECT COUNT(*) FROM beach WHERE beach.city_id = c.id AND beach.status_id = 1) as beaches_count,
+                c.main_image,
+                ST_Distance(
+                    ST_SetSRID(ST_MakePoint(c.longitude, c.latitude), 4326)::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+                ) / 1000.0 as distance_km
+            FROM city c
+            LEFT JOIN city_translation ct ON c.id = ct.city_id AND ct.locale = ?
+            LEFT JOIN city_translation ct_en ON c.id = ct_en.city_id AND ct_en.locale = 'en'
+            LEFT JOIN countries co ON c.country_code = co.code
+            LEFT JOIN country_translation co_t ON co.code = co_t.country_code AND co_t.locale = ?
+            LEFT JOIN country_translation co_t_en ON co.code = co_t_en.country_code AND co_t_en.locale = 'en'
+            LEFT JOIN continents cont ON co.continent_code = cont.code
+            LEFT JOIN continent_translation cont_t ON cont.code = cont_t.continent_code AND cont_t.locale = ?
+            LEFT JOIN continent_translation cont_t_en ON cont.code = cont_t_en.continent_code AND cont_t_en.locale = 'en'
+            LEFT JOIN region reg ON c.region_id = reg.id
+            LEFT JOIN region_translation reg_t ON reg.id = reg_t.region_id AND reg_t.locale = ?
+            LEFT JOIN region_translation reg_t_en ON reg.id = reg_t_en.region_id AND reg_t_en.locale = 'en'
+            LEFT JOIN island isl ON c.island_id = isl.id
+            LEFT JOIN island_translation isl_t ON isl.id = isl_t.island_id AND isl_t.locale = ?
+            LEFT JOIN island_translation isl_t_en ON isl.id = isl_t_en.island_id AND isl_t_en.locale = 'en'
+            WHERE c.status_id = 1
+              AND c.latitude IS NOT NULL
+              AND c.longitude IS NOT NULL
+              AND EXISTS (SELECT 1 FROM beach WHERE beach.city_id = c.id AND beach.status_id = 1)
+              AND ST_Distance(
+                    ST_SetSRID(ST_MakePoint(c.longitude, c.latitude), 4326)::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+                  ) / 1000.0 <= ?
+            ORDER BY distance_km
+            LIMIT ?
+        ", [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $radiusKm, $limit]);
+
+        return collect($results)->map(function ($city) {
+            return [
+                'id' => $city->id,
+                'name' => $city->name,
+                'slug' => $city->slug,
+                'country_code' => $city->country_code,
+                'country_name' => $city->country_name,
+                'country_slug' => $city->country_slug ?? null,
+                'continent_slug' => $city->continent_slug ?? null,
+                'region_slug' => $city->region_slug ?? null,
+                'island_slug' => $city->island_slug ?? null,
+                'latitude' => $city->latitude,
+                'longitude' => $city->longitude,
+                'beaches_count' => (int) $city->beaches_count,
+                'main_image' => $city->main_image,
+                'distance_km' => round((float) $city->distance_km, 2),
+            ];
+        });
+    }
+
+    /**
      * Format beach results with proper image URLs
      *
      * @param array $results

@@ -7005,6 +7005,94 @@
                 }
             }
         },
+        "/api/v1/spatial/cities/nearby": {
+            "get": {
+                "tags": [
+                    "Spatial"
+                ],
+                "summary": "Find nearby cities with beaches",
+                "description": "Find cities near a given point that have at least one active beach, ordered by distance. Only returns active cities (status_id=1) with active beaches.",
+                "operationId": "getNearbyCities",
+                "parameters": [
+                    {
+                        "name": "latitude",
+                        "in": "query",
+                        "description": "Latitude of the reference point (-90 to 90)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "example": 43.5
+                        }
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "query",
+                        "description": "Longitude of the reference point (-180 to 180)",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "example": 16.4
+                        }
+                    },
+                    {
+                        "name": "radius",
+                        "in": "query",
+                        "description": "Search radius in kilometers (0.1 to 500, default: 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 500,
+                            "minimum": 0.1,
+                            "example": 50
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of cities to return (1 to 50, default: 10)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 50,
+                            "minimum": 1,
+                            "example": 10
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Nearby cities found, ordered by distance from reference point",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NearbyCitiesResponseSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error - missing or invalid parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/spatial/beaches/density-grid": {
             "get": {
                 "tags": [
@@ -10903,7 +10991,7 @@
                         "description": "Array of beaches",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/BeachSchema"
+                            "$ref": "#/components/schemas/SpatialBeach"
                         }
                     },
                     "meta": {
@@ -11973,7 +12061,7 @@
                         "description": "Array of beaches ordered by distance from reference point",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/BeachSchema"
+                            "$ref": "#/components/schemas/SpatialBeach"
                         }
                     },
                     "meta": {
@@ -12021,7 +12109,7 @@
                         "description": "Array of beaches",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/BeachSchema"
+                            "$ref": "#/components/schemas/SpatialBeach"
                         }
                     },
                     "meta": {
@@ -12075,6 +12163,54 @@
                                 "description": "Number of beaches found",
                                 "type": "integer",
                                 "example": 25
+                            },
+                            "location": {
+                                "description": "Geographic location context for the search center, determined by finding the nearest city with active beaches (within 100km). Useful for displaying contextual headers like 'Beaches near Split, Croatia'.",
+                                "properties": {
+                                    "city_name": {
+                                        "description": "Translated name of the nearest city",
+                                        "type": "string",
+                                        "example": "Split",
+                                        "nullable": true
+                                    },
+                                    "city_slug": {
+                                        "description": "Localized URL slug of the nearest city",
+                                        "type": "string",
+                                        "example": "split",
+                                        "nullable": true
+                                    },
+                                    "region_slug": {
+                                        "description": "Localized URL slug of the region",
+                                        "type": "string",
+                                        "example": "dalmatia-split",
+                                        "nullable": true
+                                    },
+                                    "country_name": {
+                                        "description": "Translated name of the country",
+                                        "type": "string",
+                                        "example": "Croatia",
+                                        "nullable": true
+                                    },
+                                    "country_slug": {
+                                        "description": "Localized URL slug of the country",
+                                        "type": "string",
+                                        "example": "croatia",
+                                        "nullable": true
+                                    },
+                                    "country_code": {
+                                        "description": "ISO 3166-1 alpha-2 country code",
+                                        "type": "string",
+                                        "example": "HR",
+                                        "nullable": true
+                                    },
+                                    "continent_slug": {
+                                        "description": "Localized URL slug of the continent",
+                                        "type": "string",
+                                        "example": "europe",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
                             }
                         },
                         "type": "object"
@@ -13404,6 +13540,137 @@
                 },
                 "type": "object"
             },
+            "NearbyCitiesResponseSchema": {
+                "title": "Nearby Cities Response Schema",
+                "description": "Response schema for nearby cities endpoint",
+                "properties": {
+                    "data": {
+                        "description": "Array of cities ordered by distance from reference point",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "City ID",
+                                    "type": "integer",
+                                    "example": 1
+                                },
+                                "name": {
+                                    "description": "City name (translated)",
+                                    "type": "string",
+                                    "example": "Split"
+                                },
+                                "slug": {
+                                    "description": "City slug (translated)",
+                                    "type": "string",
+                                    "example": "split"
+                                },
+                                "country_code": {
+                                    "description": "Two-letter country code",
+                                    "type": "string",
+                                    "example": "HR"
+                                },
+                                "country_name": {
+                                    "description": "Country name (translated)",
+                                    "type": "string",
+                                    "example": "Croatia"
+                                },
+                                "country_slug": {
+                                    "description": "Country slug (translated)",
+                                    "type": "string",
+                                    "example": "croatia",
+                                    "nullable": true
+                                },
+                                "continent_slug": {
+                                    "description": "Continent slug (translated)",
+                                    "type": "string",
+                                    "example": "europe",
+                                    "nullable": true
+                                },
+                                "region_slug": {
+                                    "description": "Region slug (translated)",
+                                    "type": "string",
+                                    "example": "dalmatia",
+                                    "nullable": true
+                                },
+                                "island_slug": {
+                                    "description": "Island slug (translated)",
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "latitude": {
+                                    "description": "City latitude",
+                                    "type": "string",
+                                    "example": "43.5081000"
+                                },
+                                "longitude": {
+                                    "description": "City longitude",
+                                    "type": "string",
+                                    "example": "16.4402000"
+                                },
+                                "beaches_count": {
+                                    "description": "Number of active beaches in this city",
+                                    "type": "integer",
+                                    "example": 5
+                                },
+                                "main_image": {
+                                    "description": "Main image path for the city",
+                                    "type": "string",
+                                    "example": "img/cities/split/main.jpg",
+                                    "nullable": true
+                                },
+                                "distance_km": {
+                                    "description": "Distance from reference point in kilometers",
+                                    "type": "number",
+                                    "format": "float",
+                                    "example": 12.34
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "meta": {
+                        "description": "Metadata about the response",
+                        "properties": {
+                            "reference_point": {
+                                "description": "The reference point used for distance calculation",
+                                "properties": {
+                                    "latitude": {
+                                        "description": "Reference point latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 43.5
+                                    },
+                                    "longitude": {
+                                        "description": "Reference point longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 16.4
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "radius_km": {
+                                "description": "Search radius in kilometers",
+                                "type": "number",
+                                "format": "float",
+                                "example": 50
+                            },
+                            "limit": {
+                                "description": "Maximum number of cities requested",
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "count": {
+                                "description": "Number of cities returned",
+                                "type": "integer",
+                                "example": 5
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
             "OccupancyRate": {
                 "title": "Occupancy Rate",
                 "description": "Occupancy rate model (small, middle, big)",
@@ -14081,6 +14348,194 @@
                         "description": "URL-friendly slug",
                         "type": "string",
                         "example": "asphalt"
+                    }
+                },
+                "type": "object"
+            },
+            "SpatialBeach": {
+                "title": "Spatial Beach",
+                "description": "Beach with spatial distance information, returned by spatial query endpoints (within-radius, nearest, bounding-box)",
+                "properties": {
+                    "id": {
+                        "description": "Beach ID",
+                        "type": "integer",
+                        "example": 793
+                    },
+                    "name": {
+                        "description": "Beach name (with English fallback if translation missing)",
+                        "type": "string",
+                        "example": "Copacabana Beach"
+                    },
+                    "slug": {
+                        "description": "URL-friendly slug (with English fallback if translation missing)",
+                        "type": "string",
+                        "example": "copacabana-beach"
+                    },
+                    "description": {
+                        "description": "Beach description (translated, nullable)",
+                        "type": "string",
+                        "example": "A famous beach in Rio de Janeiro",
+                        "nullable": true
+                    },
+                    "latitude": {
+                        "description": "Beach latitude",
+                        "type": "string",
+                        "example": "-22.9711000"
+                    },
+                    "longitude": {
+                        "description": "Beach longitude",
+                        "type": "string",
+                        "example": "-43.1822000"
+                    },
+                    "country_code": {
+                        "description": "ISO country code",
+                        "type": "string",
+                        "example": "BR"
+                    },
+                    "country_name": {
+                        "description": "Country name (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "Brazil"
+                    },
+                    "country_slug": {
+                        "description": "Country slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "brazil",
+                        "nullable": true
+                    },
+                    "continent_code": {
+                        "description": "Continent code",
+                        "type": "string",
+                        "example": "SA"
+                    },
+                    "continent_slug": {
+                        "description": "Continent slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "south-america",
+                        "nullable": true
+                    },
+                    "region_slug": {
+                        "description": "Region slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "rio-de-janeiro",
+                        "nullable": true
+                    },
+                    "island_slug": {
+                        "description": "Island slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "island-hvar",
+                        "nullable": true
+                    },
+                    "city_name": {
+                        "description": "City name (translated based on Accept-Language header, with English fallback)",
+                        "type": "string",
+                        "example": "Rio de Janeiro",
+                        "nullable": true
+                    },
+                    "city_slug": {
+                        "description": "City slug (translated based on Accept-Language header)",
+                        "type": "string",
+                        "example": "rio-de-janeiro",
+                        "nullable": true
+                    },
+                    "main_image": {
+                        "description": "Primary beach image path (relative, without CDN/domain prefix). Frontend constructs Imagor URLs by prepending IMAGOR_ENDPOINT + transformation params.",
+                        "type": "string",
+                        "example": "img/beaches/br-1-copacabana/br-1-copacabana-sl1.jpg",
+                        "nullable": true
+                    },
+                    "media": {
+                        "description": "Media collections for the beach. Only non-empty collections are included (except embeds which is always present).",
+                        "properties": {
+                            "gallery": {
+                                "description": "Beach gallery images (only present if beach has gallery images)",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "url": {
+                                            "description": "Relative path to image file",
+                                            "type": "string",
+                                            "example": "img/beaches/br-1-copacabana/br-1-copacabana-sl1.jpg"
+                                        },
+                                        "is_primary": {
+                                            "description": "Whether this is the primary image",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "order": {
+                                            "description": "Display order",
+                                            "type": "integer",
+                                            "example": 1
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "videos": {
+                                "description": "Beach videos (only present if beach has videos)",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "url": {
+                                            "description": "Relative path to video file",
+                                            "type": "string",
+                                            "example": "img/beaches/br-1-copacabana/beach-video.mp4"
+                                        },
+                                        "is_primary": {
+                                            "description": "Whether this is the primary video",
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "order": {
+                                            "description": "Display order",
+                                            "type": "integer",
+                                            "example": 1
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "spheres_360": {
+                                "description": "360-degree sphere tours (only present if beach has 360 degree spheres)",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "tour_url": {
+                                            "description": "URL to 360 degree virtual tour",
+                                            "type": "string",
+                                            "example": "img/beaches/br-1-copacabana/vtour/tour.html"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "embeds": {
+                                "description": "External embeds for the beach (always present)",
+                                "properties": {
+                                    "video_url": {
+                                        "description": "YouTube video URL",
+                                        "type": "string",
+                                        "example": "https://youtu.be/k_pSc9aWyz0",
+                                        "nullable": true
+                                    },
+                                    "webcam": {
+                                        "description": "Webcam embed code",
+                                        "type": "string",
+                                        "example": null,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "distance_km": {
+                        "description": "Distance from reference point in kilometers (null for bounding-box queries)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 2.45,
+                        "nullable": true
                     }
                 },
                 "type": "object"

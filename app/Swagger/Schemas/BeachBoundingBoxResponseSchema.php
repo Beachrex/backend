@@ -12,7 +12,7 @@ namespace App\Swagger\Schemas;
  *         property="data",
  *         type="array",
  *         description="Array of beaches",
- *         @OA\Items(ref="#/components/schemas/BeachSchema")
+ *         @OA\Items(ref="#/components/schemas/SpatialBeach")
  *     ),
  *     @OA\Property(
  *         property="meta",

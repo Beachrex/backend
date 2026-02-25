@@ -12,7 +12,7 @@ namespace App\Swagger\Schemas;
  *         property="data",
  *         type="array",
  *         description="Array of beaches ordered by distance from reference point",
- *         @OA\Items(ref="#/components/schemas/BeachSchema")
+ *         @OA\Items(ref="#/components/schemas/SpatialBeach")
  *     ),
  *     @OA\Property(
  *         property="meta",
