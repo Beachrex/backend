@@ -51,6 +51,208 @@ How to test the changes
 
 ---
 
+## 2026-02-25 - Updated Spatial API OpenAPI Schemas
+
+### Overview
+Refactored and updated spatial API OpenAPI/Swagger schemas to accurately reflect the actual response structures returned by `PostGISService::formatBeachResults()`.
+
+### Changes Made
+- `app/Swagger/Schemas/SpatialBeachSchema.php` (NEW) - Comprehensive SpatialBeach schema with all 18 response fields including full media object
+- `app/Swagger/Schemas/SpatialSchemas.php` - Updated to reference new SpatialBeach schema
+- `app/Swagger/Schemas/BeachBoundingBoxResponseSchema.php` - Updated to reference SpatialBeach schema
+- `app/Swagger/Schemas/BeachNearestResponseSchema.php` - Updated to reference SpatialBeach schema
+
+### Affected Endpoints
+- `GET /api/v1/spatial/beaches/within-radius` - Response schema now documents all fields
+- `GET /api/v1/spatial/beaches/nearest` - Response schema now documents all fields
+- `GET /api/v1/spatial/beaches/bounding-box` - Response schema now documents all fields
+
+### Testing
+- Regenerate OpenAPI docs: `./vendor/bin/sail artisan l5-swagger:generate`
+- Verify schemas in Swagger UI at `http://localhost/api/documentation`
+
+---
+
+## 2026-02-25 - New Spatial Endpoint: Nearby Cities
+
+### Overview
+
+Added a new spatial endpoint `GET /api/v1/spatial/cities/nearby` that returns cities near a given point, ordered by distance. Only returns active cities (status_id=1) that have at least one active beach. Useful for showing "Nearby destinations" on city pages and map views.
+
+### Changes Made
+
+- `app/Services/PostGISService.php`: Added `getNearbyCities()` method with geography-based distance calculation using `ST_Distance` on constructed points (cities have lat/lng columns but no PostGIS geometry column)
+- `app/Http/Controllers/Api/V1/PostGISController.php`: Added `nearbyCities()` method with validation, locale-aware caching, and full OpenAPI/Swagger annotations
+- `routes/api.php`: Added `GET /spatial/cities/nearby` route inside the existing `spatial` prefix group
+- `app/Swagger/Schemas/NearbyCitiesResponseSchema.php`: New schema file with `NearbyCitySchema` and `NearbyCitiesResponseSchema`
+- `tests/Feature/NearbyCitiesApiTest.php`: Feature test with 6 test cases (valid request, missing params, empty results, limit, defaults)
+
+### Affected Endpoints
+
+- `GET /api/v1/spatial/cities/nearby` — **NEW**
+  - Required params: `latitude`, `longitude`
+  - Optional params: `radius` (km, default 50, max 500), `limit` (default 10, max 50)
+  - Respects `Accept-Language` header for translated names/slugs
+  - Returns: `id`, `name`, `slug`, `country_code`, `country_name`, `country_slug`, `continent_slug`, `region_slug`, `island_slug`, `latitude`, `longitude`, `beaches_count`, `main_image`, `distance_km`
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Split",
+      "slug": "split",
+      "country_code": "HR",
+      "country_name": "Croatia",
+      "country_slug": "croatia",
+      "continent_slug": "europe",
+      "region_slug": "dalmatia",
+      "island_slug": null,
+      "latitude": "43.5081000",
+      "longitude": "16.4402000",
+      "beaches_count": 5,
+      "main_image": null,
+      "distance_km": 1.23
+    }
+  ],
+  "meta": {
+    "reference_point": { "latitude": 43.5, "longitude": 16.4 },
+    "radius_km": 50,
+    "limit": 10,
+    "count": 1
+  }
+}
+```
+
+### Testing
+
+```bash
+# Run feature tests
+./vendor/bin/sail artisan test --filter=NearbyCities
+
+# Manual test
+curl -H "Accept-Language: en" "http://localhost/api/v1/spatial/cities/nearby?latitude=43.5&longitude=16.4&radius=50&limit=5" | jq '.'
+
+# Regenerate Swagger docs
+./vendor/bin/sail artisan l5-swagger:generate
+```
+
+---
+
+## 2026-02-25 - Added Location Object to Within-Radius Response Meta
+
+### Overview
+
+Added a `location` object to the `meta` block of the `/api/v1/spatial/beaches/within-radius` response. This provides geographic context for the search center by reverse-geocoding it to the nearest city with active beaches. The frontend can use this to display contextual headers like "Beaches near Split, Croatia".
+
+### Changes Made
+
+**1. `app/Services/PostGISService.php`** — New `reverseGeocodePoint(float $lat, float $lng)` method:
+- Finds the nearest active city (status_id=1) with active beaches within 100km of the given coordinates
+- Uses `ST_Distance` on geography-cast constructed points (cities have lat/lng columns, not PostGIS geometry)
+- Returns full geographic hierarchy: city_name, city_slug, region_slug, country_name, country_slug, country_code, continent_slug
+- Respects `Accept-Language` locale via COALESCE with English fallback (same pattern as existing queries)
+- Returns `null` if no city found within 100km
+
+**2. `app/Http/Controllers/Api/V1/PostGISController.php`** — Updated `beachesWithinRadius()`:
+- Calls `reverseGeocodePoint()` inside the existing cache closure (so location is cached with beach results)
+- Adds `location` object to response `meta` with all fields defaulting to `null` if no city found
+
+**3. `app/Swagger/Schemas/BeachRadiusResponseSchema.php`** — Updated schema:
+- Added `location` property to meta object with all 7 fields documented as nullable strings
+
+### Response Structure
+
+```json
+{
+  "data": [...],
+  "meta": {
+    "search_center": { "latitude": 43.5, "longitude": 16.4 },
+    "results_center": { "latitude": 43.52, "longitude": 16.38 },
+    "radius_km": 50,
+    "count": 25,
+    "location": {
+      "city_name": "Split",
+      "city_slug": "split",
+      "region_slug": "dalmatia-split",
+      "country_name": "Croatia",
+      "country_slug": "croatia",
+      "country_code": "HR",
+      "continent_slug": "europe"
+    }
+  }
+}
+```
+
+If no city is found within 100km, all location fields are `null`:
+```json
+"location": {
+  "city_name": null,
+  "city_slug": null,
+  "region_slug": null,
+  "country_name": null,
+  "country_slug": null,
+  "country_code": null,
+  "continent_slug": null
+}
+```
+
+### Affected Endpoints
+
+- ✅ `GET /api/v1/spatial/beaches/within-radius` — New `location` field in `meta`
+
+### Testing
+
+```bash
+# Test within-radius location (English)
+curl -H "Accept-Language: en" "http://localhost/api/v1/spatial/beaches/within-radius?latitude=43.5&longitude=16.4&radius=50" | jq '.meta.location'
+
+# Test with different locale (Croatian)
+curl -H "Accept-Language: hr" "http://localhost/api/v1/spatial/beaches/within-radius?latitude=43.5&longitude=16.4&radius=50" | jq '.meta.location'
+
+# Test location in open ocean (should return all nulls)
+curl -H "Accept-Language: en" "http://localhost/api/v1/spatial/beaches/within-radius?latitude=0&longitude=0&radius=50" | jq '.meta.location'
+
+# Regenerate Swagger docs
+./vendor/bin/sail artisan l5-swagger:generate
+
+# Verify OpenAPI spec includes location
+cat storage/api-docs/api-docs.json | jq '.components.schemas.BeachRadiusResponseSchema.properties.meta.properties.location'
+```
+
+### Cache Clearing
+
+After deploying, clear the cache to ensure fresh data with the new location field:
+```bash
+# Development
+./vendor/bin/sail artisan cache:clear
+
+# Production
+php artisan cache:clear
+```
+
+### Frontend Impact
+
+Frontend can now access the location context for building contextual UI:
+```typescript
+const response = await fetch('/api/v1/spatial/beaches/within-radius?latitude=43.5&longitude=16.4&radius=50');
+const data = await response.json();
+
+// Display contextual header
+if (data.meta.location.city_name) {
+  header = `Beaches near ${data.meta.location.city_name}, ${data.meta.location.country_name}`;
+  // "Beaches near Split, Croatia"
+}
+
+// Build URL from slugs
+const url = `/${data.meta.location.continent_slug}/${data.meta.location.country_slug}/${data.meta.location.region_slug}/${data.meta.location.city_slug}`;
+// "/europe/croatia/dalmatia-split/split"
+```
+
+---
+
 ## 2025-12-20 - Fixed Regions API to Include Full Continent Relationship
 
 ### Overview

@@ -226,6 +226,7 @@ Route::prefix('api/v1')
             Route::get('/beaches/density-grid', [PostGISController::class, 'beachDensityGrid']);
             Route::get('/beaches/statistics', [PostGISController::class, 'beachStatistics']);
             Route::get('/distance/calculate', [PostGISController::class, 'calculateDistance']);
+            Route::get('/cities/nearby', [PostGISController::class, 'nearbyCities']);
         });
 
         // AI routes (with middleware stack)

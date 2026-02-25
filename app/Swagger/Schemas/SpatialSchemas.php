@@ -3,55 +3,8 @@
 namespace App\Swagger\Schemas;
 
 /**
- * @OA\Schema(
- *     schema="SpatialBeach",
- *     type="object",
- *     title="Spatial Beach",
- *     description="Beach with spatial distance information",
- *     @OA\Property(
- *         property="id",
- *         type="integer",
- *         description="Beach ID",
- *         example=1
- *     ),
- *     @OA\Property(
- *         property="name",
- *         type="string",
- *         description="Beach name",
- *         example="Copacabana Beach"
- *     ),
- *     @OA\Property(
- *         property="latitude",
- *         type="string",
- *         description="Beach latitude",
- *         example="-22.9711000"
- *     ),
- *     @OA\Property(
- *         property="longitude",
- *         type="string",
- *         description="Beach longitude",
- *         example="-43.1822000"
- *     ),
- *     @OA\Property(
- *         property="country_code",
- *         type="string",
- *         description="Two-letter country code",
- *         example="BR"
- *     ),
- *     @OA\Property(
- *         property="continent_code",
- *         type="string",
- *         description="Two-letter continent code",
- *         example="SA"
- *     ),
- *     @OA\Property(
- *         property="distance_km",
- *         type="number",
- *         format="float",
- *         description="Distance from reference point in kilometers",
- *         example=0
- *     )
- * )
+ * NOTE: SpatialBeach schema has been moved to SpatialBeachSchema.php
+ * (swagger-php requires schemas to be attached to a class for proper parsing)
  */
 
 /**
@@ -150,14 +103,7 @@ namespace App\Swagger\Schemas;
  *         property="data",
  *         type="array",
  *         description="Array of beaches within the bounding box",
- *         @OA\Items(
- *             @OA\Property(property="id", type="integer", example=8),
- *             @OA\Property(property="name", type="string", example="Bled Lake Beach"),
- *             @OA\Property(property="latitude", type="string", example="46.3683000"),
- *             @OA\Property(property="longitude", type="string", example="14.1147000"),
- *             @OA\Property(property="country_code", type="string", example="SI"),
- *             @OA\Property(property="continent_code", type="string", example="EU")
- *         )
+ *         @OA\Items(ref="#/components/schemas/SpatialBeach")
  *     ),
  *     @OA\Property(
  *         property="meta",
@@ -167,17 +113,19 @@ namespace App\Swagger\Schemas;
  *             property="bounding_box",
  *             type="object",
  *             description="The bounding box coordinates",
- *             @OA\Property(property="min_latitude", type="string", example="35"),
- *             @OA\Property(property="min_longitude", type="string", example="10"),
- *             @OA\Property(property="max_latitude", type="string", example="50"),
- *             @OA\Property(property="max_longitude", type="string", example="30")
+ *             @OA\Property(property="min_latitude", type="number", format="float", example=45.0, description="Minimum latitude"),
+ *             @OA\Property(property="min_longitude", type="number", format="float", example=13.5, description="Minimum longitude"),
+ *             @OA\Property(property="max_latitude", type="number", format="float", example=46.5, description="Maximum latitude"),
+ *             @OA\Property(property="max_longitude", type="number", format="float", example=16.5, description="Maximum longitude")
  *         ),
  *         @OA\Property(
- *             property="count",
- *             type="integer",
- *             description="Number of beaches found",
- *             example=3
- *         )
+ *             property="center",
+ *             type="object",
+ *             description="Geographic center (centroid) of all beaches found in the bounding box",
+ *             @OA\Property(property="latitude", type="number", format="float", nullable=true, example=46.0, description="Center latitude"),
+ *             @OA\Property(property="longitude", type="number", format="float", nullable=true, example=15.0, description="Center longitude")
+ *         ),
+ *         @OA\Property(property="count", type="integer", example=3, description="Number of beaches found")
  *     )
  * )
  */

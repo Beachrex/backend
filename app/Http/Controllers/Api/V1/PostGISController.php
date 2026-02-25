@@ -267,11 +267,30 @@ class PostGISController extends Controller
                 $request
             );
 
+            // Reverse geocode the search center to find nearest city
+            $location = $this->postGISService->reverseGeocodePoint(
+                $request->latitude,
+                $request->longitude
+            );
+
             return [
                 'beaches' => $beaches,
-                'centroid' => $centroid
+                'centroid' => $centroid,
+                'location' => $location
             ];
         });
+
+        // Build location object for meta
+        $location = $data['location'] ?? null;
+        $locationMeta = [
+            'city_name' => $location?->city_name ?? null,
+            'city_slug' => $location?->city_slug ?? null,
+            'region_slug' => $location?->region_slug ?? null,
+            'country_name' => $location?->country_name ?? null,
+            'country_slug' => $location?->country_slug ?? null,
+            'country_code' => $location?->country_code ?? null,
+            'continent_slug' => $location?->continent_slug ?? null,
+        ];
 
         return response()->json([
             'data' => $data['beaches'],
@@ -282,7 +301,8 @@ class PostGISController extends Controller
                     'longitude' => $data['centroid'] && isset($data['centroid']->center_lng) ? (float) $data['centroid']->center_lng : null
                 ],
                 'radius_km' => (float) $request->radius,
-                'count' => $data['beaches']->count()
+                'count' => $data['beaches']->count(),
+                'location' => $locationMeta
             ]
         ]);
     }
@@ -674,6 +694,90 @@ class PostGISController extends Controller
                     'longitude' => $data['centroid'] && isset($data['centroid']->center_lng) ? (float) $data['centroid']->center_lng : null
                 ],
                 'count' => $data['beaches']->count()
+            ]
+        ]);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/spatial/cities/nearby",
+     *     operationId="getNearbyCities",
+     *     summary="Find nearby cities with beaches",
+     *     description="Find cities near a given point that have at least one active beach, ordered by distance. Only returns active cities (status_id=1) with active beaches.",
+     *     tags={"Spatial"},
+     *     @OA\Parameter(
+     *         name="latitude",
+     *         in="query",
+     *         required=true,
+     *         description="Latitude of the reference point (-90 to 90)",
+     *         @OA\Schema(type="number", format="float", minimum=-90, maximum=90, example=43.5)
+     *     ),
+     *     @OA\Parameter(
+     *         name="longitude",
+     *         in="query",
+     *         required=true,
+     *         description="Longitude of the reference point (-180 to 180)",
+     *         @OA\Schema(type="number", format="float", minimum=-180, maximum=180, example=16.4)
+     *     ),
+     *     @OA\Parameter(
+     *         name="radius",
+     *         in="query",
+     *         required=false,
+     *         description="Search radius in kilometers (0.1 to 500, default: 50)",
+     *         @OA\Schema(type="number", format="float", minimum=0.1, maximum=500, example=50)
+     *     ),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         required=false,
+     *         description="Maximum number of cities to return (1 to 50, default: 10)",
+     *         @OA\Schema(type="integer", minimum=1, maximum=50, example=10)
+     *     ),
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Nearby cities found, ordered by distance from reference point",
+     *         @OA\JsonContent(ref="#/components/schemas/NearbyCitiesResponseSchema")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error - missing or invalid parameters",
+     *         @OA\JsonContent(ref="#/components/schemas/ValidationError")
+     *     )
+     * )
+     */
+    public function nearbyCities(Request $request): JsonResponse
+    {
+        $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'radius' => 'sometimes|numeric|min:0.1|max:500',
+            'limit' => 'sometimes|integer|min:1|max:50'
+        ]);
+
+        $locale = app()->getLocale();
+        $lat = round($request->latitude, 4);
+        $lng = round($request->longitude, 4);
+        $radius = round($request->get('radius', 50), 2);
+        $limit = $request->get('limit', 10);
+        $cacheKey = "cities:nearby:{$locale}:lat={$lat}:lng={$lng}:radius={$radius}:limit={$limit}";
+
+        $cities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
+            return $this->postGISService->getNearbyCities(
+                $request->latitude,
+                $request->longitude,
+                $request->get('radius', 50),
+                $request->get('limit', 10)
+            );
+        });
+
+        return response()->json([
+            'data' => $cities,
+            'meta' => [
+                'reference_point' => ['latitude' => (float) $request->latitude, 'longitude' => (float) $request->longitude],
+                'radius_km' => (float) $request->get('radius', 50),
+                'limit' => (int) $request->get('limit', 10),
+                'count' => $cities->count()
             ]
         ]);
     }
