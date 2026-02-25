@@ -200,8 +200,13 @@ class NearbyCitiesApiTest extends TestCase
             'Accept-Language' => 'en',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('meta.radius_km', 50.0)
-            ->assertJsonPath('meta.limit', 10);
+        $response->assertStatus(200);
+
+        // Check radius_km is 50 (accept both int and float representation)
+        $radiusKm = $response->json('meta.radius_km');
+        $this->assertEquals(50, $radiusKm, 'Default radius should be 50km');
+
+        // Check limit is 10
+        $response->assertJsonPath('meta.limit', 10);
     }
 }
