@@ -474,6 +474,38 @@ class BeachFilterService
             }
         }
 
+        // Recommended transport type filter (many-to-many) - supports both code and ID
+        if ($request->has('recommended_transport_type')) {
+            $transports = $this->parseFilterValue($request->recommended_transport_type);
+
+            $hasNumeric = collect($transports)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($transports)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                $codes = collect($transports)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($transports)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $query->whereHas('recommendedTransportTypes', function ($q) use ($codes, $ids) {
+                    $q->where(function ($subQ) use ($codes, $ids) {
+                        if (!empty($codes)) {
+                            $subQ->orWhereIn('recommended_transport_type.code', $codes);
+                        }
+                        if (!empty($ids)) {
+                            $subQ->orWhereIn('recommended_transport_type.id', $ids);
+                        }
+                    });
+                });
+            } elseif ($hasNumeric) {
+                $query->whereHas('recommendedTransportTypes', function ($q) use ($transports) {
+                    $q->whereIn('recommended_transport_type.id', $transports);
+                });
+            } else {
+                $query->whereHas('recommendedTransportTypes', function ($q) use ($transports) {
+                    $q->whereIn('recommended_transport_type.code', $transports);
+                });
+            }
+        }
+
         // Accessibility filter - supports both code and ID
         if ($request->has('accessibility')) {
             $accessibilities = $this->parseFilterValue($request->accessibility);
@@ -1531,6 +1563,58 @@ class BeachFilterService
             }
         }
 
+        // Recommended transport type filter (many-to-many) - supports both code and ID
+        if ($request->has('recommended_transport_type')) {
+            $transports = $this->parseFilterValue($request->recommended_transport_type);
+
+            $hasNumeric = collect($transports)->contains(fn($val) => is_numeric($val));
+            $hasString = collect($transports)->contains(fn($val) => !is_numeric($val));
+
+            if ($hasNumeric && $hasString) {
+                $codes = collect($transports)->filter(fn($val) => !is_numeric($val))->values()->all();
+                $ids = collect($transports)->filter(fn($val) => is_numeric($val))->values()->all();
+
+                $subConditions = [];
+                if (!empty($codes)) {
+                    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+                    $subConditions[] = "EXISTS (
+                        SELECT 1 FROM recommended_transport_type_beach rttb
+                        JOIN recommended_transport_type rtt ON rttb.recommended_transport_type_id = rtt.id
+                        WHERE rttb.beach_id = b.id
+                        AND rtt.code IN ($placeholders)
+                    )";
+                    $bindings = array_merge($bindings, $codes);
+                }
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $subConditions[] = "EXISTS (
+                        SELECT 1 FROM recommended_transport_type_beach
+                        WHERE recommended_transport_type_beach.beach_id = b.id
+                        AND recommended_transport_type_beach.recommended_transport_type_id IN ($placeholders)
+                    )";
+                    $bindings = array_merge($bindings, $ids);
+                }
+                $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+            } elseif ($hasNumeric) {
+                $placeholders = implode(',', array_fill(0, count($transports), '?'));
+                $conditions[] = "EXISTS (
+                    SELECT 1 FROM recommended_transport_type_beach
+                    WHERE recommended_transport_type_beach.beach_id = b.id
+                    AND recommended_transport_type_beach.recommended_transport_type_id IN ($placeholders)
+                )";
+                $bindings = array_merge($bindings, $transports);
+            } else {
+                $placeholders = implode(',', array_fill(0, count($transports), '?'));
+                $conditions[] = "EXISTS (
+                    SELECT 1 FROM recommended_transport_type_beach rttb
+                    JOIN recommended_transport_type rtt ON rttb.recommended_transport_type_id = rtt.id
+                    WHERE rttb.beach_id = b.id
+                    AND rtt.code IN ($placeholders)
+                )";
+                $bindings = array_merge($bindings, $transports);
+            }
+        }
+
         $sql = !empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '';
 
         return [
@@ -1589,6 +1673,7 @@ class BeachFilterService
             'natural_location_condition',
             'sporting_activity',
             'underwater_characteristic',
+            'recommended_transport_type',
             'accessibility',
             'parking',
             'parking_capacity',

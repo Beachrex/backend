@@ -10,6 +10,19 @@ use App\Models\Country;
 use App\Models\Region;
 use App\Models\Island;
 use App\Models\City;
+use App\Models\AccommodationAround;
+use App\Models\CulinaryOffer;
+use App\Models\LocationInfrastructure;
+use App\Models\NaturalLocationCondition;
+use App\Models\SportingActivities;
+use App\Models\UnderwaterCharacteristic;
+use App\Models\RecommendedTransportType;
+use App\Models\Accessibility;
+use App\Models\AreaDescription;
+use App\Models\ParkingCapacity;
+use App\Models\BeachInclination;
+use App\Models\SwimmingDepthOfOneM;
+use App\Models\OccupancyRate;
 use App\Services\CacheService;
 use App\Traits\CacheAware;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +44,7 @@ class FilterController extends Controller
      *     path="/api/v1/beaches/filters",
      *     operationId="getBeachFilters",
      *     summary="Get beach filter options with optional cascading filters",
-     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback.",
+     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean).",
      *     tags={"Filters"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
@@ -183,7 +196,44 @@ class FilterController extends Controller
      *                             @OA\Property(property="slug", type="string", example="sand-beaches")
      *                         )
      *                     )
-     *                 )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="accommodation_around",
+     *                     type="object",
+     *                     @OA\Property(property="title", type="string", example="Accommodation Around", description="Localized filter title"),
+     *                     @OA\Property(property="icon", type="string", nullable=true, description="Icon file path (SVG/PNG)"),
+     *                     @OA\Property(property="input_type", type="string", example="checkbox", description="Input type: checkbox, radio, select, single, multiple"),
+     *                     @OA\Property(
+     *                         property="options",
+     *                         type="array",
+     *                         description="Accommodation types available near the beach",
+     *                         @OA\Items(
+     *                             type="object",
+     *                             @OA\Property(property="id", type="integer", example=1),
+     *                             @OA\Property(property="code", type="string", example="hotel"),
+     *                             @OA\Property(property="name", type="string", example="Hotel"),
+     *                             @OA\Property(property="slug", type="string", example="hotel")
+     *                         )
+     *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="parking",
+     *                     type="object",
+     *                     @OA\Property(property="title", type="string", example="Parking", description="Localized filter title"),
+     *                     @OA\Property(property="type", type="string", example="checkbox", description="Filter type"),
+     *                     @OA\Property(
+     *                         property="options",
+     *                         type="array",
+     *                         description="Boolean filter options",
+     *                         @OA\Items(
+     *                             type="object",
+     *                             @OA\Property(property="value", type="string", example="1"),
+     *                             @OA\Property(property="label", type="string", example="Yes"),
+     *                             @OA\Property(property="icon", type="string", nullable=true)
+     *                         )
+     *                     )
+     *                 ),
+     *                 description="Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool. All filters follow the same structure with title, icon, input_type/type, and options array."
      *             )
      *         )
      *     )
@@ -258,6 +308,88 @@ class FilterController extends Controller
             if ($beachTypeData) {
                 $filters['beach_type'] = $beachTypeData;
             }
+
+            // Build accommodation_around filter from database
+            $accommodationData = $this->getAccommodationAroundFilterData($locale);
+            if ($accommodationData) {
+                $filters['accommodation_around'] = $accommodationData;
+            }
+
+            // Build culinary_offer filter from database
+            $culinaryData = $this->getCulinaryOfferFilterData($locale);
+            if ($culinaryData) {
+                $filters['culinary_offer'] = $culinaryData;
+            }
+
+            // Build location_infrastructure filter from database
+            $infrastructureData = $this->getLocationInfrastructureFilterData($locale);
+            if ($infrastructureData) {
+                $filters['location_infrastructure'] = $infrastructureData;
+            }
+
+            // Build natural_location_condition filter from database
+            $naturalConditionData = $this->getNaturalLocationConditionFilterData($locale);
+            if ($naturalConditionData) {
+                $filters['natural_location_condition'] = $naturalConditionData;
+            }
+
+            // Build sporting_activities filter from database
+            $sportingData = $this->getSportingActivitiesFilterData($locale);
+            if ($sportingData) {
+                $filters['sporting_activities'] = $sportingData;
+            }
+
+            // Build underwater_characteristic filter from database
+            $underwaterData = $this->getUnderwaterCharacteristicFilterData($locale);
+            if ($underwaterData) {
+                $filters['underwater_characteristic'] = $underwaterData;
+            }
+
+            // Build recommended_transport_type filter from database
+            $transportData = $this->getRecommendedTransportTypeFilterData($locale);
+            if ($transportData) {
+                $filters['recommended_transport_type'] = $transportData;
+            }
+
+            // Build accessibility filter from database
+            $accessibilityData = $this->getAccessibilityFilterData($locale);
+            if ($accessibilityData) {
+                $filters['accessibility'] = $accessibilityData;
+            }
+
+            // Build area_description filter from database
+            $areaData = $this->getAreaDescriptionFilterData($locale);
+            if ($areaData) {
+                $filters['area_description'] = $areaData;
+            }
+
+            // Build parking_capacity filter from database
+            $parkingCapacityData = $this->getParkingCapacityFilterData($locale);
+            if ($parkingCapacityData) {
+                $filters['parking_capacity'] = $parkingCapacityData;
+            }
+
+            // Build beach_inclination filter from database
+            $inclinationData = $this->getBeachInclinationFilterData($locale);
+            if ($inclinationData) {
+                $filters['beach_inclination'] = $inclinationData;
+            }
+
+            // Build swimming_depth_of_one_m filter from database
+            $depthData = $this->getSwimmingDepthFilterData($locale);
+            if ($depthData) {
+                $filters['swimming_depth_of_one_m'] = $depthData;
+            }
+
+            // Build occupancy_rate filter from database
+            $occupancyData = $this->getOccupancyRateFilterData($locale);
+            if ($occupancyData) {
+                $filters['occupancy_rate'] = $occupancyData;
+            }
+
+            // Add boolean filters
+            $filters['parking'] = $this->getBooleanFilterData('Parking', 'parking');
+            $filters['has_swimming_pool'] = $this->getBooleanFilterData('Swimming Pool', 'has_swimming_pool');
 
             return $filters;
         });
@@ -764,5 +896,531 @@ class FilterController extends Controller
         }
 
         return $suffix;
+    }
+
+    /**
+     * Get accommodation around filter data
+     */
+    private function getAccommodationAroundFilterData(string $locale): ?array
+    {
+        $accommodations = AccommodationAround::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($accommodations->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($accommodations as $accommodation) {
+            $translation = $accommodation->translations->firstWhere('locale', $locale)
+                ?? $accommodation->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $accommodation->code,
+                    'label' => $translation->name,
+                    'icon' => $accommodation->icon,
+                ];
+            }
+        }
+
+        // Get filter title from first translation
+        $firstTranslation = $accommodations->first()->translations->firstWhere('locale', $locale)
+            ?? $accommodations->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Accommodation',
+            'type' => $accommodations->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get culinary offer filter data
+     */
+    private function getCulinaryOfferFilterData(string $locale): ?array
+    {
+        $offers = CulinaryOffer::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($offers->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($offers as $offer) {
+            $translation = $offer->translations->firstWhere('locale', $locale)
+                ?? $offer->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $offer->code,
+                    'label' => $translation->name,
+                    'icon' => $offer->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $offers->first()->translations->firstWhere('locale', $locale)
+            ?? $offers->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Culinary Offer',
+            'type' => $offers->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get location infrastructure filter data
+     */
+    private function getLocationInfrastructureFilterData(string $locale): ?array
+    {
+        $infrastructures = LocationInfrastructure::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($infrastructures->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($infrastructures as $infrastructure) {
+            $translation = $infrastructure->translations->firstWhere('locale', $locale)
+                ?? $infrastructure->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $infrastructure->code,
+                    'label' => $translation->name,
+                    'icon' => $infrastructure->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $infrastructures->first()->translations->firstWhere('locale', $locale)
+            ?? $infrastructures->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Infrastructure',
+            'type' => $infrastructures->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get natural location condition filter data
+     */
+    private function getNaturalLocationConditionFilterData(string $locale): ?array
+    {
+        $conditions = NaturalLocationCondition::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($conditions->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($conditions as $condition) {
+            $translation = $condition->translations->firstWhere('locale', $locale)
+                ?? $condition->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $condition->code,
+                    'label' => $translation->name,
+                    'icon' => $condition->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $conditions->first()->translations->firstWhere('locale', $locale)
+            ?? $conditions->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Natural Conditions',
+            'type' => $conditions->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get sporting activities filter data
+     */
+    private function getSportingActivitiesFilterData(string $locale): ?array
+    {
+        $activities = SportingActivities::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($activities->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($activities as $activity) {
+            $translation = $activity->translations->firstWhere('locale', $locale)
+                ?? $activity->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $activity->code,
+                    'label' => $translation->name,
+                    'icon' => $activity->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $activities->first()->translations->firstWhere('locale', $locale)
+            ?? $activities->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Activities',
+            'type' => $activities->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get underwater characteristic filter data
+     */
+    private function getUnderwaterCharacteristicFilterData(string $locale): ?array
+    {
+        $characteristics = UnderwaterCharacteristic::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($characteristics->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($characteristics as $characteristic) {
+            $translation = $characteristic->translations->firstWhere('locale', $locale)
+                ?? $characteristic->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $characteristic->code,
+                    'label' => $translation->name,
+                    'icon' => $characteristic->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $characteristics->first()->translations->firstWhere('locale', $locale)
+            ?? $characteristics->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Underwater',
+            'type' => $characteristics->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get recommended transport type filter data
+     */
+    private function getRecommendedTransportTypeFilterData(string $locale): ?array
+    {
+        $transports = RecommendedTransportType::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($transports->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($transports as $transport) {
+            $translation = $transport->translations->firstWhere('locale', $locale)
+                ?? $transport->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $transport->code,
+                    'label' => $translation->name,
+                    'icon' => $transport->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $transports->first()->translations->firstWhere('locale', $locale)
+            ?? $transports->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Transport',
+            'type' => $transports->first()->input_type ?? 'checkbox',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get accessibility filter data
+     */
+    private function getAccessibilityFilterData(string $locale): ?array
+    {
+        $accessibilities = Accessibility::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($accessibilities->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($accessibilities as $accessibility) {
+            $translation = $accessibility->translations->firstWhere('locale', $locale)
+                ?? $accessibility->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $accessibility->code,
+                    'label' => $translation->name,
+                    'icon' => $accessibility->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $accessibilities->first()->translations->firstWhere('locale', $locale)
+            ?? $accessibilities->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Accessibility',
+            'type' => $accessibilities->first()->input_type ?? 'radio',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get area description filter data
+     */
+    private function getAreaDescriptionFilterData(string $locale): ?array
+    {
+        $areas = AreaDescription::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($areas->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($areas as $area) {
+            $translation = $area->translations->firstWhere('locale', $locale)
+                ?? $area->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $area->code,
+                    'label' => $translation->name,
+                    'icon' => $area->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $areas->first()->translations->firstWhere('locale', $locale)
+            ?? $areas->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Area Type',
+            'type' => $areas->first()->input_type ?? 'radio',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get parking capacity filter data
+     */
+    private function getParkingCapacityFilterData(string $locale): ?array
+    {
+        $capacities = ParkingCapacity::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($capacities->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($capacities as $capacity) {
+            $translation = $capacity->translations->firstWhere('locale', $locale)
+                ?? $capacity->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $capacity->code,
+                    'label' => $translation->name,
+                    'icon' => $capacity->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $capacities->first()->translations->firstWhere('locale', $locale)
+            ?? $capacities->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Parking Capacity',
+            'type' => $capacities->first()->input_type ?? 'radio',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get beach inclination filter data
+     */
+    private function getBeachInclinationFilterData(string $locale): ?array
+    {
+        $inclinations = BeachInclination::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($inclinations->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($inclinations as $inclination) {
+            $translation = $inclination->translations->firstWhere('locale', $locale)
+                ?? $inclination->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $inclination->code,
+                    'label' => $translation->name,
+                    'icon' => $inclination->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $inclinations->first()->translations->firstWhere('locale', $locale)
+            ?? $inclinations->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Beach Inclination',
+            'type' => $inclinations->first()->input_type ?? 'radio',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get swimming depth filter data
+     */
+    private function getSwimmingDepthFilterData(string $locale): ?array
+    {
+        $depths = SwimmingDepthOfOneM::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($depths->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($depths as $depth) {
+            $translation = $depth->translations->firstWhere('locale', $locale)
+                ?? $depth->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $depth->code,
+                    'label' => $translation->name,
+                    'icon' => $depth->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $depths->first()->translations->firstWhere('locale', $locale)
+            ?? $depths->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Swimming Depth',
+            'type' => $depths->first()->input_type ?? 'radio',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get occupancy rate filter data
+     */
+    private function getOccupancyRateFilterData(string $locale): ?array
+    {
+        $rates = OccupancyRate::active()
+            ->showInFilter()
+            ->orderBy('filter_order')
+            ->orderBy('code')
+            ->get();
+
+        if ($rates->isEmpty()) {
+            return null;
+        }
+
+        $options = [];
+        foreach ($rates as $rate) {
+            $translation = $rate->translations->firstWhere('locale', $locale)
+                ?? $rate->translations->firstWhere('locale', 'en');
+
+            if ($translation) {
+                $options[] = [
+                    'value' => $rate->code,
+                    'label' => $translation->name,
+                    'icon' => $rate->icon,
+                ];
+            }
+        }
+
+        $firstTranslation = $rates->first()->translations->firstWhere('locale', $locale)
+            ?? $rates->first()->translations->firstWhere('locale', 'en');
+
+        return [
+            'title' => $firstTranslation->filter_title ?? 'Occupancy',
+            'type' => $rates->first()->input_type ?? 'radio',
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Get boolean filter data
+     */
+    private function getBooleanFilterData(string $title, string $field): array
+    {
+        return [
+            'title' => $title,
+            'type' => 'checkbox',
+            'options' => [
+                [
+                    'value' => '1',
+                    'label' => 'Yes',
+                    'icon' => null,
+                ],
+            ],
+        ];
     }
 }

@@ -17,6 +17,14 @@ class NaturalLocationCondition extends Model
     protected $fillable = [
         'code',
         'status_id',
+        'show_filter',
+        'icon',
+        'filter_order',
+        'input_type',
+    ];
+
+    protected $casts = [
+        'show_filter' => 'boolean',
     ];
 
     /**
@@ -60,5 +68,13 @@ class NaturalLocationCondition extends Model
     {
         return $query->where('code', $code);
     }
+    /**
+     * Scope to get only items that should be shown in filters
+     */
+    public function scopeShowInFilter($query)
+    {
+        return $query->where('show_filter', true);
+    }
 }
+
 

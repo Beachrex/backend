@@ -51,6 +51,128 @@ How to test the changes
 
 ---
 
+## 2026-03-06 - Extended Beach Filters API with 15 New Filter Types
+
+### Overview
+Extended the `/api/v1/beaches/filters` endpoint to support 15 additional filter types (13 new many-to-many relationship filters + 2 boolean filters). All new filters follow the same pattern as existing filters with metadata support (show_filter, icon, filter_order, input_type) and are fully integrated with the BeachFilterService for filtering beaches.
+
+### Changes Made
+
+#### Database Migrations
+- `database/migrations/2026_03_06_000001_add_filter_metadata_to_filter_tables.php` (NEW)
+  - Added filter metadata columns to 13 tables: `accommodation_around`, `culinary_offer`, `location_infrastructure`, `natural_location_condition`, `sporting_activities`, `underwater_characteristic`, `recommended_transport_type`, `accessibility`, `area_description`, `parking_capacity`, `beach_inclination`, `swimming_depth_of_one_m`, `occupancy_rate`
+  - Columns added: `show_filter` (boolean, default false), `icon` (string, nullable), `filter_order` (integer, default 0), `input_type` (enum: checkbox/radio/select/single/multiple, default checkbox)
+
+#### Models Updated
+- `app/Models/AccommodationAround.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/CulinaryOffer.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/LocationInfrastructure.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/NaturalLocationCondition.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/SportingActivities.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/UnderwaterCharacteristic.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/RecommendedTransportType.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/Accessibility.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/AreaDescription.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/ParkingCapacity.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/BeachInclination.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/SwimmingDepthOfOneM.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+- `app/Models/OccupancyRate.php` - Added fillable fields, `scopeShowInFilter()`, `scopeActive()`
+
+#### Controller Updates
+- `app/Http/Controllers/Api/V1/FilterController.php`
+  - Added 15 new filter methods: `getAccommodationAroundFilterData()`, `getCulinaryOfferFilterData()`, `getLocationInfrastructureFilterData()`, `getNaturalLocationConditionFilterData()`, `getSportingActivitiesFilterData()`, `getUnderwaterCharacteristicFilterData()`, `getRecommendedTransportTypeFilterData()`, `getAccessibilityFilterData()`, `getAreaDescriptionFilterData()`, `getParkingCapacityFilterData()`, `getBeachInclinationFilterData()`, `getSwimmingDepthFilterData()`, `getOccupancyRateFilterData()`, `getParkingFilterData()`, `getSwimmingPoolFilterData()`
+  - Updated `index()` method to call all new filter methods
+  - Added use statements for all new models
+  - Updated Swagger documentation with examples for new filters
+
+#### Service Updates
+- `app/Services/BeachFilterService.php`
+  - Added `recommended_transport_type` filter support in `applyFilters()` method (was missing)
+  - Added `recommended_transport_type` filter support in `buildRawFilters()` method for PostGIS queries
+  - Added `recommended_transport_type` to the list of filter parameters in `generateCacheKeySuffix()`
+  - All other 14 filters were already supported
+
+### New Filter Types
+
+#### Many-to-Many Relationship Filters (13)
+1. **accommodation_around** - Accommodation types near the beach (hotel, apartment, camping, etc.)
+2. **culinary_offer** - Culinary options available (restaurant, bar, cafe, etc.)
+3. **location_infrastructure** - Infrastructure at the location (shower, toilet, changing room, etc.)
+4. **natural_location_condition** - Natural conditions (shade, wind protection, etc.)
+5. **sporting_activities** - Sports activities available (diving, surfing, kayaking, etc.)
+6. **underwater_characteristic** - Underwater features (coral reef, fish, etc.)
+7. **recommended_transport_type** - Recommended transport to reach the beach (car, bus, boat, etc.)
+8. **accessibility** - Accessibility features (wheelchair accessible, etc.)
+9. **area_description** - Area type (urban, rural, remote, etc.)
+10. **parking_capacity** - Parking capacity (small, medium, large, etc.)
+11. **beach_inclination** - Beach slope/inclination (flat, gentle, steep, etc.)
+12. **swimming_depth_of_one_m** - Distance to 1m depth (close, medium, far, etc.)
+13. **occupancy_rate** - Typical occupancy level (low, medium, high, etc.)
+
+#### Boolean Filters (2)
+14. **parking** - Has parking available (yes/no)
+15. **has_swimming_pool** - Has swimming pool (yes/no)
+
+### Affected Endpoints
+
+- `GET /api/v1/beaches/filters` - Now returns up to 15 additional filter types (when data exists and show_filter=true)
+  - All filters follow the same structure: `{ title, icon, input_type/type, options: [{ id, code, name, slug }] }`
+  - Boolean filters use `type: "checkbox"` and `options: [{ value: "1", label: "Yes", icon: null }]`
+  - Filters are only returned if they have active records with `show_filter=true`
+
+### Filter Parameter Names for Beach Filtering
+
+When filtering beaches using these new filters, use these parameter names:
+- `accommodation_around` - Filter by accommodation types (supports codes or IDs)
+- `culinary_offer` - Filter by culinary options (supports codes or IDs)
+- `location_infrastructure` - Filter by infrastructure (supports codes or IDs)
+- `natural_location_condition` - Filter by natural conditions (supports codes or IDs)
+- `sporting_activity` - Filter by sports activities (supports codes or IDs) ⚠️ Note: singular form
+- `underwater_characteristic` - Filter by underwater features (supports codes or IDs)
+- `recommended_transport_type` - Filter by transport types (supports codes or IDs)
+- `accessibility` - Filter by accessibility features (supports codes or IDs)
+- `area_description` - Filter by area type (supports codes or IDs)
+- `parking_capacity` - Filter by parking capacity (supports codes or IDs)
+- `beach_inclination` - Filter by beach slope (supports codes or IDs)
+- `swimming_depth` - Filter by depth distance (supports codes or IDs) ⚠️ Note: shortened form
+- `occupancy_rate` - Filter by occupancy level (supports codes or IDs)
+- `parking` - Filter by parking availability (boolean: 0 or 1)
+- `has_swimming_pool` - Filter by swimming pool availability (boolean: 0 or 1)
+
+### Testing
+
+```bash
+# Run migration
+./vendor/bin/sail artisan migrate
+
+# Clear cache
+./vendor/bin/sail artisan cache:clear
+
+# Test the filters endpoint
+curl -H "Accept-Language: en" "http://localhost:8000/api/v1/beaches/filters" | jq '.'
+
+# Currently returns only boolean filters (parking, has_swimming_pool) because other filter tables are empty
+# To see other filters, populate the tables with data and set show_filter=true
+
+# Example: Add accommodation types
+./vendor/bin/sail artisan tinker
+>>> $hotel = AccommodationAround::create(['code' => 'hotel', 'show_filter' => true, 'filter_order' => 1, 'input_type' => 'checkbox']);
+>>> $hotel->translations()->create(['locale' => 'en', 'name' => 'Hotel', 'slug' => 'hotel']);
+
+# Test filtering beaches by accommodation
+curl "http://localhost:8000/api/v1/beaches?accommodation_around=hotel" | jq '.data | length'
+```
+
+### Notes
+- All filter tables need to be populated with data before they appear in the filters endpoint
+- Set `show_filter=true` on records you want to appear in the filters
+- Use `filter_order` to control the order of options within each filter
+- Use `input_type` to specify the UI component type (checkbox, radio, select, single, multiple)
+- All filters support both code-based and ID-based filtering
+- BeachFilterService already supports all 15 new filters for filtering beaches
+
+---
+
 ## 2026-02-25 - Updated Spatial API OpenAPI Schemas
 
 ### Overview

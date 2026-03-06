@@ -3820,7 +3820,7 @@
                     "Filters"
                 ],
                 "summary": "Get beach filter options with optional cascading filters",
-                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback.",
+                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean).",
                 "operationId": "getBeachFilters",
                 "parameters": [
                     {
@@ -3892,6 +3892,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
+                                            "description": "Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool. All filters follow the same structure with title, icon, input_type/type, and options array.",
                                             "properties": {
                                                 "country": {
                                                     "properties": {
@@ -4155,6 +4156,87 @@
                                                                     "slug": {
                                                                         "type": "string",
                                                                         "example": "sand-beaches"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "accommodation_around": {
+                                                    "properties": {
+                                                        "title": {
+                                                            "description": "Localized filter title",
+                                                            "type": "string",
+                                                            "example": "Accommodation Around"
+                                                        },
+                                                        "icon": {
+                                                            "description": "Icon file path (SVG/PNG)",
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "input_type": {
+                                                            "description": "Input type: checkbox, radio, select, single, multiple",
+                                                            "type": "string",
+                                                            "example": "checkbox"
+                                                        },
+                                                        "options": {
+                                                            "description": "Accommodation types available near the beach",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "code": {
+                                                                        "type": "string",
+                                                                        "example": "hotel"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Hotel"
+                                                                    },
+                                                                    "slug": {
+                                                                        "type": "string",
+                                                                        "example": "hotel"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "parking": {
+                                                    "properties": {
+                                                        "title": {
+                                                            "description": "Localized filter title",
+                                                            "type": "string",
+                                                            "example": "Parking"
+                                                        },
+                                                        "type": {
+                                                            "description": "Filter type",
+                                                            "type": "string",
+                                                            "example": "checkbox"
+                                                        },
+                                                        "options": {
+                                                            "description": "Boolean filter options",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "value": {
+                                                                        "type": "string",
+                                                                        "example": "1"
+                                                                    },
+                                                                    "label": {
+                                                                        "type": "string",
+                                                                        "example": "Yes"
+                                                                    },
+                                                                    "icon": {
+                                                                        "type": "string",
+                                                                        "nullable": true
                                                                     }
                                                                 },
                                                                 "type": "object"
