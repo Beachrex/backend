@@ -4216,8 +4216,13 @@
                                                             "type": "string",
                                                             "example": "Parking"
                                                         },
-                                                        "type": {
-                                                            "description": "Filter type",
+                                                        "icon": {
+                                                            "description": "Icon file path (SVG/PNG)",
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "input_type": {
+                                                            "description": "Input type: checkbox, radio, select, single, multiple",
                                                             "type": "string",
                                                             "example": "checkbox"
                                                         },
