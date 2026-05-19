@@ -190,7 +190,16 @@ class SearchController extends Controller
         $limit = (int) ($validated['limit'] ?? 5);
         $countryCode = isset($validated['country_code']) ? strtoupper($validated['country_code']) : null;
         $types = isset($validated['types']) ? explode(',', $validated['types']) : ['beach', 'city', 'island', 'region', 'country'];
-        $locale = app()->getLocale();
+
+        // Get locale from Accept-Language header, fallback to app locale
+        $locale = $request->header('Accept-Language', app()->getLocale());
+
+        // Log search request for debugging
+        \Log::info('Search request', [
+            'query' => $query,
+            'locale' => $locale,
+            'Accept-Language header' => $request->header('Accept-Language'),
+        ]);
 
         // Create cache key based on search parameters including locale
         $cacheKey = 'search:' . md5($query . $limit . ($countryCode ?? '') . implode(',', $types) . $locale);
