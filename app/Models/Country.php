@@ -130,8 +130,20 @@ class Country extends Model
         // Load relationships if not already loaded
         $this->loadMissing(['continent', 'translations']);
 
-        // Get English translation
+        // Get English translation as default
         $enTranslation = $this->translations->where('locale', 'en')->first();
+
+        // Collect all translated names for multi-language search
+        $translatedNames = [];
+        $translatedFullNames = [];
+        foreach ($this->translations as $translation) {
+            if ($translation->name) {
+                $translatedNames[] = $translation->name;
+            }
+            if ($translation->full_name) {
+                $translatedFullNames[] = $translation->full_name;
+            }
+        }
 
         return [
             'id' => $this->id,
@@ -146,6 +158,9 @@ class Country extends Model
             'longitude' => $this->longitude,
             'main_image' => $this->image_path,
             'type' => 'country',
+            // Add all translated names for multi-language search
+            'translated_names' => implode(' ', array_unique($translatedNames)),
+            'translated_full_names' => implode(' ', array_unique($translatedFullNames)),
         ];
     }
 

@@ -197,8 +197,16 @@ class City extends Model
         // Load relationships if not already loaded
         $this->loadMissing(['country', 'region', 'island', 'translations']);
 
-        // Get English translation
+        // Get English translation as default
         $enTranslation = $this->translations->where('locale', 'en')->first();
+
+        // Collect all translated names for multi-language search
+        $translatedNames = [];
+        foreach ($this->translations as $translation) {
+            if ($translation->name) {
+                $translatedNames[] = $translation->name;
+            }
+        }
 
         return [
             'id' => $this->id,
@@ -213,6 +221,8 @@ class City extends Model
             'longitude' => $this->longitude,
             'main_image' => $this->main_image,
             'type' => 'city',
+            // Add all translated names for multi-language search
+            'translated_names' => implode(' ', array_unique($translatedNames)),
         ];
     }
 

@@ -354,8 +354,20 @@ class Beach extends Model
         // Load relationships if not already loaded
         $this->loadMissing(['country', 'region', 'city', 'island', 'translations']);
 
-        // Get English translation for description
+        // Get English translation as default
         $enTranslation = $this->translations->where('locale', 'en')->first();
+
+        // Collect all translated names and descriptions for multi-language search
+        $translatedNames = [];
+        $translatedDescriptions = [];
+        foreach ($this->translations as $translation) {
+            if ($translation->name) {
+                $translatedNames[] = $translation->name;
+            }
+            if ($translation->description) {
+                $translatedDescriptions[] = $translation->description;
+            }
+        }
 
         return [
             'id' => $this->id,
@@ -371,6 +383,9 @@ class Beach extends Model
             'longitude' => $this->longitude,
             'main_image' => $this->main_image,
             'type' => 'beach',
+            // Add all translated names and descriptions for multi-language search
+            'translated_names' => implode(' ', array_unique($translatedNames)),
+            'translated_descriptions' => implode(' ', array_unique($translatedDescriptions)),
         ];
     }
 

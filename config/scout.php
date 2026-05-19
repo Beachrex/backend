@@ -143,27 +143,27 @@ return [
             'beaches' => [
                 'filterableAttributes' => ['country_code', 'region_name', 'city_name', 'island_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'description', 'country_name', 'region_name', 'city_name', 'island_name'],
+                'searchableAttributes' => ['name', 'description', 'country_name', 'region_name', 'city_name', 'island_name', 'translated_names', 'translated_descriptions'],
             ],
             'cities' => [
                 'filterableAttributes' => ['country_code', 'region_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'region_name'],
+                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names'],
             ],
             'islands' => [
                 'filterableAttributes' => ['country_code', 'region_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'region_name'],
+                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names'],
             ],
             'regions' => [
                 'filterableAttributes' => ['country_code', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name'],
+                'searchableAttributes' => ['name', 'country_name', 'translated_names'],
             ],
             'countries' => [
                 'filterableAttributes' => ['continent_code', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'full_name'],
+                'searchableAttributes' => ['name', 'full_name', 'translated_names', 'translated_full_names'],
             ],
         ],
     ],
