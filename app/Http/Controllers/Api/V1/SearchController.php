@@ -252,31 +252,35 @@ class SearchController extends Controller
                         }
                     }
 
-                    // Get all location slugs for URL building
+                    // Get all location slugs and localized names for URL building
                     $continentTranslation = $beach->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $beach->continent?->translations->firstWhere('locale', 'en')?->slug;
 
                     $countryTranslation = $beach->country?->translations->firstWhere('locale', $locale);
                     $countrySlug = $countryTranslation?->slug ?? $beach->country?->translations->firstWhere('locale', 'en')?->slug;
+                    $countryName = $countryTranslation?->name ?? $beach->country?->translations->firstWhere('locale', 'en')?->name ?? $beach->country?->name ?? '';
 
                     $regionTranslation = $beach->region?->translations->firstWhere('locale', $locale);
                     $regionSlug = $regionTranslation?->slug ?? $beach->region?->translations->firstWhere('locale', 'en')?->slug;
+                    $regionName = $regionTranslation?->name ?? $beach->region?->translations->firstWhere('locale', 'en')?->name ?? $beach->region?->name ?? '';
 
                     $cityTranslation = $beach->city?->translations->firstWhere('locale', $locale);
                     $citySlug = $cityTranslation?->slug ?? $beach->city?->translations->firstWhere('locale', 'en')?->slug;
+                    $cityName = $cityTranslation?->name ?? $beach->city?->translations->firstWhere('locale', 'en')?->name ?? $beach->city?->name ?? '';
 
                     $islandTranslation = $beach->island?->translations->firstWhere('locale', $locale);
                     $islandSlug = $islandTranslation?->slug ?? $beach->island?->translations->firstWhere('locale', 'en')?->slug;
+                    $islandName = $islandTranslation?->name ?? $beach->island?->translations->firstWhere('locale', 'en')?->name ?? $beach->island?->name ?? '';
 
                     return [
                         'id' => $beach->id,
                         'name' => $name,
                         'slug' => $slug,
                         'country_code' => $beach->country_code,
-                        'country_name' => $beach->country?->name ?? '',
-                        'region_name' => $beach->region?->name ?? '',
-                        'city_name' => $beach->city?->name ?? '',
-                        'island_name' => $beach->island?->name ?? '',
+                        'country_name' => $countryName,
+                        'region_name' => $regionName,
+                        'city_name' => $cityName,
+                        'island_name' => $islandName,
                         'main_image' => $mainImage,
                         'type' => 'beach',
                         // URL building slugs
@@ -306,32 +310,36 @@ class SearchController extends Controller
                     ]);
 
                 $searchResults['cities'] = $cityResults->map(function ($city) use ($locale) {
-                    // Get slug in current locale, fallback to English
+                    // Get name and slug in current locale, fallback to English
                     $translation = $city->translations->firstWhere('locale', $locale);
+                    $cityName = $translation?->name ?? $city->translations->firstWhere('locale', 'en')?->name ?? $city->name;
                     $slug = $translation?->slug ?? $city->translations->firstWhere('locale', 'en')?->slug ?? $city->code;
 
-                    // Get location slugs for URL building
+                    // Get location slugs and localized names for URL building
                     $continentTranslation = $city->country?->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $city->country?->continent?->translations->firstWhere('locale', 'en')?->slug;
 
                     $countryTranslation = $city->country?->translations->firstWhere('locale', $locale);
                     $countrySlug = $countryTranslation?->slug ?? $city->country?->translations->firstWhere('locale', 'en')?->slug;
+                    $countryName = $countryTranslation?->name ?? $city->country?->translations->firstWhere('locale', 'en')?->name ?? $city->country?->name ?? '';
 
                     $regionTranslation = $city->region?->translations->firstWhere('locale', $locale);
                     $regionSlug = $regionTranslation?->slug ?? $city->region?->translations->firstWhere('locale', 'en')?->slug;
+                    $regionName = $regionTranslation?->name ?? $city->region?->translations->firstWhere('locale', 'en')?->name ?? $city->region?->name ?? '';
 
                     $islandTranslation = $city->island?->translations->firstWhere('locale', $locale);
                     $islandSlug = $islandTranslation?->slug ?? $city->island?->translations->firstWhere('locale', 'en')?->slug;
+                    $islandName = $islandTranslation?->name ?? $city->island?->translations->firstWhere('locale', 'en')?->name ?? $city->island?->name ?? '';
 
                     return [
                         'id' => $city->id,
                         'code' => $city->code,
-                        'name' => $city->name,
+                        'name' => $cityName,
                         'slug' => $slug,
                         'country_code' => $city->country_code,
-                        'country_name' => $city->country?->name ?? '',
-                        'region_name' => $city->region?->name ?? '',
-                        'island_name' => $city->island?->name ?? '',
+                        'country_name' => $countryName,
+                        'region_name' => $regionName,
+                        'island_name' => $islandName,
                         'main_image' => $city->main_image,
                         'type' => 'city',
                         // URL building slugs
@@ -359,28 +367,31 @@ class SearchController extends Controller
                     ]);
 
                 $searchResults['islands'] = $islandResults->map(function ($island) use ($locale) {
-                    // Get slug in current locale, fallback to English
+                    // Get name and slug in current locale, fallback to English
                     $translation = $island->translations->firstWhere('locale', $locale);
+                    $islandName = $translation?->name ?? $island->translations->firstWhere('locale', 'en')?->name ?? $island->name;
                     $slug = $translation?->slug ?? $island->translations->firstWhere('locale', 'en')?->slug ?? $island->code;
 
-                    // Get location slugs for URL building
+                    // Get location slugs and localized names for URL building
                     $continentTranslation = $island->country?->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $island->country?->continent?->translations->firstWhere('locale', 'en')?->slug;
 
                     $countryTranslation = $island->country?->translations->firstWhere('locale', $locale);
                     $countrySlug = $countryTranslation?->slug ?? $island->country?->translations->firstWhere('locale', 'en')?->slug;
+                    $countryName = $countryTranslation?->name ?? $island->country?->translations->firstWhere('locale', 'en')?->name ?? $island->country?->name ?? '';
 
                     $regionTranslation = $island->region?->translations->firstWhere('locale', $locale);
                     $regionSlug = $regionTranslation?->slug ?? $island->region?->translations->firstWhere('locale', 'en')?->slug;
+                    $regionName = $regionTranslation?->name ?? $island->region?->translations->firstWhere('locale', 'en')?->name ?? $island->region?->name ?? '';
 
                     return [
                         'id' => $island->id,
                         'code' => $island->code,
-                        'name' => $island->name,
+                        'name' => $islandName,
                         'slug' => $slug,
                         'country_code' => $island->country_code,
-                        'country_name' => $island->country?->name ?? '',
-                        'region_name' => $island->region?->name ?? '',
+                        'country_name' => $countryName,
+                        'region_name' => $regionName,
                         'main_image' => $island->main_image,
                         'type' => 'island',
                         // URL building slugs
@@ -406,24 +417,26 @@ class SearchController extends Controller
                     ]);
 
                 $searchResults['regions'] = $regionResults->map(function ($region) use ($locale) {
-                    // Get slug in current locale, fallback to English
+                    // Get name and slug in current locale, fallback to English
                     $translation = $region->translations->firstWhere('locale', $locale);
+                    $regionName = $translation?->name ?? $region->translations->firstWhere('locale', 'en')?->name ?? $region->name;
                     $slug = $translation?->slug ?? $region->translations->firstWhere('locale', 'en')?->slug ?? $region->code;
 
-                    // Get location slugs for URL building
+                    // Get location slugs and localized names for URL building
                     $continentTranslation = $region->country?->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $region->country?->continent?->translations->firstWhere('locale', 'en')?->slug;
 
                     $countryTranslation = $region->country?->translations->firstWhere('locale', $locale);
                     $countrySlug = $countryTranslation?->slug ?? $region->country?->translations->firstWhere('locale', 'en')?->slug;
+                    $countryName = $countryTranslation?->name ?? $region->country?->translations->firstWhere('locale', 'en')?->name ?? $region->country?->name ?? '';
 
                     return [
                         'id' => $region->id,
                         'code' => $region->code,
-                        'name' => $region->name,
+                        'name' => $regionName,
                         'slug' => $slug,
                         'country_code' => $region->country_code,
-                        'country_name' => $region->country?->name ?? '',
+                        'country_name' => $countryName,
                         'main_image' => $region->main_image,
                         'type' => 'region',
                         // URL building slugs
@@ -444,22 +457,24 @@ class SearchController extends Controller
                     ]);
 
                 $searchResults['countries'] = $countryResults->map(function ($country) use ($locale) {
-                    // Get slug in current locale, fallback to English
+                    // Get name and slug in current locale, fallback to English
                     $translation = $country->translations->firstWhere('locale', $locale);
+                    $countryName = $translation?->name ?? $country->translations->firstWhere('locale', 'en')?->name ?? $country->name;
                     $slug = $translation?->slug ?? $country->translations->firstWhere('locale', 'en')?->slug ?? $country->code;
 
-                    // Get continent slug for URL building
+                    // Get continent slug and localized name for URL building
                     $continentTranslation = $country->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $country->continent?->translations->firstWhere('locale', 'en')?->slug;
+                    $continentName = $continentTranslation?->name ?? $country->continent?->translations->firstWhere('locale', 'en')?->name ?? $country->continent?->name ?? '';
 
                     return [
                         'id' => $country->id,
                         'code' => $country->code,
                         'iso3' => $country->iso3,
-                        'name' => $country->name,
+                        'name' => $countryName,
                         'slug' => $slug,
                         'continent_code' => $country->continent_code,
-                        'continent_name' => $country->continent?->name ?? '',
+                        'continent_name' => $continentName,
                         'main_image' => $country->image_path,
                         'type' => 'country',
                         // URL building slugs
