@@ -192,19 +192,27 @@ class SearchController extends Controller
         $types = isset($validated['types']) ? explode(',', $validated['types']) : ['beach', 'city', 'island', 'region', 'country'];
 
         // Get locale from Accept-Language header, fallback to app locale
-        $locale = $request->header('Accept-Language', app()->getLocale());
+        // Parse Accept-Language header to get the primary language code (e.g., "si" from "si-SI" or "si")
+        $acceptLanguage = $request->header('Accept-Language', app()->getLocale());
+        $locale = strtolower(explode(',', explode('-', $acceptLanguage)[0])[0]);
 
         // Log search request for debugging
         \Log::info('Search request', [
             'query' => $query,
             'locale' => $locale,
-            'Accept-Language header' => $request->header('Accept-Language'),
+            'Accept-Language header' => $acceptLanguage,
+            'parsed locale' => $locale,
         ]);
 
         // Create cache key based on search parameters including locale
         $cacheKey = 'search:' . md5($query . $limit . ($countryCode ?? '') . implode(',', $types) . $locale);
 
-        $results = $this->cacheRemember($cacheKey, CacheService::SHORT_TTL, function () use ($query, $limit, $countryCode, $types, $locale) {
+        // Check if cache should be bypassed (for debugging/testing)
+        // Use ?_nocache=1 query parameter to bypass cache in development
+        $bypassCache = $request->has('_nocache');
+        $cacheTtl = $bypassCache ? 0 : CacheService::SHORT_TTL;
+
+        $results = $this->cacheRemember($cacheKey, $cacheTtl, function () use ($query, $limit, $countryCode, $types, $locale) {
             $searchResults = [
                 'beaches' => [],
                 'cities' => [],
