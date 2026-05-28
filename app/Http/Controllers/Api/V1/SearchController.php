@@ -469,28 +469,31 @@ class SearchController extends Controller
                         'continent.translations'
                     ]);
 
-                $searchResults['countries'] = $countryResults->map(function ($country) use ($locale) {
+                $searchResults['countries'] = $countryResults->map(function ($country) use ($locale, $request) {
                     // Get name and slug in current locale, fallback to English
                     $translation = $country->translations->firstWhere('locale', $locale);
 
-                    // Debug logging
-                    \Log::info('Country translation lookup', [
-                        'country_code' => $country->code,
-                        'locale' => $locale,
-                        'translations_count' => $country->translations->count(),
-                        'translation_found' => $translation !== null,
-                        'translation_name' => $translation?->name,
-                    ]);
-
                     $countryName = $translation?->name ?? $country->translations->firstWhere('locale', 'en')?->name ?? $country->name;
                     $slug = $translation?->slug ?? $country->translations->firstWhere('locale', 'en')?->slug ?? $country->code;
+
+                    // Debug info (only in debug mode or with _debug parameter)
+                    $debugInfo = [];
+                    if ($request->has('_debug')) {
+                        $debugInfo = [
+                            'translations_loaded' => $country->relationLoaded('translations'),
+                            'translations_count' => $country->translations->count(),
+                            'available_locales' => $country->translations->pluck('locale')->toArray(),
+                            'translation_found_for_locale' => $translation !== null,
+                            'fallback_used' => $translation === null,
+                        ];
+                    }
 
                     // Get continent slug and localized name for URL building
                     $continentTranslation = $country->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $country->continent?->translations->firstWhere('locale', 'en')?->slug;
                     $continentName = $continentTranslation?->name ?? $country->continent?->translations->firstWhere('locale', 'en')?->name ?? $country->continent?->name ?? '';
 
-                    return [
+                    $result = [
                         'id' => $country->id,
                         'code' => $country->code,
                         'iso3' => $country->iso3,
@@ -503,6 +506,13 @@ class SearchController extends Controller
                         // URL building slugs
                         'continent_slug' => $continentSlug,
                     ];
+
+                    // Add debug info if requested
+                    if (!empty($debugInfo)) {
+                        $result['_debug'] = $debugInfo;
+                    }
+
+                    return $result;
                 })->toArray();
             }
 
