@@ -192,9 +192,14 @@ class SearchController extends Controller
         $types = isset($validated['types']) ? explode(',', $validated['types']) : ['beach', 'city', 'island', 'region', 'country'];
 
         // Get locale from Accept-Language header, fallback to app locale
-        // Parse Accept-Language header to get the primary language code (e.g., "si" from "si-SI" or "si")
+        // Parse Accept-Language header to get the primary language code (e.g., "si" from "si-SI,si;q=0.9,en;q=0.8")
         $acceptLanguage = $request->header('Accept-Language', app()->getLocale());
-        $locale = strtolower(explode(',', explode('-', $acceptLanguage)[0])[0]);
+
+        // Extract the primary language code (2-letter ISO code)
+        // Handle formats: "si", "si-SI", "si,en;q=0.9", "si-SI,en-US;q=0.9"
+        $localeParts = explode(',', $acceptLanguage);  // Split by comma to get first language
+        $primaryLanguage = trim($localeParts[0]);       // Get first language (e.g., "si-SI" or "si")
+        $locale = strtolower(explode('-', $primaryLanguage)[0]); // Extract just "si" from "si-SI"
 
         // Log search request for debugging
         \Log::info('Search request', [
@@ -498,16 +503,20 @@ class SearchController extends Controller
         $totalResults = array_sum(array_map('count', $results));
         $resultsByType = array_map('count', $results);
 
-        return response()->json([
+        $response = [
             'success' => true,
             'data' => $results,
             'meta' => [
                 'query' => $query,
                 'total_results' => $totalResults,
                 'results_by_type' => $resultsByType,
+                'locale' => $locale,
+                'cache_bypassed' => $bypassCache,
             ],
             'message' => 'Search completed successfully',
-        ], 200);
+        ];
+
+        return response()->json($response, 200);
     }
 }
 
