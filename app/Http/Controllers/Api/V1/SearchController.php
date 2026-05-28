@@ -472,6 +472,16 @@ class SearchController extends Controller
                 $searchResults['countries'] = $countryResults->map(function ($country) use ($locale) {
                     // Get name and slug in current locale, fallback to English
                     $translation = $country->translations->firstWhere('locale', $locale);
+
+                    // Debug logging
+                    \Log::info('Country translation lookup', [
+                        'country_code' => $country->code,
+                        'locale' => $locale,
+                        'translations_count' => $country->translations->count(),
+                        'translation_found' => $translation !== null,
+                        'translation_name' => $translation?->name,
+                    ]);
+
                     $countryName = $translation?->name ?? $country->translations->firstWhere('locale', 'en')?->name ?? $country->name;
                     $slug = $translation?->slug ?? $country->translations->firstWhere('locale', 'en')?->slug ?? $country->code;
 
