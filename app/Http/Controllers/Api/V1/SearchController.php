@@ -217,7 +217,7 @@ class SearchController extends Controller
         $bypassCache = $request->has('_nocache');
         $cacheTtl = $bypassCache ? 0 : CacheService::SHORT_TTL;
 
-        $results = $this->cacheRemember($cacheKey, $cacheTtl, function () use ($query, $limit, $countryCode, $types, $locale) {
+        $results = $this->cacheRemember($cacheKey, $cacheTtl, function () use ($query, $limit, $countryCode, $types, $locale, $request) {
             $searchResults = [
                 'beaches' => [],
                 'cities' => [],
