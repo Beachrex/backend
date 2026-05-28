@@ -73,13 +73,8 @@ class UpdateMeilisearchSettings extends Command
                     ]);
                 }
 
-                // Update ignore plurals
-                if (isset($settings['ignorePlurals'])) {
-                    $this->info("  - Setting ignorePlurals");
-                    $index->updateSettings([
-                        'ignorePlurals' => $settings['ignorePlurals']
-                    ]);
-                }
+                // Note: ignorePlurals is not supported in Meilisearch
+                // It was removed from config/scout.php
 
                 $this->info("  ✓ {$indexName} settings updated successfully");
                 $this->newLine();
