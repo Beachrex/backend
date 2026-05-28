@@ -217,7 +217,7 @@ class SearchController extends Controller
         $bypassCache = $request->has('_nocache');
         $cacheTtl = $bypassCache ? 0 : CacheService::SHORT_TTL;
 
-        $results = $this->cacheRemember($cacheKey, $cacheTtl, function () use ($query, $limit, $countryCode, $types, $locale, $request) {
+        $results = $this->cacheRemember($cacheKey, $cacheTtl, function () use ($query, $limit, $countryCode, $types, $locale) {
             $searchResults = [
                 'beaches' => [],
                 'cities' => [],
@@ -469,31 +469,18 @@ class SearchController extends Controller
                         'continent.translations'
                     ]);
 
-                $searchResults['countries'] = $countryResults->map(function ($country) use ($locale, $request) {
+                $searchResults['countries'] = $countryResults->map(function ($country) use ($locale) {
                     // Get name and slug in current locale, fallback to English
                     $translation = $country->translations->firstWhere('locale', $locale);
-
                     $countryName = $translation?->name ?? $country->translations->firstWhere('locale', 'en')?->name ?? $country->name;
                     $slug = $translation?->slug ?? $country->translations->firstWhere('locale', 'en')?->slug ?? $country->code;
-
-                    // Debug info (only in debug mode or with _debug parameter)
-                    $debugInfo = [];
-                    if ($request->has('_debug')) {
-                        $debugInfo = [
-                            'translations_loaded' => $country->relationLoaded('translations'),
-                            'translations_count' => $country->translations->count(),
-                            'available_locales' => $country->translations->pluck('locale')->toArray(),
-                            'translation_found_for_locale' => $translation !== null,
-                            'fallback_used' => $translation === null,
-                        ];
-                    }
 
                     // Get continent slug and localized name for URL building
                     $continentTranslation = $country->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $country->continent?->translations->firstWhere('locale', 'en')?->slug;
                     $continentName = $continentTranslation?->name ?? $country->continent?->translations->firstWhere('locale', 'en')?->name ?? $country->continent?->name ?? '';
 
-                    $result = [
+                    return [
                         'id' => $country->id,
                         'code' => $country->code,
                         'iso3' => $country->iso3,
@@ -506,13 +493,6 @@ class SearchController extends Controller
                         // URL building slugs
                         'continent_slug' => $continentSlug,
                     ];
-
-                    // Add debug info if requested
-                    if (!empty($debugInfo)) {
-                        $result['_debug'] = $debugInfo;
-                    }
-
-                    return $result;
                 })->toArray();
             }
 
@@ -523,20 +503,16 @@ class SearchController extends Controller
         $totalResults = array_sum(array_map('count', $results));
         $resultsByType = array_map('count', $results);
 
-        $response = [
+        return response()->json([
             'success' => true,
             'data' => $results,
             'meta' => [
                 'query' => $query,
                 'total_results' => $totalResults,
                 'results_by_type' => $resultsByType,
-                'locale' => $locale,
-                'cache_bypassed' => $bypassCache,
             ],
             'message' => 'Search completed successfully',
-        ];
-
-        return response()->json($response, 200);
+        ], 200);
     }
 }
 
