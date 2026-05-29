@@ -461,13 +461,15 @@ class SearchController extends Controller
 
             // Search countries
             if (in_array('country', $types)) {
-                $countryResults = Country::search($query)
+                // Get IDs from search, then query with eager loading
+                $searchIds = Country::search($query)
                     ->take($limit)
-                    ->get()
-                    ->load([
-                        'translations',
-                        'continent.translations'
-                    ]);
+                    ->keys()
+                    ->toArray();
+
+                $countryResults = Country::with(['translations', 'continent.translations'])
+                    ->whereIn('id', $searchIds)
+                    ->get();
 
                 $searchResults['countries'] = $countryResults->map(function ($country) use ($locale) {
                     // Get name and slug in current locale, fallback to English
