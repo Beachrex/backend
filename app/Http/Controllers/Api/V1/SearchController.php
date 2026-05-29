@@ -462,17 +462,21 @@ class SearchController extends Controller
             // Search countries
             if (in_array('country', $types)) {
                 // Get IDs from search, then query with eager loading
-                // Preserve Meilisearch relevance order using FIELD() in ORDER BY
+                // Preserve Meilisearch relevance order
                 $searchIds = Country::search($query)
                     ->take($limit)
                     ->keys()
                     ->toArray();
 
                 if (!empty($searchIds)) {
-                    $countryResults = Country::with(['translations', 'continent.translations'])
+                    $countries = Country::with(['translations', 'continent.translations'])
                         ->whereIn('id', $searchIds)
-                        ->orderByRaw('FIELD(id, ' . implode(',', $searchIds) . ')')
                         ->get();
+
+                    // Manually sort by Meilisearch order (since DB ordering differs between MySQL/PostgreSQL)
+                    $countryResults = collect($searchIds)->map(function ($id) use ($countries) {
+                        return $countries->firstWhere('id', $id);
+                    })->filter();
                 } else {
                     $countryResults = collect();
                 }
