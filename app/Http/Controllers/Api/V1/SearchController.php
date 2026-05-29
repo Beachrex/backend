@@ -483,23 +483,12 @@ class SearchController extends Controller
                     $countryName = $translation?->name ?? $country->translations->firstWhere('locale', 'en')?->name ?? $country->name;
                     $slug = $translation?->slug ?? $country->translations->firstWhere('locale', 'en')?->slug ?? $country->code;
 
-                    // DEBUG: Log translation data
-                    \Log::info('Country translation debug', [
-                        'country_code' => $country->code,
-                        'locale' => $locale,
-                        'translations_loaded' => $country->relationLoaded('translations'),
-                        'translations_count' => $country->translations->count(),
-                        'available_locales' => $country->translations->pluck('locale')->toArray(),
-                        'translation_found' => $translation !== null,
-                        'final_name' => $countryName,
-                    ]);
-
                     // Get continent slug and localized name for URL building
                     $continentTranslation = $country->continent?->translations->firstWhere('locale', $locale);
                     $continentSlug = $continentTranslation?->slug ?? $country->continent?->translations->firstWhere('locale', 'en')?->slug;
                     $continentName = $continentTranslation?->name ?? $country->continent?->translations->firstWhere('locale', 'en')?->name ?? $country->continent?->name ?? '';
 
-                    return [
+                    $result = [
                         'id' => $country->id,
                         'code' => $country->code,
                         'iso3' => $country->iso3,
@@ -511,7 +500,19 @@ class SearchController extends Controller
                         'type' => 'country',
                         // URL building slugs
                         'continent_slug' => $continentSlug,
+                        // DEBUG
+                        '_debug' => [
+                            'translations_loaded' => $country->relationLoaded('translations'),
+                            'translations_count' => $country->translations->count(),
+                            'available_locales' => $country->translations->pluck('locale')->toArray(),
+                            'requested_locale' => $locale,
+                            'translation_found' => $translation !== null,
+                            'translation_name' => $translation?->name,
+                            'translation_slug' => $translation?->slug,
+                        ],
                     ];
+
+                    return $result;
                 })->toArray();
             }
 
