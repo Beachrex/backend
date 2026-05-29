@@ -192,21 +192,15 @@ class SearchController extends Controller
         $types = isset($validated['types']) ? explode(',', $validated['types']) : ['beach', 'city', 'island', 'region', 'country'];
 
         // Get locale from Accept-Language header, fallback to app locale
-        // Parse Accept-Language header to get the primary language code (e.g., "si" from "si-SI,si;q=0.9,en;q=0.8")
-        $acceptLanguage = $request->header('Accept-Language', app()->getLocale());
-
-        // Extract the primary language code (2-letter ISO code)
-        // Handle formats: "si", "si-SI", "si,en;q=0.9", "si-SI,en-US;q=0.9"
-        $localeParts = explode(',', $acceptLanguage);  // Split by comma to get first language
-        $primaryLanguage = trim($localeParts[0]);       // Get first language (e.g., "si-SI" or "si")
-        $locale = strtolower(explode('-', $primaryLanguage)[0]); // Extract just "si" from "si-SI"
+        // Use the locale set by SetLocaleFromHeader middleware
+        // The middleware already handles Accept-Language parsing and si->sl mapping
+        $locale = app()->getLocale();
 
         // Log search request for debugging
         \Log::info('Search request', [
             'query' => $query,
             'locale' => $locale,
-            'Accept-Language header' => $acceptLanguage,
-            'parsed locale' => $locale,
+            'Accept-Language header' => $request->header('Accept-Language'),
         ]);
 
         // Create cache key based on search parameters including locale
