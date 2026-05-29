@@ -486,7 +486,7 @@ class SearchController extends Controller
                     $continentSlug = $continentTranslation?->slug ?? $country->continent?->translations->firstWhere('locale', 'en')?->slug;
                     $continentName = $continentTranslation?->name ?? $country->continent?->translations->firstWhere('locale', 'en')?->name ?? $country->continent?->name ?? '';
 
-                    $result = [
+                    return [
                         'id' => $country->id,
                         'code' => $country->code,
                         'iso3' => $country->iso3,
@@ -498,19 +498,7 @@ class SearchController extends Controller
                         'type' => 'country',
                         // URL building slugs
                         'continent_slug' => $continentSlug,
-                        // DEBUG
-                        '_debug' => [
-                            'translations_loaded' => $country->relationLoaded('translations'),
-                            'translations_count' => $country->translations->count(),
-                            'available_locales' => $country->translations->pluck('locale')->toArray(),
-                            'requested_locale' => $locale,
-                            'translation_found' => $translation !== null,
-                            'translation_name' => $translation?->name,
-                            'translation_slug' => $translation?->slug,
-                        ],
                     ];
-
-                    return $result;
                 })->toArray();
             }
 
