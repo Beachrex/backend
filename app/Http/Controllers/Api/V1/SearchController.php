@@ -462,20 +462,37 @@ class SearchController extends Controller
             // Search countries
             if (in_array('country', $types)) {
                 // Get IDs from search, then query with eager loading
+                // Preserve Meilisearch relevance order using FIELD() in ORDER BY
                 $searchIds = Country::search($query)
                     ->take($limit)
                     ->keys()
                     ->toArray();
 
-                $countryResults = Country::with(['translations', 'continent.translations'])
-                    ->whereIn('id', $searchIds)
-                    ->get();
+                if (!empty($searchIds)) {
+                    $countryResults = Country::with(['translations', 'continent.translations'])
+                        ->whereIn('id', $searchIds)
+                        ->orderByRaw('FIELD(id, ' . implode(',', $searchIds) . ')')
+                        ->get();
+                } else {
+                    $countryResults = collect();
+                }
 
                 $searchResults['countries'] = $countryResults->map(function ($country) use ($locale) {
                     // Get name and slug in current locale, fallback to English
                     $translation = $country->translations->firstWhere('locale', $locale);
                     $countryName = $translation?->name ?? $country->translations->firstWhere('locale', 'en')?->name ?? $country->name;
                     $slug = $translation?->slug ?? $country->translations->firstWhere('locale', 'en')?->slug ?? $country->code;
+
+                    // DEBUG: Log translation data
+                    \Log::info('Country translation debug', [
+                        'country_code' => $country->code,
+                        'locale' => $locale,
+                        'translations_loaded' => $country->relationLoaded('translations'),
+                        'translations_count' => $country->translations->count(),
+                        'available_locales' => $country->translations->pluck('locale')->toArray(),
+                        'translation_found' => $translation !== null,
+                        'final_name' => $countryName,
+                    ]);
 
                     // Get continent slug and localized name for URL building
                     $continentTranslation = $country->continent?->translations->firstWhere('locale', $locale);
