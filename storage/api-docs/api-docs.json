@@ -8686,6 +8686,130 @@
                 }
             }
         },
+        "/api/v1/static-pages": {
+            "get": {
+                "tags": [
+                    "Static Pages"
+                ],
+                "summary": "List active static pages for footer rendering",
+                "description": "Returns lightweight list (id, code, title, slug, sort_order) of active pages flagged is_in_footer, localized by Accept-Language with English fallback.",
+                "operationId": "getStaticPagesForFooter",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Footer pages retrieved successfully",
+                        "headers": {
+                            "X-Cache-Status": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Cache-Status"
+                            },
+                            "X-Cache-Key": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Cache-Key"
+                            },
+                            "X-Response-Time": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Response-Time"
+                            },
+                            "X-Locale": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Locale"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StaticPageFooter"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Static pages retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/static-pages/{slug}": {
+            "get": {
+                "tags": [
+                    "Static Pages"
+                ],
+                "summary": "Get full static page content by slug",
+                "description": "Returns the full page (title, slug, content, meta fields) for the requested locale, with English fallback. Looks up by localized slug, then English slug.",
+                "operationId": "getStaticPageBySlug",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Localized or English slug of the page",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "privacy-policy"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Static page retrieved successfully",
+                        "headers": {
+                            "X-Cache-Status": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Cache-Status"
+                            },
+                            "X-Cache-Key": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Cache-Key"
+                            },
+                            "X-Response-Time": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Response-Time"
+                            },
+                            "X-Locale": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Locale"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StaticPage"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Static page retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Page not found"
+                    }
+                }
+            }
+        },
         "/api/v1/swimming-depths": {
             "get": {
                 "tags": [
@@ -14729,6 +14853,90 @@
                 },
                 "type": "object"
             },
+            "StaticPageFooter": {
+                "title": "Static Page Footer Item",
+                "description": "Lightweight static page entry for footer rendering. Localized by Accept-Language with English fallback.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "privacy-policy"
+                    },
+                    "title": {
+                        "description": "Localized title for footer link",
+                        "type": "string",
+                        "example": "Privacy Policy"
+                    },
+                    "slug": {
+                        "description": "Localized slug for link href",
+                        "type": "string",
+                        "example": "privacy-policy"
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
+            "StaticPage": {
+                "title": "Static Page",
+                "description": "Full static page content (CMS-managed). Localized by Accept-Language with English fallback.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "description": "Unique page code",
+                        "type": "string",
+                        "example": "privacy-policy"
+                    },
+                    "title": {
+                        "description": "Localized title",
+                        "type": "string",
+                        "example": "Privacy Policy"
+                    },
+                    "slug": {
+                        "description": "Localized slug",
+                        "type": "string",
+                        "example": "privacy-policy"
+                    },
+                    "content": {
+                        "description": "HTML content from RichEditor",
+                        "type": "string",
+                        "example": "<p>Privacy policy content...</p>",
+                        "nullable": true
+                    },
+                    "meta_title": {
+                        "type": "string",
+                        "example": "Privacy Policy | Beachrex",
+                        "nullable": true
+                    },
+                    "meta_description": {
+                        "type": "string",
+                        "example": "How Beachrex handles your data.",
+                        "nullable": true
+                    },
+                    "locale": {
+                        "description": "Locale actually used (may differ from request if fallback applied)",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "is_in_footer": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
             "SwimmingDepthOfOneM": {
                 "title": "Swimming Depth of 1m",
                 "description": "Swimming depth model - distance to reach 1m depth (0m, 3m, 5m, etc.)",
@@ -15156,6 +15364,10 @@
         {
             "name": "Search",
             "description": "Global search API endpoints for searching across beaches, cities, islands, regions, and countries"
+        },
+        {
+            "name": "Static Pages",
+            "description": "API Endpoints for CMS-managed static pages (footer links and full page content)"
         },
         {
             "name": "Waterbodies",

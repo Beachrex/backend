@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
             RegionFilterTitleSeeder::class,
             IslandFilterTitleSeeder::class,
             FirstPageContentSeeder::class,
+            StaticPageSeeder::class,
             PopulateIslandAndCityForeignKeysSeeder::class,
             GeographicEntityCoordinatesSeeder::class,
             GeographicEntityMainImageSeeder::class,

@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\StaticPageController;
 use App\Http\Controllers\AI\TestController;
 
 // Public OpenAPI spec endpoint (no authentication required)
@@ -217,6 +218,10 @@ Route::prefix('api/v1')
         // First Page Content routes
         Route::get('/first-page-content', [FirstPageContentController::class, 'index']);
         Route::get('/first-page-content/{code}', [FirstPageContentController::class, 'show']);
+
+        // Static pages (CMS-managed footer + full page content)
+        Route::get('/static-pages', [StaticPageController::class, 'index']);
+        Route::get('/static-pages/{slug}', [StaticPageController::class, 'show']);
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {
