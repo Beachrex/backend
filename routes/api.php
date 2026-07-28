@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\StaticPageController;
+use App\Http\Controllers\Api\V1\NewsletterSubscriberController;
 use App\Http\Controllers\AI\TestController;
 
 // Public OpenAPI spec endpoint (no authentication required)
@@ -223,6 +224,10 @@ Route::prefix('api/v1')
         // Static pages (CMS-managed footer + full page content)
         Route::get('/static-pages', [StaticPageController::class, 'index']);
         Route::get('/static-pages/{slug}', [StaticPageController::class, 'show']);
+
+        // Newsletter subscription (public, rate-limited to prevent abuse)
+        Route::post('/newsletter/subscribe', [NewsletterSubscriberController::class, 'subscribe'])
+            ->middleware('throttle:10,1');
 
         // PostGIS routes
         Route::prefix('spatial')->group(function () {

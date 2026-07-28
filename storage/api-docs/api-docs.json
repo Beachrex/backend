@@ -5723,6 +5723,113 @@
                 }
             }
         },
+        "/api/v1/newsletter/subscribe": {
+            "post": {
+                "tags": [
+                    "Newsletter"
+                ],
+                "summary": "Subscribe an email to the newsletter",
+                "description": "Validates and stores a newsletter subscription. Idempotent: re-subscribing an existing active email returns success without creating a duplicate. Re-subscribing an unsubscribed email re-activates it. Requires GDPR consent.",
+                "operationId": "subscribeToNewsletter",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "consent"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "description": "Subscriber email address",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "consent": {
+                                        "description": "GDPR consent — user must accept to be subscribed",
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "source": {
+                                        "description": "Subscription source (footer, popup, etc.)",
+                                        "type": "string",
+                                        "example": "footer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successfully subscribed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You have been subscribed successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Already subscribed (idempotent)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You are already subscribed."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (invalid email or missing consent)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/occupancy-rates": {
             "get": {
                 "tags": [
@@ -15460,6 +15567,10 @@
         {
             "name": "Media",
             "description": "Media management endpoints"
+        },
+        {
+            "name": "Newsletter",
+            "description": "Newsletter subscription management (email collection for marketing, GDPR-compliant)"
         },
         {
             "name": "Spatial",
