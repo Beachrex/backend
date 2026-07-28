@@ -79,7 +79,7 @@ class NewsletterSubscriberController extends Controller
                 // Already active — no change, return success (idempotent).
                 return response()->json([
                     'success' => true,
-                    'message' => 'You are already subscribed.',
+                    'message' => __('You are already subscribed.'),
                 ], 200);
             }
 
@@ -98,7 +98,7 @@ class NewsletterSubscriberController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'You have been re-subscribed successfully.',
+                'message' => __('You have been re-subscribed successfully.'),
             ], 200);
         }
 
@@ -117,7 +117,7 @@ class NewsletterSubscriberController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'You have been subscribed successfully.',
+            'message' => __('You have been subscribed successfully.'),
         ], 201);
     }
 }
