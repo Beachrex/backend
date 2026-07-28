@@ -80,41 +80,66 @@ class StaticPage extends Model
 
     /**
      * Cache invalidation: clear the static-pages cache whenever an admin
-     * creates, updates, or deletes a page. Keys are written by
-     * StaticPageController using app()->getLocale() (the backend DB locale),
-     * so we clear for all supported backend locales.
+     * creates, updates, or deletes a page (or one of its translations).
+     * Keys are written by StaticPageController using app()->getLocale()
+     * (the backend DB locale), so we clear for all supported backend locales.
      */
     protected static function booted(): void
     {
         static::saved(function (StaticPage $page) {
-            // Clear the footer list cache for every supported locale.
-            foreach (self::SUPPORTED_LOCALES as $locale) {
-                Cache::forget("static_pages:footer:{$locale}");
-            }
-
-            // Clear per-page show caches for every slug of this page across locales.
-            // Translations are loaded fresh here (after save), so we walk each
-            // translation's slug and clear the show key for every locale that may
-            // have looked it up (request locale + English fallback both possible).
-            foreach ($page->translations as $tr) {
-                foreach (self::SUPPORTED_LOCALES as $locale) {
-                    Cache::forget("static_pages:show:{$locale}:{$tr->slug}");
-                }
-            }
+            self::clearCachesForPage($page);
         });
 
         static::deleted(function (StaticPage $page) {
-            foreach (self::SUPPORTED_LOCALES as $locale) {
-                Cache::forget("static_pages:footer:{$locale}");
-            }
-
-            // On force-delete (no soft-deleted row retained), translations are
-            // cascade-deleted; clear show caches for any slug we previously had.
-            foreach ($page->translations as $tr) {
-                foreach (self::SUPPORTED_LOCALES as $locale) {
-                    Cache::forget("static_pages:show:{$locale}:{$tr->slug}");
-                }
-            }
+            self::clearCachesForPage($page);
         });
+    }
+
+    /**
+     * Clear the footer list cache (all locales) and the per-page show caches
+     * for every slug of the given page across all locales.
+     *
+     * Public so StaticPageTranslation can delegate to it when a translation is
+     * saved/deleted (translation changes do not fire the StaticPage::saved
+     * event, so they must invalidate explicitly).
+     */
+    public static function clearCachesForPage(StaticPage $page): void
+    {
+        // Clear the footer list cache for every supported locale.
+        self::clearFooterCache();
+
+        // Clear per-page show caches for every slug of this page across locales.
+        // A new translation may introduce a slug that was never requested before;
+        // forgetting a non-existent key is a safe no-op.
+        foreach ($page->translations as $tr) {
+            foreach (self::SUPPORTED_LOCALES as $locale) {
+                Cache::forget("static_pages:show:{$locale}:{$tr->slug}");
+            }
+        }
+    }
+
+    /**
+     * Clear the show cache for a single slug across all supported locales.
+     * Used when a translation's slug is renamed — the OLD slug's show key
+     * must be forgotten, but the freshly-saved parent page only knows the
+     * NEW slug, so we clear the original slug explicitly here.
+     */
+    public static function clearShowCacheForSlug(string $slug): void
+    {
+        foreach (self::SUPPORTED_LOCALES as $locale) {
+            Cache::forget("static_pages:show:{$locale}:{$slug}");
+        }
+    }
+
+    /**
+     * Clear the footer list cache for every supported locale.
+     * Public so StaticPageTranslation can clear it without a parent page
+     * (e.g. when the parent was cascade-deleted).
+     */
+    public static function clearFooterCache(): void
+    {
+        foreach (self::SUPPORTED_LOCALES as $locale) {
+            Cache::forget("static_pages:footer:{$locale}");
+        }
     }
 }
