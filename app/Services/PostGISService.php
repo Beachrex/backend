@@ -86,11 +86,16 @@ class PostGISService
             LEFT JOIN beach_inclination bi ON b.beach_inclination_id = bi.id
             LEFT JOIN swimming_depth_of_one_m sd ON b.swimming_depth_of_one_m_id = sd.id
             LEFT JOIN occupancy_rate occ ON b.occupancy_rate_id = occ.id
-            LEFT JOIN media m ON b.id = m.mediable_id
-                AND m.mediable_type = 'App\\Models\\Beach'
-                AND m.media_collection_id = 1
-                AND m.is_primary IS TRUE
-                AND m.status_id = 1
+            LEFT JOIN LATERAL (
+                SELECT file_path, disk FROM media
+                WHERE mediable_id = b.id
+                  AND mediable_type = 'App\\Models\\Beach'
+                  AND media_collection_id = 1
+                  AND is_primary IS TRUE
+                  AND status_id = 1
+                ORDER BY id
+                LIMIT 1
+            ) m ON TRUE
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -151,11 +156,16 @@ class PostGISService
             LEFT JOIN countries c ON b.country_code = c.code
             LEFT JOIN country_translation ct ON c.code = ct.country_code AND ct.locale = ?
             LEFT JOIN city ON b.city_id = city.id
-            LEFT JOIN media m ON b.id = m.mediable_id
-                AND m.mediable_type = 'App\\Models\\Beach'
-                AND m.media_collection_id = 1
-                AND m.is_primary IS TRUE
-                AND m.status_id = 1
+            LEFT JOIN LATERAL (
+                SELECT file_path, disk FROM media
+                WHERE mediable_id = b.id
+                  AND mediable_type = 'App\\Models\\Beach'
+                  AND media_collection_id = 1
+                  AND is_primary IS TRUE
+                  AND status_id = 1
+                ORDER BY id
+                LIMIT 1
+            ) m ON TRUE
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -258,11 +268,16 @@ class PostGISService
             LEFT JOIN beach_inclination bi ON b.beach_inclination_id = bi.id
             LEFT JOIN swimming_depth_of_one_m sd ON b.swimming_depth_of_one_m_id = sd.id
             LEFT JOIN occupancy_rate occ ON b.occupancy_rate_id = occ.id
-            LEFT JOIN media m ON b.id = m.mediable_id
-                AND m.mediable_type = 'App\\Models\\Beach'
-                AND m.media_collection_id = 1
-                AND m.is_primary IS TRUE
-                AND m.status_id = 1
+            LEFT JOIN LATERAL (
+                SELECT file_path, disk FROM media
+                WHERE mediable_id = b.id
+                  AND mediable_type = 'App\\Models\\Beach'
+                  AND media_collection_id = 1
+                  AND is_primary IS TRUE
+                  AND status_id = 1
+                ORDER BY id
+                LIMIT 1
+            ) m ON TRUE
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
