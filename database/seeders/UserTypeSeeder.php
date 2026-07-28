@@ -34,6 +34,11 @@ class UserTypeSeeder extends Seeder
             'hu' => 'Felhasználó típusa',
             'bg' => 'Тип потребител',
             'sk' => 'Typ používateľa',
+            'da' => 'Brugertype',
+            'pt' => 'Tipo de usuário',
+            'nl' => 'Gebruikerstype',
+            'el' => 'Τύπος χρήστη',
+            'sq' => 'Lloji i përdoruesit',
         ];
 
         $userTypes = [
@@ -79,6 +84,11 @@ class UserTypeSeeder extends Seeder
                 'hu' => ['name' => 'Kalandor', 'slug' => 'kalandor'],
                 'bg' => ['name' => 'Авантюрист', 'slug' => 'avantiurist'],
                 'sk' => ['name' => 'Dobrodruh', 'slug' => 'dobrodruh'],
+                'da' => ['name' => 'Eventyrer', 'slug' => 'eventyrer'],
+                'pt' => ['name' => 'Aventureiro', 'slug' => 'aventureiro'],
+                'nl' => ['name' => 'Avonturier', 'slug' => 'avonturier'],
+                'el' => ['name' => 'Τυχοδιώκτης', 'slug' => 'tychodioktis'],
+                'sq' => ['name' => 'Aventurier', 'slug' => 'aventurier'],
             ],
             'family' => [
                 'en' => ['name' => 'Family', 'slug' => 'family'],
@@ -95,6 +105,11 @@ class UserTypeSeeder extends Seeder
                 'hu' => ['name' => 'Család', 'slug' => 'csalad'],
                 'bg' => ['name' => 'Семейство', 'slug' => 'semeistvo'],
                 'sk' => ['name' => 'Rodina', 'slug' => 'rodina'],
+                'da' => ['name' => 'Familie', 'slug' => 'familie'],
+                'pt' => ['name' => 'Família', 'slug' => 'familia'],
+                'nl' => ['name' => 'Familie', 'slug' => 'familie'],
+                'el' => ['name' => 'Οικογένεια', 'slug' => 'oikogeneia'],
+                'sq' => ['name' => 'Familje', 'slug' => 'familje'],
             ],
             'youth' => [
                 'en' => ['name' => 'Youth', 'slug' => 'youth'],
@@ -111,6 +126,11 @@ class UserTypeSeeder extends Seeder
                 'hu' => ['name' => 'Fiatalok', 'slug' => 'fiatalok'],
                 'bg' => ['name' => 'Младежи', 'slug' => 'mladezhi'],
                 'sk' => ['name' => 'Mládež', 'slug' => 'mladez'],
+                'da' => ['name' => 'Ungdom', 'slug' => 'ungdom'],
+                'pt' => ['name' => 'Juventude', 'slug' => 'juventude'],
+                'nl' => ['name' => 'Jeugd', 'slug' => 'jeugd'],
+                'el' => ['name' => 'Νεολαία', 'slug' => 'neolaia'],
+                'sq' => ['name' => 'Rinia', 'slug' => 'rinia'],
             ],
         ];
 

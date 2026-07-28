@@ -15,7 +15,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 **Beachrex** is a beach discovery platform with a **paid AI agent** as the core business model.
 
 ### The Platform (80% Complete)
-- **Frontend**: Next.js 14 (TypeScript, React Query, next-intl, 14 languages)
+- **Frontend**: Next.js 14 (TypeScript, React Query, next-intl, 19 languages)
 - **Backend**: Laravel 11 API (PostgreSQL + PostGIS, Meilisearch, Redis)
 - **Admin**: Filament 3.x for data management
 - **Data**: 2,445+ beaches across Croatia, Slovenia, Montenegro (40+ attributes each)
@@ -40,7 +40,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 - ✅ Current weather data
 - ✅ Accessibility filters
 - ✅ Educational queries
-- ✅ Multi-language support (14 languages)
+- ✅ Multi-language support (19 languages)
 
 **What is PAID**:
 1. **Trip Itinerary Generation** ($19-$59) - PRIMARY REVENUE
@@ -100,7 +100,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 **Phase**: **MVP Implementation** (80% platform complete, AI agent in development)
 
 **What is DONE**:
-- ✅ Beach database (2,445+ beaches, 40+ attributes, 14 languages)
+- ✅ Beach database (2,445+ beaches, 40+ attributes, 19 languages)
 - ✅ Search API (natural language via Meilisearch)
 - ✅ Spatial queries (PostGIS: radius, nearest, bounding-box)
 - ✅ Weather integration (OpenWeatherMap)
@@ -540,7 +540,7 @@ Api/
 **Platform**:
 - 2,445+ beaches
 - 40+ attributes per beach
-- 14 languages supported
+- 19 languages supported
 - 80% implementation complete
 
 **Revenue Model**:

@@ -47,12 +47,12 @@
 - ✅ **Admin Panel**: Filament 3.x
   - Beach CRUD operations
   - Media management (images, videos, 360° tours)
-  - Translation management (14 locales)
+  - Translation management (19 locales)
   - User management
 
 - ✅ **Frontend**: Next.js 14
   - TypeScript, React Query, next-intl
-  - Multi-language support (14 languages)
+  - Multi-language support (19 languages)
   - Responsive design (mobile-first)
   - ISR (Incremental Static Regeneration)
 

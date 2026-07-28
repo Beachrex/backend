@@ -11,7 +11,7 @@
 
 This document defines the **prompt engineering** for the AI agent. All prompts must:
 - ✅ **Enforce business rules**: Never give away paid features for free
-- ✅ **Be locale-aware**: Support all 14 languages
+- ✅ **Be locale-aware**: Support all 19 languages
 - ✅ **Be provider-agnostic**: Work with OpenAI, Anthropic, or other LLMs
 - ✅ **Produce structured output**: JSON format for easy parsing
 

@@ -38,7 +38,7 @@ This solution automatically fixes duplicate slugs by appending city names, makin
 
 This single command:
 - ✅ Runs migration
-- ✅ Fixes duplicates in **all 14 languages**
+- ✅ Fixes duplicates in **all 19 languages**
 - ✅ Creates redirect records
 - ✅ Clears cache
 
@@ -78,7 +78,7 @@ php artisan cache:clear
 - Shows preview with `--dry-run`
 - Fixes duplicates by appending city name
 - Creates redirect records
-- Processes all 14 languages by default
+- Processes all 19 languages by default
 
 ### 2. Database Migration
 **File:** `database/migrations/2024_12_22_000000_create_beach_slug_redirects_table.php`
@@ -148,7 +148,7 @@ When API receives old slug:
 
 ## 📊 Supported Languages
 
-Processes all 14 languages automatically:
+Processes all 19 languages automatically:
 - `en` - English
 - `si` - Slovenian
 - `de` - German
@@ -240,7 +240,7 @@ cd /path/to/beachrex-api
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔍 Fixing duplicate beach slugs
-Languages: en, si, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk
+Languages: en, si, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Processing locale: en
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -40,6 +40,11 @@ class GenderSeeder extends Seeder
                     'hu' => ['name' => 'Férfi', 'slug' => 'ferfi'],
                     'bg' => ['name' => 'Мъжки', 'slug' => 'mazhki'],
                     'sk' => ['name' => 'Muž', 'slug' => 'muz'],
+                    'da' => ['name' => 'Mand', 'slug' => 'mand'],
+                    'pt' => ['name' => 'Homem', 'slug' => 'homem'],
+                    'nl' => ['name' => 'Man', 'slug' => 'man'],
+                    'el' => ['name' => 'Άνδρας', 'slug' => 'andras'],
+                    'sq' => ['name' => 'Mashkull', 'slug' => 'mashkull'],
                 ],
             ],
             [
@@ -60,6 +65,11 @@ class GenderSeeder extends Seeder
                     'hu' => ['name' => 'Nő', 'slug' => 'no'],
                     'bg' => ['name' => 'Женски', 'slug' => 'zhenski'],
                     'sk' => ['name' => 'Žena', 'slug' => 'zena'],
+                    'da' => ['name' => 'Kvinde', 'slug' => 'kvinde'],
+                    'pt' => ['name' => 'Mulher', 'slug' => 'mulher'],
+                    'nl' => ['name' => 'Vrouw', 'slug' => 'vrouw'],
+                    'el' => ['name' => 'Γυναίκα', 'slug' => 'gynaika'],
+                    'sq' => ['name' => 'Femër', 'slug' => 'femer'],
                 ],
             ],
         ];

@@ -43,6 +43,11 @@ class OccupancyRateSeeder extends Seeder
                 'hu' => ['name' => 'Kicsi', 'slug' => 'kicsi'],
                 'bg' => ['name' => 'Малка', 'slug' => 'malka'],
                 'sk' => ['name' => 'Malá', 'slug' => 'mala'],
+                'da' => ['name' => 'Lille', 'slug' => 'lille'],
+                'pt' => ['name' => 'Pequena', 'slug' => 'pequena'],
+                'nl' => ['name' => 'Klein', 'slug' => 'klein'],
+                'el' => ['name' => 'Μικρή', 'slug' => 'mikri'],
+                'sq' => ['name' => 'E vogël', 'slug' => 'e-vogel'],
             ],
             'middle' => [
                 'en' => ['name' => 'Middle', 'slug' => 'middle'],
@@ -59,6 +64,11 @@ class OccupancyRateSeeder extends Seeder
                 'hu' => ['name' => 'Közepes', 'slug' => 'kozepes'],
                 'bg' => ['name' => 'Средна', 'slug' => 'sredna'],
                 'sk' => ['name' => 'Stredná', 'slug' => 'stredna'],
+                'da' => ['name' => 'Mellem', 'slug' => 'mellem'],
+                'pt' => ['name' => 'Média', 'slug' => 'media'],
+                'nl' => ['name' => 'Gemiddeld', 'slug' => 'gemiddeld'],
+                'el' => ['name' => 'Μεσαία', 'slug' => 'mesaia'],
+                'sq' => ['name' => 'E mesme', 'slug' => 'e-mesme'],
             ],
             'big' => [
                 'en' => ['name' => 'Big', 'slug' => 'big'],
@@ -75,6 +85,11 @@ class OccupancyRateSeeder extends Seeder
                 'hu' => ['name' => 'Nagy', 'slug' => 'nagy'],
                 'bg' => ['name' => 'Голяма', 'slug' => 'golyama'],
                 'sk' => ['name' => 'Veľká', 'slug' => 'velka'],
+                'da' => ['name' => 'Stor', 'slug' => 'stor'],
+                'pt' => ['name' => 'Grande', 'slug' => 'grande'],
+                'nl' => ['name' => 'Groot', 'slug' => 'groot'],
+                'el' => ['name' => 'Μεγάλη', 'slug' => 'megali'],
+                'sq' => ['name' => 'E madhe', 'slug' => 'e-madhe'],
             ],
         ];
 

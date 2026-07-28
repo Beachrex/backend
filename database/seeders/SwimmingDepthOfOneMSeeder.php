@@ -42,7 +42,7 @@ class SwimmingDepthOfOneMSeeder extends Seeder
             ['id' => 18, 'code' => '0m_25m_plus'],
         ];
 
-        $languages = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+        $languages = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
 
         foreach ($swimmingDepths as $depthData) {
             // Insert swimming depth with explicit ID
@@ -70,7 +70,7 @@ class SwimmingDepthOfOneMSeeder extends Seeder
             }
         }
 
-        $this->command->info('Swimming depths seeded successfully with translations in 14 languages!');
+        $this->command->info('Swimming depths seeded successfully with translations in 19 languages!');
     }
 
     /**

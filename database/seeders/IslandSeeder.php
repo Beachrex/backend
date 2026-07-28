@@ -203,7 +203,7 @@ class IslandSeeder extends Seeder
 
     private function getIslandTranslations(): array
     {
-        $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+        $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
 
         // Helper function to create same name for all languages
         $sameName = function($name) use ($locales) {

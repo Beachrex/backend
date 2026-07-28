@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('country_translation', function (Blueprint $table) {
             $table->id();
             $table->string('country_code', 2)->comment('ISO 3166-1 alpha-2 country code');
-            $table->string('locale', 2)->comment('Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)');
+            $table->string('locale', 2)->comment('Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)');
             $table->string('name')->comment('Translated country name');
             $table->string('full_name')->nullable()->comment('Translated full country name');
             $table->string('slug')->comment('URL-friendly slug for this language');

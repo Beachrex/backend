@@ -177,7 +177,7 @@ return [
     */
 
     'locales' => [
-        'en', 'hr', 'sl', 'de', 'it', 'fr', 'es', 'pt', 'nl', 'pl', 'cs', 'sk', 'hu', 'ro',
+        'en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq',
     ],
 
     'default_locale' => 'en',

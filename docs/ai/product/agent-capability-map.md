@@ -346,7 +346,7 @@ Find beaches meeting specific accessibility requirements (wheelchair, lifeguard,
 ## Capability 7: Multi-Language Support
 
 ### Description
-Respond in user's preferred language (14 locales) with localized beach data.
+Respond in user's preferred language (19 locales) with localized beach data.
 
 ### Required Data Sources
 
@@ -375,7 +375,7 @@ Respond in user's preferred language (14 locales) with localized beach data.
 
 ### Caching Constraints
 - Cache keys include locale: `beaches:index:{locale}:{filters}`
-- Separate cache per locale (14 locales × cache entries)
+- Separate cache per locale (19 locales × cache entries)
 
 ### Security Implications
 - **No User Input**: Locale from header only (validated against supported locales)

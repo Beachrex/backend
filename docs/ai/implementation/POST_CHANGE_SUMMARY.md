@@ -463,7 +463,7 @@ export const dynamic = 'force-dynamic';
 - [x] Authenticated users can generate multi-day itineraries
 - [x] Payment success page links work
 - [x] Frontend build succeeds
-- [ ] Test with all 14 locales (PENDING)
+- [ ] Test with all 19 locales (PENDING)
 - [ ] Deploy to dev server (PENDING)
 - [ ] End-to-end OAuth test on dev server (PENDING)
 

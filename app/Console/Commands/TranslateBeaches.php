@@ -25,12 +25,12 @@ class TranslateBeaches extends Command
      *
      * @var string
      */
-    protected $description = 'Translate beach names and descriptions to all 14 languages using AI';
+    protected $description = 'Translate beach names and descriptions to all 19 languages using AI';
 
     /**
      * All supported locales
      */
-    protected array $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+    protected array $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
 
     /**
      * Language names for better AI translation
@@ -50,6 +50,11 @@ class TranslateBeaches extends Command
         'hu' => 'Hungarian',
         'bg' => 'Bulgarian',
         'sk' => 'Slovak',
+        'da' => 'Danish',
+        'pt' => 'Portuguese',
+        'nl' => 'Dutch',
+        'el' => 'Greek',
+        'sq' => 'Albanian',
     ];
 
     /**

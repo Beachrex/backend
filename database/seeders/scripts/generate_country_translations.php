@@ -5,7 +5,7 @@
  * into a single JSON file for our database seeder
  */
 
-// Languages we support: en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk
+// Languages we support: en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq
 $languages = [
     'en' => 'en',  // English
     'sl' => 'sl',  // Slovenian
@@ -21,6 +21,11 @@ $languages = [
     'hu' => 'hu',  // Hungarian
     'bg' => 'bg',  // Bulgarian
     'sk' => 'sk',  // Slovak
+    'da' => 'da',  // Danish
+    'pt' => 'pt',  // Portuguese
+    'nl' => 'nl',  // Dutch
+    'el' => 'el',  // Greek
+    'sq' => 'sq',  // Albanian
 ];
 
 $baseUrl = 'https://raw.githubusercontent.com/stefangabos/world_countries/master/data/countries/';

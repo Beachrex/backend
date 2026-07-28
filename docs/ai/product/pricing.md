@@ -41,7 +41,7 @@
 | **Context-Aware Suggestions** | ❌ | ✅ Basic | ✅ Advanced | ✅ Advanced + Custom |
 | **Educational Queries** | ✅ Limited | ✅ Full | ✅ Full | ✅ Full |
 | **Accessibility Search** | ✅ Basic | ✅ Full | ✅ Full | ✅ Full |
-| **Multi-Language Support** | 1 language (English) | 14 languages | 14 languages | 14 languages + Custom |
+| **Multi-Language Support** | 1 language (English) | 19 languages | 19 languages | 19 languages + Custom |
 | **Global Search** | ✅ 5 results | ✅ 20 results | ✅ Unlimited | ✅ Unlimited |
 
 ### 3. Data Access Scope
@@ -116,7 +116,7 @@
 **Unlocked from Free**:
 - ✅ Advanced search (unlimited filters)
 - ✅ 20 beaches per query (vs 5)
-- ✅ All 14 languages
+- ✅ All 19 languages
 - ✅ Weather data (current)
 - ✅ Map view (up to 50 beaches)
 - ✅ Spatial queries (within 10km)
@@ -249,7 +249,7 @@ Upgrade to Explorer for:
 ✅ 1,000 queries/month (10x more)
 ✅ Weather data for all beaches
 ✅ Map view with spatial search
-✅ All 14 languages
+✅ All 19 languages
 
 Only $9/month or $0.10/query pay-as-you-go
 [Upgrade Now]

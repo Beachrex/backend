@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('beach_location_type_translation', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('beach_location_type_id');
-            $table->string('locale', 5)->comment('Language code: en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk');
+            $table->string('locale', 5)->comment('Language code: en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq');
             $table->string('name')->comment('Translated beach location type name');
             $table->string('slug')->nullable()->comment('URL-friendly slug');
             $table->timestamps();

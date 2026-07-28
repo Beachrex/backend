@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('city_translation', function (Blueprint $table) {
             $table->id();
             $table->foreignId('city_id')->constrained('city')->cascadeOnDelete();
-            $table->string('locale', 5)->comment('Language code: en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk');
+            $table->string('locale', 5)->comment('Language code: en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq');
             $table->string('name')->comment('Translated city name');
             $table->string('slug')->nullable()->comment('URL-friendly slug');
             $table->timestamps();

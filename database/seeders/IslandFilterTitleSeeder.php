@@ -24,6 +24,11 @@ class IslandFilterTitleSeeder extends Seeder
             'hu' => 'Sziget',
             'bg' => 'Остров',
             'sk' => 'Ostrov',
+            'da' => 'Ø',
+            'pt' => 'Ilha',
+            'nl' => 'Eiland',
+            'el' => 'Νησί',
+            'sq' => 'Ishulli',
         ];
 
         foreach ($filterTitles as $locale => $title) {

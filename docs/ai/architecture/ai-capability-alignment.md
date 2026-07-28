@@ -30,7 +30,7 @@ These capabilities are **100% free** and designed to drive users to paid convers
 - Parse natural language queries into structured filters
 - Support 40+ filter combinations (country, surface, facilities, activities, etc.)
 - Return up to 20 beaches per query (unlimited queries)
-- Multi-language support (14 languages)
+- Multi-language support (19 languages)
 - Response time: < 2 seconds
 
 **Data Sources**:

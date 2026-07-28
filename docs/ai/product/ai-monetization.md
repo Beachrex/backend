@@ -172,7 +172,7 @@ Consumers will not pay for search. They will pay for:
 - ✅ Accessibility filters (search by wheelchair access, etc.)
 - ✅ Map view with all beaches
 - ✅ Educational queries ("What is a Blue Flag beach?")
-- ✅ Multi-language support (14 languages)
+- ✅ Multi-language support (19 languages)
 
 **Why Free?**:
 - Search is table stakes (Google, TripAdvisor are free)
@@ -447,7 +447,7 @@ They care about: **More visitors to their beaches = More tourism revenue.**
 - **YES**: "We have 2,445 beaches with verified data (competitors don't)"
 
 **Moat**:
-- Proprietary beach database (2,445 beaches, 40+ attributes, 14 languages)
+- Proprietary beach database (2,445 beaches, 40+ attributes, 19 languages)
 - Human-verified accessibility data (not just AI hallucinations)
 - B2B relationships (DMOs, hotels provide exclusive data)
 - Network effects (more users → better data → better B2B value)

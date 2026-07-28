@@ -4,7 +4,7 @@ Automatically translate beach names and descriptions to all 14 supported languag
 
 ## Supported Languages
 
-The script translates to all 14 languages:
+The script translates to all 19 languages:
 - `en` - English
 - `sl` - Slovenian  
 - `de` - German

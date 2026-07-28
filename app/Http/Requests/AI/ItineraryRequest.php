@@ -66,7 +66,7 @@ class ItineraryRequest extends FormRequest
             'constraints.avoid_ferries' => 'nullable|boolean',
             
             // Locale (optional)
-            'locale' => 'nullable|string|size:2|in:en,hr,sl,de,it,fr,es,pt,nl,pl,cs,sk,hu,ro',
+            'locale' => 'nullable|string|size:2|in:en,sl,de,hr,fr,es,it,ua,ru,pl,cs,hu,bg,sk,da,pt,nl,el,sq',
             
             // Session ID (optional, for continuity with chat)
             'session_id' => 'nullable|uuid',

@@ -67,6 +67,11 @@ class BayLengthSeeder extends Seeder
                     'hu' => ['name' => '>100m', 'slug' => 'tobb-mint-100m'],
                     'bg' => ['name' => '>100м', 'slug' => 'poveche-ot-100m'],
                     'sk' => ['name' => '>100m', 'slug' => 'viac-ako-100m'],
+                    'da' => ['name' => '>100m', 'slug' => 'mere-end-100m'],
+                    'pt' => ['name' => '>100m', 'slug' => 'mais-de-100m'],
+                    'nl' => ['name' => '>100m', 'slug' => 'meer-dan-100m'],
+                    'el' => ['name' => '>100μ', 'slug' => 'pano-apo-100m'],
+                    'sq' => ['name' => '>100m', 'slug' => 'me-shume-se-100m'],
                 ];
             } else {
                 // For numeric lengths, use the same value for all languages
@@ -85,6 +90,11 @@ class BayLengthSeeder extends Seeder
                     'hu' => ['name' => $displayName, 'slug' => $slug],
                     'bg' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
                     'sk' => ['name' => $displayName, 'slug' => $slug],
+                    'da' => ['name' => $displayName, 'slug' => $slug],
+                    'pt' => ['name' => $displayName, 'slug' => $slug],
+                    'nl' => ['name' => $displayName, 'slug' => $slug],
+                    'el' => ['name' => str_replace('m', 'μ', $displayName), 'slug' => $slug],
+                    'sq' => ['name' => $displayName, 'slug' => $slug],
                 ];
             }
 

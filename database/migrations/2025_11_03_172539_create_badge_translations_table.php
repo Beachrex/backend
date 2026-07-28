@@ -20,7 +20,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->index('badge_id');
 
-            // Locale for translation (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)
+            // Locale for translation (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)
             $table->string('locale', 5);
             $table->index('locale');
 

@@ -72,6 +72,11 @@ class ParkingBeachDistanceSeeder extends Seeder
                     'hu' => ['name' => '>1000m', 'slug' => 'tobb-mint-1000m'],
                     'bg' => ['name' => '>1000м', 'slug' => 'poveche-ot-1000m'],
                     'sk' => ['name' => '>1000m', 'slug' => 'viac-ako-1000m'],
+                    'da' => ['name' => '>1000m', 'slug' => 'mere-end-1000m'],
+                    'pt' => ['name' => '>1000m', 'slug' => 'mais-de-1000m'],
+                    'nl' => ['name' => '>1000m', 'slug' => 'meer-dan-1000m'],
+                    'el' => ['name' => '>1000μ', 'slug' => 'pano-apo-1000m'],
+                    'sq' => ['name' => '>1000m', 'slug' => 'me-shume-se-1000m'],
 
                 ];
             } elseif ($distanceData['code'] === 'no_parking') {
@@ -90,6 +95,11 @@ class ParkingBeachDistanceSeeder extends Seeder
                     'hu' => ['name' => 'Nincs parkoló', 'slug' => 'nincs-parkolo'],
                     'bg' => ['name' => 'Без паркинг', 'slug' => 'bez-parking'],
                     'sk' => ['name' => 'Bez parkovania', 'slug' => 'bez-parkovania'],
+                    'da' => ['name' => 'Ingen parkering', 'slug' => 'ingen-parkering'],
+                    'pt' => ['name' => 'Sem estacionamento', 'slug' => 'sem-estacionamento'],
+                    'nl' => ['name' => 'Geen parkeren', 'slug' => 'geen-parkeren'],
+                    'el' => ['name' => 'Χωρίς στάθμευση', 'slug' => 'choris-stathmeysi'],
+                    'sq' => ['name' => 'Pa parkim', 'slug' => 'pa-parkim'],
 
                 ];
             } else {
@@ -109,6 +119,11 @@ class ParkingBeachDistanceSeeder extends Seeder
                     'hu' => ['name' => $displayName, 'slug' => $slug],
                     'bg' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
                     'sk' => ['name' => $displayName, 'slug' => $slug],
+                    'da' => ['name' => $displayName, 'slug' => $slug],
+                    'pt' => ['name' => $displayName, 'slug' => $slug],
+                    'nl' => ['name' => $displayName, 'slug' => $slug],
+                    'el' => ['name' => str_replace('m', 'μ', $displayName), 'slug' => $slug],
+                    'sq' => ['name' => $displayName, 'slug' => $slug],
 
                 ];
             }

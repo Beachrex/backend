@@ -73,6 +73,11 @@ class FirstPageContentSeeder extends Seeder
             'hu' => 'Minden gond kisebb a strandon!',
             'bg' => 'Всички грижи са по-малки на плажа!',
             'sk' => 'Všetky starosti sú na pláži menšie!',
+            'da' => 'Alle bekymringer er mindre på stranden!',
+            'pt' => 'Todas as preocupações são menores na praia!',
+            'nl' => 'Alle zorgen zijn kleiner op het strand!',
+            'el' => 'Όλες οι έγνοιες είναι μικρότερες στην παραλία!',
+            'sq' => 'Të gjitha shqetësimet janë më të vogla në plazh!',
         ];
 
         foreach ($translations as $locale => $title) {
@@ -152,6 +157,26 @@ class FirstPageContentSeeder extends Seeder
             'sk' => [
                 'title' => 'Prehliadajte mapu s viac ako 1500 plážami',
                 'description' => 'Objavte najkrajšie pláže sveta s interaktívnou mapou obsahujúcou viac ako 1500 úžasných lokalít. Či už hľadáte rajské piesočné pobrežia, skryté zátoky alebo obľúbené destinácie na surfovanie, nájdete si perfektnú pláž. Skontrolujte popisy, hodnotenia a fotografie a naplánujte si svoje ďalšie vysníva dobrodružstvo pri mori!',
+            ],
+            'da' => [
+                'title' => 'Gennemse kortet med over 1500 strande',
+                'description' => 'Opdag verdens smukkeste strande med et interaktivt kort, der indeholder over 1500 fantastiske lokationer. Uanset om du leder efter sandige paradisstrande, skjulte bugter eller populære surfdestinationer, finder du den perfekte strand til dig. Tjek beskrivelser, bedømmelser og fotos for at planlægge dit næste drømmeeventyr ved havet!',
+            ],
+            'pt' => [
+                'title' => 'Explore o mapa com mais de 1500 praias',
+                'description' => 'Descubra as praias mais belas do mundo com um mapa interativo que contém mais de 1500 locais deslumbrantes. Quer procure costas de areia paradisíacas, enseadas escondidas ou destinos populares para surfar, encontrará a praia perfeita para si. Consulte descrições, classificações e fotos para planear a sua próxima aventura de sonho à beira-mar!',
+            ],
+            'nl' => [
+                'title' => 'Blader door de kaart met meer dan 1500 stranden',
+                'description' => 'Ontdek de mooiste stranden ter wereld met een interactieve kaart met meer dan 1500 adembenemende locaties. Of u nu op zoek bent naar zandige paradijselijke kusten, verborgen baaien of populaire surfbestemmingen, u vindt het perfecte strand voor u. Bekijk beschrijvingen, beoordelingen en foto\'s om uw volgende droomavontuur aan zee te plannen!',
+            ],
+            'el' => [
+                'title' => 'Περιηγηθείτε στον χάρτη με πάνω από 1500 παραλίες',
+                'description' => 'Ανακαλύψτε τις πιο όμορφες παραλίες του κόσμου με έναν διαδραστικό χάρτη που περιέχει πάνω από 1500 εκπληκτικές τοποθεσίες. Είτε αναζητάτε παραδείσιες αμμώδεις ακτές, κρυφούς κόλπους είτε δημοφιλείς προορισμούς για σερφ, θα βρείτε την τέλεια παραλία για εσάς. Ελέγξτε περιγραφές, βαθμολογίες και φωτογραφίες για να σχεδιάσετε την επόμενη ονειρεμένη περιπέτειά σας δίπλα στη θάλασσα!',
+            ],
+            'sq' => [
+                'title' => 'Shfletoni hartën me më shumë se 1500 plazhe',
+                'description' => 'Zbuloni plazhet më të bukur në botë me një hartë interaktive që përmban më shumë se 1500 vendndodhje mahnitëse. Qoftë duke kërkuar për brigje rënore parajsore, gji të fshehur ose destinacione popullore për sërf, do të gjeni plazhin e përsosur për ju. Kontrolloni përshkrimet, vlerësimet dhe fotot për të planifikuar aventurën tuaj të radhës të ëndrrave pranë detit!',
             ],
         ];
 
@@ -233,6 +258,26 @@ class FirstPageContentSeeder extends Seeder
                 'title' => 'Nájdite si pláž podľa svojho vkusu',
                 'description' => 'Hľadáte perfektnú pláž? Použite pokročilé filtre a rýchlo nájdite ideálne miesto! Prehliadajte podľa typu pláže, typu piesku, prístupnosti, popularity, aktivít, infraštruktúry a ďalších. Či už chcete pokojný kútik na oddych alebo živú pláž s mnohými vodnými športmi, ľahko nájdete to, čo vám najviac vyhovuje.',
             ],
+            'da' => [
+                'title' => 'Find en strand efter din smag',
+                'description' => 'Leder du efter den perfekte strand? Brug avancerede filtre og find hurtigt den ideelle lokation! Gennemse efter strandtype, sandtype, tilgængelighed, popularitet, aktiviteter, infrastruktur og meget mere. Uanset om du ønsker en rolig krog til afslapning eller en livlig strand med masser af vandsport, finder du nemt det, der passer dig bedst.',
+            ],
+            'pt' => [
+                'title' => 'Encontre uma praia ao seu gosto',
+                'description' => 'Procura a praia perfeita? Use filtros avançados e encontre rapidamente a localização ideal! Navegue por tipo de praia, tipo de areia, acessibilidade, popularidade, atividades, infraestrutura e muito mais. Quer deseje um canto tranquilo para relaxar ou uma praia animada com muitos desportos aquáticos, encontrará facilmente o que mais lhe convém.',
+            ],
+            'nl' => [
+                'title' => 'Vind een strand naar uw smaak',
+                'description' => 'Op zoek naar het perfecte strand? Gebruik geavanceerde filters en vind snel de ideale locatie! Blader op strandtype, zandtype, toegankelijkheid, populariteit, activiteiten, infrastructuur en meer. Of u nu een rustig hoekje zoekt om te ontspannen of een levendig strand met veel watersport, u vindt gemakkelijk wat het beste bij u past.',
+            ],
+            'el' => [
+                'title' => 'Βρείτε μια παραλία στα γούστα σας',
+                'description' => 'Αναζητάτε την τέλεια παραλία; Χρησιμοποιήστε προηγμένα φίλτρα και βρείτε γρήγορα την ιδανική τοποθεσία! Περιηγηθείτε ανά τύπο παραλίας, τύπο άμμου, προσβασιμότητα, δημοτικότητα, δραστηριότητες, υποδομή και άλλα. Είτε θέλετε μια ήσυχη γωνία για χαλάρωση είτε μια ζωντανή παραλία με πολλά θαλάσσια αθλήματα, θα βρείτε εύκολα αυτό που σας ταιριάζει καλύτερα.',
+            ],
+            'sq' => [
+                'title' => 'Gjeni një plazh sipas shijes tuaj',
+                'description' => 'Po kërkoni për plazhin e përsosur? Përdorni filtrat e avancuar dhe gjeni shpejt vendndodhjen ideale! Shfletoni sipas llojit të plazhit, llojit të rërës, aksesueshmërisë, popullaritetit, aktiviteteve, infrastrukturës dhe më tepër. Qoftë që dëshironi një qosh të qetë për t\'u çlodhur apo një plazh të gjallë me shumë sporte ujore, do të gjeni lehtësisht atë që ju përshtatet më shumë.',
+            ],
         ];
 
         foreach ($translations as $locale => $data) {
@@ -269,6 +314,11 @@ class FirstPageContentSeeder extends Seeder
             'hu' => ['title' => 'Nézze meg a strandokat minden szögből'],
             'bg' => ['title' => 'Вижте плажовете от всички ъгли'],
             'sk' => ['title' => 'Pozrite si pláže zo všetkých uhlov'],
+            'da' => ['title' => 'Se strande fra alle vinkler'],
+            'pt' => ['title' => 'Veja praias de todos os ângulos'],
+            'nl' => ['title' => 'Bekijk stranden vanuit alle hoeken'],
+            'el' => ['title' => 'Δείτε τις παραλίες από όλες τις γωνίες'],
+            'sq' => ['title' => 'Shihni plazhet nga të gjitha këndet'],
         ];
 
         foreach ($translations as $locale => $data) {
@@ -289,6 +339,8 @@ class FirstPageContentSeeder extends Seeder
                     'fr' => 'Galerie', 'es' => 'Galería', 'it' => 'Galleria', 'ua' => 'Галерея',
                     'ru' => 'Галерея', 'pl' => 'Galeria', 'cs' => 'Galerie', 'hu' => 'Galéria',
                     'bg' => 'Галерия', 'sk' => 'Galéria',
+                    'da' => 'Galleri', 'pt' => 'Galeria', 'nl' => 'Galerie',
+                    'el' => 'Γκαλερί', 'sq' => 'Galeria',
                 ],
             ],
             [
@@ -299,6 +351,8 @@ class FirstPageContentSeeder extends Seeder
                     'fr' => 'Vidéo', 'es' => 'Vídeo', 'it' => 'Video', 'ua' => 'Відео',
                     'ru' => 'Видео', 'pl' => 'Wideo', 'cs' => 'Video', 'hu' => 'Videó',
                     'bg' => 'Видео', 'sk' => 'Video',
+                    'da' => 'Video', 'pt' => 'Vídeo', 'nl' => 'Video',
+                    'el' => 'Βίντεο', 'sq' => 'Video',
                 ],
             ],
             [
@@ -309,6 +363,8 @@ class FirstPageContentSeeder extends Seeder
                     'fr' => 'Sphères', 'es' => 'Esferas', 'it' => 'Sfere', 'ua' => 'Сфери',
                     'ru' => 'Сферы', 'pl' => 'Sfery', 'cs' => 'Sféry', 'hu' => 'Szférák',
                     'bg' => 'Сфери', 'sk' => 'Sféry',
+                    'da' => 'Sfærer', 'pt' => 'Esferas', 'nl' => 'Bollen',
+                    'el' => 'Σφαίρες', 'sq' => 'Sferat',
                 ],
             ],
             [
@@ -319,6 +375,8 @@ class FirstPageContentSeeder extends Seeder
                     'fr' => 'En direct', 'es' => 'En vivo', 'it' => 'Dal vivo', 'ua' => 'Наживо',
                     'ru' => 'Прямой эфир', 'pl' => 'Na żywo', 'cs' => 'Živě', 'hu' => 'Élő',
                     'bg' => 'На живо', 'sk' => 'Naživo',
+                    'da' => 'Live', 'pt' => 'Ao vivo', 'nl' => 'Live',
+                    'el' => 'Ζωντανά', 'sq' => 'Në drejtpërdrejt',
                 ],
             ],
         ];
@@ -411,6 +469,26 @@ class FirstPageContentSeeder extends Seeder
                 'title' => 'Oddýchnite si v pohodlnom plážovom ubytovaní',
                 'description' => 'Zažite úplnú relaxáciu v ubytovaní priamo pri mori! Vyberte si z luxusných rezortov, pôvabných bungalovov alebo apartmánov s výhľadom na vlny. Bez ohľadu na váš štýl cestovania vás čaká pohodlie, blízkosť pláže a nezabudnuteľný zážitok pri mori.',
             ],
+            'da' => [
+                'title' => 'Slap af i komfortabelt strandovernatningssted',
+                'description' => 'Oplev fuld afslapning i overnatning lige ved havet! Vælg mellem luksusresorts, charmerende bungalows eller lejligheder med udsigt til bølgerne. Uanset din rejsestil venter komfort, nærhed til stranden og en uforglemmelig oplevelse ved havet på dig.',
+            ],
+            'pt' => [
+                'title' => 'Relaxe em alojamento confortável na praia',
+                'description' => 'Viva um relaxamento completo num alojamento mesmo à beira-mar! Escolha entre resorts de luxo, bungalows encantadores ou apartamentos com vista para as ondas. Independentemente do seu estilo de viagem, aguardam-no conforto, proximidade da praia e uma experiência inesquecível junto ao mar.',
+            ],
+            'nl' => [
+                'title' => 'Ontspan in een comfortabele strandaccommodatie',
+                'description' => 'Ervaar volledige ontspanning in accommodatie direct aan zee! Kies uit luxe resorts, charmante bungalows of appartementen met uitzicht op de golven. Ongeacht uw reisstijl wachten op u comfort, nabijheid van het strand en een onvergetelijke ervaring aan zee.',
+            ],
+            'el' => [
+                'title' => 'Χαλαρώστε σε ένα άνετο κατάλυμα στην παραλία',
+                'description' => 'Ζήστε πλήρη χαλάρωση σε κατάλυμα ακριβώς δίπλα στη θάλασσα! Επιλέξτε μεταξύ πολυτελών θέρετρων, γοητευτικών μπανγκαλόου ή διαμερισμάτων με θέα στα κύματα. Ανεξάρτητα από το στυλ ταξιδιού σας, σας περιμένουν άνεση, εγγύτητα στην παραλία και μια αξέχαστη εμπειρία δίπλα στη θάλασσα.',
+            ],
+            'sq' => [
+                'title' => 'Çlodhu në një akomodim të rehatshëm në plazh',
+                'description' => 'Përjetoni çlodhim të plotë në një akomodim pikërisht pranë detit! Zgjidhni midis komplekseve luksoze, bungalove simpatike ose apartamentesh me pamje nga valët. Pavarësisht stilit tuaj të udhëtimit, ju presin rehatia, afërsia me plazhin dhe një përvojë e paharrueshme pranë detit.',
+            ],
         ];
 
         foreach ($translations as $locale => $data) {
@@ -463,6 +541,11 @@ class FirstPageContentSeeder extends Seeder
             'hu' => ['title' => 'A világ legszebb tengerparti célpontjai'],
             'bg' => ['title' => 'Най-красивите крайбрежни дестинации в света'],
             'sk' => ['title' => 'Najkrajšie pobrežné destinácie sveta'],
+            'da' => ['title' => 'Verdens smukkeste kystdestinationer'],
+            'pt' => ['title' => 'Os destinos costeiros mais belos do mundo'],
+            'nl' => ['title' => 'De mooiste kustbestemmingen ter wereld'],
+            'el' => ['title' => 'Οι πιο όμορφες παραθαλάσσιοι προορισμοί του κόσμου'],
+            'sq' => ['title' => 'Destinacionet më të bukura bregdetare në botë'],
         ];
 
         foreach ($translations as $locale => $data) {
@@ -502,6 +585,11 @@ class FirstPageContentSeeder extends Seeder
                     'hu' => '100 legszebb strand a világon',
                     'bg' => '100 най-красиви плажа в света',
                     'sk' => '100 najkrajších pláží sveta',
+                    'da' => '100 smukkeste strande i verden',
+                    'pt' => '100 praias mais belas do mundo',
+                    'nl' => '100 mooiste stranden ter wereld',
+                    'el' => '100 ομορφότερες παραλίες του κόσμου',
+                    'sq' => '100 plazhet më të bukur në botë',
                 ],
             ],
             [
@@ -521,6 +609,11 @@ class FirstPageContentSeeder extends Seeder
                     'hu' => 'Fedezze fel a strand történeteket és tippeket',
                     'bg' => 'Открийте плажни истории и съвети',
                     'sk' => 'Objavte plážové príbehy a tipy',
+                    'da' => 'Opdag strandhistorier og tips',
+                    'pt' => 'Descubra histórias e dicas de praia',
+                    'nl' => 'Ontdek strandverhalen en tips',
+                    'el' => 'Ανακαλύψτε ιστορίες και συμβουλές παραλίας',
+                    'sq' => 'Zbuloni histori dhe këshilla plazhi',
                 ],
             ],
             [
@@ -540,6 +633,11 @@ class FirstPageContentSeeder extends Seeder
                     'hu' => 'Pihenjen kényelmes szálláson',
                     'bg' => 'Отпуснете се в удобно настаняване',
                     'sk' => 'Oddýchnite si v pohodlnom ubytovaní',
+                    'da' => 'Slap af i komfortabel overnatning',
+                    'pt' => 'Relaxe num alojamento confortável',
+                    'nl' => 'Ontspan in een comfortabele accommodatie',
+                    'el' => 'Χαλαρώστε σε ένα άνετο κατάλυμα',
+                    'sq' => 'Çlodhu në një akomodim të rehatshëm',
                 ],
             ],
             [
@@ -559,6 +657,11 @@ class FirstPageContentSeeder extends Seeder
                     'hu' => 'Fedezzen fel egy strandot az ízlése szerint',
                     'bg' => 'Открийте плаж по ваш вкус',
                     'sk' => 'Objavte pláž podľa svojho vkusu',
+                    'da' => 'Opdag en strand efter din smag',
+                    'pt' => 'Descubra uma praia ao seu gosto',
+                    'nl' => 'Ontdek een strand naar uw smaak',
+                    'el' => 'Ανακαλύψτε μια παραλία στα γούστα σας',
+                    'sq' => 'Zbuloni një plazh sipas shijes tuaj',
                 ],
             ],
         ];
@@ -608,6 +711,11 @@ class FirstPageContentSeeder extends Seeder
             'hu' => ['title' => 'Fedezze fel, álmodjon, fedezze fel a paradicsomi strandokat!'],
             'bg' => ['title' => 'Изследвайте, мечтайте, открийте райски плажове!'],
             'sk' => ['title' => 'Preskúmajte, snívajte, objavujte rajské pláže!'],
+            'da' => ['title' => 'Udforsk, drøm, opdag paradisstrande!'],
+            'pt' => ['title' => 'Explore, sonhe, descubra praias paradisíacas!'],
+            'nl' => ['title' => 'Verken, droom, ontdek paradijselijke stranden!'],
+            'el' => ['title' => 'Εξερευνήστε, ονειρευτείτε, ανακαλύψτε παραδείσιες παραλίες!'],
+            'sq' => ['title' => 'Eksploroni, ëndërroni, zbuloni plazhe parajsore!'],
         ];
 
         foreach ($translations as $locale => $data) {

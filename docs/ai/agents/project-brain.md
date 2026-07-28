@@ -49,7 +49,7 @@
 #### 1.6 Cross-System Consistency
 - **Frontend-Backend alignment**: Ensures API contracts match frontend expectations
 - **Admin panel consistency**: Validates admin features align with API capabilities
-- **Translation completeness**: Ensures all 14 locales have required keys
+- **Translation completeness**: Ensures all 19 locales have required keys
 - **SEO implementation**: Validates metadata, JSON-LD, sitemaps across all pages
 
 #### 1.7 Security and Compliance
@@ -478,7 +478,7 @@ media:
 - [ ] No breaking changes to existing APIs
 - [ ] Proper error handling
 - [ ] Cache invalidation logic (if needed)
-- [ ] Translation keys added to all 14 locales (if frontend)
+- [ ] Translation keys added to all 19 locales (if frontend)
 ```
 
 ---

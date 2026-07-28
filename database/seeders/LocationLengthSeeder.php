@@ -72,6 +72,11 @@ class LocationLengthSeeder extends Seeder
                     'hu' => ['name' => '>1km', 'slug' => 'tobb-mint-1km'],
                     'bg' => ['name' => '>1км', 'slug' => 'poveche-ot-1km'],
                     'sk' => ['name' => '>1km', 'slug' => 'viac-ako-1km'],
+                    'da' => ['name' => '>1km', 'slug' => 'mere-end-1km'],
+                    'pt' => ['name' => '>1km', 'slug' => 'mais-de-1km'],
+                    'nl' => ['name' => '>1km', 'slug' => 'meer-dan-1km'],
+                    'el' => ['name' => '>1χλμ', 'slug' => 'pano-apo-1km'],
+                    'sq' => ['name' => '>1km', 'slug' => 'me-shume-se-1km'],
 
                 ];
             } else {
@@ -91,6 +96,11 @@ class LocationLengthSeeder extends Seeder
                     'hu' => ['name' => $displayName, 'slug' => $slug],
                     'bg' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
                     'sk' => ['name' => $displayName, 'slug' => $slug],
+                    'da' => ['name' => $displayName, 'slug' => $slug],
+                    'pt' => ['name' => $displayName, 'slug' => $slug],
+                    'nl' => ['name' => $displayName, 'slug' => $slug],
+                    'el' => ['name' => str_replace('m', 'μ', $displayName), 'slug' => $slug],
+                    'sq' => ['name' => $displayName, 'slug' => $slug],
 
                 ];
             }

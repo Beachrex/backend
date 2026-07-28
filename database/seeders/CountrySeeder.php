@@ -99,7 +99,7 @@ class CountrySeeder extends Seeder
     private function generateTranslations(array $countries): array
     {
         $translations = [];
-        $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+        $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
 
         // Get specific translations for countries that have different names
         $specificTranslations = $this->getSpecificTranslations();

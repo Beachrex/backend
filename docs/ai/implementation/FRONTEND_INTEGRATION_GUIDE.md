@@ -134,7 +134,7 @@ curl http://localhost/openapi.json | jq '.components.schemas | keys | map(select
 
 **Content-Type**: `application/json`
 
-**Accept-Language**: Optional (default: `en`, supports 14 languages)
+**Accept-Language**: Optional (default: `en`, supports 19 languages)
 
 ---
 
@@ -422,7 +422,7 @@ if (response.status === 429) {
 
 ### 6.1. Supported Languages
 
-**14 languages**: en, hr, sl, de, it, fr, es, pt, nl, pl, cs, sk, hu, ro
+**19 languages**: en, hr, sl, de, it, fr, es, pt, nl, pl, cs, sk, hu, ro
 
 **Set language**:
 ```typescript

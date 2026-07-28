@@ -55,6 +55,11 @@ class WaterBodyTypeSeeder extends Seeder
                 'hu' => ['name' => 'Tó', 'slug' => 'to'],
                 'bg' => ['name' => 'Езеро', 'slug' => 'ezero'],
                 'sk' => ['name' => 'Jazero', 'slug' => 'jazero'],
+                'da' => ['name' => 'Sø', 'slug' => 'so'],
+                'pt' => ['name' => 'Lago', 'slug' => 'lago'],
+                'nl' => ['name' => 'Meer', 'slug' => 'meer'],
+                'el' => ['name' => 'Λίμνη', 'slug' => 'limni'],
+                'sq' => ['name' => 'Liqen', 'slug' => 'liqen'],
             ],
             'sea' => [
                 'en' => ['name' => 'Sea', 'slug' => 'sea'],
@@ -71,6 +76,11 @@ class WaterBodyTypeSeeder extends Seeder
                 'hu' => ['name' => 'Tenger', 'slug' => 'tenger'],
                 'bg' => ['name' => 'Море', 'slug' => 'more'],
                 'sk' => ['name' => 'More', 'slug' => 'more'],
+                'da' => ['name' => 'Hav', 'slug' => 'hav'],
+                'pt' => ['name' => 'Mar', 'slug' => 'mar'],
+                'nl' => ['name' => 'Zee', 'slug' => 'zee'],
+                'el' => ['name' => 'Θάλασσα', 'slug' => 'thalassa'],
+                'sq' => ['name' => 'Det', 'slug' => 'det'],
             ],
             'river' => [
                 'en' => ['name' => 'River', 'slug' => 'river'],
@@ -87,6 +97,11 @@ class WaterBodyTypeSeeder extends Seeder
                 'hu' => ['name' => 'Folyó', 'slug' => 'folyo'],
                 'bg' => ['name' => 'Река', 'slug' => 'reka'],
                 'sk' => ['name' => 'Rieka', 'slug' => 'rieka'],
+                'da' => ['name' => 'Flod', 'slug' => 'flod'],
+                'pt' => ['name' => 'Rio', 'slug' => 'rio'],
+                'nl' => ['name' => 'Rivier', 'slug' => 'rivier'],
+                'el' => ['name' => 'Ποταμός', 'slug' => 'potamos'],
+                'sq' => ['name' => 'Lumë', 'slug' => 'lume'],
             ],
         ];
 

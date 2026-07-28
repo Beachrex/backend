@@ -12,7 +12,7 @@
 This document defines the **contract** between frontend and AI backend. These contracts are:
 - ✅ **Provider-agnostic**: No OpenAI/Anthropic-specific fields
 - ✅ **Version-stable**: Breaking changes require new API version
-- ✅ **Language-agnostic**: Support all 14 locales
+- ✅ **Language-agnostic**: Support all 19 locales
 
 ---
 

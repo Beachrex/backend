@@ -66,7 +66,7 @@ class RoadToParkingTypeSchema
  *     @OA\Property(
  *         property="locale",
  *         type="string",
- *         description="Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+ *         description="Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
  *         example="en"
  *     ),
  *     @OA\Property(

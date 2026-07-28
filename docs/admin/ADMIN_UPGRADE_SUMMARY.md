@@ -191,7 +191,7 @@ chmod +x create_all_resources.sh
 Every entity with `_translation` table needs:
 - TranslationsRelationManager
 - `name` appended attribute
-- Multi-language support (14 languages)
+- Multi-language support (19 languages)
 
 ### Geographic Hierarchy
 ```

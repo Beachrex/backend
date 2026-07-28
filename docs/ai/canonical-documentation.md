@@ -14,7 +14,7 @@ Beachrex is a multilingual beach discovery platform that enables users to:
 - View detailed beach information with photos, videos, 360° tours, weather data
 - Navigate geographic hierarchies (Continent → Country → Region/Island → City → Beach)
 - Discover beaches via interactive map with spatial queries
-- Access content in 14 languages with localized URLs and metadata
+- Access content in 19 languages with localized URLs and metadata
 
 ### Target Users
 - Beach tourists planning vacations
@@ -24,7 +24,7 @@ Beachrex is a multilingual beach discovery platform that enables users to:
 
 ### Core Value Proposition
 - **Comprehensive data**: 2,445+ beaches with detailed attributes
-- **Multilingual**: 14 languages (en, si, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)
+- **Multilingual**: 19 languages (en, si, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)
 - **Real-time weather**: OpenWeatherMap integration with 1-hour cache
 - **Spatial search**: PostGIS-powered radius and bounding box queries
 - **SEO-optimized**: Localized sitemaps, JSON-LD, hreflang tags
@@ -92,7 +92,7 @@ Continent (code: 2-char, e.g., "EU", "AS")
 
 **Rules**:
 - Unique constraint: `(entity_id, locale)`
-- Locale codes: 2-char (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)
+- Locale codes: 2-char (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)
 - **IMPORTANT**: Frontend uses `si` for Slovenian, backend uses `sl`
   - Mapping handled in `app/Http/Middleware/SetLocaleFromHeader.php`
 - English (`en`) is fallback locale

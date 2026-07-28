@@ -33,6 +33,11 @@ class TranslationsRelationManager extends RelationManager
                         'hu' => 'Hungarian',
                         'bg' => 'Bulgarian',
                         'sk' => 'Slovak',
+                        'da' => 'Danish',
+                        'pt' => 'Portuguese',
+                        'nl' => 'Dutch',
+                        'el' => 'Greek',
+                        'sq' => 'Albanian',
                     ])
                     ->required()
                     ->searchable(),

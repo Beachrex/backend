@@ -11,7 +11,7 @@ class SetLocaleFromHeader
     /**
      * Supported locales for the application
      */
-    private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+    private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
 
     /**
      * Locale mappings for frontend compatibility

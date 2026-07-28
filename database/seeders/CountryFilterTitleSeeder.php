@@ -24,6 +24,11 @@ class CountryFilterTitleSeeder extends Seeder
             'hu' => 'Ország',
             'bg' => 'Държава',
             'sk' => 'Krajina',
+            'da' => 'Land',
+            'pt' => 'País',
+            'nl' => 'Land',
+            'el' => 'Χώρα',
+            'sq' => 'Shteti',
         ];
 
         foreach ($filterTitles as $locale => $title) {

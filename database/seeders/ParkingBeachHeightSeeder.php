@@ -73,6 +73,11 @@ class ParkingBeachHeightSeeder extends Seeder
                     'hu' => ['name' => 'Nincs parkoló', 'slug' => 'nincs-parkolo'],
                     'bg' => ['name' => 'Без паркинг', 'slug' => 'bez-parking'],
                     'sk' => ['name' => 'Bez parkovania', 'slug' => 'bez-parkovania'],
+                    'da' => ['name' => 'Ingen parkering', 'slug' => 'ingen-parkering'],
+                    'pt' => ['name' => 'Sem estacionamento', 'slug' => 'sem-estacionamento'],
+                    'nl' => ['name' => 'Geen parkeren', 'slug' => 'geen-parkeren'],
+                    'el' => ['name' => 'Χωρίς στάθμευση', 'slug' => 'choris-stathmeysi'],
+                    'sq' => ['name' => 'Pa parkim', 'slug' => 'pa-parkim'],
 
                 ];
             } else {
@@ -92,6 +97,11 @@ class ParkingBeachHeightSeeder extends Seeder
                     'hu' => ['name' => $displayName, 'slug' => $slug],
                     'bg' => ['name' => str_replace('m', 'м', $displayName), 'slug' => $slug],
                     'sk' => ['name' => $displayName, 'slug' => $slug],
+                    'da' => ['name' => $displayName, 'slug' => $slug],
+                    'pt' => ['name' => $displayName, 'slug' => $slug],
+                    'nl' => ['name' => $displayName, 'slug' => $slug],
+                    'el' => ['name' => str_replace('m', 'μ', $displayName), 'slug' => $slug],
+                    'sq' => ['name' => $displayName, 'slug' => $slug],
 
                 ];
             }

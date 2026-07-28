@@ -21,7 +21,7 @@
 **Agent Solution**: Conversational beach discovery that understands intent
 - Natural language queries instead of complex filter forms
 - Personalized recommendations based on user preferences and constraints
-- Multi-language support (14 languages) with localized insights
+- Multi-language support (19 languages) with localized insights
 - Aggregated information (weather, facilities, accessibility) in one response
 - Context-aware suggestions based on location, season, travel party
 
@@ -147,7 +147,7 @@
 
 ### 2.7 Multi-Language Support
 
-**Capability**: Respond in user's preferred language (14 locales)
+**Capability**: Respond in user's preferred language (19 locales)
 
 **Examples**:
 - ✅ "Pokaži mi plaže v Piranu" (Slovenian)
@@ -214,7 +214,7 @@
 - ✅ All active beaches (status_id = 1) with full details
 - ✅ Geographic entities (continents, countries, regions, islands, cities)
 - ✅ Reference data (beach types, facilities, activities, badges)
-- ✅ Translations for all entities in all 14 locales
+- ✅ Translations for all entities in all 19 locales
 - ✅ Media (images, videos, 360° tours) for active beaches
 - ✅ Current weather data (via OpenWeatherMap API)
 - ✅ Beach navigation relationships (prev/next beaches)
@@ -495,7 +495,7 @@ No Data: "I don't have information about jellyfish presence at this beach"
   - Map view with spatial queries
   - Weather data (current + 3-day forecast)
   - 20 results per query
-  - All 14 languages
+  - All 19 languages
   - Beach comparisons (up to 3 beaches)
   - 360° virtual tours
 - **Target**: Frequent travelers, vacation planners
@@ -619,7 +619,7 @@ No Data: "I don't have information about jellyfish presence at this beach"
 
 **Product Metrics**:
 - **Feature Adoption**: % of users using advanced features (map, comparisons, itineraries)
-- **Language Distribution**: Usage across 14 locales (identify growth opportunities)
+- **Language Distribution**: Usage across 19 locales (identify growth opportunities)
 - **Filter Usage**: Most-used filters (inform product roadmap)
 - **Beach Coverage**: % of beaches in database that get queried (target: >60%)
 

@@ -10617,7 +10617,7 @@
                 "description": "Translation for an accessibility option",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -10678,7 +10678,7 @@
                 "description": "Translation for an accommodation type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -10739,7 +10739,7 @@
                 "description": "Translation for an area description",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -11053,7 +11053,7 @@
                 "description": "Translation for a bay length",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -11918,7 +11918,7 @@
                 "description": "Translation for a beach inclination",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -12542,7 +12542,7 @@
                 "description": "Translation for a beach type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13024,7 +13024,7 @@
                 "description": "Translation for a culinary offer",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13333,7 +13333,7 @@
                 "description": "Translation for a location infrastructure type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13394,7 +13394,7 @@
                 "description": "Translation for a location length",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13618,7 +13618,7 @@
                 "description": "Translation for a natural location condition",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13810,7 +13810,7 @@
                 "description": "Translation for an occupancy rate",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13871,7 +13871,7 @@
                 "description": "Translation for a parking beach distance",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13932,7 +13932,7 @@
                 "description": "Translation for a parking beach height",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -13993,7 +13993,7 @@
                 "description": "Translation for a parking capacity",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14257,7 +14257,7 @@
                 "description": "Translation for a recommended transport type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14430,7 +14430,7 @@
                 "description": "Translation for a road to parking type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14712,7 +14712,7 @@
                 "description": "Translation for a sporting activity",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14773,7 +14773,7 @@
                 "description": "Translation for a swimming depth",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14847,7 +14847,7 @@
                 "description": "Translation for an underwater characteristic",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14926,7 +14926,7 @@
                 "description": "Translation for a user type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -14997,7 +14997,7 @@
                 "description": "Translation for a waterbody type",
                 "properties": {
                     "locale": {
-                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk)",
+                        "description": "Language code (en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq)",
                         "type": "string",
                         "example": "en"
                     },
@@ -15078,7 +15078,12 @@
                         "cs",
                         "hu",
                         "bg",
-                        "sk"
+                        "sk",
+                        "da",
+                        "pt",
+                        "nl",
+                        "el",
+                        "sq"
                     ],
                     "example": "en"
                 }

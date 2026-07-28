@@ -24,6 +24,11 @@ class RegionFilterTitleSeeder extends Seeder
             'hu' => 'Régió',
             'bg' => 'Регион',
             'sk' => 'Región',
+            'da' => 'Region',
+            'pt' => 'Região',
+            'nl' => 'Regio',
+            'el' => 'Περιοχή',
+            'sq' => 'Rajoni',
         ];
 
         foreach ($filterTitles as $locale => $title) {
