@@ -1836,6 +1836,63 @@
                 }
             }
         },
+        "/api/v1/beaches/footer": {
+            "get": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "List most visited beaches for the footer",
+                "description": "Returns the 6 most visited beaches (by beach_views counter) with only the fields needed to render footer links: localized name, slug, and location slugs for URL building. Active beaches only. Localized by Accept-Language with English fallback.",
+                "operationId": "getBeachesForFooter",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Footer beaches retrieved successfully",
+                        "headers": {
+                            "X-Cache-Status": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Cache-Status"
+                            },
+                            "X-Cache-Key": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Cache-Key"
+                            },
+                            "X-Response-Time": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Response-Time"
+                            },
+                            "X-Locale": {
+                                "$ref": "#/components/responses/CacheHeaders/headers/X-Locale"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachFooter"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Footer beaches retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/beach-details/{identifier}": {
             "get": {
                 "tags": [
@@ -11994,6 +12051,57 @@
                     "order": {
                         "type": "integer",
                         "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "BeachFooter": {
+                "title": "Beach Footer Item",
+                "description": "Lightweight beach entry for the footer 'Most viewed beaches' column. Localized by Accept-Language with English fallback. Includes only the slugs needed to build the beach detail URL.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 793
+                    },
+                    "name": {
+                        "description": "Localized beach name (with English fallback)",
+                        "type": "string",
+                        "example": "Beach Bucanj"
+                    },
+                    "slug": {
+                        "description": "Localized beach slug (with English fallback)",
+                        "type": "string",
+                        "example": "beach-bucanj"
+                    },
+                    "continent_slug": {
+                        "description": "Localized continent slug",
+                        "type": "string",
+                        "example": "europe",
+                        "nullable": true
+                    },
+                    "country_slug": {
+                        "description": "Localized country slug",
+                        "type": "string",
+                        "example": "croatia",
+                        "nullable": true
+                    },
+                    "region_slug": {
+                        "description": "Localized region slug",
+                        "type": "string",
+                        "example": "dalmatia",
+                        "nullable": true
+                    },
+                    "island_slug": {
+                        "description": "Localized island slug",
+                        "type": "string",
+                        "example": "island-hvar",
+                        "nullable": true
+                    },
+                    "city_slug": {
+                        "description": "Localized city slug",
+                        "type": "string",
+                        "example": "split",
+                        "nullable": true
                     }
                 },
                 "type": "object"

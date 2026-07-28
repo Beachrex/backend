@@ -96,6 +96,7 @@ Route::prefix('api/v1')
         Route::get('/beaches/map-bounds', [BeachController::class, 'mapBounds']);
         Route::get('/beaches/filters', [FilterController::class, 'index']);
         Route::get('/beaches/most-visited', [BeachController::class, 'mostVisited']);
+        Route::get('/beaches/footer', [BeachController::class, 'footerMostVisited']);
         Route::get('/beaches', [BeachController::class, 'index']);
         Route::post('/beaches', [BeachController::class, 'store']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);

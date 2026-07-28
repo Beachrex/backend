@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachResource;
+use App\Http\Resources\BeachFooterResource;
 use App\Models\Beach;
 use App\Services\BeachFilterService;
 use App\Services\CacheService;
@@ -568,6 +569,67 @@ class BeachController extends Controller
                 'total' => $data['total'],
                 'limit' => $data['limit'],
             ],
+        ], 200);
+    }
+
+    /**
+     * Get the 6 most visited beaches for the footer.
+     *
+     * Lightweight endpoint: returns only the localized name + the location
+     * slugs needed to build the beach detail URL on the frontend. Ordered by
+     * the beach_views counter (descending), active beaches only. Cached for
+     * 24 hours per locale.
+     *
+     * @OA\Get(
+     *     path="/api/v1/beaches/footer",
+     *     operationId="getBeachesForFooter",
+     *     summary="List most visited beaches for the footer",
+     *     description="Returns the 6 most visited beaches (by beach_views counter) with only the fields needed to render footer links: localized name, slug, and location slugs for URL building. Active beaches only. Localized by Accept-Language with English fallback.",
+     *     tags={"Beaches"},
+     *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Footer beaches retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/BeachFooter")),
+     *             @OA\Property(property="message", type="string", example="Footer beaches retrieved successfully")
+     *         ),
+     *         @OA\Header(header="X-Cache-Status", ref="#/components/responses/CacheHeaders/headers/X-Cache-Status"),
+     *         @OA\Header(header="X-Cache-Key", ref="#/components/responses/CacheHeaders/headers/X-Cache-Key"),
+     *         @OA\Header(header="X-Response-Time", ref="#/components/responses/CacheHeaders/headers/X-Response-Time"),
+     *         @OA\Header(header="X-Locale", ref="#/components/responses/CacheHeaders/headers/X-Locale")
+     *     )
+     * )
+     */
+    public function footerMostVisited()
+    {
+        $locale = app()->getLocale();
+        $cacheKey = "beaches:footer:{$locale}";
+
+        $beaches = $this->cacheRemember($cacheKey, 86400, function () {
+            // Only eager-load translations for the beach + location entities
+            // needed to build the URL — no media, tags, or activities.
+            return Beach::where('status_id', 1)
+                ->with([
+                    'translations',
+                    'continent.translations',
+                    'country.translations',
+                    'region.translations',
+                    'island.translations',
+                    'city.translations',
+                ])
+                ->orderBy('beach_views', 'desc')
+                ->orderBy('id')
+                ->limit(6)
+                ->get();
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => BeachFooterResource::collection($beaches),
+            'message' => 'Footer beaches retrieved successfully',
         ], 200);
     }
 }
