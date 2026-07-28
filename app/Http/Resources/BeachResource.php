@@ -131,6 +131,39 @@ class BeachResource extends JsonResource
             'webcam' => $this->webcam,
         ];
 
+        // Build tags: up to 4 names from sporting activities, culinary offers, natural conditions
+        $tags = collect()
+            ->merge(
+                $this->whenLoaded('sportingActivities', function () use ($locale) {
+                    return $this->sportingActivities->map(function ($item) use ($locale) {
+                        $trans = $item->translations->firstWhere('locale', $locale);
+                        $transEn = $item->translations->firstWhere('locale', 'en');
+                        return $trans?->name ?? $transEn?->name ?? null;
+                    })->filter()->values();
+                }, collect())
+            )
+            ->merge(
+                $this->whenLoaded('culinaryOffers', function () use ($locale) {
+                    return $this->culinaryOffers->map(function ($item) use ($locale) {
+                        $trans = $item->translations->firstWhere('locale', $locale);
+                        $transEn = $item->translations->firstWhere('locale', 'en');
+                        return $trans?->name ?? $transEn?->name ?? null;
+                    })->filter()->values();
+                }, collect())
+            )
+            ->merge(
+                $this->whenLoaded('naturalLocationConditions', function () use ($locale) {
+                    return $this->naturalLocationConditions->map(function ($item) use ($locale) {
+                        $trans = $item->translations->firstWhere('locale', $locale);
+                        $transEn = $item->translations->firstWhere('locale', 'en');
+                        return $trans?->name ?? $transEn?->name ?? null;
+                    })->filter()->values();
+                }, collect())
+            )
+            ->take(4)
+            ->values()
+            ->toArray();
+
         return [
             'id' => $this->id,
             'name' => $translation->name ?? $translationEn->name ?? $this->name,
@@ -149,6 +182,7 @@ class BeachResource extends JsonResource
             'city_slug' => $citySlug,
             'main_image' => $mainImage,
             'media' => $media,
+            'tags' => $tags,
             // 'main_image_imagor' removed - frontend constructs Imagor URLs directly
         ];
     }

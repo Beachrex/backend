@@ -56,6 +56,7 @@ class PostGISService
                 COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 m.file_path as main_image_path,
                 m.disk as main_image_disk,
+                tags.tags_json,
                 ST_Distance(
                     ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
                     ST_Transform(b.location, 3857)
@@ -96,6 +97,31 @@ class PostGISService
                 ORDER BY id
                 LIMIT 1
             ) m ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT json_agg(tag_name) AS tags_json FROM (
+                    SELECT COALESCE(sat.name, sat_en.name) AS tag_name
+                    FROM sporting_activities_beach sab
+                    JOIN sporting_activities sa ON sab.sporting_activities_id = sa.id
+                    LEFT JOIN sporting_activities_translation sat ON sa.id = sat.sporting_activities_id AND sat.locale = ?
+                    LEFT JOIN sporting_activities_translation sat_en ON sa.id = sat_en.sporting_activities_id AND sat_en.locale = 'en'
+                    WHERE sab.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(cot.name, cot_en.name) AS tag_name
+                    FROM culinary_offer_beach cob
+                    JOIN culinary_offer co ON cob.culinary_offer_id = co.id
+                    LEFT JOIN culinary_offer_translation cot ON co.id = cot.culinary_offer_id AND cot.locale = ?
+                    LEFT JOIN culinary_offer_translation cot_en ON co.id = cot_en.culinary_offer_id AND cot_en.locale = 'en'
+                    WHERE cob.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(nlct.name, nlct_en.name) AS tag_name
+                    FROM natural_location_condition_beach nlcb
+                    JOIN natural_location_condition nlc ON nlcb.natural_location_condition_id = nlc.id
+                    LEFT JOIN natural_location_condition_translation nlct ON nlc.id = nlct.natural_location_condition_id AND nlct.locale = ?
+                    LEFT JOIN natural_location_condition_translation nlct_en ON nlc.id = nlct_en.natural_location_condition_id AND nlct_en.locale = 'en'
+                    WHERE nlcb.beach_id = b.id
+                    LIMIT 4
+                ) t WHERE tag_name IS NOT NULL
+            ) tags ON TRUE
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -109,7 +135,7 @@ class PostGISService
             ORDER BY distance_km
             LIMIT ?
         ", array_merge(
-            [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
+            [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
             $filterBindings,
             [$limit]
         ));
@@ -145,6 +171,7 @@ class PostGISService
                 ct.name as country_name,
                 m.file_path as main_image_path,
                 m.disk as main_image_disk,
+                tags.tags_json,
                 ST_Distance(
                     ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
                     ST_Transform(b.location, 3857)
@@ -166,6 +193,31 @@ class PostGISService
                 ORDER BY id
                 LIMIT 1
             ) m ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT json_agg(tag_name) AS tags_json FROM (
+                    SELECT COALESCE(sat.name, sat_en.name) AS tag_name
+                    FROM sporting_activities_beach sab
+                    JOIN sporting_activities sa ON sab.sporting_activities_id = sa.id
+                    LEFT JOIN sporting_activities_translation sat ON sa.id = sat.sporting_activities_id AND sat.locale = ?
+                    LEFT JOIN sporting_activities_translation sat_en ON sa.id = sat_en.sporting_activities_id AND sat_en.locale = 'en'
+                    WHERE sab.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(cot.name, cot_en.name) AS tag_name
+                    FROM culinary_offer_beach cob
+                    JOIN culinary_offer co ON cob.culinary_offer_id = co.id
+                    LEFT JOIN culinary_offer_translation cot ON co.id = cot.culinary_offer_id AND cot.locale = ?
+                    LEFT JOIN culinary_offer_translation cot_en ON co.id = cot_en.culinary_offer_id AND cot_en.locale = 'en'
+                    WHERE cob.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(nlct.name, nlct_en.name) AS tag_name
+                    FROM natural_location_condition_beach nlcb
+                    JOIN natural_location_condition nlc ON nlcb.natural_location_condition_id = nlc.id
+                    LEFT JOIN natural_location_condition_translation nlct ON nlc.id = nlct.natural_location_condition_id AND nlct.locale = ?
+                    LEFT JOIN natural_location_condition_translation nlct_en ON nlc.id = nlct_en.natural_location_condition_id AND nlct_en.locale = 'en'
+                    WHERE nlcb.beach_id = b.id
+                    LIMIT 4
+                ) t WHERE tag_name IS NOT NULL
+            ) tags ON TRUE
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -175,7 +227,7 @@ class PostGISService
                 ST_Transform(b.location, 3857)
             )
             LIMIT ?
-        ", [$longitude, $latitude, $locale, $locale, $longitude, $latitude, $limit]);
+        ", [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $limit]);
 
         return $this->formatBeachResults($results);
     }
@@ -241,7 +293,8 @@ class PostGISService
                 COALESCE(city_t.name, city_t_en.name) as city_name,
                 COALESCE(city_t.slug, city_t_en.slug) as city_slug,
                 m.file_path as main_image_path,
-                m.disk as main_image_disk
+                m.disk as main_image_disk,
+                tags.tags_json
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
             LEFT JOIN beach_translation bt_en ON b.id = bt_en.beach_id AND bt_en.locale = 'en'
@@ -278,6 +331,31 @@ class PostGISService
                 ORDER BY id
                 LIMIT 1
             ) m ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT json_agg(tag_name) AS tags_json FROM (
+                    SELECT COALESCE(sat.name, sat_en.name) AS tag_name
+                    FROM sporting_activities_beach sab
+                    JOIN sporting_activities sa ON sab.sporting_activities_id = sa.id
+                    LEFT JOIN sporting_activities_translation sat ON sa.id = sat.sporting_activities_id AND sat.locale = ?
+                    LEFT JOIN sporting_activities_translation sat_en ON sa.id = sat_en.sporting_activities_id AND sat_en.locale = 'en'
+                    WHERE sab.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(cot.name, cot_en.name) AS tag_name
+                    FROM culinary_offer_beach cob
+                    JOIN culinary_offer co ON cob.culinary_offer_id = co.id
+                    LEFT JOIN culinary_offer_translation cot ON co.id = cot.culinary_offer_id AND cot.locale = ?
+                    LEFT JOIN culinary_offer_translation cot_en ON co.id = cot_en.culinary_offer_id AND cot_en.locale = 'en'
+                    WHERE cob.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(nlct.name, nlct_en.name) AS tag_name
+                    FROM natural_location_condition_beach nlcb
+                    JOIN natural_location_condition nlc ON nlcb.natural_location_condition_id = nlc.id
+                    LEFT JOIN natural_location_condition_translation nlct ON nlc.id = nlct.natural_location_condition_id AND nlct.locale = ?
+                    LEFT JOIN natural_location_condition_translation nlct_en ON nlc.id = nlct_en.natural_location_condition_id AND nlct_en.locale = 'en'
+                    WHERE nlcb.beach_id = b.id
+                    LIMIT 4
+                ) t WHERE tag_name IS NOT NULL
+            ) tags ON TRUE
             WHERE b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND b.status_id = 1
@@ -286,7 +364,7 @@ class PostGISService
               {$filterSql}
             ORDER BY COALESCE(bt.name, bt_en.name)
         ", array_merge(
-            [$locale, $locale, $locale, $locale, $locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
+            [$locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
             $filterBindings
         ));
 
@@ -762,6 +840,7 @@ class PostGISService
                 'city_slug' => $beach->city_slug ?? null,
                 'main_image' => $mainImage,
                 'media' => $media,
+                'tags' => isset($beach->tags_json) ? json_decode($beach->tags_json, true) : [],
                 'distance_km' => $beach->distance_km ?? null,
             ];
         });

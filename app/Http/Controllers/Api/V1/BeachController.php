@@ -213,7 +213,10 @@ class BeachController extends Controller
                               ->orderBy('is_primary', 'desc')
                               ->orderBy('order')
                               ->orderBy('created_at');
-                    }
+                    },
+                    'sportingActivities.translations',
+                    'culinaryOffers.translations',
+                    'naturalLocationConditions.translations',
                 ]);
 
             // Apply filters
@@ -510,7 +513,10 @@ class BeachController extends Controller
                               ->orderBy('is_primary', 'desc')
                               ->orderBy('order')
                               ->orderBy('created_at');
-                    }
+                    },
+                    'sportingActivities.translations',
+                    'culinaryOffers.translations',
+                    'naturalLocationConditions.translations',
                 ]);
 
             // Apply geographic filters

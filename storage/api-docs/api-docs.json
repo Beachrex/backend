@@ -12476,6 +12476,14 @@
                             }
                         },
                         "type": "object"
+                    },
+                    "tags": {
+                        "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions) translated based on Accept-Language header. Empty array if none available.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "Diving"
+                        }
                     }
                 },
                 "type": "object"
@@ -14616,6 +14624,14 @@
                             }
                         },
                         "type": "object"
+                    },
+                    "tags": {
+                        "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions) translated based on Accept-Language header. Empty array if none available.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "Diving"
+                        }
                     },
                     "distance_km": {
                         "description": "Distance from reference point in kilometers (null for bounding-box queries)",

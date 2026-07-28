@@ -65,6 +65,12 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="video_url", type="string", nullable=true, example="https://youtu.be/k_pSc9aWyz0", description="YouTube video URL"),
  *             @OA\Property(property="webcam", type="string", nullable=true, example="<iframe src='...'></iframe>", description="Webcam embed code")
  *         )
+ *     ),
+ *     @OA\Property(
+ *         property="tags",
+ *         type="array",
+ *         description="Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions) translated based on Accept-Language header. Empty array if none available.",
+ *         @OA\Items(type="string", example="Diving")
  *     )
  * )
  */
