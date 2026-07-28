@@ -217,6 +217,7 @@ class BeachController extends Controller
                     'sportingActivities.translations',
                     'culinaryOffers.translations',
                     'naturalLocationConditions.translations',
+                    'occupancyRate.translations',
                 ]);
 
             // Apply filters
@@ -517,6 +518,7 @@ class BeachController extends Controller
                     'sportingActivities.translations',
                     'culinaryOffers.translations',
                     'naturalLocationConditions.translations',
+                    'occupancyRate.translations',
                 ]);
 
             // Apply geographic filters

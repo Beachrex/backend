@@ -119,6 +119,12 @@ class PostGISService
                     LEFT JOIN natural_location_condition_translation nlct ON nlc.id = nlct.natural_location_condition_id AND nlct.locale = ?
                     LEFT JOIN natural_location_condition_translation nlct_en ON nlc.id = nlct_en.natural_location_condition_id AND nlct_en.locale = 'en'
                     WHERE nlcb.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(orct.name, orct_en.name) AS tag_name
+                    FROM occupancy_rate_translation orct
+                    LEFT JOIN occupancy_rate_translation orct_en ON orct_en.occupancy_rate_id = b.occupancy_rate_id AND orct_en.locale = 'en'
+                    WHERE orct.occupancy_rate_id = b.occupancy_rate_id AND orct.locale = ?
+                      AND b.occupancy_rate_id IS NOT NULL
                     LIMIT 4
                 ) t WHERE tag_name IS NOT NULL
             ) tags ON TRUE
@@ -135,7 +141,7 @@ class PostGISService
             ORDER BY distance_km
             LIMIT ?
         ", array_merge(
-            [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
+            [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $radiusKm * 1000],
             $filterBindings,
             [$limit]
         ));
@@ -215,6 +221,12 @@ class PostGISService
                     LEFT JOIN natural_location_condition_translation nlct ON nlc.id = nlct.natural_location_condition_id AND nlct.locale = ?
                     LEFT JOIN natural_location_condition_translation nlct_en ON nlc.id = nlct_en.natural_location_condition_id AND nlct_en.locale = 'en'
                     WHERE nlcb.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(orct.name, orct_en.name) AS tag_name
+                    FROM occupancy_rate_translation orct
+                    LEFT JOIN occupancy_rate_translation orct_en ON orct_en.occupancy_rate_id = b.occupancy_rate_id AND orct_en.locale = 'en'
+                    WHERE orct.occupancy_rate_id = b.occupancy_rate_id AND orct.locale = ?
+                      AND b.occupancy_rate_id IS NOT NULL
                     LIMIT 4
                 ) t WHERE tag_name IS NOT NULL
             ) tags ON TRUE
@@ -227,7 +239,7 @@ class PostGISService
                 ST_Transform(b.location, 3857)
             )
             LIMIT ?
-        ", [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $limit]);
+        ", [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $limit]);
 
         return $this->formatBeachResults($results);
     }
@@ -353,6 +365,12 @@ class PostGISService
                     LEFT JOIN natural_location_condition_translation nlct ON nlc.id = nlct.natural_location_condition_id AND nlct.locale = ?
                     LEFT JOIN natural_location_condition_translation nlct_en ON nlc.id = nlct_en.natural_location_condition_id AND nlct_en.locale = 'en'
                     WHERE nlcb.beach_id = b.id
+                    UNION ALL
+                    SELECT COALESCE(orct.name, orct_en.name) AS tag_name
+                    FROM occupancy_rate_translation orct
+                    LEFT JOIN occupancy_rate_translation orct_en ON orct_en.occupancy_rate_id = b.occupancy_rate_id AND orct_en.locale = 'en'
+                    WHERE orct.occupancy_rate_id = b.occupancy_rate_id AND orct.locale = ?
+                      AND b.occupancy_rate_id IS NOT NULL
                     LIMIT 4
                 ) t WHERE tag_name IS NOT NULL
             ) tags ON TRUE
@@ -364,7 +382,7 @@ class PostGISService
               {$filterSql}
             ORDER BY COALESCE(bt.name, bt_en.name)
         ", array_merge(
-            [$locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
+            [$locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $locale, $minLat, $maxLat, $minLon, $maxLon],
             $filterBindings
         ));
 

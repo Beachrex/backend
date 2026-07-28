@@ -160,6 +160,15 @@ class BeachResource extends JsonResource
                     })->filter()->values();
                 }, collect())
             )
+            ->merge(
+                $this->whenLoaded('occupancyRate', function () use ($locale) {
+                    if (!$this->occupancyRate) return collect();
+                    $trans = $this->occupancyRate->translations->firstWhere('locale', $locale);
+                    $transEn = $this->occupancyRate->translations->firstWhere('locale', 'en');
+                    $name = $trans?->name ?? $transEn?->name ?? null;
+                    return $name ? collect([$name]) : collect();
+                }, collect())
+            )
             ->take(4)
             ->values()
             ->toArray();

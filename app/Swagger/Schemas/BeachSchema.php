@@ -69,7 +69,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(
  *         property="tags",
  *         type="array",
- *         description="Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions) translated based on Accept-Language header. Empty array if none available.",
+ *         description="Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions, occupancy rate) translated based on Accept-Language header. Empty array if none available.",
  *         @OA\Items(type="string", example="Diving")
  *     )
  * )

@@ -12478,7 +12478,7 @@
                         "type": "object"
                     },
                     "tags": {
-                        "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions) translated based on Accept-Language header. Empty array if none available.",
+                        "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions, occupancy rate) translated based on Accept-Language header. Empty array if none available.",
                         "type": "array",
                         "items": {
                             "type": "string",
@@ -14626,7 +14626,7 @@
                         "type": "object"
                     },
                     "tags": {
-                        "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions) translated based on Accept-Language header. Empty array if none available.",
+                        "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions, occupancy rate) translated based on Accept-Language header. Empty array if none available.",
                         "type": "array",
                         "items": {
                             "type": "string",
