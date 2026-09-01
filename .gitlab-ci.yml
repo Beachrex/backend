@@ -6,17 +6,16 @@
 # Required GitLab CI/CD Variables (Settings → CI/CD → Variables):
 #   VPS_HOST             — e.g. 2.28.76.142
 #   VPS_USER             — beachrex
-#   VPS_SSH_PRIVATE_KEY  — private SSH key (ed25519) for the VPS user
-#   ENV_DEV_API          — full contents of .env.dev  (secrets included)
-#   ENV_UAT_API          — full contents of .env.uat  (secrets included)
-#   ENV_PROD_API         — full contents of .env.prod (secrets included)
+#   VPS_SSH_PRIVATE_KEY  — base64-encoded private SSH key for the VPS user
+#
+# .env files are stored ONLY on the server (/opt/beachrex/envs/.env.{dev,uat,prod})
+# and are NOT synced from GitLab. Update them directly on the VPS when needed.
 
 stages:
   - test
   - deploy
 
 variables:
-  # Suppress interactive prompts
   COMPOSE_FILE: deploy/docker-compose.vps.yml
 
 # ───────────────────────── TEST ─────────────────────────
@@ -47,7 +46,7 @@ variables:
     - chmod 600 ~/.ssh/id_ed25519
     - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
   script:
-    # 1. Sync code to VPS
+    # 1. Sync code to VPS (excluding .env — it stays on the server)
     - rsync -az --delete
         --exclude '.git' --exclude 'node_modules' --exclude 'vendor'
         --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*'
@@ -56,11 +55,7 @@ variables:
         ./ "$VPS_USER@$VPS_HOST:/opt/beachrex/api/"
     # 2. Sync deploy/ directory (compose + nginx configs)
     - rsync -az --delete deploy/ "$VPS_USER@$VPS_HOST:/opt/beachrex/deploy/"
-    # 3. Write .env from GitLab variable (base64-decoded)
-    - echo "$ENV_FILE" | base64 -d > /tmp/.env.${ENV_NAME}
-    - scp /tmp/.env.${ENV_NAME} "$VPS_USER@$VPS_HOST:/opt/beachrex/envs/.env.${ENV_NAME}"
-    - rm -f /tmp/.env.${ENV_NAME}
-    # 4. Build, migrate and start on VPS
+    # 3. Build, migrate and start on VPS (uses existing .env on server)
     - ssh "$VPS_USER@$VPS_HOST" "
         set -euo pipefail
         cd /opt/beachrex/deploy
@@ -77,7 +72,7 @@ variables:
         docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} exec -T \${API_SVC} php artisan search:index || true
         echo 'Deploy of '\${ENV_NAME}' complete.'
       "
-    # 5. Reload host Nginx
+    # 4. Reload host Nginx
     - ssh "$VPS_USER@$VPS_HOST" "sudo systemctl reload nginx"
 
 # ───────────── JOBS PER BRANCH ─────────────
@@ -88,7 +83,6 @@ deploy:dev:
   <<: *deploy-template
   variables:
     ENV_NAME: dev
-    ENV_FILE: $ENV_DEV_API
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
 
@@ -96,7 +90,6 @@ deploy:uat:
   <<: *deploy-template
   variables:
     ENV_NAME: uat
-    ENV_FILE: $ENV_UAT_API
   rules:
     - if: $CI_COMMIT_BRANCH == "uat"
 
@@ -104,7 +97,6 @@ deploy:prod:
   <<: *deploy-template
   variables:
     ENV_NAME: prod
-    ENV_FILE: $ENV_PROD_API
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   when: manual  # Require manual click for production
