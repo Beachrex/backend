@@ -70,6 +70,19 @@ variables:
     - if: $CI_COMMIT_BRANCH =~ /^(dev|uat|main)$/
 
 # ───────────────────────── DEPLOY ─────────────────────────
+# Required GitLab CI/CD Variables (Settings → CI/CD → Variables):
+#   VPS_HOST             — e.g. 2.28.76.142
+#   VPS_USER             — beachrex
+#   VPS_SSH_PRIVATE_KEY  — ed25519 private key (Type: File, NOT Variable)
+#                          Create the key with:
+#                          ssh-keygen -t ed25519 -f id_ed25519_gitlab_ci -C "gitlab-ci-deploy@beachrex"
+#                          Paste the FULL contents of id_ed25519_gitlab_ci
+#                          (including -----BEGIN/END----- lines) into the
+#                          GitLab variable value field. Set Type = File.
+#
+# .env files are stored ONLY on the server (/opt/beachrex/envs/.env.{dev,uat,prod})
+# and are NOT synced from GitLab. Update them directly on the VPS when needed.
+
 .deploy-template: &deploy-template
   stage: deploy
   image: alpine:3.20
@@ -77,7 +90,7 @@ variables:
   before_script:
     - apk add --no-cache openssh-client rsync
     - mkdir -p ~/.ssh
-    - echo "$VPS_SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_ed25519
+    - cp "$VPS_SSH_PRIVATE_KEY" ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519
     - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
   script:
