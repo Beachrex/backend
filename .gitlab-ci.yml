@@ -1,0 +1,110 @@
+# BeachRex API — GitLab CI/CD
+# Auto-deploys the Laravel backend to the Hetzner VPS on push to dev/uat/main.
+# The VPS runs docker-compose.vps.yml (in /opt/beachrex/deploy/) which references
+# ../api/ and ../front/ directories.
+#
+# Required GitLab CI/CD Variables (Settings → CI/CD → Variables):
+#   VPS_HOST             — e.g. 2.28.76.142
+#   VPS_USER             — beachrex
+#   VPS_SSH_PRIVATE_KEY  — private SSH key (ed25519) for the VPS user
+#   ENV_DEV_API          — full contents of .env.dev  (secrets included)
+#   ENV_UAT_API          — full contents of .env.uat  (secrets included)
+#   ENV_PROD_API         — full contents of .env.prod (secrets included)
+
+stages:
+  - test
+  - deploy
+
+variables:
+  # Suppress interactive prompts
+  COMPOSE_FILE: deploy/docker-compose.vps.yml
+
+# ───────────────────────── TEST ─────────────────────────
+.test-template: &test-template
+  stage: test
+  image: php:8.4-cli
+  before_script:
+    - apt-get update -y && apt-get install -y --no-install-recommends libpq-dev libzip-dev unzip git
+    - docker-php-ext-install pdo_pgsql zip pcntl
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer
+  script:
+    - composer install --no-interaction --prefer-dist
+    - cp .env.example .env
+    - php artisan key:generate --ansi
+    - php artisan test --without-tty
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(dev|uat|main)$/
+
+# ───────────────────────── DEPLOY ─────────────────────────
+.deploy-template: &deploy-template
+  stage: deploy
+  image: alpine:3.20
+  needs: [test]
+  before_script:
+    - apk add --no-cache openssh-client rsync
+    - mkdir -p ~/.ssh
+    - echo "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    # 1. Sync code to VPS
+    - rsync -az --delete
+        --exclude '.git' --exclude 'node_modules' --exclude 'vendor'
+        --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*'
+        --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*'
+        --exclude 'database/database.sqlite' --exclude '.env'
+        ./ "$VPS_USER@$VPS_HOST:/opt/beachrex/api/"
+    # 2. Sync deploy/ directory (compose + nginx configs)
+    - rsync -az --delete deploy/ "$VPS_USER@$VPS_HOST:/opt/beachrex/deploy/"
+    # 3. Write .env from GitLab variable
+    - echo "$ENV_FILE" > /tmp/.env.${ENV_NAME}
+    - scp /tmp/.env.${ENV_NAME} "$VPS_USER@$VPS_HOST:/opt/beachrex/envs/.env.${ENV_NAME}"
+    - rm -f /tmp/.env.${ENV_NAME}
+    # 4. Build, migrate and start on VPS
+    - ssh "$VPS_USER@$VPS_HOST" "
+        set -euo pipefail
+        cd /opt/beachrex/deploy
+        export ENV_NAME=${ENV_NAME}
+        export API_SVC=api_${ENV_NAME}
+        export WEB_SVC=web_${ENV_NAME}
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} build \${API_SVC}
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} up -d pgsql redis
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} up -d --force-recreate \${WEB_SVC}
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} exec -T \${API_SVC} php artisan migrate --force
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} exec -T \${API_SVC} php artisan config:cache
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} exec -T \${API_SVC} php artisan route:cache
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} exec -T \${API_SVC} php artisan cache:clear
+        docker compose --env-file /opt/beachrex/envs/.env.\${ENV_NAME} exec -T \${API_SVC} php artisan search:index || true
+        echo 'Deploy of '\${ENV_NAME}' complete.'
+      "
+    # 5. Reload host Nginx
+    - ssh "$VPS_USER@$VPS_HOST" "sudo systemctl reload nginx"
+
+# ───────────── JOBS PER BRANCH ─────────────
+test:
+  <<: *test-template
+
+deploy:dev:
+  <<: *deploy-template
+  variables:
+    ENV_NAME: dev
+    ENV_FILE: $ENV_DEV_API
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+deploy:uat:
+  <<: *deploy-template
+  variables:
+    ENV_NAME: uat
+    ENV_FILE: $ENV_UAT_API
+  rules:
+    - if: $CI_COMMIT_BRANCH == "uat"
+
+deploy:prod:
+  <<: *deploy-template
+  variables:
+    ENV_NAME: prod
+    ENV_FILE: $ENV_PROD_API
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual  # Require manual click for production
