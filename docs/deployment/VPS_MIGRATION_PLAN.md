@@ -3,21 +3,40 @@
 > **Cilj:** Migracija celotne BeachRex infrastrukture (Frontend z Vercela, Backend z Laravel Clouda) na lasten Hetzner VPS strežnik.
 
 **Datum:** 2026-09-01
-**Status:** Osnutek načrta
-**Ciljni strežnik:** Hetzner CX33 (4 vCPU, 8 GB RAM, 80 GB SSD)
+**Status:** ✅ UAT in DEV okolje postavljena in delujeta (PROD sledi)
+**Ciljni strežnik:** Hetzner CX33 (4 vCPU, 8 GB RAM, 80 GB SSD) — `2.28.76.142`
 
 ---
 
 ## 0. Povzetek trenutnega stanja
 
+### Postavljena okolja (2026-09-01)
+
+| Okolje | API | Frontend | SSL | Baza | Status |
+|--------|-----|----------|-----|------|--------|
+| **UAT** | `https://uat-api.beachrex.com` | `https://uat.beachrex.com` | ✅ | `beachrex_uat` (3.774 plaž, 42.359 medijev) | ✅ Deluje |
+| **DEV** | `https://dev-api.beachrex.com` | `https://dev.beachrex.com` | ✅ | `beachrex_dev` (3.774 plaž, 42.359 medijev) | ✅ Deluje |
+| **PROD** | `https://api.beachrex.com` | `https://beachrex.com` | čaka | `beachrex_prod` (prazna) | čaka DNS + migracijo |
+
+### Izvedena dela
+- ✅ Provisioning VPS (Ubuntu 26.04, Docker 29.7.2, Compose v5.5.0, Nginx 1.28.3, UFW, swap 4GB)
+- ✅ SSL certifikati (Certbot) za uat-api, uat, dev-api, dev (veljavnost do 2026-11-30)
+- ✅ PostgreSQL 15 + PostGIS 3.4 (3 baze: prod/uat/dev), Redis (3 logični DB-ji)
+- ✅ `pg_dump` iz Laravel Clouda (PG17, 337 MB) → restore v `beachrex_uat` in `beachrex_dev`
+- ✅ Meilisearch reindex (uat_ / dev_ prefix)
+- ✅ GitLab CI/CD (`.gitlab-ci.yml`) za BR-api2 in Front/beachrex
+- ✅ Deploy SSH ključ (`id_ed25519_gitlab_ci`) na VPS
+
+### Komponente
+
 | Komponenta | Trenutna lokacija | Tehnologija |
 |------------|-------------------|-------------|
-| Frontend | Vercel | Next.js 14, TypeScript, React 18, next-intl (14 jezikov), TanStack Query, Leaflet |
-| Backend API | Laravel Cloud | Laravel 12, PHP 8.4, Filament 3 admin, Scout, Stripe, OpenAI, Socialite |
-| Baza | Laravel Cloud (upravljan PostgreSQL) | PostgreSQL 15 + PostGIS 3.4 |
+| Frontend | Vercel (čaka preklop) | Next.js 14, TypeScript, React 18, next-intl (14 jezikov), TanStack Query, Leaflet |
+| Backend API | Laravel Cloud (čaka preklop) | Laravel 12, PHP 8.4, Filament 3 admin, Scout, Stripe, OpenAI, Socialite |
+| Baza | Laravel Cloud (upravljan PostgreSQL 17) | PostgreSQL 15 + PostGIS 3.4 (na VPS) |
 | Iskalnik | Namenski Hetzner CPX22 | Meilisearch na `https://search.beachrex.com` (obdržimo) |
 | Statična hramba/slike | DigitalOcean Spaces | S3 + CDN (`s3.beachrex.com`, `beachrex.fra1.digitaloceanspaces.com`) (obdržimo) |
-| Cache/Queue | Laravel Cloud | Redis |
+| Cache/Queue | VPS (Redis Alpine) | Redis (logični DB-ji: prod=0, uat=1, dev=2) |
 
 **Obstoječa `docker-compose.yml`** (Laravel Sail) uporablja:
 - `sail-8.4/app` image (PHP 8.4, build iz `vendor/laravel/sail/runtimes/8.4`)
