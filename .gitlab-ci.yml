@@ -23,8 +23,9 @@ variables:
   stage: test
   image: php:8.4-cli
   before_script:
-    - apt-get update -y && apt-get install -y --no-install-recommends libpq-dev libzip-dev unzip git
-    - docker-php-ext-install pdo_pgsql zip pcntl
+    - apt-get update -y && apt-get install -y --no-install-recommends libpq-dev libzip-dev unzip git libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libonig-dev
+    - docker-php-ext-configure gd --with-freetype --with-jpeg
+    - docker-php-ext-install -j"$(nproc)" pdo_pgsql zip pcntl intl gd bcmath
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer
   script:
     - composer install --no-interaction --prefer-dist
