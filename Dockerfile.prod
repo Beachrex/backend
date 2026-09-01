@@ -50,8 +50,14 @@ RUN { \
 
 WORKDIR /var/www/html
 
-# Copy app (composer install + artisan optimize done at runtime via CI entrypoint)
+# Copy app and install deps AT BUILD TIME (production-correct)
 COPY --chown=www-data:www-data . .
+
+# Remove stale bootstrap cache that references dev-only providers (e.g. Pail)
+RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/compiled.php
+
+# Install composer deps (no-dev: pail/collision/etc excluded → no missing providers)
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Permissions for Laravel storage
 RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
