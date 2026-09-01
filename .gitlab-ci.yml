@@ -22,8 +22,18 @@ variables:
 .test-template: &test-template
   stage: test
   image: php:8.4-cli
+  services:
+    - name: postgis/postgis:15-3.4
+      alias: pgsql
+      variables:
+        POSTGRES_USER: sail
+        POSTGRES_PASSWORD: password
+        POSTGRES_DB: beachrex_test
+  variables:
+    # Don't clone whole repo for test job
+    GIT_DEPTH: 20
   before_script:
-    - apt-get update -y && apt-get install -y --no-install-recommends libpq-dev libzip-dev unzip git libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libonig-dev
+    - apt-get update -y && apt-get install -y --no-install-recommends libpq-dev libzip-dev unzip git libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libonig-dev postgresql-client
     - docker-php-ext-configure gd --with-freetype --with-jpeg
     - docker-php-ext-install -j"$(nproc)" pdo_pgsql zip pcntl intl gd bcmath
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer
@@ -31,6 +41,10 @@ variables:
     - composer install --no-interaction --prefer-dist
     - cp .env.example .env
     - php artisan key:generate --ansi
+    # Enable PostGIS + spatial functions in the test database
+    - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+    - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
+    - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -f database/postgis/init-postgis.sql || true
     - php artisan test --without-tty
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^(dev|uat|main)$/
