@@ -48,8 +48,10 @@ variables:
     - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
     - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -f database/postgis/init-postgis.sql || true
     - |
+      set +e
       php artisan test --without-tty 2>&1 | tee /tmp/test-output.txt
-      EXIT_CODE=$?
+      EXIT_CODE=${PIPESTATUS[0]}
+      set -e
       if [ $EXIT_CODE -eq 0 ]; then
         exit 0
       fi
