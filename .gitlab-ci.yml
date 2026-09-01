@@ -43,7 +43,7 @@ variables:
   before_script:
     - apk add --no-cache openssh-client rsync
     - mkdir -p ~/.ssh
-    - echo "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - echo "$VPS_SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519
     - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
   script:
@@ -56,8 +56,8 @@ variables:
         ./ "$VPS_USER@$VPS_HOST:/opt/beachrex/api/"
     # 2. Sync deploy/ directory (compose + nginx configs)
     - rsync -az --delete deploy/ "$VPS_USER@$VPS_HOST:/opt/beachrex/deploy/"
-    # 3. Write .env from GitLab variable
-    - echo "$ENV_FILE" > /tmp/.env.${ENV_NAME}
+    # 3. Write .env from GitLab variable (base64-decoded)
+    - echo "$ENV_FILE" | base64 -d > /tmp/.env.${ENV_NAME}
     - scp /tmp/.env.${ENV_NAME} "$VPS_USER@$VPS_HOST:/opt/beachrex/envs/.env.${ENV_NAME}"
     - rm -f /tmp/.env.${ENV_NAME}
     # 4. Build, migrate and start on VPS
