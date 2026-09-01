@@ -1,0 +1,61 @@
+# BeachRex API — Production Dockerfile (PHP 8.4 FPM)
+# Based on the Laravel Sail 8.4 runtime extension list, trimmed for production.
+# Used by deploy/docker-compose.vps.yml for api_prod / api_stage / api_dev.
+
+FROM php:8.4-fpm-alpine
+
+LABEL maintainer="BeachRex Ops"
+
+# System deps + PHP extension build deps
+RUN apk add --no-cache \
+        bash git unzip curl \
+        libpq-dev postgresql-dev \
+        libzip-dev zlib-dev \
+        libpng-dev libjpeg-turbo-dev freetype-dev \
+        icu-dev \
+        oniguruma-dev \
+        imagemagick imagemagick-dev \
+        librdkafka-dev \
+        supervisor \
+        nginx \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        pdo_pgsql pgsql \
+        gd \
+        zip \
+        intl \
+        bcmath \
+        pcntl \
+        opcache \
+        soap \
+    && pecl install redis igbinary imagick \
+    && docker-php-ext-enable redis igbinary imagick opcache
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Production PHP config
+RUN { \
+        echo "memory_limit=256M"; \
+        echo "upload_max_filesize=25M"; \
+        echo "post_max_size=25M"; \
+        echo "max_execution_time=60"; \
+        echo "opcache.enable=1"; \
+        echo "opcache.memory_consumption=128"; \
+        echo "opcache.max_accelerated_files=20000"; \
+        echo "opcache.validate_timestamps=0"; \
+        echo "opcache.revalidate_freq=0"; \
+    } > /usr/local/etc/php/conf.d/zz-beachrex-prod.ini
+
+WORKDIR /var/www/html
+
+# Copy app (composer install + artisan optimize done at runtime via CI entrypoint)
+COPY --chown=www-data:www-data . .
+
+# Permissions for Laravel storage
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+USER www-data
+
+EXPOSE 9000

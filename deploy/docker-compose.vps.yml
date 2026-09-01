@@ -1,0 +1,194 @@
+# BeachRex VPS — Docker Compose for Hetzner CX33 (4 vCPU / 8 GB RAM)
+# Hosts 3 environments (prod / uat / dev) on a single server.
+#
+# This file is NOT used for local development — local dev keeps using
+# BR-api2/docker-compose.yml (Laravel Sail) + docker-compose.override.yml.
+#
+# Layout on the server:
+#   /opt/beachrex/
+#   ├── deploy/docker-compose.vps.yml   (this file)
+#   ├── envs/.env.{prod,uat,dev}        (API envs, NEVER in git)
+#   ├── envs/.env.front.{prod,uat,dev}
+#   ├── api/   (BR-api2 clone)
+#   └── front/ (Front/beachrex clone)
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.vps.yml --env-file envs/.env.prod up -d
+#
+# Internal ports (NOT exposed publicly; host Nginx proxies 80/443):
+#   prod:  nginx 8081 | front 3001 | redis DB 0 | pgsql beachrex_prod
+#   uat:   nginx 8082 | front 3002 | redis DB 1 | pgsql beachrex_uat
+#   dev:   nginx 8083 | front 3003 | redis DB 2 | pgsql beachrex_dev
+
+services:
+  # ===================== SHARED DATA SERVICES =====================
+  pgsql:
+    image: postgis/postgis:15-3.4
+    restart: unless-stopped
+    env_file: [envs/.env.prod]
+    environment:
+      POSTGRES_DB: beachrex_prod
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+      - ../api/database/postgis/init-postgis-multi.sql:/docker-entrypoint-initdb.d/20-init-postgis.sql:ro
+    networks: [net_prod, net_uat, net_dev]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-U", "${DB_USERNAME}"]
+      retries: 5
+      timeout: 5s
+      interval: 10s
+    # No published ports — only reachable from inside Docker networks
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    command: redis-server --databases 16 --save 60 1 --loglevel warning
+    volumes: [redis-data:/data]
+    networks: [net_prod, net_uat, net_dev]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      retries: 3
+      timeout: 5s
+      interval: 10s
+
+  # ===================== PRODUCTION =====================
+  api_prod:
+    build:
+      context: ../api
+      dockerfile: Dockerfile.prod
+    image: beachrex/api:prod
+    restart: unless-stopped
+    env_file: [envs/.env.prod]
+    environment:
+      DB_DATABASE: beachrex_prod
+      REDIS_DB: "0"
+      APP_ENV: production
+    volumes:
+      - api-storage-prod:/var/www/html/storage
+    networks: [net_prod]
+    depends_on:
+      pgsql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web_prod:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/api.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../api/public:/var/www/html/public:ro
+      - api-storage-prod:/var/www/html/storage:ro
+    networks: [net_prod]
+    depends_on: [api_prod]
+    # Port exposed to host Nginx reverse-proxy
+    ports: ["127.0.0.1:8081:80"]
+
+  front_prod:
+    build:
+      context: ../front
+      dockerfile: Dockerfile.prod
+    image: beachrex/front:prod
+    restart: unless-stopped
+    env_file: [envs/.env.front.prod]
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+    networks: [net_prod]
+    ports: ["127.0.0.1:3001:3001"]
+
+  # ===================== UAT =====================
+  api_uat:
+    build:
+      context: ../api
+      dockerfile: Dockerfile.prod
+    image: beachrex/api:uat
+    restart: unless-stopped
+    env_file: [envs/.env.uat]
+    environment:
+      DB_DATABASE: beachrex_uat
+      REDIS_DB: "1"
+      APP_ENV: production
+    volumes:
+      - api-storage-uat:/var/www/html/storage
+    networks: [net_uat]
+    depends_on:
+      pgsql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web_uat:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/api.uat.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../api/public:/var/www/html/public:ro
+      - api-storage-uat:/var/www/html/storage:ro
+    networks: [net_uat]
+    depends_on: [api_uat]
+    ports: ["127.0.0.1:8082:80"]
+
+  front_uat:
+    build:
+      context: ../front
+      dockerfile: Dockerfile.prod
+    image: beachrex/front:uat
+    restart: unless-stopped
+    env_file: [envs/.env.front.uat]
+    environment:
+      NODE_ENV: production
+      PORT: "3002"
+    networks: [net_uat]
+    ports: ["127.0.0.1:3002:3002"]
+
+  # ===================== DEV =====================
+  api_dev:
+    build:
+      context: ../api
+      dockerfile: Dockerfile.prod
+    image: beachrex/api:dev
+    restart: unless-stopped
+    env_file: [envs/.env.dev]
+    environment:
+      DB_DATABASE: beachrex_dev
+      REDIS_DB: "2"
+      APP_ENV: local
+    volumes:
+      - api-storage-dev:/var/www/html/storage
+    networks: [net_dev]
+    depends_on:
+      pgsql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web_dev:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/api.dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../api/public:/var/www/html/public:ro
+      - api-storage-dev:/var/www/html/storage:ro
+    networks: [net_dev]
+    depends_on: [api_dev]
+    ports: ["127.0.0.1:8083:80"]
+
+  front_dev:
+    build:
+      context: ../front
+      dockerfile: Dockerfile.prod
+    image: beachrex/front:dev
+    restart: unless-stopped
+    env_file: [envs/.env.front.dev]
+    environment:
+      NODE_ENV: development
+      PORT: "3003"
+    networks: [net_dev]
+    ports: ["127.0.0.1:3003:3003"]
+
+networks:
+  net_prod:  { driver: bridge }
+  net_uat:   { driver: bridge }
+  net_dev:   { driver: bridge }
+
+volumes:
+  pgsql-data:       { driver: local }
+  redis-data:       { driver: local }
+  api-storage-prod: { driver: local }
+  api-storage-uat:  { driver: local }
+  api-storage-dev:  { driver: local }

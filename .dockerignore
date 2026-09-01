@@ -1,0 +1,18 @@
+# Build context exclusions for BR-api2 Dockerfile.prod
+vendor
+.git
+node_modules
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/public/*
+database/database.sqlite
+*.log
+.env
+.env.*
+!.env.example
+test_results.txt
+my_report.txt
+find_variable_issues.sh
+fix-duplicate-slugs.sh
