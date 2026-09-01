@@ -41,6 +41,8 @@ variables:
     - composer install --no-interaction --prefer-dist
     - cp .env.example .env
     - php artisan key:generate --ansi
+    # Raise PHP memory limit for test suite + post-test cleanup
+    - echo 'memory_limit=512M' > /usr/local/etc/php/conf.d/memory-limit.ini
     # Enable PostGIS + spatial functions in the test database
     - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
     - PGPASSWORD=password psql -h pgsql -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
