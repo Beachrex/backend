@@ -1,23 +1,24 @@
 # BeachRex API — Production Dockerfile (PHP 8.4 FPM)
-# Based on the Laravel Sail 8.4 runtime extension list, trimmed for production.
+# Based on Debian bookworm (more reliable for imagick/pecl than Alpine).
 # Used by deploy/docker-compose.vps.yml for api_prod / api_stage / api_dev.
 
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm-bookworm
 
 LABEL maintainer="BeachRex Ops"
 
 # System deps + PHP extension build deps
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         bash git unzip curl \
-        libpq-dev postgresql-dev \
-        libzip-dev zlib-dev \
-        libpng-dev libjpeg-turbo-dev freetype-dev \
-        icu-dev \
-        oniguruma-dev \
-        imagemagick imagemagick-dev \
-        librdkafka-dev \
+        libpq-dev postgresql-client \
+        libzip-dev zlib1g-dev \
+        libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+        libicu-dev \
+        libonig-dev \
+        libmagickwand-dev \
+        libssl-dev \
         supervisor \
         nginx \
+    && rm -rf /var/lib/apt/lists/* \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         pdo_pgsql pgsql \
@@ -28,8 +29,8 @@ RUN apk add --no-cache \
         pcntl \
         opcache \
         soap \
-    && pecl install redis igbinary imagick \
-    && docker-php-ext-enable redis igbinary imagick opcache
+    && pecl install redis igbinary \
+    && docker-php-ext-enable redis igbinary opcache
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

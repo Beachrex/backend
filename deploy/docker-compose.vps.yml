@@ -25,8 +25,9 @@ services:
   pgsql:
     image: postgis/postgis:15-3.4
     restart: unless-stopped
-    env_file: [envs/.env.prod]
     environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: beachrex_prod
     volumes:
       - pgsql-data:/var/lib/postgresql/data
