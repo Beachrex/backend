@@ -100,45 +100,62 @@ jobs:
           fi
 
       - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Sync backend code
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           rsync -az --delete \
+            -e "ssh -i ~/.ssh/vps_key" \
             --exclude '.git' --exclude 'node_modules' --exclude 'vendor' \
             --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*' \
             --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' \
             --exclude 'database/database.sqlite' --exclude '.env' \
-            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/beachrex/api/
+            ./ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/api/
 
       - name: Sync deploy files (compose + nginx)
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          rsync -az --delete deploy/ \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/beachrex/deploy/
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/vps_key" \
+            deploy/ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/deploy/
 
       - name: Build and start on VPS
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          ENV_NAME: ${{ steps.env.outputs.name }}
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -i ~/.ssh/vps_key ${VPS_USER}@${VPS_HOST} "
             set -euo pipefail
             cd /opt/beachrex/deploy
-            ENV_NAME=${{ steps.env.outputs.name }}
             API_SVC=api_${ENV_NAME}
             WEB_SVC=web_${ENV_NAME}
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} build ${API_SVC}
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} build \${API_SVC}
             docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} up -d pgsql redis
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} up -d --force-recreate ${WEB_SVC}
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T ${API_SVC} php artisan migrate --force
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T ${API_SVC} php artisan config:cache
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T ${API_SVC} php artisan route:cache
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T ${API_SVC} php artisan cache:clear
-            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T ${API_SVC} php artisan search:index || true
-            echo "Deploy of ${ENV_NAME} complete."
-          EOF
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} up -d --force-recreate \${WEB_SVC}
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T \${API_SVC} php artisan migrate --force
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T \${API_SVC} php artisan config:cache
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T \${API_SVC} php artisan route:cache
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T \${API_SVC} php artisan cache:clear
+            docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} exec -T \${API_SVC} php artisan search:index || true
+            echo 'Deploy of ${ENV_NAME} complete.'
+          "
 
       - name: Reload Nginx
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "sudo systemctl reload nginx"
+          ssh -i ~/.ssh/vps_key ${VPS_USER}@${VPS_HOST} "sudo systemctl reload nginx"
