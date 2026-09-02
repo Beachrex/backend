@@ -139,7 +139,7 @@ jobs:
         run: |
           ssh ${VPS_USER}@${VPS_HOST} "
             set -euo pipefail
-            cd /opt/beachrex/deploy
+            export COMPOSE_FILE=/opt/beachrex/deploy/docker-compose.vps.yml
             API_SVC=api_${ENV_NAME}
             WEB_SVC=web_${ENV_NAME}
             docker compose --env-file /opt/beachrex/envs/.env.${ENV_NAME} build \${API_SVC}
