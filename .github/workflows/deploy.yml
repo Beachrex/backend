@@ -139,19 +139,18 @@ jobs:
         run: |
           ssh ${VPS_USER}@${VPS_HOST} "
             set -euo pipefail
-            export COMPOSE_FILE=/opt/beachrex/deploy/docker-compose.vps.yml
-            export COMPOSE_PROJECT_NAME=deploy
+            cd /opt/beachrex/deploy
             ENV_FILE=/opt/beachrex/envs/.env.${ENV_NAME}
             API_SVC=api_${ENV_NAME}
             WEB_SVC=web_${ENV_NAME}
-            docker compose --env-file \${ENV_FILE} build \${API_SVC}
-            docker compose --env-file \${ENV_FILE} up -d pgsql redis
-            docker compose --env-file \${ENV_FILE} up -d --force-recreate \${WEB_SVC}
-            docker compose --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan migrate --force
-            docker compose --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan config:cache
-            docker compose --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
-            docker compose --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
-            docker compose --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:index || true
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} build \${API_SVC}
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d pgsql redis
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate \${WEB_SVC}
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan migrate --force
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan config:cache
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:index || true
             echo 'Deploy of ${ENV_NAME} complete.'
           "
 
