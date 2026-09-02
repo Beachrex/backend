@@ -99,14 +99,15 @@ jobs:
             esac
           fi
 
-      - name: Configure SSH
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add VPS host key
         env:
-          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/vps_key
-          chmod 600 ~/.ssh/vps_key
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Sync backend code
@@ -115,7 +116,6 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/vps_key" \
             --exclude '.git' --exclude 'node_modules' --exclude 'vendor' \
             --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*' \
             --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' \
@@ -128,7 +128,6 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/vps_key" \
             deploy/ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/deploy/
 
       - name: Build and start on VPS
@@ -137,7 +136,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           ENV_NAME: ${{ steps.env.outputs.name }}
         run: |
-          ssh -i ~/.ssh/vps_key ${VPS_USER}@${VPS_HOST} "
+          ssh ${VPS_USER}@${VPS_HOST} "
             set -euo pipefail
             cd /opt/beachrex/deploy
             API_SVC=api_${ENV_NAME}
@@ -158,4 +157,4 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          ssh -i ~/.ssh/vps_key ${VPS_USER}@${VPS_HOST} "sudo systemctl reload nginx"
+          ssh ${VPS_USER}@${VPS_HOST} "sudo systemctl reload nginx"
