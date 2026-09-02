@@ -57,9 +57,9 @@ jobs:
         env:
           PGPASSWORD: password
         run: |
-          psql -h localhost -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-          psql -h localhost -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
-          psql -h localhost -U sail -d beachrex_test -f database/postgis/init-postgis.sql || true
+          psql -h 127.0.0.1 -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+          psql -h 127.0.0.1 -U sail -d beachrex_test -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
+          psql -h 127.0.0.1 -U sail -d beachrex_test -f database/postgis/init-postgis.sql || true
 
       - name: Run tests
         run: |
