@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile.prod
     image: beachrex/api:prod
     restart: unless-stopped
-    env_file: [envs/.env.prod]
+    env_file: [../envs/.env.prod]
     environment:
       DB_DATABASE: beachrex_prod
       REDIS_DB: "0"
@@ -89,7 +89,7 @@ services:
       dockerfile: Dockerfile.prod
     image: beachrex/front:prod
     restart: unless-stopped
-    env_file: [envs/.env.front.prod]
+    env_file: [../envs/.env.front.prod]
     environment:
       NODE_ENV: production
       PORT: "3001"
@@ -103,7 +103,7 @@ services:
       dockerfile: Dockerfile.prod
     image: beachrex/api:uat
     restart: unless-stopped
-    env_file: [envs/.env.uat]
+    env_file: [../envs/.env.uat]
     environment:
       DB_DATABASE: beachrex_uat
       REDIS_DB: "1"
@@ -132,7 +132,7 @@ services:
       dockerfile: Dockerfile.prod
     image: beachrex/front:uat
     restart: unless-stopped
-    env_file: [envs/.env.front.uat]
+    env_file: [../envs/.env.front.uat]
     environment:
       NODE_ENV: production
       PORT: "3002"
@@ -146,7 +146,7 @@ services:
       dockerfile: Dockerfile.prod
     image: beachrex/api:dev
     restart: unless-stopped
-    env_file: [envs/.env.dev]
+    env_file: [../envs/.env.dev]
     environment:
       DB_DATABASE: beachrex_dev
       REDIS_DB: "2"
@@ -175,7 +175,7 @@ services:
       dockerfile: Dockerfile.prod
     image: beachrex/front:dev
     restart: unless-stopped
-    env_file: [envs/.env.front.dev]
+    env_file: [../envs/.env.front.dev]
     environment:
       NODE_ENV: development
       PORT: "3003"
