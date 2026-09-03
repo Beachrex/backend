@@ -62,14 +62,14 @@
    - `composer install` → `php artisan test`
    - 4 znane okoljske napake (OpenAI, OpenWeather) so dovoljene
 2. **Deploy job** (po uspešnem testu):
-   - `rsync` kode na `/opt/beachrex/api/`
-   - `rsync` deploy datotek na `/opt/beachrex/deploy/`
+   - `rsync` kode na `/opt/beachrex/api_{env}/` (npr. `api_dev/`, `api_uat/`, `api_prod/`)
+   - `rsync` deploy datotek na `/opt/beachrex/deploy/` (skupno)
    - `docker compose build` + `up -d` + `migrate` + `cache:clear`
    - Reload host Nginx
 
 ### Frontend pipeline
 1. **Deploy job** (brez test joba):
-   - `rsync` kode na `/opt/beachrex/front/`
+   - `rsync` kode na `/opt/beachrex/front_{env}/` (npr. `front_dev/`, `front_uat/`, `front_prod/`)
    - `docker compose build` (Next.js standalone z `NEXT_PUBLIC_*` build args iz `.env.front.*`)
    - `docker compose up -d --force-recreate`
    - Reload host Nginx
@@ -87,19 +87,17 @@
 
 ## 4. Direktorijska struktura na VPS
 
+> **POMEMBNO:** Vsako okolje ima svoj direktorij z lastno kodo. Sprememba na `dev` branchu **ne vpliva** na UAT ali PROD. Prej so vsa okolja delila isti `api/` in `front/` direktorij — to je bilo popravljeno 2026-09-03.
+
 ```
 /opt/beachrex/
-├── api/                    # Backend koda (Laravel)
-│   ├── app/
-│   ├── Dockerfile.prod
-│   ├── composer.json
-│   └── ...
-├── front/                  # Frontend koda (Next.js)
-│   ├── src/
-│   ├── Dockerfile.prod
-│   ├── next.config.js      # MORA imeti output: "standalone"
-│   └── ...
-├── deploy/                 # Docker Compose + Nginx configs
+├── api_prod/               # Backend koda — PROD (main branch)
+├── api_uat/                # Backend koda — UAT (uat branch)
+├── api_dev/                # Backend koda — DEV (dev branch)
+├── front_prod/             # Frontend koda — PROD (main branch)
+├── front_uat/              # Frontend koda — UAT (uat branch)
+├── front_dev/              # Frontend koda — DEV (dev branch)
+├── deploy/                 # Docker Compose + Nginx configs (skupno)
 │   ├── docker-compose.vps.yml
 │   └── nginx/
 │       ├── beachrex.conf   # Host Nginx reverse proxy (SSL)
@@ -117,6 +115,12 @@
 ```
 
 > **Lastništvo:** Vsi direktoriji so v lasti `beachrex:beachrex`. To je ključno za `rsync` iz CI/CD.
+>
+> **rsync cilji (GitHub Actions):**
+> - Backend `dev` push → `rsync` v `/opt/beachrex/api_dev/`
+> - Backend `uat` push → `rsync` v `/opt/beachrex/api_uat/`
+> - Backend `main` push → `rsync` v `/opt/beachrex/api_prod/`
+> - Frontend analogno v `front_{env}/`
 
 ---
 
@@ -127,8 +131,17 @@
 - Skupne storitve: `pgsql` (PostGIS), `redis`
 - Per-okolje: `api_{env}`, `web_{env}`, `front_{env}`
 - `env_file` poti so `../envs/.env.{env}` (relativno od `deploy/`)
-- Build context: `../api` in `../front`
+- **Build context (ločen per okolje):** `../api_{env}` in `../front_{env}`
 - Porti: API 8081-8083, Frontend 3001-3003 (vsi na `127.0.0.1`)
+- **Concurrency:** GitHub Actions `concurrency.group: deploy-backend` / `deploy-front` serializira deploye, da prepreči hkratni rsync v isti direktorij
+
+### Ločitev baz in Redis
+| Resource | Kontejner | Ločitev |
+|---|---|---|
+| PostgreSQL + PostGIS | 1 skupni `pgsql` | 3 logične baze: `beachrex_prod`, `beachrex_uat`, `beachrex_dev` |
+| Redis | 1 skupni `redis` | 3 logični DB indeksi: prod=0, uat=1, dev=2 |
+
+> **Zakaj skupni kontejner?** En PostgreSQL proces porabi manj RAM-a kot trije ločeni (~100–200 MB na proces). Podatki so med seboj popolnoma ločeni — vsaka aplikacija se poveže samo na svojo bazo. Za popolno fizično ločitev (compliance) bi razdelili na tri `pgsql_*` kontejnerje.
 
 ### Ročni deploy na VPS
 ```bash
@@ -201,10 +214,15 @@ certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com
 - Frontend pipeline: deploy (standalone build)
 - Popravki: env_file poti, Dockerfile.prod commit, output:standalone commit, robots.ts env fallback
 
-### 2026-09-03: Branch struktura in dokumentacija
+### 2026-09-03: Branch struktura, okoljska ločitev in dokumentacija
 - `dev`, `uat`, `main` branchi vzpostavljeni za oba repozitorija
 - Branch → Okolje mapping implementiran v GitHub Actions
-- Dokumentacija ustvarjena
+- **Per-okoljska ločitev kode:** vsako okolje ima svoj direktorij (`api_prod/uat/dev`, `front_prod/uat/dev`) — prej so vsa okolja delila isti `api/` in `front/` direktorij, kar je povzročalo race condition (zadnji deploy je prepisal kodo vseh okolij)
+- `concurrency.group` spremenjen v globalnega (`deploy-backend` / `deploy-front`), da prepreči hkratne rsync deploye
+- `docker-compose.vps.yml` build contexti posodobljeni na `../api_{env}` in `../front_{env}`
+- GitHub Actions `rsync` cilji posodobljeni na `/opt/beachrex/api_{env}/` in `/opt/beachrex/front_{env}/`
+- VPS direktoriji ustvarjeni (`cp -a api api_{env}`, `cp -a front front_{env}`)
+- Dokumentacija ustvarjena in posodobljena
 
 ---
 
