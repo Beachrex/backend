@@ -24,7 +24,7 @@ class BrAdminPanelProvider extends PanelProvider
     {
         return $panel
             ->id('admin')
-            ->path('admin')
+            ->path('')
             ->domain($this->getDomain())
             ->login()
             ->colors([
