@@ -115,13 +115,14 @@ jobs:
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          ENV_NAME: ${{ steps.env.outputs.name }}
         run: |
           rsync -az --delete \
             --exclude '.git' --exclude 'node_modules' --exclude 'vendor' \
             --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*' \
             --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' \
             --exclude 'database/database.sqlite' --exclude '.env' \
-            ./ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/api/
+            ./ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/api_${ENV_NAME}/
 
       - name: Sync deploy files (compose + nginx)
         env:
