@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\HasMedia;
+use App\Traits\Cacheable;
 
 class FirstPageContent extends Model
 {
-    use HasFactory, SoftDeletes, HasMedia;
+    use HasFactory, SoftDeletes, HasMedia, Cacheable;
 
     protected $table = 'first_page_content';
 
