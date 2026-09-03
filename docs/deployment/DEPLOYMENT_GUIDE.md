@@ -40,13 +40,15 @@
 | Frontend | `https://github.com/Beachrex/web-client` | Next.js frontend |
 
 ### Branch → Okolje mapping
-| Branch | Okolje | API URL | Frontend URL |
-|---|---|---|---|
-| `dev` | DEV | `https://dev-api.beachrex.com` | `https://dev.beachrex.com` |
-| `uat` | UAT | `https://uat-api.beachrex.com` | `https://uat.beachrex.com` |
-| `main` | PROD | `https://api.beachrex.com` | `https://beachrex.com` |
+| Branch | Okolje | API URL | Frontend URL | Admin URL |
+|---|---|---|---|---|
+| `dev` | DEV | `https://dev-api.beachrex.com` | `https://dev.beachrex.com` | `https://dock-dev.beachrex.com/admin` |
+| `uat` | UAT | `https://uat-api.beachrex.com` | `https://uat.beachrex.com` | `https://dock-uat.beachrex.com/admin` |
+| `main` | PROD | `https://api.beachrex.com` | `https://beachrex.com` | `https://dock.beachrex.com/admin` |
 
 > **Pravilo:** Push na `dev` → deploy na DEV. Push na `uat` → deploy na UAT. Push na `main` → deploy na PROD (za PROD je priporočljiv manual trigger preko GitHub Actions UI).
+>
+> **Admin panel:** Vsako okolje ima svoj admin panel na lastni `dock*.beachrex.com` domeni, ki je domensko omejena v Filamentu preko `FILAMENT_DOMAIN` env variable. Sprememba v `dev` adminu **ne vpliva** na UAT ali PROD admin — vsak gre v svojo bazo (`beachrex_dev`/`beachrex_uat`/`beachrex_prod`).
 
 ---
 
@@ -160,6 +162,7 @@ docker compose -f docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.${EN
 - UAT: `uat-api.beachrex.com` + `uat.beachrex.com` (cert v `uat-api.beachrex.com`)
 - DEV: `dev-api.beachrex.com` + `dev.beachrex.com` (cert v `dev-api.beachrex.com`)
 - PROD: `api.beachrex.com` + `beachrex.com` (čaka certbot)
+- Admin paneli: `dock.beachrex.com` (PROD), `dock-uat.beachrex.com` (UAT), `dock-dev.beachrex.com` (DEV)
 - HTTP → HTTPS redirect za vse domene
 - Proxy na Docker porte (8081-8083 za API, 3001-3003 za frontend)
 
@@ -170,6 +173,11 @@ certbot --nginx -d uat-api.beachrex.com -d uat.beachrex.com
 
 # DEV (že pridobljen)
 certbot --nginx -d dev-api.beachrex.com -d dev.beachrex.com
+
+# Admin paneli (že pridobljeni)
+certbot --nginx -d dock.beachrex.com
+certbot --nginx -d dock-uat.beachrex.com
+certbot --nginx -d dock-dev.beachrex.com
 
 # PROD (ko DNS preklopi)
 certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com
@@ -222,6 +230,13 @@ certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com
 - `docker-compose.vps.yml` build contexti posodobljeni na `../api_{env}` in `../front_{env}`
 - GitHub Actions `rsync` cilji posodobljeni na `/opt/beachrex/api_{env}/` in `/opt/beachrex/front_{env}/`
 - VPS direktoriji ustvarjeni (`cp -a api api_{env}`, `cp -a front front_{env}`)
+- **TrustProxies fix:** `$middleware->trustProxies(at: '*')` dodan v `bootstrap/app.php`, da Laravel upošteva `X-Forwarded-Proto` in generira HTTPS URL-je za assete (popravljeno Mixed Content napako v Filament adminu)
+- **Per-okoljski admin paneli:** `BrAdminPanelProvider::getDomain()` spremenjen, da bere `FILAMENT_DOMAIN` env variable namesto hardcoded `dock.beachrex.com` pri `APP_ENV=production`. Vsako okolje ima svojo admin domeno:
+  - `dock-dev.beachrex.com` → DEV admin → `beachrex_dev` baza
+  - `dock-uat.beachrex.com` → UAT admin → `beachrex_uat` baza
+  - `dock.beachrex.com` → PROD admin → `beachrex_prod` baza
+- SSL certifikati pridobljeni za `dock.beachrex.com`, `dock-uat.beachrex.com`, `dock-dev.beachrex.com`
+- Nginx `beachrex.conf` posodobljen z HTTPS server bloki za vse tri admin domene
 - Dokumentacija ustvarjena in posodobljena
 
 ---
