@@ -91,6 +91,12 @@ services:
     build:
       context: ../front_prod
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT}
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+        NEXT_PUBLIC_CDN_TEASER: ${NEXT_PUBLIC_CDN_TEASER}
+        NEXT_PUBLIC_CDN_LARGE: ${NEXT_PUBLIC_CDN_LARGE}
+        NEXT_PUBLIC_CDN_ASSETS: ${NEXT_PUBLIC_CDN_ASSETS}
     image: beachrex/front:prod
     restart: unless-stopped
     env_file: [../envs/.env.front.prod]
@@ -134,6 +140,12 @@ services:
     build:
       context: ../front_uat
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT}
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+        NEXT_PUBLIC_CDN_TEASER: ${NEXT_PUBLIC_CDN_TEASER}
+        NEXT_PUBLIC_CDN_LARGE: ${NEXT_PUBLIC_CDN_LARGE}
+        NEXT_PUBLIC_CDN_ASSETS: ${NEXT_PUBLIC_CDN_ASSETS}
     image: beachrex/front:uat
     restart: unless-stopped
     env_file: [../envs/.env.front.uat]
@@ -177,6 +189,12 @@ services:
     build:
       context: ../front_dev
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT}
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+        NEXT_PUBLIC_CDN_TEASER: ${NEXT_PUBLIC_CDN_TEASER}
+        NEXT_PUBLIC_CDN_LARGE: ${NEXT_PUBLIC_CDN_LARGE}
+        NEXT_PUBLIC_CDN_ASSETS: ${NEXT_PUBLIC_CDN_ASSETS}
     image: beachrex/front:dev
     restart: unless-stopped
     env_file: [../envs/.env.front.dev]
