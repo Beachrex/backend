@@ -61,7 +61,11 @@ class BrAdminPanelProvider extends PanelProvider
 
     protected function getDomain(): ?string
     {
-        // Use dock.beachrex.com in production, null (default) in local
-        return app()->environment('production') ? 'dock.beachrex.com' : null;
+        // Admin panel domain is set per environment via FILAMENT_DOMAIN env var:
+        //   prod: dock.beachrex.com
+        //   uat:  dock-uat.beachrex.com
+        //   dev:  dock-dev.beachrex.com
+        //   local: null (no domain constraint, admin at localhost:8000/admin)
+        return env('FILAMENT_DOMAIN');
     }
 }
