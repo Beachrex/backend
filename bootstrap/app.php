@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         require base_path('routes/console.php');
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust the host-level Nginx reverse proxy (SSL termination).
+        // Without this, Laravel ignores X-Forwarded-Proto and generates
+        // http:// asset URLs behind an https:// frontend (mixed content).
+        $middleware->trustProxies(at: '*');
+
         $middleware->group('api', [
             \App\Http\Middleware\SetLocaleFromHeader::class,
             \App\Http\Middleware\ForceJsonMiddleware::class,
