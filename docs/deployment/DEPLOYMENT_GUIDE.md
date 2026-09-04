@@ -2,8 +2,8 @@
 
 > **Cilj tega dokumenta:** Vsak razvijalec, ki nadaljuje delo na projektu, ve natančno kje smo, kaj je narejeno in kako deployati.
 
-**Zadnja posodobitev:** 2026-09-03
-**Status:** ✅ UAT in DEV delujeta. PROD čaka na DNS preklop.
+**Zadnja posodobitev:** 2026-09-04
+**Status:** ✅ DEV, UAT in PROD admin paneli delujejo. PROD frontend/API čakata na DNS preklop.
 
 ---
 
@@ -42,13 +42,13 @@
 ### Branch → Okolje mapping
 | Branch | Okolje | API URL | Frontend URL | Admin URL |
 |---|---|---|---|---|
-| `dev` | DEV | `https://dev-api.beachrex.com` | `https://dev.beachrex.com` | `https://dock-dev.beachrex.com/admin` |
-| `uat` | UAT | `https://uat-api.beachrex.com` | `https://uat.beachrex.com` | `https://dock-uat.beachrex.com/admin` |
-| `main` | PROD | `https://api.beachrex.com` | `https://beachrex.com` | `https://dock.beachrex.com/admin` |
+| `dev` | DEV | `https://dev-api.beachrex.com` | `https://dev.beachrex.com` | `https://dock-dev.beachrex.com` |
+| `uat` | UAT | `https://uat-api.beachrex.com` | `https://uat.beachrex.com` | `https://dock-uat.beachrex.com` |
+| `main` | PROD | `https://api.beachrex.com` | `https://beachrex.com` | `https://dock.beachrex.com` |
 
 > **Pravilo:** Push na `dev` → deploy na DEV. Push na `uat` → deploy na UAT. Push na `main` → deploy na PROD (za PROD je priporočljiv manual trigger preko GitHub Actions UI).
 >
-> **Admin panel:** Vsako okolje ima svoj admin panel na lastni `dock*.beachrex.com` domeni, ki je domensko omejena v Filamentu preko `FILAMENT_DOMAIN` env variable. Sprememba v `dev` adminu **ne vpliva** na UAT ali PROD admin — vsak gre v svojo bazo (`beachrex_dev`/`beachrex_uat`/`beachrex_prod`).
+> **Admin panel:** Vsako okolje ima svoj admin panel na lastni `dock*.beachrex.com` domeni (dostop na **root** domene, brez `/admin` končnice — npr. `https://dock-dev.beachrex.com/`), ki je domensko omejena v Filamentu preko `FILAMENT_DOMAIN` env variable. Sprememba v `dev` adminu **ne vpliva** na UAT ali PROD admin — vsak gre v svojo bazo (`beachrex_dev`/`beachrex_uat`/`beachrex_prod`).
 
 ---
 
@@ -72,9 +72,11 @@
 ### Frontend pipeline
 1. **Deploy job** (brez test joba):
    - `rsync` kode na `/opt/beachrex/front_{env}/` (npr. `front_dev/`, `front_uat/`, `front_prod/`)
-   - `docker compose build` (Next.js standalone z `NEXT_PUBLIC_*` build args iz `.env.front.*`)
+   - `docker compose build` z `--env-file` za **oba** env file (backend `.env.{env}` + frontend `.env.front.{env}`), da se `NEXT_PUBLIC_*` variable pravilno substituirajo v `build.args`
    - `docker compose up -d --force-recreate`
    - Reload host Nginx
+
+> **Kritično:** `NEXT_PUBLIC_*` env variable se v Next.js inline-a ob **build time**, ne runtime. Zato mora `docker-compose.vps.yml` vsebovati `build.args` sekcijo za vsak `front_*` service, ki sklicuje `${NEXT_PUBLIC_*}`. Frontend workflow naloži oba env file preko `--env-file`, da compose lahko substituira te variable. Brez tega bi vsi frontend kontejnerji uporabljali fallback `http://localhost:8000` kot API URL.
 
 ### GitHub Secrets (oba repozitorija)
 | Secret | Vrednost | Opomba |
@@ -143,7 +145,9 @@
 | PostgreSQL + PostGIS | 1 skupni `pgsql` | 3 logične baze: `beachrex_prod`, `beachrex_uat`, `beachrex_dev` |
 | Redis | 1 skupni `redis` | 3 logični DB indeksi: prod=0, uat=1, dev=2 |
 
-> **Zakaj skupni kontejner?** En PostgreSQL proces porabi manj RAM-a kot trije ločeni (~100–200 MB na proces). Podatki so med seboj popolnoma ločeni — vsaka aplikacija se poveže samo na svojo bazo. Za popolno fizično ločitev (compliance) bi razdelili na tri `pgsql_*` kontejnerje.
+> **Zakaj skupni kontejner?** En PostgreSQL proces porabi manj RAM-a kot trije ločeni (~100–200 MB na proces). Podatki so med seboj popolnoma ločeni — vsaka aplikacija se poveče samo na svojo bazo. Za popolno fizično ločitev (compliance) bi razdelili na tri `pgsql_*` kontejnerje.
+>
+> **Kritično za Redis:** V `config/database.php` morata tako `default` kot `cache` Redis konekciji uporabljati `env('REDIS_DB')`, **ne** `env('REDIS_CACHE_DB', '1')`. Če je `cache` konekcija hardcodirana na DB 1, bosta DEV (REDIS_DB=2) in UAT (REDIS_DB=1) delila cache, kar povzroča cross-env podatke (sprememba v DEV adminu postane vidna na UAT frontendu).
 
 ### Ročni deploy na VPS
 ```bash
@@ -204,6 +208,52 @@ certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com
 
 ---
 
+## 8. Okoljska ločitev in Cache invalidacija
+
+### Okoljska ločitev (3 sloji)
+
+| Sloj | Kako je ločeno | Datoteka |
+|---|---|---|
+| **Koda** | Vsako okolje ima svoj direktorij na VPS (`api_{env}/`, `front_{env}/`) | `docker-compose.vps.yml` (build context) |
+| **Baza** | 3 logične baze v enem PostgreSQL kontejnerju | `.env.{env}` (`DB_DATABASE=beachrex_{env}`) |
+| **Redis cache** | 3 logični DB indeksi v enem Redis kontejnerju | `.env.{env}` (`REDIS_DB={0|1|2}`) + `config/database.php` |
+| **Admin panel** | 3 ločene domene, vsaka domensko omejena v Filamentu | `.env.{env}` (`FILAMENT_DOMAIN=dock*.beachrex.com`) |
+| **Frontend API URL** | `NEXT_PUBLIC_*` variable inline-ane ob build time | `.env.front.{env}` + `docker-compose.vps.yml` (build.args) |
+
+### Cache invalidacija (admin → frontend)
+
+Ko administrator shrani spremembo v Filament adminu, se Redis cache avtomatsko počisti preko model eventov:
+
+```
+Admin save → FirstPageContentTranslation::saved() event
+           → Cache::forget("first_page_content:index:{locale}") za vseh 14 jezikov
+           → Cache::forget("first_page_content:show:{code}:{locale}") za vseh 14 jezikov
+           → Naslednji API klic pridobi sveže podatke iz baze
+```
+
+**Modeli z cache invalidacijo:**
+- `FirstPageContent` — `Cacheable` trait (čisti reference cache)
+- `FirstPageContentTranslation` — `booted()` saved/deleted eventi (čisti index/show cache)
+- `StaticPage` — `booted()` saved/deleted eventi (čisti footer/show cache)
+- `StaticPageTranslation` — `booted()` saved/deleted eventi (delegira na StaticPage)
+
+### Next.js renderiranje
+
+| Stran | Način | Zakaj |
+|---|---|---|
+| Homepage (`/`) | `force-dynamic` (SSR vsak request) | Admin spremembe morajo biti takoj vidne |
+| Beach detail | ISR `revalidate = 3600` (1h) | Plaže se redko spreminjajo |
+| Continent/Country | ISR `revalidate = 3600` (1h) | Geografski podatki so stabilni |
+| Sitemap | ISR `revalidate = 86400` (24h) | SEO, redko se spreminja |
+
+### React Query (client-side cache)
+
+`useFirstPageContent` hook ima `staleTime: 0` + `refetchOnMount: true`, kar pomeni, da brskalnik vedno pridobi sveže podatke ob obisku strani. Laravel API še vedno cache-a DB query v Redis (invalidiran ob admin save), tako da je response hiter.
+
+> **Pomembno:** V frontend kodi **ne sme** biti hardcodiran `https://dev-api.beachrex.com` kot fallback za `NEXT_PUBLIC_API_ENDPOINT`. Vsi fallback-i morajo biti `http://localhost:8000` (samo za lokalni dev). Hardcodiran DEV API URL se inline-a v build UAT in PROD kontejnerjev, kar povzroča cross-env API klice.
+
+---
+
 ## 8. Kaj je narejeno ( Kronologija)
 
 ### 2026-09-01: Provisioning in UAT
@@ -239,6 +289,24 @@ certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com
 - Nginx `beachrex.conf` posodobljen z HTTPS server bloki za vse tri admin domene
 - Dokumentacija ustvarjena in posodobljena
 
+### 2026-09-04: Cross-env popravki, admin root domene, cache invalidacija
+- **Admin na root domeni:** `BrAdminPanelProvider` path spremenjen iz `'admin'` na `''` — admin paneli so sedaj dostopni na `https://dock-*.beachrex.com/` (brez `/admin`)
+- **Cross-env API klici (frontend):** 6 datotek v frontendu je imelo hardcodiran `https://dev-api.beachrex.com` kot fallback za `NEXT_PUBLIC_API_ENDPOINT`. Ta fallback se je inline-al v build UAT in PROD kontejnerjev, kar je povzročalo, da je UAT frontend klical DEV API. Popravljeno: vsi fallback-i spremenjeni v `http://localhost:8000`
+  - `src/lib/api-client/client.gen.ts` (baseUrl bil hardcodiran)
+  - `src/lib/api-client/types.gen.ts` (TypeScript tip)
+  - `src/env.ts` (zod default + runtimeEnv fallback)
+  - `src/components/ApiClientProvider.tsx`
+  - `src/app/[locale]/ai/chat/page.tsx`
+  - `src/app/[locale]/ai/itinerary/page.tsx` (3 occurrenči)
+- **Docker Compose build.args:** `front_prod/uat/dev` v `docker-compose.vps.yml` niso imeli `build.args` sekcije. Dodano, da se `NEXT_PUBLIC_*` variable pravilno substituirajo iz `.env.front.{env}` preko `--env-file`
+- **Frontend workflow:** `deploy.yml` posodobljen, da naloži oba env file (`.env.{env}` + `.env.front.{env}`) preko `--env-file`
+- **Redis cache deljenje (KORENITI PROBLEM):** `config/database.php` Redis `cache` konekcija je bila hardcodirana na `env('REDIS_CACHE_DB', '1')` — kar pomeni, da so vsa okolja uporabljala Redis DB 1 za cache. DEV in UAT sta delila cache, tako da je sprememba v DEV adminu postala vidna na UAT frontendu. Popravljeno: `REDIS_CACHE_DB` spremenjeno v `REDIS_DB`, tako da vsako okolje uporablja svoj Redis database za cache
+- **Cache invalidacija (Laravel):** `FirstPageContent` in `FirstPageContentTranslation` nista imela cache invalidacije. Controller cache-a podatke s ključem `first_page_content:index:{locale}`, ampak admin save ni čistil tega ključa. Popravljeno:
+  - `FirstPageContent` — dodan `Cacheable` trait
+  - `FirstPageContentTranslation` — dodan `booted()` z `saved`/`deleted` eventi, ki pozabijo index/show cache ključe za vseh 14 jezikov
+- **Next.js ISR → force-dynamic:** Homepage je imel `revalidate = 3600` (1h ISR cache). Admin spremembe so bile vidne šele po uri. Spremenjeno na `force-dynamic` (SSR vsak request)
+- **React Query staleTime:** `useFirstPageContent` hook ima sedaj `staleTime: 0` + `refetchOnMount: true`, da brskalnik vedno pridobi sveže podatke
+
 ---
 
 ## 9. Kaj manjka ( Naslednji koraki)
@@ -248,12 +316,12 @@ certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com
 2. **SSL certifikat:** `certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com`
 3. **Nginx config:** Posodobiti `beachrex.conf` z PROD SSL bloki (trenutno samo HTTP)
 4. **Baza:** Finalni `pg_dump` iz Laravel Clouda → restore v `beachrex_prod`
-5. **`.env.prod`:** Posodobiti s pravimi PROD tajnostmi
-6. **Deploy:** Push na `main` branch → GitHub Actions deploy na PROD
+5. **`.env.prod`:** Posodobiti s pravimi PROD tajnostmi (trenutno kaže na UAT API za frontend)
+6. **Frontend rebuild:** Po DNS preklopu push na `main` → build z `.env.front.prod` (ki mora kaže na `https://api.beachrex.com`)
 7. **Preverba:** `https://beachrex.com` in `https://api.beachrex.com/api/v1/beaches?limit=1`
 
 ### Ostalo
 - **Backup cron:** Dnevni `pg_dump` za `beachrex_uat` in `beachrex_prod`
-- **Frontend UAT/DEV branchi:** Push na `uat`/`dev` branch v frontend repu za testiranje
 - **Monitoring:** Razmisliti o uptime monitoring (npr. UptimeRobot)
 - **Log rotation:** Docker logs lahko zasedejo disk — nastaviti log rotation
+- **Cache invalidacija za ostale modele:** Preveriti, ali tudi drugi Filament resource-i (Beach, Country, itd.) potrebujejo `Cacheable` trait ali `booted()` eventi za cache invalidacijo
