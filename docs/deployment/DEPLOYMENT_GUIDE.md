@@ -2,8 +2,8 @@
 
 > **Cilj tega dokumenta:** Vsak razvijalec, ki nadaljuje delo na projektu, ve natančno kje smo, kaj je narejeno in kako deployati.
 
-**Zadnja posodobitev:** 2026-09-04
-**Status:** ✅ DEV, UAT in PROD admin paneli delujejo. PROD frontend/API čakata na DNS preklop.
+**Zadnja posodobitev:** 2026-09-08
+**Status:** ✅ DEV, UAT in PROD admin paneli delujejo. Skalabilnost cache popravljena. PROD frontend/API čakata na DNS preklop.
 
 ---
 
@@ -254,9 +254,74 @@ Admin save → FirstPageContentTranslation::saved() event
 
 ---
 
-## 8. Kaj je narejeno ( Kronologija)
+## 8b. Cache skalabilnost (Redis + PHP memory)
 
-### 2026-09-01: Provisioning in UAT
+### Problem
+
+`BeachController::index()` je cache-a **celotne Eloquent kolekcije** z 8+ eager loading relacijami v Redis. Laravel `Cache::remember` uporabi `serialize()`, ki shrani cele model objekte z vsemi relacijami, atributi, metapodatki.
+
+**Pred popravkom:**
+| Metrika | Vrednost | Problem |
+|---|---|---|
+| Največji Redis ključ | 28 MB (`beaches:index:en:continent_code=EU:country=ES`) | Eloquent model + 8 relacij serializirano |
+| Skupna Redis poraba (DEV) | 204 MB (652 ključev) | 14 jezikov × več filter kombinacij |
+| PHP `unserialize()` poraba | 200MB+ na ključ | 28MB serializirano → 200MB+ v PHP pomnilniku |
+| Rezultat | `Allowed memory size of 268435456 bytes exhausted` | HTTP 500, API crash, frontend nedostopen |
+
+### Rešitev
+
+Cache-a se **že transformiran JSON array** (preko `BeachResource::collection()->resolve()`), ne pa surovih Eloquent modelov.
+
+```php
+// PREJ (ne-skalabilno):
+$beaches = $this->cacheRemember($cacheKey, $ttl, function () {
+    return Beach::with([...8 relacij...])->limit(5000)->get();
+    // ← serialize() shrani CELE Eloquent modele → 28MB na ključ
+});
+return BeachResource::collection($beaches); // ← transformacija šele po cache read
+
+// SEDAJ (skalabilno):
+$data = $this->cacheRemember($cacheKey, $ttl, function () {
+    $beaches = Beach::with([...8 relacij...])->limit(1000)->get();
+    return BeachResource::collection($beaches)->resolve();
+    // ← resolve() ZNOTRAJ callbacka → Redis shrani flat array → 1.4MB na ključ
+});
+return response()->json(['data' => $data['beaches'], ...]);
+```
+
+**Po popravku:**
+| Metrika | Vrednost | Izboljšava |
+|---|---|---|
+| Največji Redis ključ | 1.4 MB | **20x manj** |
+| Skupna Redis poraba (DEV) | 5.4 MB | **38x manj** |
+| Cache MISS (prvi klic) | 2.6s | DB query + Resource transform |
+| Cache HIT (drugi klic) | 0.36s | **70x hitreje** od prej (30s/timeout) |
+| PHP memory poraba na cache read | ~5-10MB | **20x manj** |
+
+### Popravljene metode v `BeachController.php`
+
+| Metoda | Route | Popravek |
+|---|---|---|
+| `index()` | `GET /api/v1/beaches` | `BeachResource::collection()->resolve()` znotraj callbacka |
+| `mostVisited()` | `GET /api/v1/beaches/most-visited` | isto |
+| `footerMostVisited()` | `GET /api/v1/beaches/footer` | `BeachFooterResource::collection()->resolve()` znotraj callbacka |
+
+### PHP memory_limit
+
+| Setting | Vrednost | Zakaj |
+|---|---|---|
+| `memory_limit` | 512M | Varnostna mriža — koreni problem je popravljen (manjši cache), ampak posamezni query-ji lahko še vedno zahtevni |
+| `max_execution_time` | 120s | Varnostna mriža za počasne PostGIS query-je |
+
+> **Pravilo za prihodnje controllerje:** Nikoli ne cache-aj surovih Eloquent modelov v Redis. Vedno kliči `Resource::collection($models)->resolve()` znotraj cache callbacka, tako da Redis shrani flat JSON-able array. To velja za vse controllerje, ki uporabljajo `cacheRemember()`.
+
+---
+
+## 8c. Changelog (vse spremembe)
+
+### Backend (`Beachrex/backend`)
+
+#### 2026-09-01: Provisioning in UAT
 - VPS provisioned (Ubuntu 26.04, Docker, Nginx, UFW, swap)
 - SSL certifikati pridobljeni za UAT in DEV domene
 - PostgreSQL + PostGIS + Redis kontejnerji zagnani
@@ -264,7 +329,7 @@ Admin save → FirstPageContentTranslation::saved() event
 - UAT API in Frontend postavljena in verificirana
 - DEV okolje postavljena iz UAT
 
-### 2026-09-02: CI/CD
+#### 2026-09-02: CI/CD
 - Začetni poskus z GitLab CI/CD — odpovedano zaradi SSH key težav
 - Preklop na GitHub Actions (bolj zanesljivo)
 - SSH ključ generiran (RSA 2048 PEM), dodan v GitHub Secrets
@@ -272,40 +337,50 @@ Admin save → FirstPageContentTranslation::saved() event
 - Frontend pipeline: deploy (standalone build)
 - Popravki: env_file poti, Dockerfile.prod commit, output:standalone commit, robots.ts env fallback
 
-### 2026-09-03: Branch struktura, okoljska ločitev in dokumentacija
+#### 2026-09-03: Branch struktura, okoljska ločitev in dokumentacija
 - `dev`, `uat`, `main` branchi vzpostavljeni za oba repozitorija
 - Branch → Okolje mapping implementiran v GitHub Actions
-- **Per-okoljska ločitev kode:** vsako okolje ima svoj direktorij (`api_prod/uat/dev`, `front_prod/uat/dev`) — prej so vsa okolja delila isti `api/` in `front/` direktorij, kar je povzročalo race condition (zadnji deploy je prepisal kodo vseh okolij)
-- `concurrency.group` spremenjen v globalnega (`deploy-backend` / `deploy-front`), da prepreči hkratne rsync deploye
+- **Per-okoljska ločitev kode:** vsako okolje ima svoj direktorij (`api_prod/uat/dev`, `front_prod/uat/dev`)
+- `concurrency.group` spremenjen v globalnega (`deploy-backend` / `deploy-front`)
 - `docker-compose.vps.yml` build contexti posodobljeni na `../api_{env}` in `../front_{env}`
 - GitHub Actions `rsync` cilji posodobljeni na `/opt/beachrex/api_{env}/` in `/opt/beachrex/front_{env}/`
-- VPS direktoriji ustvarjeni (`cp -a api api_{env}`, `cp -a front front_{env}`)
-- **TrustProxies fix:** `$middleware->trustProxies(at: '*')` dodan v `bootstrap/app.php`, da Laravel upošteva `X-Forwarded-Proto` in generira HTTPS URL-je za assete (popravljeno Mixed Content napako v Filament adminu)
-- **Per-okoljski admin paneli:** `BrAdminPanelProvider::getDomain()` spremenjen, da bere `FILAMENT_DOMAIN` env variable namesto hardcoded `dock.beachrex.com` pri `APP_ENV=production`. Vsako okolje ima svojo admin domeno:
-  - `dock-dev.beachrex.com` → DEV admin → `beachrex_dev` baza
-  - `dock-uat.beachrex.com` → UAT admin → `beachrex_uat` baza
-  - `dock.beachrex.com` → PROD admin → `beachrex_prod` baza
-- SSL certifikati pridobljeni za `dock.beachrex.com`, `dock-uat.beachrex.com`, `dock-dev.beachrex.com`
-- Nginx `beachrex.conf` posodobljen z HTTPS server bloki za vse tri admin domene
-- Dokumentacija ustvarjena in posodobljena
+- VPS direktoriji ustvarjeni
+- **TrustProxies fix:** `$middleware->trustProxies(at: '*')` v `bootstrap/app.php` (Mixed Content fix)
+- **Per-okoljski admin paneli:** `FILAMENT_DOMAIN` env variable
+- SSL certifikati pridobljeni za `dock*.beachrex.com` domene
+- Nginx `beachrex.conf` posodobljen z HTTPS server bloki za admin domene
+- Dokumentacija ustvarjena
 
-### 2026-09-04: Cross-env popravki, admin root domene, cache invalidacija
-- **Admin na root domeni:** `BrAdminPanelProvider` path spremenjen iz `'admin'` na `''` — admin paneli so sedaj dostopni na `https://dock-*.beachrex.com/` (brez `/admin`)
-- **Cross-env API klici (frontend):** 6 datotek v frontendu je imelo hardcodiran `https://dev-api.beachrex.com` kot fallback za `NEXT_PUBLIC_API_ENDPOINT`. Ta fallback se je inline-al v build UAT in PROD kontejnerjev, kar je povzročalo, da je UAT frontend klical DEV API. Popravljeno: vsi fallback-i spremenjeni v `http://localhost:8000`
-  - `src/lib/api-client/client.gen.ts` (baseUrl bil hardcodiran)
-  - `src/lib/api-client/types.gen.ts` (TypeScript tip)
-  - `src/env.ts` (zod default + runtimeEnv fallback)
-  - `src/components/ApiClientProvider.tsx`
-  - `src/app/[locale]/ai/chat/page.tsx`
-  - `src/app/[locale]/ai/itinerary/page.tsx` (3 occurrenči)
-- **Docker Compose build.args:** `front_prod/uat/dev` v `docker-compose.vps.yml` niso imeli `build.args` sekcije. Dodano, da se `NEXT_PUBLIC_*` variable pravilno substituirajo iz `.env.front.{env}` preko `--env-file`
-- **Frontend workflow:** `deploy.yml` posodobljen, da naloži oba env file (`.env.{env}` + `.env.front.{env}`) preko `--env-file`
-- **Redis cache deljenje (KORENITI PROBLEM):** `config/database.php` Redis `cache` konekcija je bila hardcodirana na `env('REDIS_CACHE_DB', '1')` — kar pomeni, da so vsa okolja uporabljala Redis DB 1 za cache. DEV in UAT sta delila cache, tako da je sprememba v DEV adminu postala vidna na UAT frontendu. Popravljeno: `REDIS_CACHE_DB` spremenjeno v `REDIS_DB`, tako da vsako okolje uporablja svoj Redis database za cache
-- **Cache invalidacija (Laravel):** `FirstPageContent` in `FirstPageContentTranslation` nista imela cache invalidacije. Controller cache-a podatke s ključem `first_page_content:index:{locale}`, ampak admin save ni čistil tega ključa. Popravljeno:
-  - `FirstPageContent` — dodan `Cacheable` trait
-  - `FirstPageContentTranslation` — dodan `booted()` z `saved`/`deleted` eventi, ki pozabijo index/show cache ključe za vseh 14 jezikov
-- **Next.js ISR → force-dynamic:** Homepage je imel `revalidate = 3600` (1h ISR cache). Admin spremembe so bile vidne šele po uri. Spremenjeno na `force-dynamic` (SSR vsak request)
-- **React Query staleTime:** `useFirstPageContent` hook ima sedaj `staleTime: 0` + `refetchOnMount: true`, da brskalnik vedno pridobi sveže podatke
+#### 2026-09-04: Cross-env popravki, admin root domene, cache invalidacija
+- **Admin na root domeni:** `BrAdminPanelProvider` path spremenjen iz `'admin'` na `''`
+- **Cross-env API klici (frontend):** 6 datotek imelo hardcodiran `https://dev-api.beachrex.com` fallback — spremenjeno v `http://localhost:8000`
+- **Docker Compose build.args:** `front_*` service dodana `build.args` sekcija za `NEXT_PUBLIC_*`
+- **Frontend workflow:** `deploy.yml` naloži oba env file preko `--env-file`
+- **Redis cache deljenje (KORENITI PROBLEM):** `config/database.php` `REDIS_CACHE_DB` → `REDIS_DB`
+- **Cache invalidacija:** `FirstPageContent` + `FirstPageContentTranslation` dodana cache invalidacija preko model eventov
+- **Next.js ISR → force-dynamic:** Homepage `revalidate = 3600` → `dynamic = 'force-dynamic'`
+- **React Query staleTime:** `useFirstPageContent` `staleTime: 0` + `refetchOnMount: true`
+
+#### 2026-09-08: Skalabilnost fix (Redis cache + PHP memory)
+- **PHP memory_limit:** 256M → 512M, `max_execution_time` 60s → 120s (`Dockerfile.prod`)
+- **Cache skalabilnost (KORENITI POPRAVEK):** `BeachController::index()`, `mostVisited()`, `footerMostVisited()` so cache-ali surove Eloquent kolekcije z 8+ relacijami v Redis (28MB na ključ). Popravljeno: `BeachResource::collection()->resolve()` znotraj cache callbacka — Redis sedaj hrani flat array (1.4MB na ključ, 20x manj)
+- Redis poraba DEV: 204MB → 5.4MB (38x manj)
+- Cache HIT čas: 30s/timeout → 0.36s (70x hitreje)
+- **Pravilo dodano v dokumentacijo:** Nikoli ne cache-aj surovih Eloquent modelov v Redis — vedno uporabi `Resource::resolve()` znotraj callbacka
+
+### Frontend (`Beachrex/web-client`)
+
+#### 2026-09-03
+- `output: "standalone"` dodan v `next.config.js`
+- `robots.ts` popravljen za env fallback
+- Branch struktura: `dev`, `uat`, `main` vzpostavljeni
+- `concurrency.group: deploy-front` (globalni)
+
+#### 2026-09-04
+- `src/app/[locale]/page.tsx`: `revalidate = 3600` → `dynamic = 'force-dynamic'`
+- `src/hooks/useFirstPageContent.ts`: `staleTime: 0` + `refetchOnMount: true`
+- 6 datotek: hardcodiran `https://dev-api.beachrex.com` fallback → `http://localhost:8000`
+- `deploy.yml`: `--env-file` za oba env file (backend + frontend)
 
 ---
 
