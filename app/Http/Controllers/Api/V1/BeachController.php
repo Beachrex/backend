@@ -196,6 +196,11 @@ class BeachController extends Controller
         $filterSuffix = $this->filterService->generateCacheKeySuffix($request);
         $cacheKey = "beaches:index:{$locale}:{$filterSuffix}";
 
+        // Cache the already-transformed array (not Eloquent models).
+        // Caching Eloquent collections with eager loading causes huge
+        // serialized blobs (20-28MB per key) that exhaust PHP memory
+        // on unserialize. By resolving BeachResource before caching,
+        // we store only the flat JSON-able array (~5-10x smaller).
         $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
             $limit = $request->input('limit', 5000);
 
@@ -241,7 +246,7 @@ class BeachController extends Controller
             $beaches = $query->limit($limit)->get();
 
             return [
-                'beaches' => $beaches,
+                'beaches' => BeachResource::collection($beaches)->resolve(),
                 'meta' => [
                     'center' => [
                         'latitude' => $geoData?->center_lat ? (float) $geoData->center_lat : null,
@@ -258,8 +263,9 @@ class BeachController extends Controller
             ];
         });
 
-        return BeachResource::collection($data['beaches'])->additional([
-            'meta' => $data['meta']
+        return response()->json([
+            'data' => $data['beaches'],
+            'meta' => $data['meta'],
         ]);
     }
 
@@ -500,6 +506,8 @@ class BeachController extends Controller
         $cacheKey = "beaches:most_visited:{$locale}:" . ($cacheKeySuffix ?: 'all');
 
         // Cache for 24 hours (86400 seconds)
+        // Cache the resolved resource array, not Eloquent models, to keep
+        // Redis keys small and avoid memory exhaustion on unserialize.
         $data = $this->cacheRemember($cacheKey, 86400, function () use ($request, $limit) {
             $query = Beach::where('status_id', 1)
                 ->with([
@@ -555,7 +563,7 @@ class BeachController extends Controller
                 ->get();
 
             return [
-                'beaches' => $beaches,
+                'beaches' => BeachResource::collection($beaches)->resolve(),
                 'total' => $beaches->count(),
                 'limit' => $limit,
             ];
@@ -563,7 +571,7 @@ class BeachController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => BeachResource::collection($data['beaches']),
+            'data' => $data['beaches'],
             'message' => 'Most visited beaches retrieved successfully',
             'meta' => [
                 'total' => $data['total'],
@@ -608,10 +616,9 @@ class BeachController extends Controller
         $locale = app()->getLocale();
         $cacheKey = "beaches:footer:{$locale}";
 
-        $beaches = $this->cacheRemember($cacheKey, 86400, function () {
-            // Only eager-load translations for the beach + location entities
-            // needed to build the URL — no media, tags, or activities.
-            return Beach::where('status_id', 1)
+        // Cache the resolved resource array, not Eloquent models.
+        $data = $this->cacheRemember($cacheKey, 86400, function () {
+            $beaches = Beach::where('status_id', 1)
                 ->with([
                     'translations',
                     'continent.translations',
@@ -624,11 +631,13 @@ class BeachController extends Controller
                 ->orderBy('id')
                 ->limit(6)
                 ->get();
+
+            return BeachFooterResource::collection($beaches)->resolve();
         });
 
         return response()->json([
             'success' => true,
-            'data' => BeachFooterResource::collection($beaches),
+            'data' => $data,
             'message' => 'Footer beaches retrieved successfully',
         ], 200);
     }
