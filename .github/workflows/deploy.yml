@@ -152,6 +152,16 @@ jobs:
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:index || true
+
+            # Rebuild MCP server if it exists (dist/ is not in git)
+            if [ -f /opt/beachrex/api_${ENV_NAME}/mcp-server/package.json ]; then
+              cd /opt/beachrex/api_${ENV_NAME}/mcp-server
+              npm install --production 2>/dev/null || true
+              npm run build 2>/dev/null || true
+              pm2 restart beachrex-mcp 2>/dev/null || true
+              echo 'MCP server rebuilt.'
+            fi
+
             echo 'Deploy of ${ENV_NAME} complete.'
           "
 
