@@ -113,6 +113,29 @@ AI agent je uspešno:
 
 **Zakaj AI to ni ulovil:** AI pozna GitHub Actions concurrency, ampak ne razmišlja, da rsync ni thread-safe.
 
+### Napaka 11: Ročno kopiranje datotek na VPS mimo CI/CD pipeline
+
+**Kaj je AI naredil:** Pri postavljanju MCP serverja je AI ročno kopiral datoteke na VPS preko `scp` in restartal procese z `ssh`, namesto da bi vse spremembe šle skozi GitHub Actions deploy workflow.
+
+**Posledica:** Trije kaskadni problemi:
+1. **Lastništvo `root` namesto `beachrex`** — `scp` kot root je ustvaril datoteke v lasti `root`. Naslednji `rsync` iz CI/CD (ki teče kot `beachrex`) ni mogel brisati ali prepisovati teh datotek → `Permission denied` → deploy faila.
+2. **`dist/` pobrisan** — `dist/` direktorij (kompilirana TypeScript koda) ni v gitu (je v `.gitignore`). `rsync --delete` ga je pobrisal. MCP server je crknil, ker `dist/index.js` manjka.
+3. **Koda ni v `dev` branchu** — spremembe so bile samo na `feature` branchu. Naslednji deploy iz `dev` je prepisal MCP server s staro kodo, ki ni imela popravkov.
+
+**Zakaj AI to ni ulovil:** AI rešuje trenutni problem ("dobi MCP server na VPS delujoč") in ne razmišlja o:
+- Kaj se zgodi pri naslednjem deploy-u? Ali bo `rsync --delete` pobrisal moje datoteke?
+- Ali je lastništvo pravilno? `scp` kot root ustvari `root` lastništvo, CI/CD teče kot `beachrex`.
+- Ali so spremembe v `dev` branchu? Če niso, jih naslednji deploy bo prepisal.
+
+Inženir bi vedel, da na produkcijskem strežniku **nikoli** ne kopiraš datotek ročno — vse gre skozi CI/CD pipeline, da je stanje vedno sinhronizirano in reproducibilno.
+
+**Kaj bi se zgodilo, če uporabnik tega ne bi opazil:**
+- Naslednji push na `dev` bi deploy failal (Permission denied) — **celoten dev environment bi bil nedelujoč**
+- MCP server bi bil nedelujoč po vsakem deploy-u, ker `dist/` manjka
+- Vsak restart VPS-a bi pomenil ročno rebuild MCP serverja — brez dokumentacije tega postopka
+- Nov razvijalec ne bi vedel, zakaj MCP ne deluje in bi izgubil ure iskanja
+- V najslabšem primeru: `uat` in `main` deployi bi prav tako failali, če bi MCP bil dodan tam — **popoln izpad vseh okolij**
+
 ---
 
 ## 3. Zakaj se to zgodi — vzroki vibecodinga
@@ -143,7 +166,16 @@ V tutorialih je ena aplikacija, ena baza, en Redis. AI ne razmišlja o multi-ten
 
 ### Vzrok 4: AI ne testira robnih pogojev
 
-AI ne pošlje 100 sočasnih zahtevkov. Ne push-a na 3 branche hkrati. Ne spremeni admin vsebine in preveri, ali se pojavi na frontendu. Inženir pa točno to počne — testira robne pogoje, ker ve, da so tam težave.
+AI ne pošlje 100 sočasnih zahtevkov. Ne push-a na 3 branche hkrati. Ne spremeni admin vsebine in preveri, ali se pojavi na frontendu. Ne preveri, kaj se zgodi pri naslednjem deploy-u. Inženir pa točno to počne — testira robne pogoje, ker ve, da so tam težave.
+
+### Vzrok 5: AI ne spoštuje CI/CD pipeline
+
+AI rešuje trenutni problem ("dobi to na VPS delujoč") in ne razmišlja o:
+- Kaj se zgodi pri naslednjem deploy-u? Ali bo `rsync --delete` pobrisal moje datoteke?
+- Ali je lastništvo pravilno? `scp` kot root ustvari `root` lastništvo, CI/CD teče kot `beachrex`.
+- Ali so spremembe v `dev` branchu? Če niso, jih naslednji deploy bo prepisal.
+
+Inženir ve, da na produkcijskem strežniku **nikoli** ne kopiraš datotek ročno — vse gre skozi CI/CD pipeline, da je stanje vedno sinhronizirano in reproducibilno.
 
 ---
 
@@ -170,6 +202,8 @@ Inženir ne popravlja simptomov — išče korenite vzroke. Za vsak problem:
 | Cross-env API klici | da | ne | popravljeno |
 | Koda izolacija | ne | da | popravljeno |
 | PHP OOM crash | da | ne | popravljeno |
+| Ročno kopiranje na VPS | da | ne | popravljeno |
+| Deploy po MCP spremembi | faila | samodejen rebuild | popravljeno |
 
 ---
 
@@ -208,6 +242,7 @@ AI agent je v enem tednu naredil MVP, ki je deloval na prvi pogled. Za demo, pro
 - Skalabilnost
 - Varnost
 - Robni pogoji
+- CI/CD pipeline integriteta — nikoli ne kopiraj ročno na strežnik, kar lahko prepiše CI/CD
 
 **Inženir vodi AI agenta, ne obratno.** AI generira, inženir odobri. AI predlaga, inženir odloči. AI implementira, inženir preveri.
 
@@ -227,6 +262,7 @@ AI agent je v enem tednu naredil MVP, ki je deloval na prvi pogled. Za demo, pro
 8. **Meri pred in po** — brez metrik ne veš, ali je popravek res popravek
 9. **Dokumentiraj korenite vzroke** — ne samo KAJ je narobe, ampak ZAKAJ
 10. **Testiraj robne pogoje** — sočasnost, obremenitev, admin spremembe, cross-env
+11. **Nikoli ne kopiraj ročno na VPS** — vse spremembe gredo skozi CI/CD pipeline. Ročno `scp`/`rsync` povzroči lastništvo `root`, `dist/` pobrise, in deploy faila.
 
 ---
 

@@ -90,7 +90,20 @@ bugfix/xxx  ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
    - `rsync` kode na `/opt/beachrex/api_{env}/` (npr. `api_dev/`, `api_uat/`, `api_prod/`)
    - `rsync` deploy datotek na `/opt/beachrex/deploy/` (skupno)
    - `docker compose build` + `up -d` + `migrate` + `cache:clear`
+   - **Samodejni rebuild MCP serverja** (če obstaja `mcp-server/package.json`)
    - Reload host Nginx
+
+> ⚠️ **KRITIČNO — DEPLOY PRAVILA:**
+>
+> 1. **Nikoli ne kopiraj datotek ročno na VPS preko `scp`, `rsync` ali `ssh`!** Vse spremembe gredo skozi GitHub Actions deploy workflow. Ročno kopiranje povzroči:
+>    - Lastništvo `root` namesto `beachrex` → `rsync` iz CI/CD faila (Permission denied)
+>    - `dist/` direktoriji, ki niso v gitu, se pobrišejo pri naslednjem `rsync --delete`
+>    - Kontejnerji zgrajeni iz napačne kode (stara ali nepopolna)
+>    - MCP server crkne, ker `dist/index.js` manjka
+>
+> 2. **`dist/` in `node_modules/` niso v gitu** — sta v `.gitignore`. Po vsakem `rsync --delete` jih je treba ponovno zgraditi na VPS. Deploy workflow ima samodejni korak za to.
+>
+> 3. **Če moraš nekaj ročno popraviti na VPS** (npr. Nginx config, SSL cert), dokumentiraj v `DEPLOYMENT_GUIDE.md` pod "Ročni koraki" in poskrbi, da je popravek v gitu, da ga naslednji deploy ne bo prepisal.
 
 ### Frontend pipeline
 1. **Deploy job** (brez test joba):
