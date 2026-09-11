@@ -1,10 +1,7 @@
 /**
- * Beachrex API Client
- *
- * Wraps the Beachrex REST API. The API key is stored server-side
- * and never exposed to the AI agent.
+ * Beachrex API Client — wraps the Beachrex REST API.
+ * API key is stored server-side, never exposed to AI.
  */
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const BEACHREX_API_URL = process.env.BEACHREX_API_URL || 'https://dev-api.beachrex.com';
@@ -30,29 +27,19 @@ export interface BeachSummary {
   slug: string;
   country: string;
   region: string;
+  city: string;
   waterbody: string;
   latitude: number;
   longitude: number;
   beach_views: number;
+  distance_km?: number;
 }
 
 export interface BeachDetail extends BeachSummary {
   description: string;
   continent: string;
-  city: string;
   island: string | null;
-  media: Array<{
-    id: number;
-    url: string;
-    type: string;
-    is_primary: boolean;
-  }>;
-  characteristics: Record<string, string>;
-  activities: string[];
-  weather?: {
-    temperature: number;
-    condition: string;
-  };
+  media: Array<{ url: string; is_primary: boolean; type: string }>;
 }
 
 export interface FilterOption {
@@ -64,55 +51,49 @@ export interface FilterOption {
 export interface SearchResult {
   total: number;
   beaches: BeachSummary[];
-  meta?: {
-    center?: { latitude: number; longitude: number };
-    bounding_box?: {
-      min_latitude: number;
-      min_longitude: number;
-      max_latitude: number;
-      max_longitude: number;
-    };
-  };
+  meta?: any;
 }
 
 async function apiCall<T>(path: string, params?: Record<string, string>, locale?: string): Promise<T> {
   const url = new URL(`${BEACHREX_API_URL}/api/v1${path}`);
-
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value) url.searchParams.set(key, value);
     }
   }
-
   const headers: Record<string, string> = {
     'Accept': 'application/json',
     'Accept-Language': locale || DEFAULT_LOCALE,
   };
-
   if (BEACHREX_API_KEY) {
     headers['Authorization'] = `Bearer ${BEACHREX_API_KEY}`;
   }
-
   const response = await fetch(url.toString(), { headers });
-
   if (!response.ok) {
     throw new Error(`Beachrex API error: ${response.status} ${response.statusText} for ${url}`);
   }
-
   return response.json() as Promise<T>;
 }
 
-/**
- * Search beaches with optional filters.
- * Returns a compact summary suitable for AI consumption.
- */
+function mapBeach(b: any): BeachSummary {
+  return {
+    id: b.id,
+    name: b.name || `Beach #${b.id}`,
+    slug: b.slug || '',
+    country: b.country_name || b.country_code || '',
+    region: b.region_slug || '',
+    city: b.city_name || '',
+    waterbody: b.waterbody_name || 'sea',
+    latitude: parseFloat(b.latitude) || 0,
+    longitude: parseFloat(b.longitude) || 0,
+    beach_views: b.beach_views || 0,
+    distance_km: b.distance_km ? parseFloat(Number(b.distance_km).toFixed(2)) : undefined,
+  };
+}
+
 export async function searchBeaches(filters: BeachSearchFilters, locale?: string): Promise<SearchResult> {
   const limit = Math.min(filters.limit || DEFAULT_LIMIT, MAX_LIMIT);
-
-  const params: Record<string, string> = {
-    limit: String(limit),
-  };
-
+  const params: Record<string, string> = { limit: String(limit) };
   if (filters.continent_code) params.continent_code = filters.continent_code;
   if (filters.country_code) params.country_code = filters.country_code;
   if (filters.region_code) params.region_code = filters.region_code;
@@ -120,94 +101,53 @@ export async function searchBeaches(filters: BeachSearchFilters, locale?: string
   if (filters.island_code) params.island_code = filters.island_code;
   if (filters.waterbody) params.waterbody = filters.waterbody;
   if (filters.beach_type) params.beach_type = filters.beach_type;
-
   const data = await apiCall<any>('/beaches', params, locale);
-
-  const beaches: BeachSummary[] = (data.data || []).map((b: any) => ({
-    id: b.id as number,
-    name: b.translations?.[0]?.name || b.name || `Beach #${b.id}`,
-    slug: b.translations?.[0]?.slug || '',
-    country: b.country?.translations?.[0]?.name || b.country?.code || '',
-    region: b.region?.translations?.[0]?.name || '',
-    waterbody: b.waterbody?.translations?.[0]?.name || 'sea',
-    latitude: b.latitude as number,
-    longitude: b.longitude as number,
-    beach_views: b.beach_views || 0,
-  }));
-
-  return {
-    total: beaches.length,
-    beaches,
-    meta: data.meta,
-  };
+  const beaches: BeachSummary[] = (data.data || []).map(mapBeach);
+  return { total: beaches.length, beaches, meta: data.meta };
 }
 
-/**
- * Get detailed information about a specific beach by ID or slug.
- */
+export async function findBeachesNearby(
+  latitude: number, longitude: number, radiusKm?: number, limit?: number, locale?: string,
+): Promise<SearchResult> {
+  const params: Record<string, string> = {
+    latitude: String(latitude),
+    longitude: String(longitude),
+    limit: String(Math.min(limit || DEFAULT_LIMIT, MAX_LIMIT)),
+  };
+  if (radiusKm) params.radius = String(radiusKm);
+  const data = await apiCall<any>('/spatial/beaches/nearest', params, locale);
+  const beaches: BeachSummary[] = (data.data || []).map(mapBeach);
+  return { total: beaches.length, beaches };
+}
+
 export async function getBeachDetails(identifier: string | number, locale?: string): Promise<BeachDetail> {
   const data = await apiCall<any>(`/beach-details/${identifier}`, undefined, locale);
-
   const b = data.data;
   return {
-    id: b.id as number,
-    name: b.translations?.[0]?.name || b.name || `Beach #${b.id}`,
-    slug: b.translations?.[0]?.slug || '',
-    country: b.country?.translations?.[0]?.name || '',
-    region: b.region?.translations?.[0]?.name || '',
-    continent: b.continent?.translations?.[0]?.name || '',
-    city: b.city?.translations?.[0]?.name || '',
-    island: b.island?.translations?.[0]?.name || null,
-    waterbody: b.waterbody?.translations?.[0]?.name || 'sea',
-    description: b.translations?.[0]?.description || '',
-    latitude: b.latitude as number,
-    longitude: b.longitude as number,
-    beach_views: b.beach_views || 0,
-    media: (b.media || []).map((m: any) => ({
-      id: m.id as number,
-      url: m.url as string,
-      type: m.type as string,
-      is_primary: m.is_primary as boolean,
+    ...mapBeach(b),
+    description: b.description || '',
+    continent: b.continent_name || b.continent_code || '',
+    island: b.island_name || null,
+    media: (b.media?.gallery || []).map((m: any) => ({
+      url: m.url, is_primary: m.is_primary || false, type: 'image',
     })),
-    characteristics: {},
-    activities: [],
   };
 }
 
-/**
- * Get available beach filters (waterbody types, beach types, etc.)
- */
 export async function getBeachFilters(locale?: string): Promise<{
-  waterbodies: FilterOption[];
-  beach_types: FilterOption[];
-  continents: FilterOption[];
+  waterbodies: FilterOption[]; beach_types: FilterOption[]; continents: FilterOption[];
 }> {
   const data = await apiCall<any>('/beaches/filters', undefined, locale);
-
   const options: FilterOption[] = (data.data || []).map((f: any) => ({
-    code: f.code as string,
-    name: f.translations?.[0]?.name || f.name || f.code,
-    beach_count: f.beaches_count || 0,
+    code: f.code || '', name: f.name || f.code, beach_count: f.beaches_count || 0,
   }));
-
-  return {
-    waterbodies: options,
-    beach_types: [],
-    continents: [],
-  };
+  return { waterbodies: options, beach_types: [], continents: [] };
 }
 
-/**
- * Get weather for a beach by identifier.
- */
 export async function getBeachWeather(identifier: string | number): Promise<{
-  temperature: number;
-  condition: string;
-  humidity: number;
-  wind_speed: number;
+  temperature: number; condition: string; humidity: number; wind_speed: number;
 }> {
   const data = await apiCall<any>(`/beach-details/${identifier}/weather`);
-
   const w = data.data;
   return {
     temperature: w.temperature || 0,

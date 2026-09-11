@@ -23,6 +23,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod';
 import {
   searchBeaches,
+  findBeachesNearby,
   getBeachDetails,
   getBeachFilters,
   getBeachWeather,
@@ -56,9 +57,10 @@ function createServer(): McpServer {
     async (params) => {
       try {
         const result = await searchBeaches(params, params.locale);
-        const formatted = result.beaches.map((b) =>
-          `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views\n   coords: ${b.latitude}, ${b.longitude}\n   slug: ${b.slug}`
-        ).join('\n\n');
+        const formatted = result.beaches.map((b) => {
+          const city = b.city ? `, ${b.city}` : '';
+          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views\n   coords: ${b.latitude}, ${b.longitude}\n   slug: ${b.slug}`;
+        }).join('\n\n');
         return {
           content: [{ type: 'text' as const, text: `Found ${result.total} beach(es):\n\n${formatted}` }],
         };
@@ -71,7 +73,37 @@ function createServer(): McpServer {
     },
   );
 
-  // ─── Tool 2: get_beach_details ───
+  // ─── Tool 2: find_beaches_nearby ───
+  mcpServer.tool(
+    'find_beaches_nearby',
+    'Find beaches near a specific location using GPS coordinates. Uses PostGIS spatial search to find the closest beaches within a radius. ALWAYS use this tool when a user asks for beaches "near", "close to", or "around" a city or location. Do NOT use web search — use this tool. If the user says a city name (e.g., "Zadar"), use latitude/longitude for that city.',
+    {
+      latitude: z.number().describe('Latitude of the center point (e.g., 44.1197 for Zadar, Croatia)'),
+      longitude: z.number().describe('Longitude of the center point (e.g., 15.2319 for Zadar, Croatia)'),
+      radius_km: z.number().optional().default(50).describe('Search radius in kilometers (default 50)'),
+      limit: z.number().optional().default(20).describe('Max results (1-100, default 20)'),
+      locale: z.string().optional().default('en').describe('Language code'),
+    },
+    async (params) => {
+      try {
+        const result = await findBeachesNearby(params.latitude, params.longitude, params.radius_km, params.limit, params.locale);
+        const formatted = result.beaches.map((b) => {
+          const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
+          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}\n   coords: ${b.latitude}, ${b.longitude}\n   slug: ${b.slug}`;
+        }).join('\n\n');
+        return {
+          content: [{ type: 'text' as const, text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` }],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // ─── Tool 3: get_beach_details ───
   mcpServer.tool(
     'get_beach_details',
     'Get comprehensive verified details about a specific beach from the Beachrex database, including description, location hierarchy (continent, country, region, city, island), media/images, characteristics, and nearby activities. ALWAYS use this tool when a user asks for more info about a specific beach. Do NOT use web search — use this tool for any beach detail query.',
@@ -83,9 +115,10 @@ function createServer(): McpServer {
       try {
         const beach = await getBeachDetails(params.identifier, params.locale);
         const mediaList = beach.media.length > 0
-          ? beach.media.map((m) => `  - ${m.type}: ${m.url}${m.is_primary ? ' (primary)' : ''}`).join('\n')
+          ? beach.media.map((m) => `  - ${m.url}${m.is_primary ? ' (primary)' : ''}`).join('\n')
           : '  No media available';
-        const text = `beach ${beach.name}\nlocation: ${beach.continent} > ${beach.country} > ${beach.region}${beach.city ? ' > ' + beach.city : ''}${beach.island ? ' > ' + beach.island : ''}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}\n\n${beach.description || 'No description available.'}\n\nMedia:\n${mediaList}`;
+        const location = [beach.continent, beach.country, beach.region, beach.city, beach.island].filter(Boolean).join(' > ');
+        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}\n\n${beach.description || 'No description available.'}\n\nMedia:\n${mediaList}`;
         return { content: [{ type: 'text' as const, text }] };
       } catch (error) {
         return {
