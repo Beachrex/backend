@@ -141,13 +141,36 @@ export async function findBeachesNearby(
 
 export async function getBeachDetails(identifier: string | number, locale?: string): Promise<BeachDetail> {
   const data = await apiCall<any>(`/beach-details/${identifier}`, undefined, locale);
+  // beach-details API nests data under basic_info, location, characteristics
   const b = data.data;
+  const info = b.basic_info || {};
+  const loc = b.location || {};
+  const chars = b.characteristics || {};
+  const gallery = b.media?.gallery || [];
   return {
-    ...mapBeach(b, locale),
-    description: b.description || '',
-    continent: b.continent_name || b.continent_code || '',
-    island: b.island_name || null,
-    media: (b.media?.gallery || []).map((m: any) => ({
+    id: info.id,
+    name: info.name || `Beach #${info.id}`,
+    slug: info.slug || '',
+    country: loc.country?.name || loc.country?.code || '',
+    region: loc.region?.slug || '',
+    continent: loc.continent?.name || loc.continent?.code || '',
+    city: loc.city?.name || '',
+    island: loc.island?.slug || null,
+    waterbody: chars.waterbody?.name || 'sea',
+    description: info.description || '',
+    latitude: parseFloat(info.latitude) || 0,
+    longitude: parseFloat(info.longitude) || 0,
+    beach_views: 0,
+    image_url: imageUrl(gallery.find((m: any) => m.is_primary)?.url || gallery[0]?.url),
+    beachrex_url: beachUrl({
+      continent_slug: loc.continent?.slug,
+      country_slug: loc.country?.slug,
+      region_slug: loc.region?.slug,
+      island_slug: loc.island?.slug,
+      city_slug: loc.city?.slug,
+      slug: info.slug,
+    }, locale || DEFAULT_LOCALE),
+    media: gallery.map((m: any) => ({
       url: imageUrl(m.url), is_primary: m.is_primary || false,
     })),
   };
