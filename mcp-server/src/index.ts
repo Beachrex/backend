@@ -30,25 +30,6 @@ import {
 } from './api-client.js';
 
 /**
- * Fetch an image URL and return as base64 for MCP image content type.
- * Falls back gracefully if fetch fails.
- */
-async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const buf = await response.arrayBuffer();
-    const mimeType = response.headers.get('content-type') || 'image/jpeg';
-    return {
-      data: Buffer.from(buf).toString('base64'),
-      mimeType: mimeType.split(';')[0].trim(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Factory: creates a fresh McpServer with all tools/resources registered.
  * In stateless HTTP mode, a new server instance is created per request
  * to avoid session conflicts (per MCP SDK pattern).
@@ -79,22 +60,13 @@ function createServer(): McpServer {
         const formatted = result.beaches.map((b) => {
           const city = b.city ? `, ${b.city}` : '';
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
-          const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
-          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
-          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
+          const imgMd = b.image_url ? `\n   🖼️ [View photo](${b.image_url})` : '';
+          const url = b.beachrex_url ? `\n   🔗 [View on Beachrex](${b.beachrex_url})` : '';
+          return `🏖️ **${b.name}** (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${imgMd}${url}`;
         }).join('\n\n');
-
-        const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
-          { type: 'text', text: `Found ${result.total} beach(es):\n\n${formatted}` },
-        ];
-
-        // Fetch first beach thumbnail as base64 for inline display
-        const firstThumb = result.beaches.find((b) => b.image_thumb)?.image_thumb;
-        if (firstThumb) {
-          const imgBase64 = await fetchImageAsBase64(firstThumb);
-          if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
-        }
-        return { content };
+        return {
+          content: [{ type: 'text' as const, text: `Found ${result.total} beach(es):\n\n${formatted}` }],
+        };
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
@@ -120,20 +92,13 @@ function createServer(): McpServer {
         const result = await findBeachesNearby(params.latitude, params.longitude, params.radius_km, params.limit, params.locale);
         const formatted = result.beaches.map((b) => {
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
-          const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
-          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
-          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
+          const imgMd = b.image_url ? `\n   🖼️ [View photo](${b.image_url})` : '';
+          const url = b.beachrex_url ? `\n   🔗 [View on Beachrex](${b.beachrex_url})` : '';
+          return `🏖️ **${b.name}** (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${imgMd}${url}`;
         }).join('\n\n');
-
-        const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
-          { type: 'text', text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` },
-        ];
-        const firstThumb = result.beaches.find((b) => b.image_thumb)?.image_thumb;
-        if (firstThumb) {
-          const imgBase64 = await fetchImageAsBase64(firstThumb);
-          if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
-        }
-        return { content };
+        return {
+          content: [{ type: 'text' as const, text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` }],
+        };
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
@@ -158,18 +123,13 @@ function createServer(): McpServer {
           ? beach.media.map((m) => `  - ${m.url}${m.is_primary ? ' (primary)' : ''}`).join('\n')
           : '  No media available';
         const location = [beach.continent, beach.country, beach.region, beach.city, beach.island].filter(Boolean).join(' > ');
-        const url = beach.beachrex_url ? `\nView on Beachrex: ${beach.beachrex_url}` : '';
-        const img = beach.image_url ? `\nImage: ${beach.image_url}` : '';
-        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${img}${url}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${mediaList}`;
-
-        const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
-          { type: 'text', text },
-        ];
-        if (beach.image_thumb) {
-          const imgBase64 = await fetchImageAsBase64(beach.image_thumb);
-          if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
-        }
-        return { content };
+        const urlMd = beach.beachrex_url ? `\n🔗 [View on Beachrex](${beach.beachrex_url})` : '';
+        const imgMd = beach.image_url ? `\n🖼️ [View photo](${beach.image_url})` : '';
+        const galleryMd = beach.media.length > 0
+          ? beach.media.map((m) => `  - [${m.is_primary ? 'Primary photo' : 'Photo'}](${m.url})`).join('\n')
+          : '  No gallery available';
+        const text = `🏖️ **${beach.name}**\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${imgMd}${urlMd}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${galleryMd}`;
+        return { content: [{ type: 'text' as const, text }] };
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
