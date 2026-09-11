@@ -80,20 +80,19 @@ function createServer(): McpServer {
           const city = b.city ? `, ${b.city}` : '';
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
           const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
-          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${url}`;
+          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
+          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
         }).join('\n\n');
 
         const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
           { type: 'text', text: `Found ${result.total} beach(es):\n\n${formatted}` },
         ];
 
-        // Fetch first beach image as base64 so Claude can display it inline
-        const firstImageUrl = result.beaches.find((b) => b.image_url)?.image_url;
-        if (firstImageUrl) {
-          const imgBase64 = await fetchImageAsBase64(firstImageUrl);
-          if (imgBase64) {
-            content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
-          }
+        // Fetch first beach thumbnail as base64 for inline display
+        const firstThumb = result.beaches.find((b) => b.image_thumb)?.image_thumb;
+        if (firstThumb) {
+          const imgBase64 = await fetchImageAsBase64(firstThumb);
+          if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
         }
         return { content };
       } catch (error) {
@@ -122,15 +121,16 @@ function createServer(): McpServer {
         const formatted = result.beaches.map((b) => {
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
           const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
-          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${url}`;
+          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
+          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
         }).join('\n\n');
 
         const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
           { type: 'text', text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` },
         ];
-        const firstImageUrl = result.beaches.find((b) => b.image_url)?.image_url;
-        if (firstImageUrl) {
-          const imgBase64 = await fetchImageAsBase64(firstImageUrl);
+        const firstThumb = result.beaches.find((b) => b.image_thumb)?.image_thumb;
+        if (firstThumb) {
+          const imgBase64 = await fetchImageAsBase64(firstThumb);
           if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
         }
         return { content };
@@ -159,13 +159,14 @@ function createServer(): McpServer {
           : '  No media available';
         const location = [beach.continent, beach.country, beach.region, beach.city, beach.island].filter(Boolean).join(' > ');
         const url = beach.beachrex_url ? `\nView on Beachrex: ${beach.beachrex_url}` : '';
-        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${url}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${mediaList}`;
+        const img = beach.image_url ? `\nImage: ${beach.image_url}` : '';
+        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${img}${url}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${mediaList}`;
 
         const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
           { type: 'text', text },
         ];
-        if (beach.image_url) {
-          const imgBase64 = await fetchImageAsBase64(beach.image_url);
+        if (beach.image_thumb) {
+          const imgBase64 = await fetchImageAsBase64(beach.image_thumb);
           if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
         }
         return { content };

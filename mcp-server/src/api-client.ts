@@ -7,6 +7,7 @@
 const BEACHREX_API_URL = process.env.BEACHREX_API_URL || 'https://dev-api.beachrex.com';
 const BEACHREX_API_KEY = process.env.BEACHREX_API_KEY || '';
 const CDN_BASE = process.env.BEACHREX_CDN_URL || 'https://s3.beachrex.com/unsafe/fit-in/800x800/';
+const CDN_THUMB = process.env.BEACHREX_CDN_THUMB || 'https://s3.beachrex.com/unsafe/fit-in/200x200/';
 const FRONTEND_URL = process.env.BEACHREX_FRONTEND_URL || 'https://dev.beachrex.com';
 const DEFAULT_LOCALE = 'en';
 const DEFAULT_LIMIT = 20;
@@ -36,6 +37,7 @@ export interface BeachSummary {
   beach_views: number;
   distance_km?: number;
   image_url: string;
+  image_thumb: string;
   beachrex_url: string;
 }
 
@@ -70,6 +72,12 @@ async function apiCall<T>(path: string, params?: Record<string, string>, locale?
 function imageUrl(relPath: string | undefined): string {
   if (!relPath) return '';
   return `${CDN_BASE}${relPath}`;
+}
+
+/** Build thumbnail CDN URL (smaller, for inline display in AI chat) */
+function imageThumbUrl(relPath: string | undefined): string {
+  if (!relPath) return '';
+  return `${CDN_THUMB}${relPath}`;
 }
 
 /** Localized "beaches" word for URL (matches frontend routing) */
@@ -115,6 +123,7 @@ function mapBeach(b: any, locale?: string): BeachSummary {
     beach_views: b.beach_views || 0,
     distance_km: b.distance_km ? parseFloat(Number(b.distance_km).toFixed(2)) : undefined,
     image_url: imageUrl(b.main_image),
+    image_thumb: imageThumbUrl(b.main_image),
     beachrex_url: beachUrl(b, locale || DEFAULT_LOCALE),
   };
 }
@@ -183,6 +192,7 @@ export async function getBeachDetails(identifier: string | number, locale?: stri
   const loc = b.location || {};
   const chars = b.characteristics || {};
   const gallery = b.media?.gallery || [];
+  const primaryImg = gallery.find((m: any) => m.is_primary)?.url || gallery[0]?.url;
   return {
     id: info.id,
     name: info.name || `Beach #${info.id}`,
@@ -197,7 +207,8 @@ export async function getBeachDetails(identifier: string | number, locale?: stri
     latitude: parseFloat(info.latitude) || 0,
     longitude: parseFloat(info.longitude) || 0,
     beach_views: 0,
-    image_url: imageUrl(gallery.find((m: any) => m.is_primary)?.url || gallery[0]?.url),
+    image_url: imageUrl(primaryImg),
+    image_thumb: imageThumbUrl(primaryImg),
     beachrex_url: beachUrl({
       continent_slug: loc.continent?.slug,
       country_slug: loc.country?.slug,
