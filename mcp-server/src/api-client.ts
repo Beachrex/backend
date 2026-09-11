@@ -74,23 +74,27 @@ function imageUrl(relPath: string | undefined): string {
 
 /** Localized "beaches" word for URL (matches frontend routing) */
 const BEACHES_WORD: Record<string, string> = {
-  en: 'beaches', si: 'plaze', de: 'strande', hr: 'plaze',
+  en: 'beaches', si: 'plaze', sl: 'plaze', de: 'strande', hr: 'plaze',
   fr: 'plages', es: 'playas', it: 'spiagge', ua: 'plyazhi',
   ru: 'plyazhi', pl: 'plaze', cs: 'plaze', hu: 'strandok',
   bg: 'plyazhove', sk: 'plaze',
 };
 function getBeachesWord(locale: string): string {
-  return BEACHES_WORD[locale] ?? 'beaches';
+  // Normalize: API uses 'sl' for Slovenian, frontend uses 'si'
+  const normalized = locale === 'sl' ? 'si' : locale;
+  return BEACHES_WORD[normalized] ?? 'beaches';
 }
 
 /** Build full beachrex.com URL from slugs */
 function beachUrl(b: any, locale: string): string {
+  // Normalize: API uses 'sl', frontend URL uses 'si'
+  const urlLocale = locale === 'sl' ? 'si' : locale;
   const beachesWord = getBeachesWord(locale);
   const parts = [
     b.continent_slug, b.country_slug, b.region_slug,
     b.island_slug || b.city_slug, b.slug,
   ].filter(Boolean);
-  return `${FRONTEND_URL}/${locale}/${beachesWord}/${parts.join('/')}`;
+  return `${FRONTEND_URL}/${urlLocale}/${beachesWord}/${parts.join('/')}`;
 }
 
 function mapBeach(b: any, locale?: string): BeachSummary {
