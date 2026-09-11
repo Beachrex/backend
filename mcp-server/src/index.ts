@@ -30,6 +30,25 @@ import {
 } from './api-client.js';
 
 /**
+ * Fetch an image URL and return as base64 for MCP image content type.
+ * Falls back gracefully if fetch fails.
+ */
+async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buf = await response.arrayBuffer();
+    const mimeType = response.headers.get('content-type') || 'image/jpeg';
+    return {
+      data: Buffer.from(buf).toString('base64'),
+      mimeType: mimeType.split(';')[0].trim(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Factory: creates a fresh McpServer with all tools/resources registered.
  * In stateless HTTP mode, a new server instance is created per request
  * to avoid session conflicts (per MCP SDK pattern).
@@ -60,13 +79,23 @@ function createServer(): McpServer {
         const formatted = result.beaches.map((b) => {
           const city = b.city ? `, ${b.city}` : '';
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
-          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
           const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
-          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
+          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${url}`;
         }).join('\n\n');
-        return {
-          content: [{ type: 'text' as const, text: `Found ${result.total} beach(es):\n\n${formatted}` }],
-        };
+
+        const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
+          { type: 'text', text: `Found ${result.total} beach(es):\n\n${formatted}` },
+        ];
+
+        // Fetch first beach image as base64 so Claude can display it inline
+        const firstImageUrl = result.beaches.find((b) => b.image_url)?.image_url;
+        if (firstImageUrl) {
+          const imgBase64 = await fetchImageAsBase64(firstImageUrl);
+          if (imgBase64) {
+            content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
+          }
+        }
+        return { content };
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
@@ -92,13 +121,19 @@ function createServer(): McpServer {
         const result = await findBeachesNearby(params.latitude, params.longitude, params.radius_km, params.limit, params.locale);
         const formatted = result.beaches.map((b) => {
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
-          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
           const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
-          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
+          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${url}`;
         }).join('\n\n');
-        return {
-          content: [{ type: 'text' as const, text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` }],
-        };
+
+        const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
+          { type: 'text', text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` },
+        ];
+        const firstImageUrl = result.beaches.find((b) => b.image_url)?.image_url;
+        if (firstImageUrl) {
+          const imgBase64 = await fetchImageAsBase64(firstImageUrl);
+          if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
+        }
+        return { content };
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
@@ -123,10 +158,17 @@ function createServer(): McpServer {
           ? beach.media.map((m) => `  - ${m.url}${m.is_primary ? ' (primary)' : ''}`).join('\n')
           : '  No media available';
         const location = [beach.continent, beach.country, beach.region, beach.city, beach.island].filter(Boolean).join(' > ');
-        const img = beach.image_url ? `\nImage: ${beach.image_url}` : '';
         const url = beach.beachrex_url ? `\nView on Beachrex: ${beach.beachrex_url}` : '';
-        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${img}${url}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${mediaList}`;
-        return { content: [{ type: 'text' as const, text }] };
+        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${url}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${mediaList}`;
+
+        const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [
+          { type: 'text', text },
+        ];
+        if (beach.image_url) {
+          const imgBase64 = await fetchImageAsBase64(beach.image_url);
+          if (imgBase64) content.push({ type: 'image', data: imgBase64.data, mimeType: imgBase64.mimeType });
+        }
+        return { content };
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
