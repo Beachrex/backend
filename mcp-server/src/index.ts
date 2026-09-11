@@ -4,18 +4,24 @@
  * Exposes Beachrex beach search, details, filters, and weather
  * to AI agents (Claude, ChatGPT, Gemini) via the Model Context Protocol.
  *
- * Transport: Streamable HTTP (production) / stdio (local dev)
+ * Transport: auto-detects based on env
+ *   - MCP_HTTP_PORT set → Streamable HTTP (cloud AI, production)
+ *   - no MCP_HTTP_PORT   → stdio (local dev, Cursor/Claude Desktop)
+ *
  * Auth: API key stored server-side, never exposed to AI
  *
- * Usage:
- *   BEACHREX_API_URL=https://dev-api.beachrex.com \
- *   BEACHREX_API_KEY=your-key \
- *   node dist/index.js
+ * Usage (stdio — local dev):
+ *   BEACHREX_API_URL=https://dev-api.beachrex.com node dist/index.js
+ *
+ * Usage (HTTP — cloud AI):
+ *   MCP_HTTP_PORT=3100 BEACHREX_API_URL=https://dev-api.beachrex.com node dist/index.js
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import {
   searchBeaches,
   getBeachDetails,
@@ -216,9 +222,40 @@ For weather at a beach, use get_beach_weather.`,
 // ───────────────────── START ─────────────────────
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('Beachrex MCP Server running on stdio');
+  const httpPort = process.env.MCP_HTTP_PORT;
+
+  if (httpPort) {
+    // HTTP transport — for cloud AI agents (Claude.ai, ChatGPT)
+    // StreamableHTTPServerTransport handles the MCP protocol over HTTP.
+    // We wrap it in a Node.js http.Server to listen on a port.
+    const port = parseInt(httpPort, 10);
+    const http = await import('http');
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+    });
+
+    const httpServer = http.createServer((req, res) => {
+      // Health check endpoint
+      if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', server: 'beachrex-mcp' }));
+        return;
+      }
+      // MCP endpoint — delegate to transport
+      transport.handleRequest(req, res);
+    });
+
+    await server.connect(transport);
+    httpServer.listen(port);
+    console.log(`Beachrex MCP Server running on HTTP port ${port}`);
+    console.log(`  Health check: http://localhost:${port}/health`);
+    console.log(`  MCP endpoint:  http://localhost:${port}/mcp`);
+  } else {
+    // stdio transport — for local dev (Cursor, Claude Desktop)
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('Beachrex MCP Server running on stdio');
+  }
 }
 
 main().catch((error) => {
