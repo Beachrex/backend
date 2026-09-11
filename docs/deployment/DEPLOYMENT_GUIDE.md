@@ -50,6 +50,29 @@
 >
 > **Admin panel:** Vsako okolje ima svoj admin panel na lastni `dock*.beachrex.com` domeni (dostop na **root** domene, brez `/admin` končnice — npr. `https://dock-dev.beachrex.com/`), ki je domensko omejena v Filamentu preko `FILAMENT_DOMAIN` env variable. Sprememba v `dev` adminu **ne vpliva** na UAT ali PROD admin — vsak gre v svojo bazo (`beachrex_dev`/`beachrex_uat`/`beachrex_prod`).
 
+### ⚠️ Branch politika (STROGO)
+
+**AI agenti in razvijalci NIKOLI ne smejo pushati direktno na `uat` ali `main`!**
+
+```
+feature/xxx ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
+bugfix/xxx  ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
+```
+
+| Korak | Akcija | Kdo |
+|---|---|---|
+| 1. Nova funkcionalnost | `git checkout -b feature/xxx` (ali `bugfix/xxx`) | Razvijalec/AI |
+| 2. Implementacija | Commit na feature branch | Razvijalec/AI |
+| 3. Push feature branch | `git push origin feature/xxx` | Razvijalec/AI |
+| 4. PR feature → dev | Pull Request na GitHub, review, merge | Razvijalec |
+| 5. Testiranje na DEV | Preverba na `dev.beachrex.com` / `dev-api.beachrex.com` | Razvijalec |
+| 6. PR dev → uat | Pull Request, review, merge | Razvijalec |
+| 7. Testiranje na UAT | Preverba na `uat.beachrex.com` / `uat-api.beachrex.com` | Razvijalec |
+| 8. PR uat → main | Pull Request, review, merge | Razvijalec |
+| 9. Deploy na PROD | Automatic (ali manual trigger) | GitHub Actions |
+
+> **KRITIČNO:** `uat` in `main` sta zaščiteni branchi. Edini dovoljeni način spremembe je Pull Request iz `dev` (za uat) oziroma iz `uat` (za main). Direktni push na `uat` ali `main` je **prepovedan** in bo povzročil nepravilno stanje repozitorija.
+
 ---
 
 ## 3. CI/CD (GitHub Actions)
