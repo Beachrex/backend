@@ -85,8 +85,12 @@ function getBeachesWord(locale: string): string {
   return BEACHES_WORD[normalized] ?? 'beaches';
 }
 
-/** Build full beachrex.com URL from slugs */
-function beachUrl(b: any, locale: string): string {
+/** Check if value is numeric */
+function isNumeric(val: string | number): boolean {
+  return typeof val === 'number' || /^\d+$/.test(String(val));
+}
+
+/** Build full beachrex.com URL from slugs */function beachUrl(b: any, locale: string): string {
   // Normalize: API uses 'sl', frontend URL uses 'si'
   const urlLocale = locale === 'sl' ? 'si' : locale;
   const beachesWord = getBeachesWord(locale);
@@ -144,9 +148,37 @@ export async function findBeachesNearby(
 }
 
 export async function getBeachDetails(identifier: string | number, locale?: string): Promise<BeachDetail> {
-  const data = await apiCall<any>(`/beach-details/${identifier}`, undefined, locale);
+  let data: any;
+  let b: any;
+
+  // If identifier is a string (beach name like "Beach Bajlo"), try slug first, then search
+  if (typeof identifier === 'string' && !isNumeric(identifier)) {
+    // Replace spaces with hyphens for slug matching
+    const possibleSlug = identifier.toLowerCase().replace(/\s+/g, '-');
+    try {
+      data = await apiCall<any>(`/beach-details/${possibleSlug}`, undefined, locale);
+      b = data.data;
+    } catch {
+      // Slug didn't work — search by name and get the real slug
+      const searchResult = await searchBeaches({ limit: 1 }, locale);
+      const match = searchResult.beaches.find((beach) =>
+        beach.name.toLowerCase() === identifier.toLowerCase() ||
+        beach.slug === possibleSlug,
+      );
+      if (match) {
+        data = await apiCall<any>(`/beach-details/${match.slug}`, undefined, locale);
+        b = data.data;
+      } else {
+        throw new Error(`Beach "${identifier}" not found in Beachrex database. Use search_beaches to find beaches.`);
+      }
+    }
+  } else {
+    // Numeric ID or exact slug — direct call
+    data = await apiCall<any>(`/beach-details/${identifier}`, undefined, locale);
+    b = data.data;
+  }
+
   // beach-details API nests data under basic_info, location, characteristics
-  const b = data.data;
   const info = b.basic_info || {};
   const loc = b.location || {};
   const chars = b.characteristics || {};
