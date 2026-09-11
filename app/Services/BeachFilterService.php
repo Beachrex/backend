@@ -87,8 +87,8 @@ class BeachFilterService
         }
 
         // Region filter (single or multiple) - supports both codes and IDs
-        if ($request->has('region')) {
-            $regions = $this->parseFilterValue($request->region);
+        if ($request->has('region_code')) {
+            $regions = $this->parseFilterValue($request->region_code);
 
             $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
             $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
@@ -120,8 +120,8 @@ class BeachFilterService
         }
 
         // Island filter (single or multiple) - supports both codes and IDs
-        if ($request->has('island')) {
-            $islands = $this->parseFilterValue($request->island);
+        if ($request->has('island_code')) {
+            $islands = $this->parseFilterValue($request->island_code);
 
             $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
             $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
@@ -153,8 +153,8 @@ class BeachFilterService
         }
 
         // City filter (single or multiple) - supports both code and ID
-        if ($request->has('city')) {
-            $cities = $this->parseFilterValue($request->city);
+        if ($request->has('city_code')) {
+            $cities = $this->parseFilterValue($request->city_code);
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($cities)->contains(fn($val) => is_numeric($val));
@@ -793,9 +793,9 @@ class BeachFilterService
             }
         }
 
-        // Region filter - supports both codes and IDs
-        if ($request->has('region')) {
-            $regions = $this->parseFilterValue($request->region);
+        // Region filter (single or multiple) - supports both codes and IDs
+        if ($request->has('region_code')) {
+            $regions = $this->parseFilterValue($request->region_code);
 
             $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
             $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
@@ -831,8 +831,8 @@ class BeachFilterService
         }
 
         // Island filter - supports both codes and IDs
-        if ($request->has('island')) {
-            $islands = $this->parseFilterValue($request->island);
+        if ($request->has('island_code')) {
+            $islands = $this->parseFilterValue($request->island_code);
 
             $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
             $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
@@ -1657,9 +1657,13 @@ class BeachFilterService
         $filterParams = [
             'continent_code',
             'country',
+            'country_code',
             'region',
+            'region_code',
             'island',
+            'island_code',
             'city',
+            'city_code',
             'waterbody',
             'beach_type',
             'user_type',
