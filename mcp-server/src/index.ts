@@ -59,7 +59,10 @@ function createServer(): McpServer {
         const result = await searchBeaches(params, params.locale);
         const formatted = result.beaches.map((b) => {
           const city = b.city ? `, ${b.city}` : '';
-          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views\n   coords: ${b.latitude}, ${b.longitude}\n   slug: ${b.slug}`;
+          const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
+          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
+          const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
+          return `beach ${b.name} (${b.country}${city}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
         }).join('\n\n');
         return {
           content: [{ type: 'text' as const, text: `Found ${result.total} beach(es):\n\n${formatted}` }],
@@ -89,7 +92,9 @@ function createServer(): McpServer {
         const result = await findBeachesNearby(params.latitude, params.longitude, params.radius_km, params.limit, params.locale);
         const formatted = result.beaches.map((b) => {
           const dist = b.distance_km ? ` (${b.distance_km} km away)` : '';
-          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}\n   coords: ${b.latitude}, ${b.longitude}\n   slug: ${b.slug}`;
+          const img = b.image_url ? `\n   image: ${b.image_url}` : '';
+          const url = b.beachrex_url ? `\n   view on Beachrex: ${b.beachrex_url}` : '';
+          return `beach ${b.name} (${b.country}) — ${b.waterbody}, ${b.beach_views} views${dist}${img}${url}`;
         }).join('\n\n');
         return {
           content: [{ type: 'text' as const, text: `Found ${result.total} beach(es) near ${params.latitude}, ${params.longitude}:\n\n${formatted}` }],
@@ -118,7 +123,9 @@ function createServer(): McpServer {
           ? beach.media.map((m) => `  - ${m.url}${m.is_primary ? ' (primary)' : ''}`).join('\n')
           : '  No media available';
         const location = [beach.continent, beach.country, beach.region, beach.city, beach.island].filter(Boolean).join(' > ');
-        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}\n\n${beach.description || 'No description available.'}\n\nMedia:\n${mediaList}`;
+        const img = beach.image_url ? `\nImage: ${beach.image_url}` : '';
+        const url = beach.beachrex_url ? `\nView on Beachrex: ${beach.beachrex_url}` : '';
+        const text = `beach ${beach.name}\nlocation: ${location}\nwaterbody: ${beach.waterbody}\nviews: ${beach.beach_views}${img}${url}\n\n${beach.description || 'No description available.'}\n\nGallery:\n${mediaList}`;
         return { content: [{ type: 'text' as const, text }] };
       } catch (error) {
         return {
