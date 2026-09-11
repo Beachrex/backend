@@ -274,24 +274,26 @@ async function main() {
         let body = '';
         req.on('data', (chunk) => { body += chunk; });
         req.on('end', async () => {
+          let mcpServer: McpServer | null = null;
+          let transport: StreamableHTTPServerTransport | null = null;
           try {
             const parsedBody = body ? JSON.parse(body) : undefined;
-            const mcpServer = createServer();
-            const transport = new StreamableHTTPServerTransport({
+            mcpServer = createServer();
+            transport = new StreamableHTTPServerTransport({
               sessionIdGenerator: undefined,
             });
             await mcpServer.connect(transport);
             await transport.handleRequest(req, res, parsedBody);
-            res.on('close', () => {
-              transport.close();
-              mcpServer.close();
-            });
           } catch (error) {
             console.error('MCP request error:', error);
             if (!res.headersSent) {
               res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null }));
             }
+          } finally {
+            // Always clean up to prevent "Already connected" on next request
+            if (transport) await transport.close().catch(() => {});
+            if (mcpServer) await mcpServer.close().catch(() => {});
           }
         });
         return;
