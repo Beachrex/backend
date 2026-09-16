@@ -351,9 +351,16 @@ class BeachDetailsResource extends JsonResource
 
     private function formatMediaCollection($mediaItems, ?string $collectionCode = null): array
     {
-        $vtourUrl = ($collectionCode === 'beach_360_sphere' && $this->folder_name && $mediaItems->isNotEmpty())
-            ? "img/beaches/{$this->folder_name}/vtour/tour.html"
-            : null;
+        // Build the vtour URL only when we actually have sphere media.
+        // The path must respect the mobile_upload flag: mobile-uploaded
+        // beaches store their files under img/beaches_mobile/, while regular
+        // uploads use img/beaches/. Using the wrong base folder caused the 360°
+        // tour to 404 on mobile-uploaded beaches (e.g. Albania beaches).
+        $vtourUrl = null;
+        if ($collectionCode === 'beach_360_sphere' && $this->folder_name && $mediaItems->isNotEmpty()) {
+            $baseFolder = $this->mobile_upload ? 'beaches_mobile' : 'beaches';
+            $vtourUrl = "img/{$baseFolder}/{$this->folder_name}/vtour/tour.html";
+        }
 
         return $mediaItems->map(function ($media) use ($vtourUrl, $collectionCode) {
             $baseData = [
