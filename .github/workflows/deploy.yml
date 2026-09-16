@@ -154,10 +154,15 @@ jobs:
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:index || true
 
-            # Rebuild MCP server if it exists (dist/ is gitignored, gets deleted by rsync)
+            # Rebuild MCP server if it exists.
+            # dist/ and node_modules/ are excluded from rsync and may contain
+            # root-owned files from a previous build, so clean them with sudo
+            # before npm install/build to avoid EACCES errors.
             if [ -f /opt/beachrex/api_${ENV_NAME}/mcp-server/package.json ]; then
               echo 'Rebuilding MCP server...'
-              cd /opt/beachrex/api_${ENV_NAME}/mcp-server
+              MCP_DIR=/opt/beachrex/api_${ENV_NAME}/mcp-server
+              sudo rm -rf \$MCP_DIR/dist \$MCP_DIR/node_modules
+              cd \$MCP_DIR
               npm install 2>&1
               npm run build 2>&1
               pm2 restart beachrex-mcp 2>&1 || pm2 start ecosystem.config.cjs 2>&1
