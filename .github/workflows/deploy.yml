@@ -119,6 +119,7 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude '.git' --exclude 'node_modules' --exclude 'vendor' \
+            --exclude 'mcp-server/dist' --exclude 'mcp-server/node_modules' \
             --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*' \
             --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' \
             --exclude 'database/database.sqlite' --exclude '.env' \
