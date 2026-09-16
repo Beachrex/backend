@@ -52,7 +52,7 @@ class DiagnoseSphereTours extends Command
         $bar->start();
 
         foreach ($beachesWithSphere as $beachId) {
-            $beach = \DB::table('beaches')->where('id', $beachId)->first();
+            $beach = Beach::where('id', $beachId)->first();
             if (!$beach || !$beach->folder_name) {
                 $bar->advance();
                 continue;
@@ -109,8 +109,7 @@ class DiagnoseSphereTours extends Command
 
         // Now find beaches WITHOUT a sphere record but where tour.html might exist
         $this->info("\nChecking beaches WITHOUT sphere media records for orphaned tour.html files...");
-        $beachesWithoutSphere = \DB::table('beaches')
-            ->where('status_id', 1)
+        $beachesWithoutSphere = Beach::where('status_id', 1)
             ->whereNotIn('id', $beachesWithSphere->toArray())
             ->whereNotNull('folder_name')
             ->get(['id', 'folder_name', 'mobile_upload']);
