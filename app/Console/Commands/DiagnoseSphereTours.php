@@ -171,6 +171,12 @@ class DiagnoseSphereTours extends Command
             $fileName = $beach['folder'] . '-Panorama.jpg';
             $filePath = "img/{$baseFolder}/{$beach['folder']}/{$fileName}";
 
+            // Only set file_path if the panorama image actually exists on Spaces.
+            // If it doesn't, leave file_path empty so the frontend falls back
+            // to the first gallery image instead of showing a broken image.
+            $panoramaS3Key = $this->toS3Key($filePath);
+            $actualFilePath = Storage::disk('spaces')->exists($panoramaS3Key) ? $filePath : '';
+
             \DB::table('media')->insert([
                 'mediable_type' => 'App\\Models\\Beach',
                 'mediable_id' => $beach['id'],
@@ -178,7 +184,7 @@ class DiagnoseSphereTours extends Command
                 'media_collection_id' => $collectionId,
                 'user_id' => null,
                 'file_name' => $fileName,
-                'file_path' => $filePath,
+                'file_path' => $actualFilePath,
                 'disk' => 'spaces',
                 'mime_type' => 'image/jpeg',
                 'size' => 0,
