@@ -4,13 +4,16 @@ namespace App\Console\Commands;
 
 use App\Models\Beach;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Diagnoses beaches that have 360° sphere media records but would generate
  * a wrong vtour URL (mobile_upload mismatch), and beaches where the tour.html
  * file actually exists on DigitalOcean Spaces but the beach has no sphere
  * media record in the database.
+ *
+ * Uses the S3-compatible Storage API (not HTTP HEAD) to check file existence,
+ * because the CDN endpoint may be Imagor which doesn't serve HTML files.
  *
  * Usage:
  *   php artisan beaches:diagnose-spheres
@@ -41,10 +44,6 @@ class DiagnoseSphereTours extends Command
 
         $this->info("Beaches with sphere media record: {$beachesWithSphere->count()}");
 
-        // Check each: does the tour.html exist on Spaces at the correct path?
-        $cdnBase = config('filesystems.disks.spaces.url')
-            ?? rtrim(env('DO_SPACES_CDN_ENDPOINT', 'https://beachrex.fra1.digitaloceanspaces.com'), '/');
-
         $mismatched = [];
         $missingOnSpaces = [];
 
@@ -60,30 +59,27 @@ class DiagnoseSphereTours extends Command
 
             $baseFolder = $beach->mobile_upload ? 'beaches_mobile' : 'beaches';
             $tourPath = "img/{$baseFolder}/{$beach->folder_name}/vtour/tour.html";
-            $fullUrl = "{$cdnBase}/{$tourPath}";
+            $s3Key = $this->toS3Key($tourPath);
 
-            try {
-                $resp = Http::timeout(5)->head($fullUrl);
-                if (!$resp->successful()) {
-                    // Try the other folder as fallback
-                    $altFolder = $beach->mobile_upload ? 'beaches' : 'beaches_mobile';
-                    $altPath = "img/{$altFolder}/{$beach->folder_name}/vtour/tour.html";
-                    $altUrl = "{$cdnBase}/{$altPath}";
-                    $altResp = Http::timeout(5)->head($altUrl);
+            // Check expected path first, then the alternate folder
+            if (Storage::disk('spaces')->exists($s3Key)) {
+                // OK - file exists at the expected (correct) path
+            } else {
+                // Try the other folder as fallback
+                $altFolder = $beach->mobile_upload ? 'beaches' : 'beaches_mobile';
+                $altPath = "img/{$altFolder}/{$beach->folder_name}/vtour/tour.html";
+                $altS3Key = $this->toS3Key($altPath);
 
-                    if ($altResp->successful()) {
-                        $mismatched[] = [
-                            'id' => $beach->id,
-                            'folder' => $beach->folder_name,
-                            'mobile_upload' => (bool) $beach->mobile_upload,
-                            'correct_path' => $altPath,
-                        ];
-                    } else {
-                        $missingOnSpaces[] = $beach->id;
-                    }
+                if (Storage::disk('spaces')->exists($altS3Key)) {
+                    $mismatched[] = [
+                        'id' => $beach->id,
+                        'folder' => $beach->folder_name,
+                        'mobile_upload' => (bool) $beach->mobile_upload,
+                        'correct_path' => $altPath,
+                    ];
+                } else {
+                    $missingOnSpaces[] = $beach->id;
                 }
-            } catch (\Exception $e) {
-                $missingOnSpaces[] = $beach->id;
             }
 
             $bar->advance();
@@ -99,8 +95,8 @@ class DiagnoseSphereTours extends Command
         }
 
         if (count($missingOnSpaces) > 0) {
-            $this->warn("\n=== TOUR.HTML MISSING ON SPACES (media record exists but file not found) ===");
-            $this->line(implode(', ', $missingOnSpaces));
+            $this->warn("\n=== TOUR.HTML MISSING ON SPACES (media record exists but file not found): " . count($missingOnSpaces) . " beaches ===");
+            $this->line(implode(', ', array_slice($missingOnSpaces, 0, 50)) . (count($missingOnSpaces) > 50 ? ' ...' : ''));
         }
 
         if (count($mismatched) === 0 && count($missingOnSpaces) === 0) {
@@ -121,20 +117,15 @@ class DiagnoseSphereTours extends Command
         foreach ($beachesWithoutSphere as $beach) {
             $baseFolder = $beach->mobile_upload ? 'beaches_mobile' : 'beaches';
             $tourPath = "img/{$baseFolder}/{$beach->folder_name}/vtour/tour.html";
-            $fullUrl = "{$cdnBase}/{$tourPath}";
+            $s3Key = $this->toS3Key($tourPath);
 
-            try {
-                $resp = Http::timeout(5)->head($fullUrl);
-                if ($resp->successful()) {
-                    $orphaned[] = [
-                        'id' => $beach->id,
-                        'folder' => $beach->folder_name,
-                        'mobile_upload' => $beach->mobile_upload,
-                        'tour_path' => $tourPath,
-                    ];
-                }
-            } catch (\Exception $e) {
-                // skip
+            if (Storage::disk('spaces')->exists($s3Key)) {
+                $orphaned[] = [
+                    'id' => $beach->id,
+                    'folder' => $beach->folder_name,
+                    'mobile_upload' => $beach->mobile_upload,
+                    'tour_path' => $tourPath,
+                ];
             }
             $bar2->advance();
         }
@@ -155,6 +146,15 @@ class DiagnoseSphereTours extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Media file_path in DB does NOT have 'public/' prefix, but the Storage
+     * disk (S3-compatible) stores files under 'public/'. This prepends it.
+     */
+    private function toS3Key(string $path): string
+    {
+        return str_starts_with($path, 'public/') ? $path : 'public/' . $path;
     }
 
     private function createMissingMediaRecords(array $orphaned, int $collectionId): void
