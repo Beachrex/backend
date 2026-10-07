@@ -51,6 +51,31 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - API Fixes: View Counts, Filter Aliases, `/beaches` Docs, 360° Tour Path
+
+### Overview
+Four of the API issues found while fixing the MCP (HANDOFF open items). `sea_temperature` is not changed: today it is the air temperature, and setting it to `null` would show "--°" on every beach page. That is a product decision for the owner.
+
+### Changes Made
+- **View counts**: `GET /beach-details/{identifier}` no longer increments `beach_views` when the request has an `X-Beachrex-Client` header. The MCP server now sends `X-Beachrex-Client: mcp`, so AI lookups no longer inflate "most visited". The web client sends no such header and is counted as before.
+- **Filter aliases**: `GET /beaches/filters` accepts `country_code`, `region_code` and `island_code` as aliases of `country`, `region` and `island`, matching `/beaches` and the MCP.
+- **`/beaches` OpenAPI**: the region, island and city params are documented with their real names `region_code`, `island_code` and `city_code` (`applyFilters` never read `region`/`island`/`city`). The `country_code` alias is documented. `api-docs.json` is regenerated. The frontend already uses the `*_code` names; `yarn generate:api` in web-client picks up the corrected names next time.
+- **360° tour URL** in search/map results (`PostGISService`) respects `mobile_upload` (`img/beaches_mobile/…`), like `BeachDetailsResource`.
+
+### Affected endpoints
+- `GET /api/v1/beach-details/{identifier}`: new optional header `X-Beachrex-Client`.
+- `GET /api/v1/beaches/filters`: new aliases.
+- `GET /api/v1/beaches` and the nearby/radius endpoints: `spheres_360[].tour_url` is fixed for mobile uploads.
+
+### Testing
+```bash
+php artisan test tests/Feature/BeachDetailsApiTest.php tests/Feature/FilterAliasApiTest.php tests/Feature/PostGISSphereTourUrlTest.php
+cd mcp-server && npm test
+```
+Against the old backend code, 3 of the new tests fail: view count, alias, mobile tour URL.
+
+---
+
 ## 2026-10-07 - MCP: "Zlatni rat" Is an Exact Match for "Beach Zlatni Rat"
 
 ### Overview

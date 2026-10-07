@@ -43,6 +43,13 @@ class BeachDetailsController extends Controller
      *         )
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Parameter(
+     *         name="X-Beachrex-Client",
+     *         in="header",
+     *         required=false,
+     *         description="Set by machine clients (e.g. `mcp`). Requests with this header are not counted in beach_views.",
+     *         @OA\Schema(type="string", example="mcp")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Beach details found",
@@ -93,10 +100,13 @@ class BeachDetailsController extends Controller
             ], 404);
         }
 
-        // Increment view counter outside of cache (always increment)
-        $beach = $this->findBeachByIdentifier($identifier);
-        if ($beach) {
-            $beach->increment('beach_views');
+        // Increment view counter outside of cache. Machine clients (the MCP server, other tools)
+        // identify themselves with X-Beachrex-Client and are not counted as visits.
+        if (! $request->hasHeader('X-Beachrex-Client')) {
+            $beach = $this->findBeachByIdentifier($identifier);
+            if ($beach) {
+                $beach->increment('beach_views');
+            }
         }
 
         return response()->json(['data' => $data]);

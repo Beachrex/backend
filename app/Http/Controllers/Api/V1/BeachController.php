@@ -122,28 +122,28 @@ class BeachController extends Controller
      *     @OA\Parameter(
      *         name="country",
      *         in="query",
-     *         description="Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
+     *         description="Filter by country code(s) or ID(s); `country_code` is accepted as an alias. Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="HR,SI,IT")
      *     ),
      *     @OA\Parameter(
-     *         name="region",
+     *         name="region_code",
      *         in="query",
-     *         description="Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
+     *         description="Filter by region code(s) or ID(s). Supports: single value (region_code=algarve), comma-separated (region_code=algarve,lisbon), or array (region_code[]=algarve&region_code[]=lisbon). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="algarve")
      *     ),
      *     @OA\Parameter(
-     *         name="island",
+     *         name="island_code",
      *         in="query",
-     *         description="Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
+     *         description="Filter by island code(s) or ID(s). Supports: single value (island_code=madeira), comma-separated (island_code=madeira,azores), or array (island_code[]=madeira&island_code[]=azores). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="madeira")
      *     ),
      *     @OA\Parameter(
-     *         name="city",
+     *         name="city_code",
      *         in="query",
-     *         description="Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+     *         description="Filter by city code(s) or ID(s). Supports: single value (city_code=sukosan), comma-separated (city_code=sukosan,zadar), or array (city_code[]=sukosan&city_code[]=zadar). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="sukosan")
      *     ),

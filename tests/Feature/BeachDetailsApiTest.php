@@ -346,5 +346,25 @@ class BeachDetailsApiTest extends TestCase
                 ],
             ]);
     }
-}
 
+    public function test_views_are_counted_for_browsers_but_not_for_machine_clients()
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522', 'longitude' => '14.4606', 'country_code' => 'HR',
+            'region_id' => 1, 'island_id' => 1, 'city_id' => 1, 'status_id' => 1,
+            'folder_name' => 'views-beach', 'mobile_upload' => false,
+        ]);
+        BeachTranslation::insert([
+            ['beach_id' => $beach->id, 'locale' => 'en', 'name' => 'Views Beach', 'slug' => 'views-beach'],
+        ]);
+        $views = fn () => (int) $beach->fresh()->beach_views;
+        $before = $views();
+
+        $this->getJson('/api/v1/beach-details/views-beach', ['Accept-Language' => 'en'])->assertOk();
+        $this->assertSame($before + 1, $views());
+
+        // The MCP server (AI assistants) identifies itself and is not counted.
+        $this->getJson('/api/v1/beach-details/views-beach', ['Accept-Language' => 'en', 'X-Beachrex-Client' => 'mcp'])->assertOk();
+        $this->assertSame($before + 1, $views());
+    }
+}
