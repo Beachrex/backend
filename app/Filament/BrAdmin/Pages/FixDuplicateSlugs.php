@@ -32,7 +32,7 @@ class FixDuplicateSlugs extends Page
     public function checkDuplicates(): void
     {
         // Check for duplicates across all locales
-        $locales = ['en', 'si', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+        $locales = \App\Http\Middleware\SetLocaleFromHeader::SUPPORTED_LOCALES;
 
         $this->duplicates = [];
         $totalCount = 0;

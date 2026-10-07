@@ -26,7 +26,11 @@ This folder contains all technical documentation for the Beachrex API project.
 ### 🚀 [deployment/](./deployment/)
 **Deployment and server configuration**
 
-- `staging-server-config.md` - Staging server configuration guide
+- `DEPLOYMENT_GUIDE.md` - **Authoritative current infra doc**: Hetzner VPS, dev/uat/prod, GitHub Actions CI/CD, branch policy, env isolation, cache rules
+- `VPS_MIGRATION_PLAN.md` - Migration plan from Laravel Cloud/Vercel to Hetzner VPS, with status per environment
+- `CASE_STUDY_VIBECODING.md` - Case study / lessons learned from the VPS migration
+- `MEILISEARCH_*.md` - Meilisearch setup on Hetzner
+- `staging-server-config.md` - Staging server configuration guide (historical, pre-VPS)
 
 ---
 
@@ -71,7 +75,10 @@ This folder contains all technical documentation for the Beachrex API project.
 - [Database Performance](./DATABASE_PERFORMANCE_ANALYSIS.md)
 
 ### For DevOps
-- [Staging Server Config](./deployment/staging-server-config.md)
+- [Deployment Guide (VPS, CI/CD)](./deployment/DEPLOYMENT_GUIDE.md)
+- [VPS Migration Plan](./deployment/VPS_MIGRATION_PLAN.md)
+- [MCP Server README](../mcp-server/README.md)
+- [Staging Server Config](./deployment/staging-server-config.md) (historical)
 - [Swagger Configuration](./swagger-configuration.md)
 
 ---
@@ -82,8 +89,9 @@ Important documentation files in the project root:
 
 - `README.md` - Main project README
 - `DEV_HANDOFF.md` - Developer handoff documentation
+- `mcp-server/README.md` - Beachrex MCP server (AI agent access to the API)
 
 ---
 
-**Last Updated:** 2025-11-29
+**Last Updated:** 2026-10-07
 

@@ -80,11 +80,15 @@ Route::prefix('api/v1')
             Route::get('/me', [GoogleAuthController::class, 'me']);
             Route::get('/user', [UserController::class, 'show']);
 
-            // Media routes (authenticated)
-            Route::post('/media/upload', [MediaController::class, 'upload']);
-            Route::put('/media/{id}', [MediaController::class, 'update']);
-            Route::delete('/media/{id}', [MediaController::class, 'destroy']);
-            Route::post('/media/reorder', [MediaController::class, 'reorder']);
+            // Data-mutating routes (admin only - any visitor can get a token via register/Google)
+            Route::middleware('admin')->group(function () {
+                Route::post('/beaches', [BeachController::class, 'store']);
+
+                Route::post('/media/upload', [MediaController::class, 'upload']);
+                Route::put('/media/{id}', [MediaController::class, 'update']);
+                Route::delete('/media/{id}', [MediaController::class, 'destroy']);
+                Route::post('/media/reorder', [MediaController::class, 'reorder']);
+            });
         });
 
         // Public media routes
@@ -99,7 +103,6 @@ Route::prefix('api/v1')
         Route::get('/beaches/most-visited', [BeachController::class, 'mostVisited']);
         Route::get('/beaches/footer', [BeachController::class, 'footerMostVisited']);
         Route::get('/beaches', [BeachController::class, 'index']);
-        Route::post('/beaches', [BeachController::class, 'store']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
 
         // Beach Details routes - comprehensive beach information for detail pages

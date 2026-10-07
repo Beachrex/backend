@@ -1,5 +1,8 @@
 # Deployment Documentation
 
+> **Current infrastructure (Sept 2026):** the authoritative doc is [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md): a single Hetzner VPS running the **dev / uat / prod** environments, deployed by GitHub Actions (`.github/workflows/deploy.yml`). See also [VPS_MIGRATION_PLAN.md](./VPS_MIGRATION_PLAN.md) and [CASE_STUDY_VIBECODING.md](./CASE_STUDY_VIBECODING.md).
+> References in this folder to **Laravel Cloud** or **`stage-api.beachrex.com`** (e.g. `staging-server-config.md`, parts of the Meilisearch guides) are **historical** and predate the VPS migration. The Meilisearch server itself (`search.beachrex.com`, dedicated Hetzner box) is still in use.
+
 This directory contains all deployment documentation for the BeachRex API infrastructure.
 
 ## 📁 Directory Structure

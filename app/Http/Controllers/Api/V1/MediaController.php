@@ -60,7 +60,8 @@ class MediaController extends Controller
      *         )
      *     ),
      *     @OA\Response(response=422, description="Validation error"),
-     *     @OA\Response(response=401, description="Unauthenticated")
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - admin only")
      * )
      */
     public function upload(Request $request): JsonResponse
@@ -194,7 +195,9 @@ class MediaController extends Controller
      *             @OA\Property(property="data", ref="#/components/schemas/Media"),
      *             @OA\Property(property="message", type="string")
      *         )
-     *     )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - admin only")
      * )
      */
     public function update(Request $request, int $id): JsonResponse
@@ -274,7 +277,9 @@ class MediaController extends Controller
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string")
      *         )
-     *     )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - admin only")
      * )
      */
     public function destroy(int $id): JsonResponse
@@ -317,7 +322,9 @@ class MediaController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Media reordered successfully"
-     *     )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - admin only")
      * )
      */
     public function reorder(Request $request): JsonResponse

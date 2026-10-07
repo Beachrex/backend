@@ -51,6 +51,219 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - Security: Admin-Only Write Endpoints + Locale, Filter and Cache Fixes
+
+### Overview
+Clean-up before further development. One security fix (anyone could create beaches or modify media) and three correctness fixes found while bringing this file up to date. Commits: ced7755, e20e284, cad55e2, 2f01f23.
+
+### Changes Made
+- **Security (ced7755):** `POST /api/v1/beaches` had no auth at all. The media write routes only required a Sanctum token, and any visitor can get one via `/register` or Google sign-in.
+  - New `app/Http/Middleware/EnsureUserIsAdmin.php`, registered as the `admin` alias in `bootstrap/app.php`. It checks `users.is_admin` and returns `403 {"message":"Forbidden."}`.
+  - `routes/api.php`: `POST /beaches` and the media writes moved into `auth:sanctum` + `admin`.
+  - OpenAPI: added `security={{"sanctum":{}}}` and 401/403 responses; `storage/api-docs/api-docs.json` regenerated.
+  - `UserFactory::admin()` state added. `MediaApiTest` now acts as an admin. New tests: `BeachCreateApiTest` and `MediaApiTest::non_admin_cannot_modify_media`.
+- **Spatial filters (e20e284):** `BeachFilterService::buildRawFilters()` read `region_code`/`island_code` but `city`, while the spatial OpenAPI docs say `region`/`island`/`city`. All three now accept both spellings; the `*_code` name wins if both are sent. Test: `tests/Unit/BeachFilterServiceRawFiltersTest.php`.
+- **Locales (cad55e2):** `SetLocaleFromHeader::SUPPORTED_LOCALES` is now a public constant and the single source of truth (19 DB codes, Slovenian = `sl`). It is now referenced by:
+  - `FirstPageContentTranslation`: cache invalidation skipped da/pt/nl/el/sq, so admin edits in those languages stayed stale.
+  - `FixDuplicateSlugs` (Filament page) and `beaches:fix-duplicate-slugs`: both used `si`, which never matches the DB, so Slovenian was skipped; the new languages were skipped too.
+  - `TranslationCompletenessWidget`: "complete" meant exactly 14 translations.
+  - `StaticPage` (it already had all 19 locales).
+  - Test: `tests/Feature/FirstPageContentCacheTest.php`.
+- **Cache rule (2f01f23):** `StaticPageController` caches `Resource::resolve()` arrays instead of Eloquent models. The response shape is unchanged. Test: `tests/Feature/StaticPageApiTest.php`.
+
+### Affected Endpoints
+- `POST /api/v1/beaches`: now **401** without a token and **403** for non-admins (previously public)
+- `POST /api/v1/media/upload`, `PUT /api/v1/media/{id}`, `DELETE /api/v1/media/{id}`, `POST /api/v1/media/reorder`: now **403** for non-admins
+- `GET /api/v1/spatial/beaches/{within-radius,bounding-box,nearest,density-grid,statistics}`: `region`, `island`, `city` and their `*_code` variants all filter
+- `GET /api/v1/static-pages`, `GET /api/v1/static-pages/{slug}`: no change in output
+
+No current client is affected. The frontend and MCP server never call the write endpoints or pass location filters to the spatial endpoints. Filament keeps writing directly through Eloquent.
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter='BeachCreateApiTest|MediaApiTest|BeachFilterServiceRawFiltersTest|FirstPageContentCacheTest|StaticPageApiTest'
+# Full suite: 292 passed; only the 4 known env-dependent failures remain (PlanEnforcementTest, CountrySlugSupportTest)
+```
+
+---
+
+## 2026-09-17 - 360° Sphere Tour Path Fix + Sphere Diagnostic/Fix Commands
+
+### Overview
+360° tours 404'd for beaches uploaded via the mobile app (e.g. Albania), because `tour_url` was always built under `img/beaches/` while mobile uploads live under `img/beaches_mobile/`. Fixed the URL builder and added two artisan commands to find and repair inconsistent sphere media records on DigitalOcean Spaces. Commits: 3776f3a, f9e3ea9 (2026-09-16), 330aa82, eb1e94b (2026-09-17).
+
+### Changes Made
+- `app/Http/Resources/BeachResource.php`, `app/Http/Resources/BeachDetailsResource.php`: vtour URL is now `img/{beaches|beaches_mobile}/{folder_name}/vtour/tour.html`, chosen by `beaches.mobile_upload`. Still only emitted when the beach has `beach_360_sphere` media.
+- `app/Console/Commands/DiagnoseSphereTours.php` (NEW), `php artisan beaches:diagnose-spheres`:
+  - For beaches with an active `beach_360_sphere` media record, checks that `tour.html` exists on the `spaces` disk (S3 API via `Storage::disk('spaces')->exists()`, not HTTP HEAD, because the CDN/Imagor endpoint does not serve HTML). Reports `mobile_upload` mismatches (tour exists under the other folder) and missing tours.
+  - For active beaches without a sphere record, finds orphaned `tour.html` files and, after an interactive confirm, inserts `media` rows (`sphere_360` type). `file_path` is set to `{folder}-Panorama.jpg` only if that image exists, otherwise `''` (frontend falls back to the first gallery image).
+- `app/Console/Commands/FixSphereThumbnails.php` (NEW), `php artisan beaches:fix-sphere-thumbnails`: sets `file_path = ''` on active sphere media whose panorama image is missing on Spaces.
+- Both commands write to the DB. Run `php artisan cache:clear` afterwards, as the commands themselves say.
+
+### Affected Endpoints
+- `GET /api/v1/beaches`, `GET /api/v1/beaches/most-visited`, `GET /api/v1/beaches/{id}` (BeachResource): `media.spheres_360[].tour_url`
+- `GET /api/v1/beach-details/{identifier}` (BeachDetailsResource): `spheres_360[].tour_url`
+
+### Testing
+```bash
+./vendor/bin/sail artisan beaches:diagnose-spheres     # read-only unless you confirm the insert prompt
+./vendor/bin/sail artisan beaches:fix-sphere-thumbnails
+./vendor/bin/sail artisan cache:clear
+# For a beach with mobile_upload=true, tour_url should start with img/beaches_mobile/
+```
+Both commands need working `spaces` disk credentials.
+
+---
+
+## 2026-09-11 - Fix: city_code / region_code / island_code Filters Were Ignored
+
+### Overview
+`BeachFilterService` checked `$request->has('city')`, `'region'` and `'island'`, but the documented API parameters are `city_code`, `region_code` and `island_code`. Those filters were silently ignored. For example, `?city_code=zadar` returned up to the default limit of random beaches instead of the 14 Zadar beaches. Commit 3edea3c.
+
+### Changes Made
+- `app/Services/BeachFilterService.php`
+  - `applyFilters()` (Eloquent path): now reads `region_code`, `island_code` and `city_code`. Values are still parsed by `parseFilterValue()`, so single, comma-separated, code or numeric ID all work.
+  - `buildRawFilters()` (raw SQL path used by PostGIS): now reads `region_code` and `island_code`. **The city filter in this method still read `city`, not `city_code`** (fixed 2026-10-07: both spellings accepted, see that entry).
+  - `generateCacheKeySuffix()`: adds `country_code`, `region_code`, `island_code` and `city_code` to the cache-key params, so filtered results no longer share a cache key with unfiltered ones.
+
+### Affected Endpoints
+- `GET /api/v1/beaches`: `city_code`, `region_code` and `island_code` now filter (behaviour change; clients relying on the old unfiltered result will now get fewer rows)
+- `GET /api/v1/spatial/beaches/within-radius`, `GET /api/v1/spatial/beaches/bounding-box`: `region_code` and `island_code` now filter. City filtering there still used `city` (fixed 2026-10-07).
+- Old parameter names `region` / `island` / `city` are no longer honoured by `GET /api/v1/beaches`.
+
+### Testing
+```bash
+curl "http://localhost/api/v1/beaches?city_code=zadar" | jq '.data | length'          # expect a small number (14 on UAT data)
+curl "http://localhost/api/v1/beaches?region_code=dalmatia-zadar" | jq '.data | length'
+```
+
+---
+
+## 2026-09-11 - Beachrex MCP Server (`mcp-server/`)
+
+### Overview
+New Node.js/TypeScript Model Context Protocol server that lets AI agents (Claude Desktop, ChatGPT, Cursor) query the Beachrex API. It lives in this repo under `mcp-server/` and is deployed by the backend workflow. Full documentation is in `mcp-server/README.md` (Slovenian). Commits b01b418 to c7bec24 (2026-09-11), plus deploy follow-ups 2e34914 and 43d6ef2 (2026-09-16).
+
+### Changes Made
+- `mcp-server/src/index.ts`, `mcp-server/src/api-client.ts`: tools `search_beaches`, `find_beaches_nearby`, `get_beach_details` (accepts slug, ID or a beach name it resolves to a slug), `get_beach_filters` and `get_beach_weather`; resource `beachrex-context`. Responses include 200x200 thumbnail links and localized beachrex.com URLs (`si` locale with `sl` alias). Tool descriptions tell agents to prefer MCP over web search and not to use Google Images.
+- Transport: stdio by default. Streamable HTTP (stateless, fresh server per request, `/health` endpoint) when `MCP_HTTP_PORT` is set.
+- Env: `BEACHREX_API_URL`, `BEACHREX_API_KEY` (server-side only), `BEACHREX_CDN_URL`, `BEACHREX_CDN_THUMB`, `BEACHREX_FRONTEND_URL`, `MCP_HTTP_PORT`.
+- `mcp-server/ecosystem.config.cjs`: PM2 app `beachrex-mcp` (port 3100, `/opt/beachrex/api_dev/mcp-server`).
+- `deploy/nginx/beachrex.conf`: server block for `mcp-dev.beachrex.com`.
+- `.github/workflows/deploy.yml`: `mcp-server/dist` and `node_modules` are excluded from rsync. After deploy it removes them (with sudo, to avoid root-owned leftovers), runs `npm install && npm run build`, then `pm2 restart beachrex-mcp`, falling back to `pm2 start ecosystem.config.cjs`.
+- `docs/deployment/DEPLOYMENT_GUIDE.md`: branch policy (`feature/xxx → dev → uat → main` via PR only) and the "never copy files to the VPS manually (scp)" rule. `docs/deployment/CASE_STUDY_VIBECODING.md`: incident write-up.
+
+### Affected Endpoints
+- No Laravel API changes. The MCP server consumes the existing public `/api/v1/*` endpoints.
+- MCP endpoint: `https://mcp-dev.beachrex.com/mcp` (DEV only; UAT/PROD not configured yet per README)
+
+### Testing
+```bash
+cd mcp-server && npm install && npm run build
+BEACHREX_API_URL=https://dev-api.beachrex.com node dist/index.js        # stdio
+curl https://mcp-dev.beachrex.com/health                                # {"status":"ok","server":"beachrex-mcp"}
+```
+
+---
+
+## 2026-09-08 - Cache Scalability: Cache Resolved Resource Arrays, PHP memory_limit
+
+### Overview
+The DEV API crashed with `Allowed memory size of 268435456 bytes exhausted` in `RedisStore`. The cause was cached Eloquent collections with heavy eager loading: PHP-serialized blobs reached 20-28 MB per key (e.g. `beaches:index:en:continent_code=EU:country=ES`), and `unserialize()` on a cache hit exhausted memory. The fix is to cache the resolved Resource array instead of models. Commits d44ac4c, 68e53eb. The background and the rule are in `docs/deployment/DEPLOYMENT_GUIDE.md` §8b.
+
+### Changes Made
+- `app/Http/Controllers/Api/V1/BeachController.php`: `index()`, `mostVisited()` and `footerMostVisited()` call `BeachResource::collection(...)->resolve()` / `BeachFooterResource::collection(...)->resolve()` **inside** the `cacheRemember()` callback. `index()` now returns `response()->json(['data' => ..., 'meta' => ...])` instead of `BeachResource::collection()->additional()`. The JSON shape is unchanged.
+- `Dockerfile.prod`: `memory_limit` 256M → 512M, `max_execution_time` 60 → 120. (The 68e53eb message says the limit was reverted, but `Dockerfile.prod` still has 512M/120. The guide documents 512M as a safety net.)
+- **Rule:** never cache raw Eloquent models or collections. Resolve the Resource inside the cache callback.
+- Known remaining violation (not changed here): `StaticPageController::index()`/`show()` still cached Eloquent models (fixed 2026-10-07).
+
+### Affected Endpoints
+- `GET /api/v1/beaches`, `GET /api/v1/beaches/most-visited`, `GET /api/v1/beaches/footer`: response bodies unchanged, cache values smaller
+
+### Testing
+After deploy, run `php artisan cache:clear` (the deploy workflow already does), then call the endpoints twice and compare `X-Cache-Status` MISS → HIT with identical bodies.
+
+---
+
+## 2026-09-03 - Per-Environment Isolation (Redis DB, Filament Domain, Admin at Root, TrustProxies) + FirstPageContent Cache Invalidation
+
+### Overview
+All three VPS environments run `APP_ENV=production` on one host, so several settings leaked between DEV, UAT and PROD. This entry isolates them. Commits 71d2f98, 772300b, bed0e3a, 5eab873, 014b47f, 7295cf7. Background is in `docs/deployment/DEPLOYMENT_GUIDE.md` §8.
+
+### Changes Made
+- **Per-env code dirs** (71d2f98): `deploy/docker-compose.vps.yml` build contexts are `../api_{env}` / `../front_{env}`, and the workflow rsyncs to `/opt/beachrex/api_{env}/`. Before this, the last deploy overwrote the code for every environment.
+- **Redis** (014b47f): `config/database.php`: the `cache` connection now uses `env('REDIS_DB')` instead of `env('REDIS_CACHE_DB', '1')`. DEV (`REDIS_DB=2`) and UAT (`REDIS_DB=1`) had been sharing a cache DB. PROD uses 0.
+- **Filament domain** (bed0e3a): `app/Providers/Filament/BrAdminPanelProvider.php` uses `->domain(env('FILAMENT_DOMAIN'))`, set to `dock.beachrex.com`, `dock-uat.beachrex.com` or `dock-dev.beachrex.com`. Empty means no domain constraint (local). `FILAMENT_DOMAIN=` was added to `.env.example`, and nginx blocks to `deploy/nginx/beachrex.conf`.
+- **Admin at root** (5eab873): panel `->path('')`, so the admin is at `https://dock-dev.beachrex.com/` with no `/admin`. Also added frontend `build.args` for `NEXT_PUBLIC_*` in `docker-compose.vps.yml`.
+- **TrustProxies** (772300b): `bootstrap/app.php` `$middleware->trustProxies(at: '*')`, so the `X-Forwarded-Proto` header from host Nginx is honoured and asset URLs use https (fixes mixed content in Filament).
+- **FirstPageContent cache** (7295cf7): `app/Models/FirstPageContent.php` uses the `Cacheable` trait. `app/Models/FirstPageContentTranslation.php` forgets `first_page_content:index:{locale}` and `first_page_content:show:{code}:{locale}` on save/delete. Known gap: the locale list there was the old 14 and omitted `da, pt, nl, el, sq` (fixed 2026-10-07).
+
+### Affected Endpoints
+- `GET /api/v1/first-page-content`, `GET /api/v1/first-page-content/{code}`: admin edits now show without a manual cache clear (for the 14 listed locales)
+- Admin panel URLs changed from `/admin` to the root of the `dock*` domains
+
+### Testing
+On each env, edit a FirstPageContent translation in that env's admin and confirm the API reflects it, and that the other envs do not change.
+
+---
+
+## 2026-09-02 - Migration to Hetzner VPS + GitHub Actions CI/CD
+
+### Overview
+Backend moved from Laravel Cloud to a single Hetzner VPS running DEV, UAT and PROD stacks (Docker Compose, host Nginx, shared PostgreSQL/PostGIS and Redis containers with per-env DBs). Git history starts at 0692559 (2026-09-01). CI first ran on GitLab CI (`.gitlab-ci.yml`, 2026-09-01), then switched to GitHub Actions on 2026-09-02. `.gitlab-ci.yml` is still in the repo but superseded. The authoritative docs are `docs/deployment/DEPLOYMENT_GUIDE.md` and `docs/deployment/VPS_MIGRATION_PLAN.md`; this entry does not repeat them.
+
+### Changes Made
+- `.github/workflows/deploy.yml` (NEW): runs on push to `dev`/`uat`/`main` (→ dev/uat/prod) and on `workflow_dispatch`. Global `concurrency: deploy-backend`.
+  - `test` job: PHP 8.4, `postgis/postgis:15-3.4` service, `memory_limit=512M`, `php artisan test`. Failures matching `PlanEnforcementTest|CountrySlugSupportTest` are tolerated, because they need OpenAI/OpenWeather keys.
+  - `deploy` job: rsync to `/opt/beachrex/api_{env}/`, `docker compose -f docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.{env}` build/up, then `migrate --force`, `config:cache`, `route:cache`, `cache:clear`, `search:index`, then an Nginx reload.
+  - Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (base64-encoded).
+- `Dockerfile.prod` (PHP 8.4-fpm bookworm), `deploy/docker-compose.vps.yml`, `deploy/nginx/*.conf`: VPS stack.
+- `phpunit.xml`: `DB_HOST=127.0.0.1` (was `pgsql`) so tests work against the CI service container.
+- `.env.example`: per-env notes for `REDIS_DB` and `SCOUT_PREFIX` (`prod_`/`uat_`/`dev_`).
+
+### Affected Endpoints
+- None (infrastructure). Hosts: `dev-api`, `uat-api` and `api.beachrex.com`. PROD was waiting on DNS cutover as of the guide's last update.
+
+### Testing
+Merge to `dev` and watch the GitHub Actions run, then `curl https://dev-api.beachrex.com/api/v1/beaches?limit=1`. Locally, if you change `phpunit.xml` DB settings, run tests via Sail.
+
+---
+
+## 2026-09-01 - Catch-up: Features Added Mar–Aug 2026 (pre git history)
+
+### Overview
+Git history begins at commit 0692559 (2026-09-01), which imported everything earlier in one commit. The features below were added after the 2026-03-06 entry, or earlier without being logged here. **Exact dates are unknown.** Migration timestamps and the language changelog are the only date hints, and are given where available. Everything below was verified against the current code.
+
+### Changes Made
+- **Static pages (CMS)**: migration `2026_07_28_000001_create_static_pages_table.php`; models `StaticPage`, `StaticPageTranslation`; `app/Http/Controllers/Api/V1/StaticPageController.php`; resources `StaticPageResource`, `StaticPageFooterResource`; Filament `StaticPageResource`. Lookup by localized slug with English fallback. Cache keys `static_pages:footer:{locale}` and `static_pages:show:{locale}:{slug}` are invalidated from model events across all 19 locales.
+- **Newsletter**: migration `2026_07_28_000002_create_newsletter_subscribers_table.php`; `NewsletterSubscriberController::subscribe`; Filament `NewsletterSubscriberResource`. Body `email` (`email:rfc,dns`), `consent` (must be accepted), optional `source` (default `footer`). Idempotent: 201 for a new subscriber, 200 if already active or re-subscribed. Stores IP, user agent, locale and `is_synced` (for a later ESP/Klaviyo sync, not implemented in this controller).
+- **Footer beaches**: `BeachController::footerMostVisited()` + `BeachFooterResource` returns the top 6 active beaches by `beach_views` with only the name, slug and location slugs needed to build URLs. Cached as `beaches:footer:{locale}` for 24h. (`/beaches/most-visited` itself is documented in the 2025-11-30 entry.)
+- **5 new languages** (2026-07-28 per `docs/NEW_LANGUAGES_CHANGES.md`): `da, pt, nl, el, sq`, for **19 locales** in total: `en, sl, de, hr, fr, es, it, ua, ru, pl, cs, hu, bg, sk, da, pt, nl, el, sq`. They were added to `SetLocaleFromHeader`, `config/ai.php` (which also dropped the stray `ro`), `ItineraryRequest`, the Swagger Accept-Language enum, `beaches:translate`, every Filament `TranslationsRelationManager` and the seeders. The frontend side is in `ai-agent/NEW_LANGUAGES_CHANGES.md`, which uses `si` for Slovenian in URLs; the DB uses `sl`.
+- **AI chat and itineraries, Stripe, Google auth** were never logged in this file (their migrations are dated 2025-12-22 to 2025-12-31). Design and implementation docs are in `docs/ai/` (see `docs/ai/AI_INDEX.md`, `docs/ai/implementation/`).
+  - AI routes use the middleware `OptionalAuth`, `CircuitBreaker`, `RateLimit` and `TokenBudget` (`app/Http/Middleware/AI/`). Env: `OPENAI_API_KEY`, `AI_*`.
+  - Stripe env: `STRIPE_*`, `STRIPE_PRODUCT_ITINERARY_{3,7,14}DAY_PRICE_ID`.
+  - Google OAuth via Socialite. Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_AUTH_ENABLED`.
+
+### Affected Endpoints
+- `GET /api/v1/static-pages` - active footer pages (`id, code, title, slug, sort_order`), localized
+- `GET /api/v1/static-pages/{slug}` - full page with content and meta fields, 404 if not found
+- `POST /api/v1/newsletter/subscribe` - `throttle:10,1`
+- `GET /api/v1/beaches/footer` - 6 most-visited beaches for footer links
+- All endpoints: `Accept-Language` now also accepts `da, pt, nl, el, sq`
+- `POST /api/v1/ai/chat`, `POST /api/v1/ai/itineraries`, `POST /api/v1/ai/test`
+- `POST /api/v1/payments/stripe/checkout` (auth:sanctum), `POST /api/v1/payments/stripe/webhook` (Stripe signature), `GET /api/v1/me/entitlements` (auth:sanctum)
+- `GET /api/v1/auth/google/redirect`, `GET /api/v1/auth/google/callback`, `POST /api/v1/auth/google/exchange` (`throttle:10,1`); `POST /api/v1/auth/logout`, `GET /api/v1/me` (auth:sanctum)
+
+### Testing
+```bash
+curl -H "Accept-Language: nl" "http://localhost/api/v1/static-pages" | jq '.data'
+curl -X POST "http://localhost/api/v1/newsletter/subscribe" -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","consent":true,"source":"footer"}'
+curl -H "Accept-Language: el" "http://localhost/api/v1/beaches/footer" | jq '.data'
+```
+
+---
+
 ## 2026-03-06 - Extended Beach Filters API with 15 New Filter Types
 
 ### Overview

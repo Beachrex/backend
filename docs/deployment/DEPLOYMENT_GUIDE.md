@@ -50,6 +50,29 @@
 >
 > **Admin panel:** Vsako okolje ima svoj admin panel na lastni `dock*.beachrex.com` domeni (dostop na **root** domene, brez `/admin` končnice — npr. `https://dock-dev.beachrex.com/`), ki je domensko omejena v Filamentu preko `FILAMENT_DOMAIN` env variable. Sprememba v `dev` adminu **ne vpliva** na UAT ali PROD admin — vsak gre v svojo bazo (`beachrex_dev`/`beachrex_uat`/`beachrex_prod`).
 
+### ⚠️ Branch politika (STROGO)
+
+**AI agenti in razvijalci NIKOLI ne smejo pushati direktno na `uat` ali `main`!**
+
+```
+feature/xxx ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
+bugfix/xxx  ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
+```
+
+| Korak | Akcija | Kdo |
+|---|---|---|
+| 1. Nova funkcionalnost | `git checkout -b feature/xxx` (ali `bugfix/xxx`) | Razvijalec/AI |
+| 2. Implementacija | Commit na feature branch | Razvijalec/AI |
+| 3. Push feature branch | `git push origin feature/xxx` | Razvijalec/AI |
+| 4. PR feature → dev | Pull Request na GitHub, review, merge | Razvijalec |
+| 5. Testiranje na DEV | Preverba na `dev.beachrex.com` / `dev-api.beachrex.com` | Razvijalec |
+| 6. PR dev → uat | Pull Request, review, merge | Razvijalec |
+| 7. Testiranje na UAT | Preverba na `uat.beachrex.com` / `uat-api.beachrex.com` | Razvijalec |
+| 8. PR uat → main | Pull Request, review, merge | Razvijalec |
+| 9. Deploy na PROD | Automatic (ali manual trigger) | GitHub Actions |
+
+> **KRITIČNO:** `uat` in `main` sta zaščiteni branchi. Edini dovoljeni način spremembe je Pull Request iz `dev` (za uat) oziroma iz `uat` (za main). Direktni push na `uat` ali `main` je **prepovedan** in bo povzročil nepravilno stanje repozitorija.
+
 ---
 
 ## 3. CI/CD (GitHub Actions)
@@ -67,7 +90,20 @@
    - `rsync` kode na `/opt/beachrex/api_{env}/` (npr. `api_dev/`, `api_uat/`, `api_prod/`)
    - `rsync` deploy datotek na `/opt/beachrex/deploy/` (skupno)
    - `docker compose build` + `up -d` + `migrate` + `cache:clear`
+   - **Samodejni rebuild MCP serverja** (če obstaja `mcp-server/package.json`)
    - Reload host Nginx
+
+> ⚠️ **KRITIČNO — DEPLOY PRAVILA:**
+>
+> 1. **Nikoli ne kopiraj datotek ročno na VPS preko `scp`, `rsync` ali `ssh`!** Vse spremembe gredo skozi GitHub Actions deploy workflow. Ročno kopiranje povzroči:
+>    - Lastništvo `root` namesto `beachrex` → `rsync` iz CI/CD faila (Permission denied)
+>    - `dist/` direktoriji, ki niso v gitu, se pobrišejo pri naslednjem `rsync --delete`
+>    - Kontejnerji zgrajeni iz napačne kode (stara ali nepopolna)
+>    - MCP server crkne, ker `dist/index.js` manjka
+>
+> 2. **`dist/` in `node_modules/` niso v gitu** — sta v `.gitignore`. Po vsakem `rsync --delete` jih je treba ponovno zgraditi na VPS. Deploy workflow ima samodejni korak za to.
+>
+> 3. **Če moraš nekaj ročno popraviti na VPS** (npr. Nginx config, SSL cert), dokumentiraj v `DEPLOYMENT_GUIDE.md` pod "Ročni koraki" in poskrbi, da je popravek v gitu, da ga naslednji deploy ne bo prepisal.
 
 ### Frontend pipeline
 1. **Deploy job** (brez test joba):

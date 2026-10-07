@@ -23,7 +23,7 @@
 ## What is DONE ✅
 
 ### Platform Infrastructure (100% Complete)
-- ✅ **Database**: PostgreSQL + PostGIS with 2,445+ beaches
+- ✅ **Database**: PostgreSQL + PostGIS with ~3,774 beaches (UAT/DEV DB, Sept 2026)
   - 40+ attributes per beach
   - 14 language translations
   - Geographic hierarchy (continent → country → region/island → city → beach)
@@ -56,7 +56,7 @@
   - Responsive design (mobile-first)
   - ISR (Incremental Static Regeneration)
 
-- ✅ **API**: Laravel 11 REST API
+- ✅ **API**: Laravel 12 REST API
   - 50+ endpoints (beaches, countries, regions, islands, cities, filters, spatial, search)
   - Authentication (Laravel Sanctum)
   - Caching (Redis, 8-30 day TTL)

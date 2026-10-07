@@ -98,11 +98,17 @@ class BeachResource extends JsonResource
                 ];
             })->values()->toArray();
 
-        // Format 360 spheres - only tour_url needed
+        // Format 360 spheres - only tour_url needed.
+        // The vtour path must respect the mobile_upload flag: mobile-uploaded
+        // beaches store their files under img/beaches_mobile/, while regular
+        // uploads use img/beaches/. Using the wrong base folder caused the 360°
+        // tour to 404 on mobile-uploaded beaches (e.g. Albania beaches).
         $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
-        $vtourUrl = ($this->folder_name && $spheres360Collection->isNotEmpty())
-            ? "img/beaches/{$this->folder_name}/vtour/tour.html"
-            : null;
+        $vtourUrl = null;
+        if ($this->folder_name && $spheres360Collection->isNotEmpty()) {
+            $baseFolder = $this->mobile_upload ? 'beaches_mobile' : 'beaches';
+            $vtourUrl = "img/{$baseFolder}/{$this->folder_name}/vtour/tour.html";
+        }
 
         $spheres360 = [];
         if ($vtourUrl) {
