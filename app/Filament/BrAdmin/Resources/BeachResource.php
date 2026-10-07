@@ -31,7 +31,7 @@ class BeachResource extends Resource
                     ->label('Folder Name')
                     ->required()
                     ->maxLength(255)
-                    ->helperText('Used for organizing beach images. Format: country-id-region-city (e.g., hr-69-o-pag)')
+                    ->helperText('Used for organizing beach images. Format: country-id-region-city (e.g., hr-69-o-pag). Stored ASCII-only: č/ć/š/ž/đ become c/c/s/z/dj and spaces become "-".')
                     ->placeholder('e.g., hr-69-o-pag'),
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name')

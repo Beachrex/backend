@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasAsciiPaths;
 use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +10,11 @@ use Illuminate\Support\Facades\Cache;
 
 class Continent extends Model
 {
-    use Cacheable;
+    use Cacheable, HasAsciiPaths;
+
+    /** Storage paths kept ASCII-only (TASK-002). */
+    protected array $asciiPathAttributes = ['main_image'];
+
     protected $table = 'continents';
 
     // No timestamps in continents table

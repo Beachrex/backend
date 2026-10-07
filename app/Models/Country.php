@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasAsciiPaths;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,11 @@ use Laravel\Scout\Searchable;
 
 class Country extends Model
 {
-    use Searchable;
+    use Searchable, HasAsciiPaths;
+
+    /** Storage paths kept ASCII-only (TASK-002). */
+    protected array $asciiPathAttributes = ['image_path'];
+
     protected $table = 'countries';
 
     // No timestamps in countries table

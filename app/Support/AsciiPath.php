@@ -25,6 +25,17 @@ final class AsciiPath
         return implode('/', array_map(self::segment(...), explode('/', $path)));
     }
 
+    /**
+     * Storage file name for an admin upload: a ULID plus the ASCII, lowercase extension of the
+     * original name. Same as Filament's default naming, but the extension is guaranteed ASCII.
+     */
+    public static function uploadFileName(string $originalName): string
+    {
+        $extension = self::fromPath(strtolower(pathinfo($originalName, PATHINFO_EXTENSION)));
+
+        return Str::ulid().($extension === '' ? '' : '.'.$extension);
+    }
+
     public static function isAscii(string $value): bool
     {
         return ! preg_match('/[^\x00-\x7F]/', $value);

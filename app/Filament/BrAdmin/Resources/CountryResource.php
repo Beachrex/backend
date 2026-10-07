@@ -2,6 +2,8 @@
 
 namespace App\Filament\BrAdmin\Resources;
 
+use App\Support\AsciiPath;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Filament\BrAdmin\Resources\CountryResource\Pages;
 use App\Filament\BrAdmin\Resources\CountryResource\RelationManagers;
 use App\Models\Country;
@@ -43,6 +45,7 @@ class CountryResource extends Resource
                         '1:1',
                     ])
                     ->disk('spaces')
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => AsciiPath::uploadFileName($file->getClientOriginalName()))
                     ->directory('public/img/countries')
                     ->visibility('public')
                     ->maxSize(10240)

@@ -2,6 +2,8 @@
 
 namespace App\Filament\BrAdmin\Resources;
 
+use App\Support\AsciiPath;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Filament\BrAdmin\Resources\ContinentResource\Pages;
 use App\Filament\BrAdmin\Resources\ContinentResource\RelationManagers;
 use App\Models\Continent;
@@ -37,6 +39,7 @@ class ContinentResource extends Resource
                         '1:1',
                     ])
                     ->disk('spaces')
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => AsciiPath::uploadFileName($file->getClientOriginalName()))
                     ->directory('public/img/continents')
                     ->visibility('public')
                     ->maxSize(10240)
