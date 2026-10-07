@@ -120,6 +120,128 @@ class ItineraryContextBuilderService
         ];
     }
 
+    /**
+     * TASK-003: candidates for the AI chat. Every criterion is optional.
+     *
+     * $criteria keys: country_code, island_id, city_id, region_id, beach_ids (int[]), beach_types, facilities,
+     * user_types, activities (code lists), accessible (bool), latitude/longitude/radius_km, order
+     * ('distance' | 'popularity' | 'score'). Attribute filters are relaxed in this order when fewer than
+     * $minimum beaches match (default: none matched): user types, activities, facilities, beach types.
+     * Accessibility is never relaxed.
+     *
+     * @return array{beaches: array<int, array>, relaxed: string[]}
+     */
+    public function fetchChatCandidates(array $criteria, string $locale, int $limit, int $minimum = 1): array
+    {
+        $relaxable = ['user_types', 'activities', 'facilities', 'beach_types'];
+        $active = array_values(array_filter($relaxable, fn ($k) => ! empty($criteria[$k])));
+
+        $relaxed = [];
+        $beaches = collect();
+        for ($i = 0; $i <= count($active); $i++) {
+            $current = $criteria;
+            foreach ($relaxed as $key) {
+                $current[$key] = [];
+            }
+            $beaches = $this->chatQuery($current, $locale)->limit(max($limit * 4, 20))->get();
+            if ($beaches->count() >= $minimum || $i === count($active)) {
+                break;
+            }
+            $relaxed[] = $active[$i];
+        }
+
+        $maxViews = max(1, (int) $beaches->max('beach_views'));
+        $interests = $this->interestsFor($criteria);
+        $formatted = $beaches->map(function (Beach $b) use ($locale, $interests, $criteria, $maxViews) {
+            $row = $this->format($b, $locale, $interests, in_array('family', $criteria['user_types'] ?? [], true), $maxViews);
+            $row['distance_km'] = isset($b->distance_km) ? round((float) $b->distance_km, 1) : null;
+
+            return $row;
+        });
+
+        $order = $criteria['order'] ?? 'score';
+        $sorted = match (true) {
+            $order === 'distance' && isset($criteria['latitude']) => $formatted->sortBy('distance_km'),
+            $order === 'popularity' => $formatted->sortByDesc('beach_views'),
+            default => $formatted->sortByDesc('score'),
+        };
+
+        return ['beaches' => $sorted->take($limit)->values()->all(), 'relaxed' => $relaxed];
+    }
+
+    /** Interest signals from explicit chat codes, so format() can score them. */
+    private function interestsFor(array $criteria): array
+    {
+        $interests = [];
+        foreach (self::INTEREST_SIGNALS as $interest => $signals) {
+            if (array_intersect($signals['activities'] ?? [], $criteria['activities'] ?? [])
+                || array_intersect($signals['user_types'] ?? [], $criteria['user_types'] ?? [])) {
+                $interests[] = $interest;
+            }
+        }
+
+        return $interests;
+    }
+
+    private function chatQuery(array $c, string $locale): Builder
+    {
+        $locales = array_values(array_unique([$locale, 'en']));
+        $withTranslations = fn ($q) => $q->whereIn('locale', $locales);
+
+        $query = Beach::query()
+            ->select('beach.*')
+            ->where('status_id', 1)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude');
+
+        if (! empty($c['country_code'])) {
+            $query->where('country_code', strtoupper($c['country_code']));
+        }
+        foreach (['island_id', 'city_id', 'region_id'] as $column) {
+            if (! empty($c[$column])) {
+                $query->where($column, $c[$column]);
+            }
+        }
+        if (! empty($c['beach_ids'])) {
+            $query->whereIn('beach.id', $c['beach_ids']);
+        }
+        if (! empty($c['beach_types'])) {
+            $query->whereHas('beachType', fn ($q) => $q->whereIn('code', $c['beach_types']));
+        }
+        $facilities = $c['facilities'] ?? [];
+        if (! empty($c['accessible'])) {
+            $facilities[] = 'access_for_disabled';
+        }
+        foreach (array_unique($facilities) as $code) {
+            $query->whereHas('locationInfrastructures', fn ($q) => $q->where('code', $code));
+        }
+        if (! empty($c['user_types'])) {
+            $query->whereHas('userTypes', fn ($q) => $q->whereIn('code', $c['user_types']));
+        }
+        if (! empty($c['activities'])) {
+            $query->whereHas('sportingActivities', fn ($q) => $q->whereIn('code', $c['activities']));
+        }
+        if (isset($c['latitude'], $c['longitude'])) {
+            $point = 'ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography';
+            $query->selectRaw("ST_Distance(location::geography, {$point}) / 1000.0 AS distance_km", [$c['longitude'], $c['latitude']])
+                ->whereRaw("ST_DWithin(location::geography, {$point}, ?)", [$c['longitude'], $c['latitude'], ($c['radius_km'] ?? 50) * 1000])
+                ->orderBy('distance_km');
+        }
+
+        return $query
+            ->with([
+                'translations' => $withTranslations,
+                'city.translations' => $withTranslations,
+                'region.translations' => $withTranslations,
+                'beachType.translations' => $withTranslations,
+                'locationInfrastructures.translations' => $withTranslations,
+                'userTypes',
+                'sportingActivities',
+            ])
+            ->orderByDesc('beach_views')
+            ->orderBy('beach.id');
+    }
+
     private function query(array $destination, array $constraints, string $locale, array $facilityCodes, array $surfaceCodes, bool $needsAccessible): Builder
     {
         $locales = array_values(array_unique([$locale, 'en']));

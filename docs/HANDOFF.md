@@ -120,7 +120,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    Step 2 (prevention) merged: Beachrex/backend#19. New or changed paths are stored ASCII (`HasAsciiPaths`, ASCII upload names).
    Step 3 merged (Beachrex/backend#20): `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
    After step 6: cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
-   Then TASK-003 AI chat: multilingual intent and filter extraction via function calling instead of English keyword matching; the same candidate service.
+   **TASK-003 AI chat** (owner: "ja, začni task", 2026-10-07): structured multilingual query understanding + real DB candidates. Built; live check on dev is an owner action (5 questions in sl/hr/de/it/en, `docs/tasks/TASK-003.feedback.md`).
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
 
 ## Open items (found, not yet scheduled)
@@ -145,4 +145,4 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Latest numbers
 
-- Next TASK number: TASK-003 (TASK-001 = itinerary quality, TASK-002 = ASCII storage paths) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-004 (TASK-001 = itinerary quality, TASK-002 = ASCII storage paths, TASK-003 = chat understanding) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)

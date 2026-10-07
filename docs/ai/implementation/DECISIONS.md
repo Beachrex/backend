@@ -849,6 +849,31 @@ Only 21% of beaches have descriptions (legacy data), so embeddings would have li
 
 ---
 
+## [2026-10-07] Chat: Code Queries, LLM Understands and Narrates (TASK-003)
+
+**Status**: Accepted
+
+**Context**: Chat intent and filters came from English keyword matching. Without GPS, most questions got 0 beaches. Places, surface and facilities were never queried, and `filters_applied` was whatever the model claimed.
+
+**Decision**:
+1. A small first LLM call extracts the query with **strict structured output** (`response_format: json_schema`). Attribute codes and countries are enums built from the DB, so the model cannot invent codes.
+2. Place names are resolved by the code (`PlaceResolver`) against city, island and region translations in every locale, with simple inflection handling. An unknown place becomes an assumption, never a guess.
+3. Candidates come from the DB (`ItineraryContextBuilderService::fetchChatCandidates`, shared with TASK-001):
+   - attribute filters are relaxed only when nothing matches;
+   - accessibility is never relaxed.
+4. The answer call only narrates the candidates. `filters_applied` comes from the code.
+5. If the extraction fails, the old keyword detection (now with word boundaries) is the fallback; `metadata.understanding = fallback`.
+
+Structured output was chosen over a tool-calling loop: one predictable extra call, easy to test and to fall back from.
+
+**Alternatives Considered**:
+1. Tool calling with the model choosing searches in a loop. Rejected: more calls and latency, harder to test, and the DB query is deterministic anyway.
+2. Translating the keyword lists into 19 languages. Rejected: brittle, misses inflections and paraphrases.
+
+**Related**: `docs/tasks/TASK-003-chat-query-understanding.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

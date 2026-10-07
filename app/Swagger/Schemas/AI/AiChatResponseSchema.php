@@ -40,26 +40,15 @@ namespace App\Swagger\Schemas\AI;
  *         property="filters_applied",
  *         type="object",
  *         nullable=true,
- *         description="Filters used in search",
- *         @OA\Property(property="country", type="string", nullable=true, example="HR"),
- *         @OA\Property(property="region", type="string", nullable=true, example="Dalmatia"),
- *         @OA\Property(property="city", type="string", nullable=true, example="Split"),
- *         @OA\Property(
- *             property="surface",
- *             type="array",
- *             nullable=true,
- *             @OA\Items(type="string"),
- *             example={"sand", "pebble"}
- *         ),
- *         @OA\Property(
- *             property="facilities",
- *             type="array",
- *             nullable=true,
- *             @OA\Items(type="string"),
- *             example={"parking"}
- *         ),
- *         @OA\Property(property="family_friendly", type="boolean", nullable=true, example=true),
- *         @OA\Property(property="wheelchair_accessible", type="boolean", nullable=true, example=false)
+ *         description="Filters the API actually queried (TASK-003), named like the /beaches query parameters. Relaxed filters are left out and explained in metadata.assumptions. On the keyword fallback (metadata.understanding = fallback) this is the model's own summary.",
+ *         @OA\Property(property="country_code", type="string", nullable=true, example="HR"),
+ *         @OA\Property(property="island_code", type="string", nullable=true, example="BRA"),
+ *         @OA\Property(property="city_code", type="string", nullable=true, example="makarska"),
+ *         @OA\Property(property="region_code", type="string", nullable=true, example="HR-ISTRIA"),
+ *         @OA\Property(property="beach_type", type="array", nullable=true, @OA\Items(type="string"), example={"sand"}),
+ *         @OA\Property(property="location_infrastructure", type="array", nullable=true, @OA\Items(type="string"), example={"shower", "access_for_disabled"}),
+ *         @OA\Property(property="user_type", type="array", nullable=true, @OA\Items(type="string"), example={"family"}),
+ *         @OA\Property(property="sporting_activities", type="array", nullable=true, @OA\Items(type="string"), example={"snorkeling"})
  *     ),
  *     @OA\Property(
  *         property="suggestions",

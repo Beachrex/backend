@@ -9,13 +9,20 @@ use App\Http\Requests\AI\ChatRequest;
 use App\Models\AiMessage;
 use App\Models\AiSession;
 use App\Models\AiUsage;
+use App\Models\BeachTranslation;
+use App\Services\AI\Chat\PlaceResolver;
+use App\Services\AI\Chat\QueryUnderstandingService;
 use App\Services\AI\ContextBuilderService;
+use App\Services\AI\DTOs\ChatCompletionResponse;
+use App\Services\AI\ItineraryContextBuilderService;
+use App\Services\AI\ItineraryService;
 use App\Services\AI\DTOs\ChatCompletionRequest;
 use App\Services\AI\DTOs\ChatMessage;
 use App\Services\AI\LLMService;
 use App\Services\AI\LoggingService;
 use App\Services\AI\PlanEnforcementService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -40,6 +47,9 @@ class ChatController extends Controller
         private readonly LLMService $llmService,
         private readonly PlanEnforcementService $planEnforcement,
         private readonly LoggingService $loggingService,
+        private readonly QueryUnderstandingService $understanding,
+        private readonly PlaceResolver $places,
+        private readonly ItineraryContextBuilderService $candidates,
     ) {}
 
     /**
@@ -177,20 +187,24 @@ class ChatController extends Controller
         // Get user message
         $userMessage = $request->input('message');
 
-        // Detect intent (simple keyword-based for MVP)
-        $intent = $this->detectIntent($userMessage);
+        // Get conversation history (last 5 messages)
+        $conversationHistory = $this->getConversationHistory($session);
+
+        // TASK-003: understand the message in any language (structured LLM extraction);
+        // keyword detection is the fallback when that call fails.
+        $understood = $this->understanding->understand($userMessage, array_values($conversationHistory));
+        $understandingResponse = $this->understanding->lastResponse;
+        $intent = $understood['intent'] ?? $this->detectIntent($userMessage);
 
         // Check plan enforcement for paid features
-        $enforcementCheck = $this->checkPlanEnforcement($request->user(), $intent, $userMessage);
+        $enforcementCheck = $this->checkPlanEnforcement($request->user(), $intent, $userMessage, $understood['days'] ?? null);
         if ($enforcementCheck !== null) {
             return $enforcementCheck;
         }
 
         // Build context
-        $context = $this->buildContext($request, $session, $intent);
-
-        // Get conversation history (last 5 messages)
-        $conversationHistory = $this->getConversationHistory($session);
+        $context = $this->buildContext($request, $session, $intent, $understood);
+        $context['metadata']['language'] = $understood['language'] ?? $session->locale;
 
         // Build messages for LLM
         $messages = $this->buildLLMMessages($userMessage, $context, $conversationHistory);
@@ -220,6 +234,11 @@ class ChatController extends Controller
                 }, $parsedResponse['beaches']);
             }
 
+            // TASK-003: report the filters the code actually queried, not what the model claims.
+            if ($understood !== null) {
+                $parsedResponse['filters_applied'] = $context['metadata']['filters_applied'] ?? null;
+            }
+
             // Ensure filters_applied is null (not []) when empty - matches OpenAPI schema (type="object" nullable)
             if (isset($parsedResponse['filters_applied']) && $parsedResponse['filters_applied'] === []) {
                 $parsedResponse['filters_applied'] = null;
@@ -231,9 +250,10 @@ class ChatController extends Controller
             // Save assistant message
             $this->saveMessage($session, 'assistant', $parsedResponse['message'], $intent, $parsedResponse, 0, $llmResponse->outputTokens);
 
-            // Update session
+            // Update session (both LLM calls count)
+            $totalTokens = $llmResponse->totalTokens + ($understandingResponse?->totalTokens ?? 0);
             $session->increment('messages_count', 2);
-            $session->increment('tokens_used', $llmResponse->totalTokens);
+            $session->increment('tokens_used', $totalTokens);
             $session->update(['last_activity_at' => now()]);
 
             // Track usage
@@ -245,6 +265,7 @@ class ChatController extends Controller
                 requestId: $requestId,
                 latencyMs: (int) ((microtime(true) - $startTime) * 1000),
                 intent: $intent,
+                understandingResponse: $understandingResponse,
             );
 
             // Build response
@@ -256,7 +277,10 @@ class ChatController extends Controller
                 'filters_applied' => $parsedResponse['filters_applied'] ?? null,
                 'suggestions' => $parsedResponse['suggestions'] ?? [],
                 'metadata' => [
-                    'tokens_used' => $llmResponse->totalTokens,
+                    'tokens_used' => $totalTokens,
+                    'understanding' => $understood !== null ? 'llm' : 'fallback',
+                    'language' => $context['metadata']['language'],
+                    'assumptions' => $context['metadata']['assumptions'] ?? [],
                     'model' => $llmResponse->model,
                     'response_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
                     'cached' => false,
@@ -331,49 +355,32 @@ class ChatController extends Controller
         }
 
         // Accessibility query (PAID)
-        if (str_contains($message, 'wheelchair') ||
-            str_contains($message, 'accessible') ||
-            str_contains($message, 'disability') ||
-            str_contains($message, 'accessibility')) {
+        if (preg_match('/\b(wheelchair|accessible|disability|accessibility)\b/', $message)) {
             return 'accessibility_query';
         }
 
         // Popularity query (does NOT require location)
-        if (str_contains($message, 'popular') ||
-            str_contains($message, 'top') ||
-            str_contains($message, 'best') ||
-            str_contains($message, 'most viewed') ||
-            str_contains($message, 'frequently visited')) {
+        if (preg_match('/\b(popular|top|best|most viewed|frequently visited)\b/', $message)) {
             return 'popularity_query';
         }
 
         // Proximity query (REQUIRES location)
-        if (str_contains($message, 'near me') ||
-            str_contains($message, 'nearby') ||
-            str_contains($message, 'closest')) {
+        if (preg_match('/\b(near me|nearby|closest)\b/', $message)) {
             return 'proximity_query';
         }
 
         // Weather query
-        if (str_contains($message, 'weather') ||
-            str_contains($message, 'temperature') ||
-            str_contains($message, 'forecast')) {
+        if (preg_match('/\b(weather|temperature|forecast)\b/', $message)) {
             return 'weather_query';
         }
 
         // Beach comparison
-        if (str_contains($message, 'compare') ||
-            str_contains($message, 'vs') ||
-            str_contains($message, 'versus') ||
-            str_contains($message, 'difference')) {
+        if (preg_match('/\b(compare|vs|versus|difference)\b/', $message)) {
             return 'beach_comparison';
         }
 
         // Beach search (default)
-        if (str_contains($message, 'beach') ||
-            str_contains($message, 'find') ||
-            str_contains($message, 'show') ||
-            str_contains($message, 'search')) {
+        if (preg_match('/\b(beach|beaches|find|show|search)\b/', $message)) {
             return 'beach_search';
         }
 
@@ -383,8 +390,13 @@ class ChatController extends Controller
     /**
      * Check plan enforcement for paid features.
      */
-    private function checkPlanEnforcement($user, string $intent, string $message): ?JsonResponse
+    private function checkPlanEnforcement($user, string $intent, string $message, ?int $days = null): ?JsonResponse
     {
+        // Days understood from the message in any language (TASK-003) win over the English regex below.
+        if ($intent === 'itinerary_request' && $days !== null) {
+            return $days >= 2 ? $this->planEnforcement->checkMultiDayItinerary($user, $days) : null;
+        }
+
         // Multi-day itineraries (2+ days) require payment
         if ($intent === 'itinerary_request') {
             if (preg_match('/\b(\d+)[\s-]*(day|days)\b/i', $message, $matches)) {
@@ -405,8 +417,11 @@ class ChatController extends Controller
 
     /**
      * Build context for LLM.
+     *
+     * With an understood query (TASK-003) the code picks the beaches: place, country, attributes and GPS
+     * are real DB filters. Without one (fallback) the pre-TASK-003 behaviour is kept.
      */
-    private function buildContext(ChatRequest $request, AiSession $session, string $intent): array
+    private function buildContext(ChatRequest $request, AiSession $session, string $intent, ?array $understood = null): array
     {
         $location = $request->input('context.location');
         $preferences = $request->input('context.preferences', []);
@@ -426,6 +441,27 @@ class ChatController extends Controller
             $params['radius'] = $preferences['max_distance_km'] ?? 50;
         }
 
+        if ($understood !== null) {
+            [$criteria, $assumptions] = $this->criteriaFrom($understood, $preferences, $params, $session->locale);
+            $filtersApplied = null;
+            if ($this->shouldFetchCandidates($intent, $criteria, $location !== null)) {
+                $limit = $intent === 'popularity_query' ? 3 : ContextBuilderService::MAX_BEACHES[$session->tier] ?? 5;
+                $found = $this->candidates->fetchChatCandidates($criteria, $understood['language'] ?? $session->locale, $limit);
+                $params['candidates'] = $found['beaches'];
+                foreach ($found['relaxed'] as $key) {
+                    $criteria[$key] = [];
+                    $assumptions[] = "Not enough beaches matched all requested {$key}; that filter was relaxed.";
+                }
+                $filtersApplied = $this->filtersApplied($criteria);
+            }
+
+            $context = $this->contextBuilder->buildContext($params);
+            $context['metadata']['filters_applied'] = $filtersApplied;
+            $context['metadata']['assumptions'] = $assumptions;
+
+            return $context;
+        }
+
         // Add filters from preferences
         if (!empty($preferences['surface_types'])) {
             $params['filters']['surface'] = $preferences['surface_types'];
@@ -442,6 +478,107 @@ class ChatController extends Controller
         }
 
         return $this->contextBuilder->buildContext($params);
+    }
+
+    /**
+     * Understood query + request preferences → candidate criteria, plus assumptions to report.
+     *
+     * @return array{0: array, 1: string[]}
+     */
+    private function criteriaFrom(array $understood, array $preferences, array $params, string $locale): array
+    {
+        $assumptions = [];
+        $criteria = [
+            'country_code' => $understood['country_code'],
+            'beach_types' => $understood['beach_types'],
+            'facilities' => $understood['facilities'],
+            'user_types' => $understood['user_types'],
+            'activities' => $understood['activities'],
+            'accessible' => $understood['intent'] === 'accessibility_query',
+            'order' => $understood['intent'] === 'popularity_query' ? 'popularity' : 'score',
+        ];
+
+        // Structured preferences from the request (UI filters) are merged in.
+        foreach ($preferences['surface_types'] ?? [] as $surface) {
+            array_push($criteria['beach_types'], ...(ItineraryContextBuilderService::SURFACE_TO_BEACH_TYPES[$surface] ?? []));
+        }
+        foreach ($preferences['facilities'] ?? [] as $facility) {
+            $key = str_replace([' ', '-'], '_', mb_strtolower(trim((string) $facility)));
+            if (isset(ItineraryContextBuilderService::FACILITY_TO_INFRASTRUCTURE[$key])) {
+                $criteria['facilities'][] = ItineraryContextBuilderService::FACILITY_TO_INFRASTRUCTURE[$key];
+            }
+        }
+        $criteria['beach_types'] = array_values(array_unique($criteria['beach_types']));
+        $criteria['facilities'] = array_values(array_unique($criteria['facilities']));
+
+        if ($understood['place'] !== null) {
+            $place = $this->places->resolve($understood['place'], $locale);
+            if ($place !== null) {
+                $criteria["{$place['type']}_id"] = $place['id'];
+                $criteria['place'] = $place;
+            } else {
+                $assumptions[] = "\"{$understood['place']}\" is not a place in the Beachrex database, so it was not used as a filter.";
+            }
+        }
+
+        if ($understood['beach_names'] !== []) {
+            $ids = $this->beachIdsByName($understood['beach_names']);
+            if ($ids !== []) {
+                $criteria['beach_ids'] = $ids;
+            }
+        }
+
+        if (isset($params['latitude'], $params['longitude'])) {
+            $criteria['latitude'] = (float) $params['latitude'];
+            $criteria['longitude'] = (float) $params['longitude'];
+            $criteria['radius_km'] = (float) ($params['radius'] ?? 50);
+            if ($criteria['order'] !== 'popularity') {
+                $criteria['order'] = 'distance';
+            }
+        }
+
+        return [$criteria, $assumptions];
+    }
+
+    /** Proximity without a location stays empty (the model asks for the location), as before. */
+    private function shouldFetchCandidates(string $intent, array $criteria, bool $hasLocation): bool
+    {
+        if ($intent === 'proximity_query' && ! $hasLocation) {
+            return false;
+        }
+        $hasCriteria = ! empty($criteria['country_code']) || ! empty($criteria['place']) || ! empty($criteria['beach_ids'])
+            || $criteria['beach_types'] || $criteria['facilities'] || $criteria['user_types'] || $criteria['activities'];
+
+        return $hasLocation || $hasCriteria || $intent !== 'general_question';
+    }
+
+    /** filters_applied with the real /beaches parameter names. */
+    private function filtersApplied(array $criteria): ?array
+    {
+        $place = $criteria['place'] ?? null;
+        $filters = array_filter([
+            'country_code' => $criteria['country_code'] ?? null,
+            ($place ? "{$place['type']}_code" : 'place') => $place['code'] ?? null,
+            'beach_type' => $criteria['beach_types'] ?: null,
+            'location_infrastructure' => array_values(array_unique(array_merge(
+                $criteria['facilities'], ! empty($criteria['accessible']) ? ['access_for_disabled'] : []
+            ))) ?: null,
+            'user_type' => $criteria['user_types'] ?: null,
+            'sporting_activities' => $criteria['activities'] ?: null,
+        ], fn ($v) => $v !== null);
+
+        return $filters ?: null;
+    }
+
+    /** @return int[] active beaches whose translated name or slug matches one of the names */
+    private function beachIdsByName(array $names): array
+    {
+        $slugs = array_map(fn ($n) => Str::slug(Str::ascii($n)), $names);
+
+        return BeachTranslation::query()
+            ->whereIn('slug', $slugs)
+            ->orWhereIn(DB::raw('lower(name)'), array_map('mb_strtolower', $names))
+            ->pluck('beach_id')->unique()->take(5)->values()->all();
     }
 
     /**
@@ -477,8 +614,10 @@ class ChatController extends Controller
      */
     private function getConversationHistory(AiSession $session): array
     {
+        // The user and assistant messages of one turn share a timestamp; id keeps their order.
         return $session->messages()
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->limit(5)
             ->get()
             ->reverse()
@@ -525,6 +664,8 @@ class ChatController extends Controller
         // Base system prompt
         $prompt = "You are a helpful beach discovery assistant for Beachrex, a platform with 2,445+ beaches across Croatia, Slovenia, and Montenegro.\n\n";
         $prompt .= "Your role is to help users find the perfect beach based on their preferences.\n\n";
+        $language = ItineraryService::LANGUAGE_NAMES[$context['metadata']['language'] ?? $locale] ?? 'English';
+        $prompt .= "Write \"message\" and \"suggestions\" in {$language} (the user's language).\n\n";
         $prompt .= "IMPORTANT RULES:\n";
         $prompt .= "- Always respond in valid JSON format\n";
         $prompt .= "- Recommend 1-3 beaches maximum (never more)\n";
@@ -716,8 +857,10 @@ class ChatController extends Controller
         array $context,
         string $requestId,
         int $latencyMs,
-        string $intent
+        string $intent,
+        ?ChatCompletionResponse $understandingResponse = null,
     ): void {
+        $extra = $understandingResponse;
         // Create usage record in database
         AiUsage::create([
             'user_id' => $user?->id,
@@ -726,10 +869,10 @@ class ChatController extends Controller
             'event_type' => 'chat',
             'llm_provider' => 'openai',
             'llm_model' => $llmResponse->model,
-            'tokens_input' => $llmResponse->inputTokens,
-            'tokens_output' => $llmResponse->outputTokens,
-            'tokens_total' => $llmResponse->totalTokens,
-            'cost_usd' => $llmResponse->costUsd,
+            'tokens_input' => $llmResponse->inputTokens + ($extra?->inputTokens ?? 0),
+            'tokens_output' => $llmResponse->outputTokens + ($extra?->outputTokens ?? 0),
+            'tokens_total' => $llmResponse->totalTokens + ($extra?->totalTokens ?? 0),
+            'cost_usd' => $llmResponse->costUsd + ($extra?->costUsd ?? 0),
             'latency_ms' => $latencyMs,
             'cache_hit' => false,
             'beaches_fetched' => $context['metadata']['beaches_fetched'] ?? 0,
