@@ -13082,7 +13082,7 @@
                                         "description": "Current temperature in Celsius",
                                         "type": "number",
                                         "format": "float",
-                                        "example": 21.4
+                                        "example": 9.9
                                     },
                                     "feels_like": {
                                         "description": "Feels like temperature in Celsius",
@@ -13094,13 +13094,13 @@
                                         "description": "Minimum temperature in Celsius",
                                         "type": "number",
                                         "format": "float",
-                                        "example": 21.4
+                                        "example": 9.9
                                     },
                                     "temp_max": {
                                         "description": "Maximum temperature in Celsius",
                                         "type": "number",
                                         "format": "float",
-                                        "example": 21.4
+                                        "example": 9.9
                                     },
                                     "pressure": {
                                         "description": "Atmospheric pressure in hPa",

@@ -61,7 +61,7 @@ namespace App\Swagger\Schemas;
  *                 type="number",
  *                 format="float",
  *                 description="Current temperature in Celsius",
- *                 example=21.4
+ *                 example=9.9
  *             ),
  *             @OA\Property(
  *                 property="feels_like",
@@ -75,14 +75,14 @@ namespace App\Swagger\Schemas;
  *                 type="number",
  *                 format="float",
  *                 description="Minimum temperature in Celsius",
- *                 example=21.4
+ *                 example=9.9
  *             ),
  *             @OA\Property(
  *                 property="temp_max",
  *                 type="number",
  *                 format="float",
  *                 description="Maximum temperature in Celsius",
- *                 example=21.4
+ *                 example=9.9
  *             ),
  *             @OA\Property(
  *                 property="pressure",
