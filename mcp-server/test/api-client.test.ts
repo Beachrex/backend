@@ -4,7 +4,7 @@ import { mockFetch } from './helpers.js';
 import * as fx from './fixtures.js';
 import {
   searchBeaches, findBeachesNearby, findBeachByName, getBeachDetails, getBeachFilters,
-  getBeachWeather, mercatorRadiusKm, haversineKm, beachUrl, slugify, MAX_LIMIT, imageUrl, imageThumbUrl,
+  getBeachWeather, mercatorRadiusKm, haversineKm, beachUrl, slugify, MAX_LIMIT, imageUrl, imageThumbUrl, nameKey,
 } from '../src/api-client.js';
 import {
   formatSearch, formatNearby, formatDetails, formatNameSearch, formatFilters, formatWeather,
@@ -146,6 +146,26 @@ describe('name lookup through /search', () => {
     const text = formatDetails(d);
     assert.match(text, /closest match/);
     assert.match(text, /Zlatna luka/);
+  });
+
+  test('"Zlatni rat" matches "Beach Zlatni Rat" exactly (owner feedback 2026-10-07)', async () => {
+    m.on('/beach-details/zlatni-rat', fx.notFound, 404)
+      .on('/search', fx.searchResponse([fx.searchBeach({ id: 126, name: 'Beach Zlatni Rat' })]))
+      .on('/beach-details/126', fx.beachDetails());
+    const d = await getBeachDetails('Zlatni rat', 'en');
+    assert.equal(d.match.kind, 'exact');
+    assert.doesNotMatch(formatDetails(d), /closest match|No beach is named exactly/);
+  });
+
+  test('nameKey ignores case, diacritics and a leading or trailing beach word', () => {
+    for (const name of ['Beach Zlatni Rat', 'Plaža Zlatni rat', 'zlatni rat', 'ZLATNI RAT beach', 'Spiaggia Zlatni Rat']) {
+      assert.equal(nameKey(name), 'zlatni rat', name);
+    }
+    assert.equal(nameKey('Čiovo'), 'ciovo');
+    // A name that is only the generic word keeps it; inner words are kept.
+    assert.equal(nameKey('Beach'), 'beach');
+    assert.equal(nameKey('Long Beach Bay'), 'long beach bay');
+    assert.notEqual(nameKey('Zlatni rat Mini'), nameKey('Zlatni rat'));
   });
 
   test('several beaches with the same name are listed', async () => {
