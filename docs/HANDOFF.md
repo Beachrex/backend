@@ -78,6 +78,10 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
+- **TASK-002 inventory (read-only):** after the PR below is live on dev, run `storage:ascii-paths --inventory` on dev and uat
+  per [`docs/runbooks/ascii-storage-paths.md`](runbooks/ascii-storage-paths.md) and send the summary + CSVs to the agent.
+  Nothing on Spaces moves until the owner has reviewed the inventory.
+
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.
   - Still to do: after the uat deploy, run `db:backup --no-prune` once on uat, then the restore drill.
@@ -98,7 +102,9 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 3. **Prod launch runbook**: [`docs/runbooks/prod-launch.md`](runbooks/prod-launch.md) covers the prod DB from UAT, env checklist, deploy, DNS, SSL and rollback. *(written; launch date is the owner's decision)*
 4. **MCP server quality**: fixed and **verified live on dev** (2026-10-07). The owner tested it in Claude and is happy with it, including the AI adding general knowledge (e.g. lifeguard season) on top of Beachrex data.
 5. **AI itineraries**: rebuilt (TASK-001; ADR "code plans, LLM narrates"; pgvector deferred). *(Built; live quality check on dev is an owner action, and `OPENAI_MODEL` in the server env should be `gpt-4o-mini`)*
-   **Next: TASK-002 ASCII-only storage paths** (owner request 2026-10-07; spec: `docs/tasks/TASK-002-ascii-storage-paths.md`).
+   **Now: TASK-002 ASCII-only storage paths** (owner request 2026-10-07; spec: `docs/tasks/TASK-002-ascii-storage-paths.md`).
+   Step 1 built: `AsciiPath` + read-only `storage:ascii-paths --inventory` (runbook `docs/runbooks/ascii-storage-paths.md`).
+   Waiting for the owner's inventory output before building `--copy` / `--update-db` / prevention.
    Then TASK-003 AI chat: multilingual intent and filter extraction via function calling instead of English keyword matching; the same candidate service.
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
 
