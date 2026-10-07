@@ -13082,7 +13082,7 @@
                                         "description": "Current temperature in Celsius",
                                         "type": "number",
                                         "format": "float",
-                                        "example": 9.9
+                                        "example": 21.4
                                     },
                                     "feels_like": {
                                         "description": "Feels like temperature in Celsius",
@@ -13094,13 +13094,13 @@
                                         "description": "Minimum temperature in Celsius",
                                         "type": "number",
                                         "format": "float",
-                                        "example": 9.9
+                                        "example": 21.4
                                     },
                                     "temp_max": {
                                         "description": "Maximum temperature in Celsius",
                                         "type": "number",
                                         "format": "float",
-                                        "example": 9.9
+                                        "example": 21.4
                                     },
                                     "pressure": {
                                         "description": "Atmospheric pressure in hPa",
@@ -13173,10 +13173,10 @@
                                 "nullable": true
                             },
                             "sea_temperature": {
-                                "description": "Sea surface temperature in Celsius (approximation from weather data)",
+                                "description": "Sea surface temperature in Celsius from the Open-Meteo Marine API (cached 3 h). Null where there is no marine data (e.g. lakes) or the API is unavailable.",
                                 "type": "number",
                                 "format": "float",
-                                "example": 9.9,
+                                "example": 21.4,
                                 "nullable": true
                             },
                             "cached_at": {

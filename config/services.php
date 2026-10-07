@@ -39,6 +39,11 @@ return [
         'api_key' => env('OPENWEATHER_API_KEY'),
     ],
 
+    // Sea surface temperature. Without a key the free endpoint is used (non-commercial use only).
+    'open_meteo' => [
+        'api_key' => env('OPEN_METEO_API_KEY'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
