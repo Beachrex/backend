@@ -12,6 +12,8 @@ use Tests\TestCase;
 
 class ItineraryControllerTest extends TestCase
 {
+    use \Tests\Feature\AI\Concerns\SeedsItineraryBeaches;
+
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -79,6 +81,8 @@ class ItineraryControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function authenticated_user_gets_itinerary()
     {
+        $this->seedItineraryBeaches();
+
         // Create user with paid tier
         $user = User::factory()->create();
 
@@ -307,6 +311,8 @@ class ItineraryControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function authenticated_user_with_credits_gets_itinerary_and_decrements()
     {
+        $this->seedItineraryBeaches();
+
         // Enable payments
         Config::set('ai.payments_enabled', true);
 

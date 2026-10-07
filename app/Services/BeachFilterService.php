@@ -52,8 +52,8 @@ class BeachFilterService
         }
 
         // Country filter (single or multiple) - supports both code and ID
-        if ($request->has('country')) {
-            $countries = $this->parseFilterValue($request->country);
+        if ($request->hasAny(['country', 'country_code'])) {
+            $countries = $this->parseFilterValue($request->input('country', $request->input('country_code')));
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
@@ -757,8 +757,8 @@ class BeachFilterService
         }
 
         // Country filter - supports both code and ID
-        if ($request->has('country')) {
-            $countries = $this->parseFilterValue($request->country);
+        if ($request->hasAny(['country', 'country_code'])) {
+            $countries = $this->parseFilterValue($request->input('country', $request->input('country_code')));
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));

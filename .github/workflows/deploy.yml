@@ -3,6 +3,9 @@ name: Deploy to VPS
 on:
   push:
     branches: [dev, uat, main]
+  # PRs run the test job only (deploy job is skipped), so we can merge on green.
+  pull_request:
+    branches: [dev, uat, main]
   workflow_dispatch:
     inputs:
       environment:
@@ -13,8 +16,10 @@ on:
         options: [dev, uat, prod]
 
 concurrency:
-  group: deploy-backend
-  cancel-in-progress: false
+  # Deploys share one global group (rsync into the same server is not concurrency-safe).
+  # PR test runs get their own group per PR so they never queue behind deploys.
+  group: ${{ github.event_name == 'pull_request' && format('pr-backend-{0}', github.event.pull_request.number) || 'deploy-backend' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -78,9 +83,28 @@ jobs:
             exit 1
           fi
 
+  mcp-test:
+    name: MCP server (build + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck:test
+      - run: npm test
+
   deploy:
     name: Deploy
-    needs: test
+    needs: [test, mcp-test]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,6 +134,9 @@ jobs:
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/id_rsa
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Write REVISION (shown by /api/v1/health)
+        run: echo "${GITHUB_SHA}" > REVISION
 
       - name: Sync backend code
         env:
@@ -148,6 +175,8 @@ jobs:
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} build \${API_SVC}
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d pgsql redis
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate \${WEB_SVC}
+            # Scheduler (daily db:backup) reuses the freshly built api image.
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate --no-deps scheduler_${ENV_NAME}
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan migrate --force
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan config:cache
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
@@ -165,7 +194,11 @@ jobs:
               cd \$MCP_DIR
               npm install 2>&1
               npm run build 2>&1
-              pm2 restart beachrex-mcp 2>&1 || pm2 start ecosystem.config.cjs 2>&1
+              # One pm2 process per environment: beachrex-mcp-<env> (ports 3100/3101/3102).
+              # One-time migration: the legacy shared 'beachrex-mcp' process is the dev one on :3100.
+              if [ '${ENV_NAME}' = 'dev' ]; then pm2 delete beachrex-mcp 2>&1 || true; fi
+              MCP_ENV=${ENV_NAME} pm2 startOrReload ecosystem.config.cjs --update-env 2>&1
+              pm2 save 2>&1 || true
               echo 'MCP server rebuilt and restarted.'
             fi
 

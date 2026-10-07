@@ -748,6 +748,65 @@ Use **Stripe Checkout (hosted payment page)** where:
 
 ---
 
+## [2026-10-07] Project-wide Development Rules and Working Mode B
+
+**Status**: Accepted
+
+**Context**: The owner shared a general rules file from another project and asked to apply what makes sense for Beachrex. Until now, agent work had no single entry point, no handoff file, and no PR CI.
+
+**Decision**:
+- `docs/DEVELOPMENT-RULES.md` (backend repo, covers both repos) is the rules file. `CLAUDE.md` in each repo points to it.
+- `docs/HANDOFF.md` holds the current state.
+- **Mode B:** the agent merges green PRs into `dev`. Promotion `dev → uat → main` happens only via PRs and only when the owner asks.
+- This file stays the project-wide ADR log, so there is no separate `03-DECISIONS.md`.
+- `DEV_HANDOFF.md` stays the change log, so the full `docs/` restructure from the general rules is not adopted.
+
+**Alternatives Considered**:
+1. Copy the general rules file verbatim and restructure `docs/` into 00-MANIFEST/01-SPEC/02-ARCHITECTURE. Rejected: ~140 existing docs would have to move, and it adds churn without value.
+2. Mode A, where the owner commits. Rejected: the owner explicitly asked the agent to open and merge PRs.
+
+**Related**: `docs/DEVELOPMENT-RULES.md`, `docs/HANDOFF.md`, `CLAUDE.md`, `.claude/settings.json` (deny list for ssh/scp/rsync, force-push, env files)
+
+---
+
+## [2026-10-07] Production Database Is Created from UAT (No Laravel Cloud)
+
+**Status**: Accepted (supersedes the "final pg_dump from Laravel Cloud" step in `docs/deployment/VPS_MIGRATION_PLAN.md` and `DEPLOYMENT_GUIDE.md` §9)
+
+**Context**: Laravel Cloud no longer exists for this project. `beachrex.com` still serves an old site from another host. Only dev and uat run on the VPS.
+
+**Decision**: At prod launch, `beachrex_prod` is loaded from a `pg_dump` of `beachrex_uat`, which holds the curated content. The procedure, including dry run and verification, is in the prod launch runbook. Test users, AI sessions and purchases created on UAT must be reviewed and cleaned before or after the load. That is an owner decision at launch time.
+
+**Related**: `docs/runbooks/prod-launch.md`
+
+---
+
+## [2026-10-07] Itineraries: Code Plans, LLM Narrates. pgvector Deferred
+
+**Status**: Accepted
+
+**Context**: The owner reported that itineraries are of very poor quality and suggested pgvector. The diagnosis (TASK-001) found the main causes outside semantic search:
+- filters on nonexistent columns;
+- the model received almost no beach data and no coordinates;
+- there was no geographic logic;
+- no JSON mode, a fixed token limit, gpt-3.5-turbo.
+
+Only 21% of beaches have descriptions (legacy data), so embeddings would have little text to work with.
+
+**Decision**:
+1. The **code** builds the plan: candidate beaches from real attributes (beach type, facilities, accessibility, user types, activities), k-means day clusters, nearest-neighbour order and haversine distances.
+2. The **LLM** only writes the narrative around the fixed skeleton, in JSON mode. Beach facts in the response always come from the database.
+3. Default model `gpt-4o-mini`, which is both cheaper and better than `gpt-3.5-turbo`. It can be overridden with `OPENAI_MODEL`.
+4. **pgvector is deferred.** Semantic re-ranking of free-text preferences is a later, optional step. It will be evaluated against Meilisearch hybrid search, which is already deployed, once descriptions are filled in for more beaches.
+
+**Alternatives Considered**:
+1. Add pgvector now. Rejected: it fixes none of the root causes above. It also needs a custom Postgres image (PostGIS + pgvector) on the VPS and in CI, while there is too little description text to embed.
+2. Let the LLM keep choosing and grouping beaches with better prompts. Rejected: the model has no reliable geographic sense and invents distances.
+
+**Related**: `docs/tasks/TASK-001-itinerary-quality.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

@@ -209,7 +209,7 @@
                         }
                     },
                     "422": {
-                        "description": "Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
+                        "description": "Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.), or error=not_enough_beaches with {message, found, needed} when fewer beaches match than days (no credit used)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4442,6 +4442,68 @@
                     },
                     "500": {
                         "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/v1/health": {
+            "get": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health check for uptime monitoring and deploy verification",
+                "description": "Checks database and Redis. Returns the deployed git revision (written by CI) and the time of the last successful database backup. 503 when a dependency is down.",
+                "operationId": "getHealth",
+                "responses": {
+                    "200": {
+                        "description": "All dependencies healthy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "revision": {
+                                            "type": "string",
+                                            "example": "fd20e84c3d112454958e0a37d16bfa75decb5ec6"
+                                        },
+                                        "checks": {
+                                            "properties": {
+                                                "database": {
+                                                    "type": "string",
+                                                    "example": "ok"
+                                                },
+                                                "redis": {
+                                                    "type": "string",
+                                                    "example": "ok"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "backup": {
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "last_success_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "A dependency is down (status=fail)"
                     }
                 }
             }
@@ -15655,6 +15717,10 @@
         {
             "name": "Culinary Offers",
             "description": "Culinary Offers"
+        },
+        {
+            "name": "System",
+            "description": "System"
         },
         {
             "name": "Location Infrastructure",

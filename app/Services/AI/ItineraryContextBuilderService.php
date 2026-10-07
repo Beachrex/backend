@@ -3,254 +3,231 @@
 namespace App\Services\AI;
 
 use App\Models\Beach;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
- * Itinerary Context Builder Service
- * 
- * Fetches candidate beaches for itinerary generation based on destination and preferences.
- * 
- * Source: docs/ai/implementation/PHASE_1_PROPOSAL.md Section 4 (Suggested Phase 2 scope)
+ * Fetches and scores candidate beaches for itinerary generation (TASK-001).
+ *
+ * Hard filters use the real attribute tables (beach_type, location_infrastructure).
+ * Soft preferences (interests, children) only change the score. When too few
+ * beaches match, facility and then surface filters are relaxed — accessibility
+ * never is. Every relaxation is reported so it can be shown in `assumptions`.
  */
 class ItineraryContextBuilderService
 {
+    /** Request surface values → beach_type codes. */
+    public const SURFACE_TO_BEACH_TYPES = [
+        'sand' => ['sand', 'brown_sand', 'black_sand'],
+        'pebble' => ['small_stones', 'big_stones'],
+        'rock' => ['rock_beach'],
+        'concrete' => ['concrete'],
+        'grass' => ['grass_beach'],
+    ];
+
+    /** Free-text facility names (lowercased) → location_infrastructure codes. */
+    public const FACILITY_TO_INFRASTRUCTURE = [
+        'parking' => 'parking',
+        'wc' => 'wc', 'toilet' => 'wc', 'toilets' => 'wc',
+        'shower' => 'shower', 'showers' => 'shower',
+        'lifeguard' => 'lifeguard',
+        'playground' => 'children_playground', 'children_playground' => 'children_playground',
+        'restaurant' => 'restaurants', 'restaurants' => 'restaurants', 'bar' => 'restaurants',
+        'sunshades' => 'sunshades', 'umbrellas' => 'sunshades', 'parasols' => 'sunshades',
+        'deckchairs' => 'deckchairs', 'sunbeds' => 'deckchairs', 'loungers' => 'deckchairs',
+        'pool' => 'swimming_pool', 'swimming_pool' => 'swimming_pool',
+        'waterslide' => 'waterslide',
+        'pier' => 'pier',
+        'wifi' => 'wifi_hotspot',
+        'atm' => 'atm',
+        'dog_friendly' => 'dog_friendly', 'dogs' => 'dog_friendly',
+        'naturist' => 'naturist_friendly', 'naturist_friendly' => 'naturist_friendly',
+        'accessible' => 'access_for_disabled', 'access_for_disabled' => 'access_for_disabled',
+    ];
+
+    /** Interests → what makes a beach a match (activity codes, user type codes, infrastructure codes). */
+    private const INTEREST_SIGNALS = [
+        'swimming' => ['activities' => ['swimming']],
+        'snorkeling' => ['activities' => ['snorkeling']],
+        'diving' => ['activities' => ['diving']],
+        'surfing' => ['activities' => ['surfing', 'windsurfing', 'kiteboarding']],
+        'kayaking' => ['activities' => ['water_sports']],
+        'family' => ['user_types' => ['family'], 'infrastructure' => ['children_playground', 'lifeguard']],
+        'nightlife' => ['user_types' => ['youth'], 'infrastructure' => ['dance_floor']],
+        'quiet' => ['infrastructure' => ['no_service']],
+        'nature' => ['user_types' => ['adventurer']],
+        'hiking' => ['user_types' => ['adventurer']],
+    ];
+
+    private const POOL_SIZE = 150;
+
     /**
-     * Fetch candidate beaches for itinerary generation.
-     * 
-     * Returns beaches ordered by beach_views (visitor interest) when no explicit routing is provided.
-     * 
-     * @param array $destination Destination details (country_code, region_slug, city_slug)
-     * @param array $preferences User preferences (interests, facilities, surface_types, accessibility)
-     * @param int $limit Maximum number of beaches to fetch
-     * @param string $locale Locale for translations
-     * @return array Array of beaches with essential fields
+     * @return array{beaches: array<int, array>, relaxed: string[], unmapped_facilities: string[]}
      */
     public function fetchCandidateBeaches(
         array $destination,
         array $preferences,
-        int $limit = 30,
-        string $locale = 'en'
+        array $constraints,
+        array $travelParty,
+        string $locale,
+        int $minimumNeeded,
     ): array {
-        // Set locale
-        app()->setLocale($locale);
+        $surfaceCodes = collect($preferences['surface_types'] ?? [])
+            ->flatMap(fn ($s) => self::SURFACE_TO_BEACH_TYPES[$s] ?? [])->unique()->values()->all();
 
-        // Build query
+        $facilityCodes = [];
+        $unmapped = [];
+        foreach ($preferences['must_have_facilities'] ?? [] as $facility) {
+            $key = str_replace([' ', '-'], '_', mb_strtolower(trim($facility)));
+            isset(self::FACILITY_TO_INFRASTRUCTURE[$key])
+                ? $facilityCodes[] = self::FACILITY_TO_INFRASTRUCTURE[$key]
+                : $unmapped[] = $facility;
+        }
+        $facilityCodes = array_values(array_unique($facilityCodes));
+        $needsAccessible = !empty($preferences['accessibility']);
+
+        // Try strict first, then relax facilities, then surface. Accessibility is never relaxed.
+        $attempts = [
+            ['facilities' => $facilityCodes, 'surface' => $surfaceCodes, 'relaxed' => []],
+            ['facilities' => [], 'surface' => $surfaceCodes, 'relaxed' => $facilityCodes ? ['facilities'] : []],
+            ['facilities' => [], 'surface' => [], 'relaxed' => array_values(array_filter([
+                $facilityCodes ? 'facilities' : null,
+                $surfaceCodes ? 'surface' : null,
+            ]))],
+        ];
+
+        $beaches = collect();
+        $relaxed = [];
+        foreach ($attempts as $attempt) {
+            $beaches = $this->query($destination, $constraints, $locale, $attempt['facilities'], $attempt['surface'], $needsAccessible)->get();
+            $relaxed = $attempt['relaxed'];
+            if ($beaches->count() >= $minimumNeeded) {
+                break;
+            }
+        }
+
+        $interests = $preferences['interests'] ?? [];
+        $hasChildren = (int) ($travelParty['children'] ?? 0) > 0;
+        $maxViews = max(1, (int) $beaches->max('beach_views'));
+
+        return [
+            'beaches' => $beaches
+                ->map(fn (Beach $b) => $this->format($b, $locale, $interests, $hasChildren, $maxViews))
+                ->values()
+                ->all(),
+            'relaxed' => $relaxed,
+            'unmapped_facilities' => $unmapped,
+        ];
+    }
+
+    private function query(array $destination, array $constraints, string $locale, array $facilityCodes, array $surfaceCodes, bool $needsAccessible): Builder
+    {
+        $locales = array_values(array_unique([$locale, 'en']));
+        $withTranslations = fn ($q) => $q->whereIn('locale', $locales);
+
         $query = Beach::query()
             ->where('status_id', 1)
             ->whereNotNull('latitude')
-            ->whereNotNull('longitude');
+            ->whereNotNull('longitude')
+            ->where('country_code', strtoupper($destination['country_code']));
 
-        // Apply destination filters
-        $query->where('country_code', $destination['country_code']);
-
-        if (!empty($destination['region_slug'])) {
-            $query->whereHas('region', function ($q) use ($destination) {
-                $q->where('slug', $destination['region_slug']);
-            });
-        }
-
-        if (!empty($destination['city_slug'])) {
-            $query->whereHas('city', function ($q) use ($destination) {
-                $q->where('slug', $destination['city_slug']);
-            });
-        }
-
-        // Apply preference filters
-        if (!empty($preferences['surface_types'])) {
-            $query->whereIn('surface', $preferences['surface_types']);
-        }
-
-        // Apply facility filters (if must_have_facilities specified)
-        if (!empty($preferences['must_have_facilities'])) {
-            foreach ($preferences['must_have_facilities'] as $facility) {
-                // Map facility names to database columns
-                $facilityColumn = $this->mapFacilityToColumn($facility);
-                if ($facilityColumn) {
-                    $query->where($facilityColumn, true);
-                }
+        foreach (['region' => 'region_slug', 'city' => 'city_slug'] as $relation => $key) {
+            if (!empty($destination[$key])) {
+                $query->whereHas("{$relation}.translations", fn ($q) => $q->where('slug', $destination[$key]));
             }
         }
 
-        // Apply accessibility filters
-        if (!empty($preferences['accessibility'])) {
-            foreach ($preferences['accessibility'] as $accessibilityFeature) {
-                $accessibilityColumn = $this->mapAccessibilityToColumn($accessibilityFeature);
-                if ($accessibilityColumn) {
-                    $query->where($accessibilityColumn, true);
-                }
-            }
+        if ($surfaceCodes) {
+            $query->whereHas('beachType', fn ($q) => $q->whereIn('code', $surfaceCodes));
+        }
+        foreach ($facilityCodes as $code) {
+            $query->whereHas('locationInfrastructures', fn ($q) => $q->where('code', $code));
+        }
+        if ($needsAccessible) {
+            $query->whereHas('locationInfrastructures', fn ($q) => $q->where('code', 'access_for_disabled'));
+        }
+        if (!empty($constraints['avoid_ferries'])) {
+            $query->whereNull('island_id');
         }
 
-        // Order by beach_views (visitor interest) - TRANSPARENT ORDERING
-        // This is explicitly documented in assumptions field of response
-        $query->orderBy('beach_views', 'desc');
-
-        // Limit results
-        $query->limit($limit);
-
-        // Fetch beaches
-        $beaches = $query->get();
-
-        // Format beaches for itinerary context
-        return $beaches->map(function ($beach) use ($locale) {
-            return $this->formatBeachForItinerary($beach, $locale);
-        })->toArray();
+        return $query
+            ->with([
+                'translations' => $withTranslations,
+                'city.translations' => $withTranslations,
+                'region.translations' => $withTranslations,
+                'beachType.translations' => $withTranslations,
+                'locationInfrastructures.translations' => $withTranslations,
+                'userTypes',
+                'sportingActivities',
+            ])
+            ->orderByDesc('beach_views')
+            ->orderBy('id')
+            ->limit(self::POOL_SIZE);
     }
 
-    /**
-     * Format beach data for itinerary generation.
-     * 
-     * Returns minimal essential fields needed for LLM to generate itinerary.
-     * 
-     * @param Beach $beach
-     * @param string $locale
-     * @return array
-     */
-    private function formatBeachForItinerary(Beach $beach, string $locale): array
+    private function format(Beach $beach, string $locale, array $interests, bool $hasChildren, int $maxViews): array
     {
-        $beachArray = $beach->toArray();
+        $translation = $this->translation($beach, $locale);
+        $infraCodes = $beach->locationInfrastructures->pluck('code')->all();
+        $userTypes = $beach->userTypes->pluck('code')->all();
+        $activities = $beach->sportingActivities->pluck('code')->all();
+
+        $matched = [];
+        foreach ($interests as $interest) {
+            $signals = self::INTEREST_SIGNALS[$interest] ?? [];
+            if (array_intersect($signals['activities'] ?? [], $activities)
+                || array_intersect($signals['user_types'] ?? [], $userTypes)
+                || array_intersect($signals['infrastructure'] ?? [], $infraCodes)) {
+                $matched[] = $interest;
+            }
+        }
+        $familyFriendly = in_array('family', $userTypes, true) || in_array('children_playground', $infraCodes, true);
+
+        // Popularity 0..1 (log-scaled) + 1 per matched interest + 1 for families travelling with children.
+        $score = log10(1 + (int) $beach->beach_views) / log10(1 + $maxViews)
+            + count($matched)
+            + ($hasChildren && $familyFriendly ? 1 : 0);
+
+        $description = $translation?->description ? trim(strip_tags($translation->description)) : null;
 
         return [
             'id' => $beach->id,
-            'name' => $beach->name ?? null,
-            'slug' => $beach->slug ?? null,
+            'name' => $translation?->name ?? $beach->name ?? "Beach #{$beach->id}",
+            'slug' => $translation?->slug,
+            'city' => $this->localizedName($beach->city, $locale),
+            'region' => $this->localizedName($beach->region, $locale),
             'country_code' => $beach->country_code,
-            'city' => $beach->city?->name ?? null,
-            'surface' => $beach->surface ?? null,
-            'facilities' => $this->extractFacilities($beach),
-            'latitude' => $beach->latitude,
-            'longitude' => $beach->longitude,
-            'beach_views' => $beach->beach_views ?? 0,
-            'description' => $beach->description ?? null,
+            'latitude' => (float) $beach->latitude,
+            'longitude' => (float) $beach->longitude,
+            'type' => $this->localizedName($beach->beachType, $locale),
+            'type_code' => $beach->beachType?->code,
+            'facilities' => $beach->locationInfrastructures
+                ->map(fn ($i) => $this->localizedName($i, $locale))->filter()->values()->all(),
+            'facility_codes' => $infraCodes,
+            'suitable_for' => $userTypes,
+            'activities' => $activities,
+            'has_parking' => in_array('parking', $infraCodes, true),
+            'accessible' => in_array('access_for_disabled', $infraCodes, true),
+            'description' => $description ? mb_substr($description, 0, 400) : null,
+            'matched_interests' => $matched,
+            'beach_views' => (int) $beach->beach_views,
+            'score' => round($score, 4),
         ];
     }
 
-    /**
-     * Extract facilities from beach model.
-     * 
-     * @param Beach $beach
-     * @return array
-     */
-    private function extractFacilities(Beach $beach): array
+    private function translation(Model $model, string $locale): ?Model
     {
-        $facilities = [];
+        $translations = $model->relationLoaded('translations') ? $model->translations : collect();
 
-        if ($beach->parking) $facilities[] = 'parking';
-        if ($beach->showers) $facilities[] = 'showers';
-        if ($beach->toilets) $facilities[] = 'toilets';
-        if ($beach->lifeguard) $facilities[] = 'lifeguard';
-        if ($beach->playground) $facilities[] = 'playground';
-        if ($beach->restaurant) $facilities[] = 'restaurant';
-        if ($beach->beach_bar) $facilities[] = 'beach_bar';
-        if ($beach->sunbeds) $facilities[] = 'sunbeds';
-        if ($beach->umbrellas) $facilities[] = 'umbrellas';
-
-        return $facilities;
+        return $translations->firstWhere('locale', $locale) ?? $translations->firstWhere('locale', 'en');
     }
 
-    /**
-     * Map facility name to database column.
-     * 
-     * @param string $facility
-     * @return string|null
-     */
-    private function mapFacilityToColumn(string $facility): ?string
+    private function localizedName(?Model $model, string $locale): ?string
     {
-        $mapping = [
-            'parking' => 'parking',
-            'showers' => 'showers',
-            'toilets' => 'toilets',
-            'lifeguard' => 'lifeguard',
-            'playground' => 'playground',
-            'restaurant' => 'restaurant',
-            'beach_bar' => 'beach_bar',
-            'sunbeds' => 'sunbeds',
-            'umbrellas' => 'umbrellas',
-        ];
-
-        return $mapping[$facility] ?? null;
-    }
-
-    /**
-     * Map accessibility feature to database column.
-     * 
-     * @param string $feature
-     * @return string|null
-     */
-    private function mapAccessibilityToColumn(string $feature): ?string
-    {
-        $mapping = [
-            'wheelchair_accessible' => 'wheelchair_accessible',
-            'ramp_available' => 'ramp_available',
-            'accessible_parking' => 'accessible_parking',
-            'accessible_toilets' => 'accessible_toilets',
-        ];
-
-        return $mapping[$feature] ?? null;
-    }
-
-    /**
-     * Build context text for LLM prompt.
-     * 
-     * Formats beaches as text for LLM consumption.
-     * 
-     * @param array $beaches
-     * @param array $destination
-     * @param int $durationDays
-     * @param array $preferences
-     * @return string
-     */
-    public function buildContextText(
-        array $beaches,
-        array $destination,
-        int $durationDays,
-        array $preferences
-    ): string {
-        $text = "ITINERARY GENERATION CONTEXT\n\n";
-
-        $text .= "DESTINATION:\n";
-        $text .= "- Country: {$destination['country_code']}\n";
-        if (!empty($destination['region_slug'])) {
-            $text .= "- Region: {$destination['region_slug']}\n";
-        }
-        if (!empty($destination['city_slug'])) {
-            $text .= "- City: {$destination['city_slug']}\n";
-        }
-        $text .= "- Duration: {$durationDays} days\n\n";
-
-        $text .= "PREFERENCES:\n";
-        $text .= "- Pace: " . ($preferences['pace'] ?? 'balanced') . "\n";
-        if (!empty($preferences['interests'])) {
-            $text .= "- Interests: " . implode(', ', $preferences['interests']) . "\n";
-        }
-        if (!empty($preferences['must_have_facilities'])) {
-            $text .= "- Required facilities: " . implode(', ', $preferences['must_have_facilities']) . "\n";
-        }
-        if (!empty($preferences['surface_types'])) {
-            $text .= "- Preferred surfaces: " . implode(', ', $preferences['surface_types']) . "\n";
-        }
-        $text .= "\n";
-
-        $text .= "CANDIDATE BEACHES (ordered by visitor interest - beach_views):\n";
-        $text .= "IMPORTANT: Use transparent language like 'frequently viewed' or 'based on visitor interest'.\n";
-        $text .= "DO NOT claim 'best rated' or 'highest rated' unless you have rating data.\n\n";
-
-        foreach ($beaches as $index => $beach) {
-            $num = $index + 1;
-            $text .= "Beach {$num}:\n";
-            $text .= "- ID: {$beach['id']}\n";
-            $text .= "- Name: {$beach['name']}\n";
-            $text .= "- City: " . ($beach['city'] ?? 'N/A') . "\n";
-            $text .= "- Surface: " . ($beach['surface'] ?? 'N/A') . "\n";
-            $text .= "- Facilities: " . (empty($beach['facilities']) ? 'None' : implode(', ', $beach['facilities'])) . "\n";
-            $text .= "- Views: {$beach['beach_views']}\n";
-            if (!empty($beach['description'])) {
-                $text .= "- Description: {$beach['description']}\n";
-            }
-            $text .= "\n";
+        if (!$model) {
+            return null;
         }
 
-        return $text;
+        return $this->translation($model, $locale)?->name ?? $model->name ?? $model->code ?? null;
     }
 }
-

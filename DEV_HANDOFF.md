@@ -51,6 +51,112 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - AI Itineraries Rebuilt: Real Beaches, Geographic Days, LLM Writes Narrative Only (TASK-001)
+
+### Overview
+The owner reported very poor itineraries. The root causes (`docs/tasks/TASK-001-itinerary-quality.md`) were:
+- filters on nonexistent columns;
+- no beach data or coordinates in the prompt;
+- no geographic logic;
+- no JSON mode, a fixed token limit, and gpt-3.5-turbo.
+
+Now the **code builds the plan** and the **LLM only writes the text** (ADR 2026-10-07). pgvector is deferred (same ADR).
+
+### Changes Made
+- `ItineraryContextBuilderService` (rewritten): real filters and translations, scoring, relaxation rules (accessibility is never relaxed).
+- `Itinerary\ItineraryPlanner` (new): k-means day clusters, nearest-neighbour order, haversine distances, max km per day.
+- `ItineraryService` (rewritten): skeleton → LLM narrative (JSON mode, scaled `max_tokens`, language name, one retry) → merge with DB facts. If the LLM fails, a deterministic fallback text is used (`metadata.narrative="fallback"`).
+- `ItineraryController`: **422 `not_enough_beaches`** (`found`, `needed`) when fewer beaches match than days. No credit is used.
+- `ChatCompletionRequest::$responseFormat`, passed by `OpenAIProvider` as `response_format`.
+- `config/ai.php`: the default `OPENAI_MODEL` is now `gpt-4o-mini`.
+
+### Affected Endpoints
+- `POST /api/v1/ai/itineraries`
+  - The response schema is unchanged at the top level.
+  - New fields: `beach.type`, `beach.suitable_for`, `beach.latitude`, `beach.longitude`, `logistics.notes`, `metadata.narrative`, `metadata.candidates_considered`.
+  - `beach.surface` = localized beach-type name; `beach.distance_km` = straight-line km from the previous stop; `logistics.estimated_travel_km` is computed.
+  - New 422 `not_enough_beaches`.
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter='ItineraryQualityTest|ItineraryControllerTest|ItineraryPlannerTest'
+```
+Real DB with 12 seeded beaches in 3 areas; only the LLM is mocked. Details and deliberate breaks: `docs/tasks/TASK-001.feedback.md`.
+## 2026-10-07 - MCP Server Fixes + `country_code` Filter Alias
+
+### Overview
+Live testing of the Beachrex MCP server on dev found it was broken in several ways:
+- `get_beach_filters` crashed;
+- `search_beaches` with `country_code=HR` returned beaches from every country;
+- lookup by name never worked ("zlatni rat" → not found);
+- weather returned all zeros;
+- nearby results had flat, broken beach URLs.
+
+The MCP server is rewritten against the real API shapes. The API now also accepts `country_code` wherever it accepted `country`.
+
+### Changes Made
+- **API:** `BeachFilterService::applyFilters()` and `buildRawFilters()` accept `country` **or** `country_code`. `/beaches` used to read only `country`, so the MCP's `country_code` was ignored. Regression tests are in `tests/Unit/BeachFilterServiceRawFiltersTest.php`; on the old code the two `country_code` cases fail.
+- **MCP** (`mcp-server/`, v1.1.0; details in `mcp-server/README.md`):
+  - New tool `find_beach_by_name`, backed by `/api/v1/search` (Meilisearch). `get_beach_details` and `get_beach_weather` resolve names the same way: ID → slug → search.
+  - `search_beaches` and `find_beaches_nearby` take attribute filters (beach_type, location_infrastructure, user_type, sporting_activity, …, the same params as `BeachFilterService`). `get_beach_filters` returns the codes.
+  - `find_beaches_nearby` now uses `/spatial/beaches/within-radius`, which supports a radius and filters and returns full hierarchical URLs. It corrects the API's EPSG:3857 distance error client-side (see the open item below).
+  - Weather is mapped from the real response; when there is no data it says "weather unavailable" instead of zeros.
+  - Details show localized region, island and city names, the description, facilities, activities and user types. "0 views" is hidden.
+  - All 19 locales are supported (`si`→`sl` for the API, `si` in URLs).
+  - `ecosystem.config.cjs` is per environment via `MCP_ENV`: `beachrex-mcp-{dev,uat,prod}` on ports 3100/3101/3102. Before this, every deploy restarted the dev process.
+  - Tests: `npm test` (30 tests; `fetch` mocked with fixtures derived from the PHP Resources).
+- **CI** (`.github/workflows/deploy.yml`):
+  - New `mcp-test` job (`npm ci`, build, typecheck, tests) on PRs and pushes; the deploy needs it.
+  - The deploy runs `MCP_ENV=<env> pm2 startOrReload ecosystem.config.cjs`. A dev deploy deletes the legacy `beachrex-mcp` process once.
+
+### Affected Endpoints
+- `GET /api/v1/beaches`, `GET /api/v1/spatial/beaches/*`: `country_code` now filters (same as `country`).
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter=BeachFilterServiceRawFiltersTest
+cd mcp-server && npm ci && npm run build && npm test
+```
+After the dev deploy: in Claude (with the MCP connected) ask for "Zlatni rat", "beaches in Croatia" and "sandy beaches with a lifeguard near Split".
+
+---
+
+## 2026-10-07 - Ops Safety Net: Daily DB Backups, Scheduler, Health Endpoint, Log Rotation, PR CI
+
+### Overview
+Before this change the VPS had no database backups, no running Laravel scheduler, unbounded Docker logs, no health endpoint and no CI on pull requests. All of it is now in the repo as code. Enabling backups needs an owner step (a private bucket and key); see `docs/runbooks/restore-backup.md`.
+
+### Changes Made
+- `app/Console/Commands/BackupDatabase.php` (new): `php artisan db:backup [--keep-days=N] [--no-prune]`.
+  - Runs `pg_dump -Fc` with the password passed via `PGPASSWORD`, not on the command line, and checks the `PGDMP` header.
+  - Uploads to the private `backups` disk as `<prefix>/<db>-YYYYMMDD-HHMMSS.dump` and verifies the size.
+  - Writes `storage/app/backup-last-success.txt` and prunes its own files older than the retention period. On error it fails loudly and uploads nothing.
+- `config/backup.php` (new), plus the `backups` disk in `config/filesystems.php` (s3 driver, DO Spaces, `visibility: private`).
+- `routes/console.php`: `db:backup` runs daily at `BACKUP_TIME` (02:30 UTC), `withoutOverlapping`, only when `BACKUP_ENABLED=true`.
+- `app/Http/Controllers/Api/V1/HealthController.php` (new): `GET /api/v1/health`.
+- `deploy/docker-compose.vps.yml`:
+  - New `scheduler_{prod,uat,dev}` services that reuse the `beachrex/api:<env>` image and run `php artisan schedule:work`.
+  - Log rotation (`json-file`, 10m × 5) on all app containers. `pgsql`/`redis` are left unchanged so a dev deploy never restarts the shared database.
+- `.github/workflows/deploy.yml`:
+  - The `test` job now also runs on pull requests (the deploy job is skipped). PR runs use their own concurrency group.
+  - The deploy writes `REVISION` (the commit SHA) before rsync and recreates `scheduler_<env>` with `--no-deps`.
+- `.env.example`: `BACKUP_*` variables (names only). `.gitignore`: `REVISION`.
+- Docs: `docs/runbooks/restore-backup.md` (enable, restore, drill); `DEPLOYMENT_GUIDE.md` §9 updated.
+
+### Affected Endpoints
+- `GET /api/v1/health` (new, public). Returns `{status, revision, checks:{database, redis}, backup:{enabled, last_success_at}}`: **200** when healthy, **503** when the database or Redis is down.
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter='BackupDatabaseTest|HealthApiTest'
+# BackupDatabaseTest runs the real pg_dump against the test DB: valid dump, retention prune
+# (only its own files and prefix), failure with wrong credentials, schedule gated by BACKUP_ENABLED
+curl -s https://dev-api.beachrex.com/api/v1/health | jq   # after deploy: revision = merge SHA
+```
+The compose and workflow changes can't be run in the agent sandbox (no Docker or SSH). They are verified by the dev deploy run.
+
+---
+
 ## 2026-10-07 - Security: Admin-Only Write Endpoints + Locale, Filter and Cache Fixes
 
 ### Overview
