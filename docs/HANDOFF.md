@@ -58,6 +58,14 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Done
 
+- 2026-10-07 (session 2, work order items 1–5):
+  - Rules adopted: Beachrex/backend#5, Beachrex/web-client#3.
+  - Ops safety net (backups, scheduler, `/api/v1/health`, log rotation, PR CI): Beachrex/backend#6, deploy run 86.
+  - Prod launch runbook: Beachrex/backend#7.
+  - Frontend PR CI plus a fix for broken beach/beach-map links in da/pt/nl/el/sq: Beachrex/web-client#4.
+  - MCP server rewrite and the `country_code` alias: Beachrex/backend#8, deploy run 90.
+  - Itineraries rebuilt (TASK-001): Beachrex/backend#9.
+
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
   Beachrex/backend#3 and Beachrex/web-client#1 merged to dev; Beachrex/backend#4 and Beachrex/web-client#2 promoted to uat.
   Deploys green: backend dev run 82, uat run 83; frontend dev run 40, uat run 41.
