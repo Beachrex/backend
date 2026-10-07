@@ -51,6 +51,27 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - MCP: Deploy Actually Replaces the Legacy Process; Image URLs With Šumniki
+
+### Overview
+After Beachrex/backend#8 the dev MCP still served the **old** code. The deploy log showed `beachrex-mcp-dev` with 36 restarts and 0 s uptime, a crash loop. The legacy `beachrex-mcp` process is not in the deploy user's pm2 (`not found`), so it most likely runs under root's pm2 (started by hand before CI managed it) and still holds port 3100. The deploy reported success anyway. Separately, image URLs with šumniki (`…/hr-114-o-brač/…`) opened only sometimes, because Imagor does not serve UTF-8 keys reliably.
+
+### Changes Made
+- `.github/workflows/deploy.yml` (MCP block):
+  - dev deploys also run `sudo -n pm2 delete beachrex-mcp` + `pm2 save --force` for root's pm2;
+  - after `startOrReload`, the deploy **verifies** that `http://127.0.0.1:<port>/health` reports `"env":"<env>"`. The old process doesn't report it. If the check fails, the deploy prints the health response, the port owner (`ss -ltnp`) and the pm2 logs, then **fails**.
+  - The expanded remote script was checked with `bash -n`; the health check was tested against a locally running MCP and against the old response format.
+- `mcp-server/src/api-client.ts` `cdn()`: paths with non-ASCII characters bypass Imagor and link the original on Spaces (`BEACHREX_CDN_ASSETS`, default `https://beachrex.fra1.digitaloceanspaces.com/public/`), with NFD-encoded segments. This is the same rule as web-client `buildCdnUrl`. The root fix is TASK-002 (ASCII-only storage paths).
+- Tests: `mcp-server/test/api-client.test.ts`, image URL cases. 32/32 pass; on the old `api-client.ts` the non-ASCII case fails.
+
+### Testing
+```bash
+cd mcp-server && npm run build && npm test
+```
+After the dev deploy, the "Build and start on VPS" log ends with `MCP server rebuilt, restarted and verified on port 3100`. If it ends with `ERROR: MCP did not come up…`, the printed `ss` line shows which process holds the port.
+
+---
+
 ## 2026-10-07 - AI Itineraries Rebuilt: Real Beaches, Geographic Days, LLM Writes Narrative Only (TASK-001)
 
 ### Overview

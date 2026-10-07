@@ -4,7 +4,7 @@ import { mockFetch } from './helpers.js';
 import * as fx from './fixtures.js';
 import {
   searchBeaches, findBeachesNearby, findBeachByName, getBeachDetails, getBeachFilters,
-  getBeachWeather, mercatorRadiusKm, haversineKm, beachUrl, slugify, MAX_LIMIT,
+  getBeachWeather, mercatorRadiusKm, haversineKm, beachUrl, slugify, MAX_LIMIT, imageUrl, imageThumbUrl,
 } from '../src/api-client.js';
 import {
   formatSearch, formatNearby, formatDetails, formatNameSearch, formatFilters, formatWeather,
@@ -317,5 +317,23 @@ describe('helpers', () => {
   test('haversine sanity: Split -> Zadar ≈ 118 km', () => {
     const d = haversineKm(43.5081, 16.4402, 44.1197, 15.2319);
     assert.ok(d > 115 && d < 122, String(d));
+  });
+});
+
+describe('image URLs with non-ASCII paths (Imagor bypass)', () => {
+  test('ASCII paths go through Imagor', () => {
+    assert.equal(
+      imageUrl('img/beaches/hr-540-k-odalmacija/hr-540-k-odalmacija-sl9.jpg'),
+      `${CDN}img/beaches/hr-540-k-odalmacija/hr-540-k-odalmacija-sl9.jpg`,
+    );
+  });
+
+  test('paths with č/š/ž go directly to Spaces with NFD-encoded segments (same as web-client)', () => {
+    // "brač" (NFC) must become "brac" + U+030C → c%CC%8C, not %C4%8D (which Imagor/Spaces fail on)
+    assert.equal(
+      imageUrl('img/beaches/hr-114-o-brač/hr-114-o-brač-sl17.jpg'),
+      'https://beachrex.fra1.digitaloceanspaces.com/public/img/beaches/hr-114-o-brac%CC%8C/hr-114-o-brac%CC%8C-sl17.jpg',
+    );
+    assert.ok(imageThumbUrl('img/beaches/hr-114-o-brač/x.jpg').startsWith('https://beachrex.fra1.digitaloceanspaces.com/public/'), 'thumbs bypass Imagor too');
   });
 });

@@ -196,10 +196,31 @@ jobs:
               npm run build 2>&1
               # One pm2 process per environment: beachrex-mcp-<env> (ports 3100/3101/3102).
               # One-time migration: the legacy shared 'beachrex-mcp' process is the dev one on :3100.
-              if [ '${ENV_NAME}' = 'dev' ]; then pm2 delete beachrex-mcp 2>&1 || true; fi
+              # The legacy process may belong to root's pm2 (it was started by hand before CI managed it),
+              # in which case it keeps port 3100 and the new beachrex-mcp-dev crash-loops (EADDRINUSE).
+              if [ '${ENV_NAME}' = 'dev' ]; then
+                pm2 delete beachrex-mcp 2>&1 || true
+                sudo -n env PATH=\$PATH pm2 delete beachrex-mcp 2>&1 || true
+                sudo -n env PATH=\$PATH pm2 save --force 2>&1 || true
+              fi
               MCP_ENV=${ENV_NAME} pm2 startOrReload ecosystem.config.cjs --update-env 2>&1
               pm2 save 2>&1 || true
-              echo 'MCP server rebuilt and restarted.'
+
+              # Verify the NEW process answers (its /health reports env). Fail the deploy loudly otherwise.
+              case '${ENV_NAME}' in dev) MCP_PORT=3100 ;; uat) MCP_PORT=3101 ;; prod) MCP_PORT=3102 ;; esac
+              MCP_OK=0
+              for i in 1 2 3 4 5 6 7 8 9 10; do
+                if curl -fsS http://127.0.0.1:\$MCP_PORT/health 2>/dev/null | grep -q '\"env\":\"${ENV_NAME}\"'; then MCP_OK=1; break; fi
+                sleep 2
+              done
+              if [ \$MCP_OK != 1 ]; then
+                echo 'ERROR: MCP did not come up as beachrex-mcp-${ENV_NAME} on port '\$MCP_PORT
+                curl -sS http://127.0.0.1:\$MCP_PORT/health 2>&1 || true
+                sudo -n ss -ltnp \"sport = :\$MCP_PORT\" 2>&1 || true
+                pm2 logs beachrex-mcp-${ENV_NAME} --lines 30 --nostream 2>&1 || true
+                exit 1
+              fi
+              echo 'MCP server rebuilt, restarted and verified on port '\$MCP_PORT
             fi
 
             echo 'Deploy of ${ENV_NAME} complete.'
