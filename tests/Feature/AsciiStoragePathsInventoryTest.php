@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Beach;
 use App\Models\Media;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Normalizer;
 use Tests\TestCase;
@@ -37,6 +38,12 @@ class AsciiStoragePathsInventoryTest extends TestCase
     private function nfd(string $value): string
     {
         return Normalizer::normalize($value, Normalizer::FORM_D);
+    }
+
+    /** Legacy rows were written before TASK-002, so they bypass the model's ASCII guard. */
+    private function legacy(string $table, int $id, array $values): void
+    {
+        DB::table($table)->where('id', $id)->update($values);
     }
 
     /** @return list<array<string, string>> */
@@ -111,10 +118,11 @@ class AsciiStoragePathsInventoryTest extends TestCase
 
     public function test_finds_non_ascii_db_paths(): void
     {
-        $beach = Beach::factory()->create(['folder_name' => 'hr-114-o-brač']);
+        $beach = Beach::factory()->create();
+        $this->legacy('beach', $beach->id, ['folder_name' => 'hr-114-o-brač']);
         $ascii = Beach::factory()->create(['folder_name' => 'hr-69-o-pag']);
-        $media = Media::factory()->create([
-            'mediable_id' => $beach->id,
+        $media = Media::factory()->create(['mediable_id' => $beach->id]);
+        $this->legacy('media', $media->id, [
             'file_name' => $this->nfd('hr-114-o-brač-sl17.jpg'),
             'file_path' => 'img/beaches/hr-114-o-brač/hr-114-o-brač-sl17.jpg',
         ]);
@@ -134,7 +142,8 @@ class AsciiStoragePathsInventoryTest extends TestCase
         $spaces = Storage::disk('spaces');
         $key = 'public/img/beaches/hr-114-o-brač/x.jpg';
         $spaces->put($key, 'original');
-        $beach = Beach::factory()->create(['folder_name' => 'hr-114-o-brač']);
+        $beach = Beach::factory()->create();
+        $this->legacy('beach', $beach->id, ['folder_name' => 'hr-114-o-brač']);
 
         $this->runInventory();
 

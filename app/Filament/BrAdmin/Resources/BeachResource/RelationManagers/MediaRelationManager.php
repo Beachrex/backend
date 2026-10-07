@@ -2,6 +2,8 @@
 
 namespace App\Filament\BrAdmin\Resources\BeachResource\RelationManagers;
 
+use App\Support\AsciiPath;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -32,6 +34,7 @@ class MediaRelationManager extends RelationManager
                     ->maxSize(10240) // 10MB per file
                     ->maxFiles(20) // Maximum 20 files at once
                     ->disk('spaces')
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => AsciiPath::uploadFileName($file->getClientOriginalName()))
                     ->directory(function ($livewire) {
                         $beach = $livewire->getOwnerRecord();
                         $folderName = $beach->folder_name ?? 'beach-' . $beach->id;

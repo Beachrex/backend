@@ -51,6 +51,35 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - TASK-002 Step 2: No New Non-ASCII Storage Paths (Prevention)
+
+### Overview
+New and changed storage paths are stored ASCII-only. Legacy values are not touched until the migration (ADR "ASCII-only Storage Paths: Convert New Values Only").
+
+### Changes Made
+- `app/Models/Traits/HasAsciiPaths.php`: on `saving`, it applies `AsciiPath::fromPath` to dirty path attributes. Used by:
+  - `Beach` (`folder_name`);
+  - `Media` (`file_path`, `file_name`);
+  - `City`, `Region`, `Island`, `Continent` (`main_image`);
+  - `Country` (`image_path`).
+- Filament: every `FileUpload` (city, region, island, country and continent images; beach media) names files with `AsciiPath::uploadFileName()` (ULID + ASCII extension). The `folder_name` helper text explains the rule.
+- `AsciiStoragePathsInventoryTest` now writes legacy rows with `DB::table`, as the old data was written, because the model guard converts them.
+- Known gap until the migration: uploads to a beach whose legacy `folder_name` is non-ASCII still go into that folder, because the main image URL is built from `folder_name`. The inventory reports them.
+
+### Affected endpoints
+None. Admin saves of beaches, media and geographic images store ASCII paths for new values.
+
+### Testing
+```bash
+php artisan test tests/Feature/AsciiPathPreventionTest.php
+```
+Deliberate breaks (each caught):
+- trait disabled → 4 failures;
+- dirty check removed → the legacy-value test fails;
+- one `FileUpload` unwired → the source-scan test fails.
+
+---
+
 ## 2026-10-07 - TASK-002 Step 1: `AsciiPath` + Read-Only Inventory of Non-ASCII Storage Paths
 
 ### Overview

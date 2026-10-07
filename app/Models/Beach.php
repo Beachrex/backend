@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasAsciiPaths;
 use App\Models\Traits\HasMedia;
 use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +17,11 @@ use Laravel\Scout\Searchable;
 
 class Beach extends Model
 {
-    use HasFactory, Cacheable, HasMedia, Searchable;
+    use HasFactory, Cacheable, HasMedia, Searchable, HasAsciiPaths;
+
+    /** Storage paths kept ASCII-only (TASK-002). */
+    protected array $asciiPathAttributes = ['folder_name'];
+
     protected $table = 'beach';
 
     protected $fillable = [

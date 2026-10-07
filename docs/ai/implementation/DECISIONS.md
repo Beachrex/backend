@@ -807,6 +807,32 @@ Only 21% of beaches have descriptions (legacy data), so embeddings would have li
 
 ---
 
+## [2026-10-07] ASCII-only Storage Paths: Convert New Values Only; ULID Upload Names
+
+**Status**: Accepted
+
+**Context**: TASK-002 prevention (§4) must stop new non-ASCII paths before the legacy keys are migrated. Legacy rows such as `beach.folder_name = "hr-114-o-brač"` still point to non-ASCII keys on Spaces. If a re-save rewrote them to ASCII, the images would break until the copy step runs.
+
+**Decision**:
+1. Models with storage paths use the `HasAsciiPaths` trait:
+   - `Beach.folder_name`;
+   - `Media.file_path` and `Media.file_name`;
+   - `main_image` on City, Region, Island and Continent;
+   - `Country.image_path`.
+
+   On `saving`, it applies `AsciiPath::fromPath` **only to new or changed values**. An unchanged legacy value is left as is; `storage:ascii-paths` migrates keys and DB together.
+2. Every Filament `FileUpload` names files `AsciiPath::uploadFileName()`: a ULID plus the ASCII, lowercase extension. This is Filament's default naming made explicit, so unique names stay and readable names are not reintroduced. A source-scan test fails if a `FileUpload` lacks it.
+3. `article.feature_image`, `badges.icon` and `beach.path_to_beach_map_url` are free-text fields that may hold full URLs, which `AsciiPath` would break (`:` → `-`). They are not converted. The inventory still reports them.
+4. The Filament `folder_name` field converts silently instead of rejecting input. The helper text explains the rule.
+
+**Alternatives Considered**:
+1. A mutator that always converts. Rejected: it would break images of not-yet-migrated beaches on any admin edit.
+2. Readable upload names (`Plaza-Ciovo.jpg`). Rejected: name collisions would overwrite files, and today's names are ULIDs anyway.
+
+**Related**: `docs/tasks/TASK-002-ascii-storage-paths.md`, `app/Models/Traits/HasAsciiPaths.php`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

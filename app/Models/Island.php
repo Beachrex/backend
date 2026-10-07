@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasAsciiPaths;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,7 +12,10 @@ use Laravel\Scout\Searchable;
 
 class Island extends Model
 {
-    use HasFactory, Searchable;
+    use HasFactory, Searchable, HasAsciiPaths;
+
+    /** Storage paths kept ASCII-only (TASK-002). */
+    protected array $asciiPathAttributes = ['main_image'];
 
     protected $table = 'island';
 
