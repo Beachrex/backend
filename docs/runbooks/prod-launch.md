@@ -93,7 +93,7 @@ Then `$DC exec -T pgsql rm /tmp/uat.dump`.
 | D2 | Owner | Issue certificates **without letting certbot edit nginx** (the repo owns the config): `sudo certbot certonly --nginx -d beachrex.com -d www.beachrex.com -d api.beachrex.com` | `sudo ls /etc/letsencrypt/live/beachrex.com/` shows `fullchain.pem` |
 | D3 | Agent | PR: replace the HTTP-only prod blocks in `deploy/nginx/beachrex.conf` with 80→301 + 443 blocks using `/etc/letsencrypt/live/beachrex.com/` (template below). Merge **only after D2**, otherwise `nginx reload` fails for all environments | Deploy green |
 | D4 | Owner | `https://beachrex.com/en`, `https://api.beachrex.com/api/v1/health`, `https://dock.beachrex.com` | Pages load; health `ok`; `curl -sI https://beachrex.com/en \| grep -i x-robots-tag` is **empty** (prod is indexable) |
-| D5 | Owner | Stripe live webhook (if live), UptimeRobot monitor for `https://api.beachrex.com/api/v1/health`, enable backups on prod | First backup appears next night |
+| D5 | Owner | Stripe live webhook (if live), UptimeRobot monitor for `https://api.beachrex.com/api/v1/health`, enable backups on prod (`BACKUP_ENABLED=true` in `.env.prod`), then **turn them off on UAT** (`BACKUP_ENABLED=false` in `.env.uat` + redeploy uat) | First prod backup appears next night; `uat-api…/api/v1/health` shows `backup.enabled: false` |
 | D6 | Owner | Google Search Console: add the `beachrex.com` property and submit `https://beachrex.com/sitemap.xml` | Sitemap accepted |
 
 Template for D3 (443 block; the 80 block becomes `return 301 https://$host$request_uri;`):

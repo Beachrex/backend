@@ -58,6 +58,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Done
 
+- 2026-10-07: the owner set `OPENAI_MODEL=gpt-4o-mini` in `.env.dev` and `.env.uat`.
 - 2026-10-07 (session 2, work order items 1–5):
   - Rules adopted: Beachrex/backend#5, Beachrex/web-client#3.
   - Ops safety net (backups, scheduler, `/api/v1/health`, log rotation, PR CI): Beachrex/backend#6, deploy run 86.
@@ -72,10 +73,10 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
-- **Enable DB backups** (`docs/runbooks/restore-backup.md`, "Enable"):
-  - create a private Spaces bucket and a dedicated key;
-  - set `BACKUP_ENABLED=true` and `BACKUP_S3_KEY`, `BACKUP_S3_SECRET`, `BACKUP_S3_BUCKET` in `/opt/beachrex/envs/.env.uat`;
-  - redeploy uat, run `db:backup --no-prune` once, then do the restore drill.
+- **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
+  - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.
+  - Still to do: after the uat deploy, run `db:backup --no-prune` once on uat, then the restore drill.
+  - At prod launch (runbook phase D5): `BACKUP_ENABLED=true` in `.env.prod`, then `BACKUP_ENABLED=false` in `.env.uat` and redeploy uat.
 - **Enable Hetzner Cloud Backups** for the VPS (Hetzner console → server → Backups).
 - **UptimeRobot** (or similar): HTTP monitors on `https://dev-api.beachrex.com/api/v1/health` and `https://uat-api.beachrex.com/api/v1/health`, with an alert e-mail to the owner.
 - Optional: Docker daemon log rotation for `pgsql`/`redis` (`/etc/docker/daemon.json` `log-opts`).
