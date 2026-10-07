@@ -70,8 +70,8 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 21 | Map: show the selected filters (like on home) | feature | Reasonable UX request | P3 | Decision | |
 | 22 | Map: place names lowercase or with hyphens | bug | Spreadsheet: fixed | – | Closed | |
 | 23 | DE map link → 404 (`strandkarte`) | bug | Spreadsheet: fixed | – | Closed | |
-| 24 | Map button sometimes jumps to another language (PL → RU) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The map button on listing pages (`DynamicSearchBeaches`) and on the continent banner used `/beach-map`; now `buildBeachMapUrl(locale)` | P1 | Retest | Beachrex/web-client#8, deploy pending |
-| 25 | Bottom button on a localized map goes to another locale or back to EN | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The footer map button (the bottom button on the map page) used `/beach-map` | P1 | Retest | Beachrex/web-client#8, deploy pending |
+| 24 | Map button sometimes jumps to another language (PL → RU) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The map button on listing pages (`DynamicSearchBeaches`) and on the continent banner used `/beach-map`; now `buildBeachMapUrl(locale)` | P1 | Retest | Beachrex/web-client#8, dev run 47 |
+| 25 | Bottom button on a localized map goes to another locale or back to EN | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The footer map button (the bottom button on the map page) used `/beach-map` | P1 | Retest | Beachrex/web-client#8, dev run 47 |
 | 26 | UA/RU map page partly untranslated | bug | Missing translations | P3 | Translation/data | |
 | 27 | PL footer not translated | bug | Missing translations | P3 | Translation/data | |
 | 28 | SL footer problem | bug | Needs the screenshot. Likely a translation or layout issue | P3 | Translation/data | |
@@ -120,7 +120,7 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 71 | These functions are not programmed; how should they work? | question | Decision | – | Decision | |
 | 72 | Map needs a double click to show a beach | bug | Frontend map click handler | P2 | Bug | |
 | 73 | Map card: place and country clickable | feature | Small feature | P3 | Decision | |
-| 74 | DE → map → logo: language resets to EN (all languages) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The header and footer logos used `/`; now `/${locale}` | P1 | Retest | Beachrex/web-client#8, deploy pending |
+| 74 | DE → map → logo: language resets to EN (all languages) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The header and footer logos used `/`; now `/${locale}` | P1 | Retest | Beachrex/web-client#8, dev run 47 |
 | 75 | RU, UA, EL, BG: beach page text not in their script | bug | Missing translations (DB `*_translation` + UI strings) | P3 | Translation/data | |
 | 76 | Same as #75 on maps | bug | Missing translations | P3 | Translation/data | |
 | 77 | EUROPE on the map → empty page | bug | Verified in code: `DynamicSearchBeaches` threw for any beach without `main_image`, and the continent "most visited" cards passed a null image to `next/image`. Both crashed the page after it loaded. Beaches without an image are now skipped. The map's EUROPE link opens the continent page | P1 | Retest | Beachrex/web-client#6, dev run 45 |

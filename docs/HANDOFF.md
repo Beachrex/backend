@@ -97,7 +97,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   |---|---|---|---|
   | Beachrex/web-client#6 | 19, 53, 55, 56, 60, 77 | card lists threw on beaches without `main_image`; `buildDestinationUrl` threw for cities/islands without a region | 45 |
   | Beachrex/web-client#7 | 52, 53, 54 | search pushed `/<locale>/beaches/...`; the middleware turned next-intl's redirect into an empty 200 | 46 |
-  | Beachrex/web-client#8 | 24, 25, 74 | locale-less `next/link` hrefs (logo, footer map, listing map buttons) | pending |
+  | Beachrex/web-client#8 | 24, 25, 74 | locale-less `next/link` hrefs (logo, footer map, listing map buttons) | 47 |
 
   The sandbox cannot reach dev, so the live check is the tester's retest.
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
