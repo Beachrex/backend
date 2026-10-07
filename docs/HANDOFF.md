@@ -81,7 +81,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 1. **Dev rules adopted**: this file, `DEVELOPMENT-RULES.md`, `CLAUDE.md` in both repos. *(done: Beachrex/backend#5, Beachrex/web-client#3)*
 2. **Ops safety net**: daily DB backups to a private bucket, scheduler service, Docker log rotation,
    `/api/v1/health`, PR CI. *(Built; backups need the owner step below)*
-3. **Prod launch runbook** — prod DB from UAT, DNS, SSL, Nginx, MCP process names. *(planned)*
+3. **Prod launch runbook**: [`docs/runbooks/prod-launch.md`](runbooks/prod-launch.md) covers the prod DB from UAT, env checklist, deploy, DNS, SSL and rollback. *(written; launch date is the owner's decision)*
 4. **MCP server quality** — known bugs found 2026-10-07:
    - `get_beach_filters` crashes;
    - `search_beaches` ignores `country_code` (the API reads `country`) and returns beaches from all countries;
@@ -99,7 +99,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 - `.gitlab-ci.yml` in both repos is unused (GitHub Actions replaced it).
 - Local `sail artisan test`: `phpunit.xml` points at `127.0.0.1` / `beachrex_test`, as in CI. Inside Sail this probably fails.
 - Cache invalidation on admin edits for other cached models (Beach, Country, …): `DEPLOYMENT_GUIDE` §9.
-- The MCP pm2 process name `beachrex-mcp` is shared by all envs, so a uat deploy restarts the dev MCP process.
+- The MCP pm2 process name `beachrex-mcp` is shared by all envs, so a uat deploy restarts the dev MCP process. This will be fixed with item 4 (MCP).
 
 ## Latest numbers
 

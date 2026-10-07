@@ -1,5 +1,7 @@
 # Načrt migracije BeachRex infrastrukture na Hetzner VPS
 
+> **2026-10-07:** Laravel Cloud no longer exists. Every step below that dumps from Laravel Cloud is **historical**. Prod launch follows [`docs/runbooks/prod-launch.md`](../runbooks/prod-launch.md), with the prod DB loaded from UAT.
+
 > **Cilj:** Migracija celotne BeachRex infrastrukture (Frontend z Vercela, Backend z Laravel Clouda) na lasten Hetzner VPS strežnik.
 
 **Datum:** 2026-09-01
