@@ -423,13 +423,8 @@ return response()->json(['data' => $data['beaches'], ...]);
 ## 9. Kaj manjka ( Naslednji koraki)
 
 ### PROD migracija
-1. **DNS preklop:** `beachrex.com` in `api.beachrex.com` A record → `2.28.76.142`
-2. **SSL certifikat:** `certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com`
-3. **Nginx config:** Posodobiti `beachrex.conf` z PROD SSL bloki (trenutno samo HTTP)
-4. **Baza:** Finalni `pg_dump` iz Laravel Clouda → restore v `beachrex_prod`
-5. **`.env.prod`:** Posodobiti s pravimi PROD tajnostmi (trenutno kaže na UAT API za frontend)
-6. **Frontend rebuild:** Po DNS preklopu push na `main` → build z `.env.front.prod` (ki mora kaže na `https://api.beachrex.com`)
-7. **Preverba:** `https://beachrex.com` in `https://api.beachrex.com/api/v1/beaches?limit=1`
+Celoten postopek je v **[`docs/runbooks/prod-launch.md`](../runbooks/prod-launch.md)**: priprava, prod baza iz **UAT**, deploy, DNS in SSL, rollback.
+Laravel Cloud ne obstaja več, zato končnega `pg_dump` iz Clouda ni (ADR 2026-10-07).
 
 ### Ostalo
 - **Backupi baze:** *Built* (2026-10-07). `php artisan db:backup` vsak dan ob 02:30 UTC v kontejnerju `scheduler_<env>` naloži `pg_dump` v **privaten** bucket. Vklop (owner): `docs/runbooks/restore-backup.md`. Drugi sloj: Hetzner Cloud Backups (owner).
