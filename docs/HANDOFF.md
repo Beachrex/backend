@@ -70,7 +70,9 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - **Promoted dev → uat** (owner request): Beachrex/backend#12 (uat deploy run 99) and Beachrex/web-client#5 (uat deploy run 44).
   - MCP deploy fix: the legacy root-owned `beachrex-mcp` held :3100, so the new process crash-looped while the deploy reported success. The deploy now removes the legacy process and **verifies `/health` reports the env**. Also: Imagor bypass for image paths with šumniki. Beachrex/backend#13, dev deploy run 103. **Verified live on dev**: filters, name search ("zlatni rat"), beach type/lifeguard/family data, and image URLs all work.
   - TASK-002 spec written: Beachrex/backend#14.
-  - **Not yet on uat:** Beachrex/backend#13 and Beachrex/backend#14. Promote when the owner asks.
+  - TASK-002 step 1 (`AsciiPath` + read-only `storage:ascii-paths --inventory`): Beachrex/backend#17, dev deploy run 109 green.
+    Not yet run against real data (owner action below).
+  - **Not yet on uat:** Beachrex/backend#13, #14 and #17. Promote when the owner asks.
 
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
   Beachrex/backend#3 and Beachrex/web-client#1 merged to dev; Beachrex/backend#4 and Beachrex/web-client#2 promoted to uat.
@@ -78,7 +80,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
-- **TASK-002 inventory (read-only):** after the PR below is live on dev, run `storage:ascii-paths --inventory` on dev and uat
+- **TASK-002 inventory (read-only):** deployed to dev (Beachrex/backend#17, run 109), run `storage:ascii-paths --inventory` on dev and uat
   per [`docs/runbooks/ascii-storage-paths.md`](runbooks/ascii-storage-paths.md) and send the summary + CSVs to the agent.
   Nothing on Spaces moves until the owner has reviewed the inventory.
 
