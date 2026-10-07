@@ -753,7 +753,8 @@ class PostGISService
                 m.is_primary,
                 m.order,
                 mc.code as collection_code,
-                b.folder_name
+                b.folder_name,
+                b.mobile_upload
             FROM media m
             INNER JOIN media_collections mc ON m.media_collection_id = mc.id
             INNER JOIN beach b ON m.mediable_id = b.id
@@ -809,8 +810,10 @@ class PostGISService
             $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
             $vtourUrl = null;
             if ($spheres360Collection->isNotEmpty() && isset($spheres360Collection->first()->folder_name)) {
-                $folderName = $spheres360Collection->first()->folder_name;
-                $vtourUrl = "img/beaches/{$folderName}/vtour/tour.html";
+                $sphere = $spheres360Collection->first();
+                // Same rule as BeachDetailsResource: mobile uploads live under img/beaches_mobile/.
+                $baseFolder = $sphere->mobile_upload ? 'beaches_mobile' : 'beaches';
+                $vtourUrl = "img/{$baseFolder}/{$sphere->folder_name}/vtour/tour.html";
             }
 
             $spheres360 = [];

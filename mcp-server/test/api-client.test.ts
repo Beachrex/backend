@@ -113,6 +113,12 @@ describe('search_beaches', () => {
     assert.match(text, /\*\*Beach Bajlo\*\* \(Zadar, Croatia\)/);
   });
 
+  test('every API call identifies the MCP server (not counted as a beach page view)', async () => {
+    m.on('/beaches', { data: [] });
+    await searchBeaches({}, 'en');
+    assert.equal(m.calls[0].headers['X-Beachrex-Client'], 'mcp');
+  });
+
   test('default limit is 20', async () => {
     m.on('/beaches', { data: [] });
     const r = await searchBeaches({}, 'en');

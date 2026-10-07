@@ -131,11 +131,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 - MCP on uat/prod: the processes run on 3101/3102, but there is no Nginx route or DNS (`mcp-uat`/`mcp`) yet. Owner decision.
 - `MediaService::upload` (API `/media/upload`) stores the client's original name in `media.file_name`, but the file is stored under a slug + time + random name. `BeachDetailsController` (previous/next beach `main_image`) builds URLs from `folder_name` + `file_name`, so such images would 404 there. Found during TASK-002, not fixed.
 - API issues found while fixing the MCP (2026-10-07), not fixed yet:
-  - `beach-details` increments `beach_views` on every call, including AI/MCP calls.
-  - `ProvidesWeather` sets `sea_temperature` = air temperature (fake).
-  - `/beaches` Swagger documents `region`/`island`/`city`, but `applyFilters` reads only the `*_code` names.
-  - `FilterController` reads only `country` (not `country_code`).
-  - The spatial 360° tour path ignores `mobile_upload`.
+  - `ProvidesWeather` sets `sea_temperature` = air temperature (fake). **Owner decision:** show "--°" (null), or add a real sea surface temperature source (e.g. Open-Meteo Marine API, free, no key).
 
 ## Latest numbers
 

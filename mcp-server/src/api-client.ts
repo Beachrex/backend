@@ -187,6 +187,8 @@ async function apiCall<T = any>(path: string, params?: Params, locale?: string):
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Accept-Language': normalizeLocale(locale),
+    // Identifies the MCP server, so AI lookups are not counted as beach page views.
+    'X-Beachrex-Client': 'mcp',
   };
   if (c.apiKey) headers.Authorization = `Bearer ${c.apiKey}`;
   const response = await fetch(url, { headers, signal: AbortSignal.timeout(c.timeoutMs) });

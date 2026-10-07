@@ -57,21 +57,21 @@ class FilterController extends Controller
      *     @OA\Parameter(
      *         name="country",
      *         in="query",
-     *         description="Filter by country code or ID (e.g., HR, SI, or numeric ID)",
+     *         description="Filter by country code or ID (e.g., HR, SI, or numeric ID). Alias: country_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="string"), @OA\Schema(type="integer")})
      *     ),
      *     @OA\Parameter(
      *         name="region",
      *         in="query",
-     *         description="Filter by region ID or code",
+     *         description="Filter by region ID or code. Alias: region_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
      *     ),
      *     @OA\Parameter(
      *         name="island",
      *         in="query",
-     *         description="Filter by island ID or code",
+     *         description="Filter by island ID or code. Alias: island_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
      *     ),
@@ -247,9 +247,10 @@ class FilterController extends Controller
 
         // Get optional geographic filters for cascading
         $continentCode = $request->get('continent_code');
-        $countryParam = $request->get('country');
-        $regionParam = $request->get('region');
-        $islandParam = $request->get('island');
+        // The *_code names are accepted as aliases, matching /beaches (BeachFilterService).
+        $countryParam = $request->get('country', $request->get('country_code'));
+        $regionParam = $request->get('region', $request->get('region_code'));
+        $islandParam = $request->get('island', $request->get('island_code'));
 
         // Resolve country parameter (can be code or ID)
         $countryCode = $this->resolveCountryParameter($countryParam);
