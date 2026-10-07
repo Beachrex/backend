@@ -106,8 +106,9 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 5. **AI itineraries**: rebuilt (TASK-001; ADR "code plans, LLM narrates"; pgvector deferred). *(Built; live quality check on dev is an owner action, and `OPENAI_MODEL` in the server env should be `gpt-4o-mini`)*
    **Now: TASK-002 ASCII-only storage paths** (owner request 2026-10-07; spec: `docs/tasks/TASK-002-ascii-storage-paths.md`).
    Step 1 built: `AsciiPath` + read-only `storage:ascii-paths --inventory` (runbook `docs/runbooks/ascii-storage-paths.md`).
-   Step 2 built: prevention, so new or changed paths are stored ASCII (`HasAsciiPaths`, ASCII upload names).
-   Next: `--copy` / `--update-db` / `--delete-old` with `--dry-run` (built and tested, not run). The real run waits for the owner's inventory.
+   Step 2 (prevention) merged: Beachrex/backend#19. New or changed paths are stored ASCII (`HasAsciiPaths`, ASCII upload names).
+   Step 3 built: `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
+   After step 6: cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
    Then TASK-003 AI chat: multilingual intent and filter extraction via function calling instead of English keyword matching; the same candidate service.
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
 
