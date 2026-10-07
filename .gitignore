@@ -26,3 +26,4 @@ my_report.txt
 
 # Local Docker overrides (for platform-specific configurations)
 docker-compose.override.yml
+REVISION

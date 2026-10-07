@@ -432,7 +432,7 @@ return response()->json(['data' => $data['beaches'], ...]);
 7. **Preverba:** `https://beachrex.com` in `https://api.beachrex.com/api/v1/beaches?limit=1`
 
 ### Ostalo
-- **Backup cron:** Dnevni `pg_dump` za `beachrex_uat` in `beachrex_prod`
-- **Monitoring:** Razmisliti o uptime monitoring (npr. UptimeRobot)
-- **Log rotation:** Docker logs lahko zasedejo disk — nastaviti log rotation
+- **Backupi baze:** *Built* (2026-10-07). `php artisan db:backup` vsak dan ob 02:30 UTC v kontejnerju `scheduler_<env>` naloži `pg_dump` v **privaten** bucket. Vklop (owner): `docs/runbooks/restore-backup.md`. Drugi sloj: Hetzner Cloud Backups (owner).
+- **Monitoring:** *Built* (2026-10-07). `GET /api/v1/health` vrne status baze in Redisa, deployan SHA (`revision`) in čas zadnjega backupa; ob izpadu vrne 503. Owner: UptimeRobot monitor na `https://{dev,uat}-api.beachrex.com/api/v1/health`.
+- **Log rotation:** *Built* (2026-10-07). App kontejnerji (`api_*`, `web_*`, `front_*`, `scheduler_*`) imajo `json-file` z `max-size: 10m`, `max-file: 5`. `pgsql`/`redis` namerno nista spremenjena, ker bi to ponovno zagnalo bazo za vsa okolja. Za njiju je priporočen daemon-level `log-opts` v `/etc/docker/daemon.json` (owner).
 - **Cache invalidacija za ostale modele:** Preveriti, ali tudi drugi Filament resource-i (Beach, Country, itd.) potrebujejo `Cacheable` trait ali `booted()` eventi za cache invalidacijo

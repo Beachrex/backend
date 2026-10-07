@@ -51,6 +51,42 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - Ops Safety Net: Daily DB Backups, Scheduler, Health Endpoint, Log Rotation, PR CI
+
+### Overview
+Before this change the VPS had no database backups, no running Laravel scheduler, unbounded Docker logs, no health endpoint and no CI on pull requests. All of it is now in the repo as code. Enabling backups needs an owner step (a private bucket and key); see `docs/runbooks/restore-backup.md`.
+
+### Changes Made
+- `app/Console/Commands/BackupDatabase.php` (new): `php artisan db:backup [--keep-days=N] [--no-prune]`.
+  - Runs `pg_dump -Fc` with the password passed via `PGPASSWORD`, not on the command line, and checks the `PGDMP` header.
+  - Uploads to the private `backups` disk as `<prefix>/<db>-YYYYMMDD-HHMMSS.dump` and verifies the size.
+  - Writes `storage/app/backup-last-success.txt` and prunes its own files older than the retention period. On error it fails loudly and uploads nothing.
+- `config/backup.php` (new), plus the `backups` disk in `config/filesystems.php` (s3 driver, DO Spaces, `visibility: private`).
+- `routes/console.php`: `db:backup` runs daily at `BACKUP_TIME` (02:30 UTC), `withoutOverlapping`, only when `BACKUP_ENABLED=true`.
+- `app/Http/Controllers/Api/V1/HealthController.php` (new): `GET /api/v1/health`.
+- `deploy/docker-compose.vps.yml`:
+  - New `scheduler_{prod,uat,dev}` services that reuse the `beachrex/api:<env>` image and run `php artisan schedule:work`.
+  - Log rotation (`json-file`, 10m × 5) on all app containers. `pgsql`/`redis` are left unchanged so a dev deploy never restarts the shared database.
+- `.github/workflows/deploy.yml`:
+  - The `test` job now also runs on pull requests (the deploy job is skipped). PR runs use their own concurrency group.
+  - The deploy writes `REVISION` (the commit SHA) before rsync and recreates `scheduler_<env>` with `--no-deps`.
+- `.env.example`: `BACKUP_*` variables (names only). `.gitignore`: `REVISION`.
+- Docs: `docs/runbooks/restore-backup.md` (enable, restore, drill); `DEPLOYMENT_GUIDE.md` §9 updated.
+
+### Affected Endpoints
+- `GET /api/v1/health` (new, public). Returns `{status, revision, checks:{database, redis}, backup:{enabled, last_success_at}}`: **200** when healthy, **503** when the database or Redis is down.
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter='BackupDatabaseTest|HealthApiTest'
+# BackupDatabaseTest runs the real pg_dump against the test DB: valid dump, retention prune
+# (only its own files and prefix), failure with wrong credentials, schedule gated by BACKUP_ENABLED
+curl -s https://dev-api.beachrex.com/api/v1/health | jq   # after deploy: revision = merge SHA
+```
+The compose and workflow changes can't be run in the agent sandbox (no Docker or SSH). They are verified by the dev deploy run.
+
+---
+
 ## 2026-10-07 - Security: Admin-Only Write Endpoints + Locale, Filter and Cache Fixes
 
 ### Overview

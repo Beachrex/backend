@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\SlugResolverController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\StaticPageController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriberController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\AI\TestController;
 
 // Public OpenAPI spec endpoint (no authentication required)
@@ -62,6 +63,9 @@ Route::get('/openapi.json', function () {
 Route::prefix('api/v1')
     ->middleware('api')
     ->group(function () {
+        // Health check (uptime monitoring + deploy verification)
+        Route::get('/health', HealthController::class);
+
         // Traditional email/password auth
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
