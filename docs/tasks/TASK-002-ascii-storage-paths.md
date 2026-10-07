@@ -58,7 +58,7 @@ The bucket is **shared by dev, uat and prod**, so the order matters:
 
 ### 5. Cleanup after the migration (separate PRs)
 - web-client: `buildCdnUrl` can drop the non-ASCII bypass and always use Imagor; keep a test that rejects non-ASCII paths.
-- MCP: `cdn()` bypass can be removed.
+- MCP: remove the `cdn()` bypass, so **all images come only from `s3.beachrex.com` (Imagor)** (owner decision 2026-10-07). Today details show `fra1.digitaloceanspaces.com` for paths with šumniki and search shows `s3.beachrex.com`.
 - `docs/features/image-url-encoding-handoff.md`: mark it historical.
 
 ## Decisions already made
