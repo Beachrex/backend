@@ -34,8 +34,8 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | Already "odpravljena napaka" in the spreadsheet | 2, 3, 4, 5, 10, 11, 12, 13, 14, 15, 16, 22, 23 | Closed (no action) |
 | Fixed in session 2026-10-07 | 18 (sea temperature) · 6, 7 (AI chat) | Retest |
 | Probably fixed by session 2026-10-07 | 17, 38, 61 (360° tours) · 30 (languages) · 8, 9 (AI login) | Likely fixed, retest |
-| **Crashes / empty pages (P1)** | 19, 52, 53, 54, 55, 56, 60, 77 | Bug, first |
-| Language switch jumps to another locale (P1–P2) | 24, 25, 74 | Bug |
+| **Crashes / empty pages (P1)** | 19, 52, 53, 54, 55, 56, 60, 77 | Retest (fixed in session 3: Beachrex/web-client#6, #7) |
+| Language switch jumps to another locale (P1–P2) | 24, 25, 74 | Retest (fixed in session 3: Beachrex/web-client#8) |
 | Map and filter bugs (P2) | 39, 40, 43, 44, 45, 46, 69, 70, 72 | Bug, to verify |
 | Media (video, webcam, image crop, media switch) (P2) | 36, 37, 48, 63, 64, 65, 66, 67, 68 | Bug or data, to verify |
 | Search ranking and inconsistencies | 41, 50, 51 | Bug (51) / decision (50) / data (41) |
@@ -65,13 +65,13 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 16 | Beach gallery images low quality and cropped | bug | Spreadsheet: fixed (but see #37) | – | Closed | |
 | 17 | No 360° spheres or videos on some beaches (Albania, Montenegro) | bug | Two known causes fixed: the `mobile_upload` tour path in search/map (Beachrex/backend#23) and non-ASCII image paths (TASK-002, migration pending). Retest after the TASK-002 migration | P2 | Likely fixed, retest | Beachrex/backend#23 (+ TASK-002) |
 | 18 | Sea temperature = air temperature, always cloudy | bug | Confirmed: `sea_temperature` was the air temperature. Now Open-Meteo Marine; the owner confirmed the widget (2026-10-07). "Always cloudy": verify separately | P2 | Retest | Beachrex/backend#25, dev run 125 |
-| 19 | Home: click EUROPE → 404 / client-side exception | bug | Same family as #55/#77 (continent page crash) | P1 | Bug | |
+| 19 | Home: click EUROPE → 404 / client-side exception | bug | Verified in code: `DynamicSearchBeaches` threw for any beach without `main_image`, and the continent "most visited" cards passed a null image to `next/image`. Both crashed the page after it loaded. Beaches without an image are now skipped (continent page) | P1 | Retest | Beachrex/web-client#6, dev run 45 |
 | 20 | Home filters: "clear all" button; keep filters on Back | feature | Reasonable UX request | P3 | Decision | |
 | 21 | Map: show the selected filters (like on home) | feature | Reasonable UX request | P3 | Decision | |
 | 22 | Map: place names lowercase or with hyphens | bug | Spreadsheet: fixed | – | Closed | |
 | 23 | DE map link → 404 (`strandkarte`) | bug | Spreadsheet: fixed | – | Closed | |
-| 24 | Map button sometimes jumps to another language (PL → RU) | bug | Locale routing: the localized map slug resolves to the wrong locale. Frontend middleware / URL builders | P1 | Bug | |
-| 25 | Bottom button on a localized map goes to another locale or back to EN | bug | Same family as #24 | P1 | Bug | |
+| 24 | Map button sometimes jumps to another language (PL → RU) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The map button on listing pages (`DynamicSearchBeaches`) and on the continent banner used `/beach-map`; now `buildBeachMapUrl(locale)` | P1 | Retest | Beachrex/web-client#8, deploy pending |
+| 25 | Bottom button on a localized map goes to another locale or back to EN | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The footer map button (the bottom button on the map page) used `/beach-map` | P1 | Retest | Beachrex/web-client#8, deploy pending |
 | 26 | UA/RU map page partly untranslated | bug | Missing translations | P3 | Translation/data | |
 | 27 | PL footer not translated | bug | Missing translations | P3 | Translation/data | |
 | 28 | SL footer problem | bug | Needs the screenshot. Likely a translation or layout issue | P3 | Translation/data | |
@@ -98,15 +98,15 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 49 | Define what these buttons do | feature | Decision | – | Decision | |
 | 50 | Search result priority: country → region → city/island → beach | feature | Sensible; small change in search ranking or grouping once agreed | P3 | Decision | |
 | 51 | SL search: all levels only for Albania and Montenegro; "Belgij" ≠ "Belgija" | bug | Meilisearch index or locale data inconsistency. Verify | P2 | Bug, to verify | |
-| 52 | Non-EN search → country page is empty | bug | Localized route resolution bug (all non-EN locales) | P1 | Bug | |
-| 53 | From Albania page, search France → client-side exception | bug | Same family as #52/#55 | P1 | Bug | |
-| 54 | All non-EN: every search result level → empty page | bug | Same as #52 | P1 | Bug | |
-| 55 | Click Europe (all languages) → page loads, then client-side exception | bug | Continent page crash | P1 | Bug | |
-| 56 | Click any country (except SI, DK, BE, AL, NL) → client-side exception | bug | Country page crash for most countries, maybe data-dependent (e.g. a null field) | P1 | Bug | |
+| 52 | Non-EN search → country page is empty | bug | Verified in code: search pushed `/<locale>/beaches/...`. next-intl redirects that to the localized word, and the middleware turned the redirect into an empty 200. Search now builds the localized URL, and the middleware follows the redirect | P1 | Retest | Beachrex/web-client#7, dev run 46 |
+| 53 | From Albania page, search France → client-side exception | bug | Non-EN: same as #52. EN: most likely the same as #56 (a French city or island without a region, or a beach without an image, crashed the page; data not checked) | P1 | Retest | Beachrex/web-client#6, dev run 45; Beachrex/web-client#7, dev run 46 |
+| 54 | All non-EN: every search result level → empty page | bug | Verified in code: search pushed `/<locale>/beaches/...`. next-intl redirects that to the localized word, and the middleware turned the redirect into an empty 200. Search now builds the localized URL, and the middleware follows the redirect (all result types) | P1 | Retest | Beachrex/web-client#7, dev run 46 |
+| 55 | Click Europe (all languages) → page loads, then client-side exception | bug | Verified in code: `DynamicSearchBeaches` threw for any beach without `main_image`, and the continent "most visited" cards passed a null image to `next/image`. Both crashed the page after it loaded. Beaches without an image are now skipped (continent page) | P1 | Retest | Beachrex/web-client#6, dev run 45 |
+| 56 | Click any country (except SI, DK, BE, AL, NL) → client-side exception | bug | Verified in code: `DynamicSearchBeaches` threw for any beach without `main_image`, and the continent "most visited" cards passed a null image to `next/image`. Both crashed the page after it loaded. Beaches without an image are now skipped. Also: `buildDestinationUrl` threw for a city or island without a region, which crashed the country page. Now optional. SI, DK, BE, AL, NL apparently have no such beaches or cities | P1 | Retest | Beachrex/web-client#6, dev run 45 |
 | 57 | Sort countries A–Z and by beach count | feature | Small feature | P3 | Decision | |
 | 58 | Sticky header | feature | Small feature | P3 | Decision | |
 | 59 | Country level: switch beach view on "browse all" like on "most visited" | feature | Small feature | P3 | Decision | |
-| 60 | Next page / next country click broken | bug | Probably the same as #56 | P1 | Bug | |
+| 60 | Next page / next country click broken | bug | Same as #56: "next country" opens a country page that crashed | P1 | Retest | Beachrex/web-client#6, dev run 45 |
 | 61 | Map sphere click → `NoSuchKey` (Albania); beach page works | bug | Matches the bug fixed in Beachrex/backend#23 (map/search tour URL ignored `mobile_upload`) | P2 | Likely fixed, retest | Beachrex/backend#23 |
 | 62 | Click beach on map → open the beach page | feature | Small feature | P3 | Decision | |
 | 63 | No videos for some Albania and Germany beaches | bug | Data (no video media rows) or frontend. Verify per beach | P2 | Bug, to verify | |
@@ -120,10 +120,10 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 71 | These functions are not programmed; how should they work? | question | Decision | – | Decision | |
 | 72 | Map needs a double click to show a beach | bug | Frontend map click handler | P2 | Bug | |
 | 73 | Map card: place and country clickable | feature | Small feature | P3 | Decision | |
-| 74 | DE → map → logo: language resets to EN (all languages) | bug | The logo link is not locale-aware. Use the URL builders | P1 | Bug | |
+| 74 | DE → map → logo: language resets to EN (all languages) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The header and footer logos used `/`; now `/${locale}` | P1 | Retest | Beachrex/web-client#8, deploy pending |
 | 75 | RU, UA, EL, BG: beach page text not in their script | bug | Missing translations (DB `*_translation` + UI strings) | P3 | Translation/data | |
 | 76 | Same as #75 on maps | bug | Missing translations | P3 | Translation/data | |
-| 77 | EUROPE on the map → empty page | bug | Same family as #55 | P1 | Bug | |
+| 77 | EUROPE on the map → empty page | bug | Verified in code: `DynamicSearchBeaches` threw for any beach without `main_image`, and the continent "most visited" cards passed a null image to `next/image`. Both crashed the page after it loaded. Beaches without an image are now skipped. The map's EUROPE link opens the continent page | P1 | Retest | Beachrex/web-client#6, dev run 45 |
 
 Second sheet ("ZA NAREDITI, RAZMISLITI"): one note, item 2 needs a definition of what the page should do → **Decision**.
 

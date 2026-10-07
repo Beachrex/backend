@@ -1,7 +1,7 @@
-# Handoff — state as of 2026-10-07 (end of session 2)
+# Handoff — state as of 2026-10-07 (session 3)
 
-> **Next session, start here:** (1) the owner runs the TASK-002 inventory and sends the result (runbook step 1);
-> (2) work the **dev review tracker** [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md), P1 crashes first;
+> **Next session, start here:** (1) TASK-002: still waiting for the owner's inventory output (runbook step 1);
+> (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
@@ -91,6 +91,15 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
   - **Not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#26. Promote when the owner asks.
 
+- 2026-10-07 (session 3): **dev review tracker P1 rows fixed, Live on dev** and set to Retest. Each root cause was verified in the code first:
+
+  | PR | QA rows | Root cause | Deploy run |
+  |---|---|---|---|
+  | Beachrex/web-client#6 | 19, 53, 55, 56, 60, 77 | card lists threw on beaches without `main_image`; `buildDestinationUrl` threw for cities/islands without a region | 45 |
+  | Beachrex/web-client#7 | 52, 53, 54 | search pushed `/<locale>/beaches/...`; the middleware turned next-intl's redirect into an empty 200 | 46 |
+  | Beachrex/web-client#8 | 24, 25, 74 | locale-less `next/link` hrefs (logo, footer map, listing map buttons) | pending |
+
+  The sandbox cannot reach dev, so the live check is the tester's retest.
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
   Beachrex/backend#3 and Beachrex/web-client#1 merged to dev; Beachrex/backend#4 and Beachrex/web-client#2 promoted to uat.
   Deploys green: backend dev run 82, uat run 83; frontend dev run 40, uat run 41.
@@ -152,6 +161,11 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   
   Candidates for an AI translation/cleanup pass (`beaches:translate` exists) once TASK-002 is done.
 
+- Frontend links found during QA #24/#25/#74, not fixed (allowlisted in `web-client/e2e/locale-links.unit.spec.ts`):
+  - `payment/success` and `payment/cancel` pages use locale-less `next/link` hrefs (`/`, `/ai/...`, `/internal/...`);
+  - `auth/callback` links to a hard-coded `/en`;
+  - `BurgerMenu` links to `/beach-accommodation` and `/mobile-app`, and the footer `browse.links` messages link to `/destinations` and `/accommodations`. None of these routes exist (404);
+  - `src/hooks/useLocalizedPath.ts` has its own beaches-word map without da/pt/nl/el/sq, so the language switch from those locales' beach pages is not recognised.
 - `.gitlab-ci.yml` in both repos is unused (GitHub Actions replaced it).
 - Local `sail artisan test`: `phpunit.xml` points at `127.0.0.1` / `beachrex_test`, as in CI. Inside Sail this probably fails.
 - Cache invalidation on admin edits for other cached models (Beach, Country, …): `DEPLOYMENT_GUIDE` §9.
