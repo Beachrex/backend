@@ -64,15 +64,23 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
+- **Enable DB backups** (`docs/runbooks/restore-backup.md`, "Enable"):
+  - create a private Spaces bucket and a dedicated key;
+  - set `BACKUP_ENABLED=true` and `BACKUP_S3_KEY`, `BACKUP_S3_SECRET`, `BACKUP_S3_BUCKET` in `/opt/beachrex/envs/.env.uat`;
+  - redeploy uat, run `db:backup --no-prune` once, then do the restore drill.
+- **Enable Hetzner Cloud Backups** for the VPS (Hetzner console → server → Backups).
+- **UptimeRobot** (or similar): HTTP monitors on `https://dev-api.beachrex.com/api/v1/health` and `https://uat-api.beachrex.com/api/v1/health`, with an alert e-mail to the owner.
+- Optional: Docker daemon log rotation for `pgsql`/`redis` (`/etc/docker/daemon.json` `log-opts`).
+
 - Smoke-check UAT after the 2026-10-07 promotion:
   - `curl -s -o /dev/null -w "%{http_code}" -X POST -H "Accept: application/json" https://uat-api.beachrex.com/api/v1/beaches` → `401`
   - `curl -sI https://uat.beachrex.com/en | grep -i x-robots-tag` → `noindex, nofollow, noarchive, nosnippet`
 
 ## Agreed work order (2026-10-07)
 
-1. **Dev rules adopted** — this file, `DEVELOPMENT-RULES.md`, `CLAUDE.md` in both repos. *(in progress)*
-2. **Ops safety net** — daily DB backups to a private bucket, scheduler service, Docker log rotation,
-   `/api/v1/health`, PR CI. *(planned)*
+1. **Dev rules adopted**: this file, `DEVELOPMENT-RULES.md`, `CLAUDE.md` in both repos. *(done: Beachrex/backend#5, Beachrex/web-client#3)*
+2. **Ops safety net**: daily DB backups to a private bucket, scheduler service, Docker log rotation,
+   `/api/v1/health`, PR CI. *(Built; backups need the owner step below)*
 3. **Prod launch runbook** — prod DB from UAT, DNS, SSL, Nginx, MCP process names. *(planned)*
 4. **MCP server quality** — known bugs found 2026-10-07:
    - `get_beach_filters` crashes;

@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        // Database backups (php artisan db:backup). Must point to a PRIVATE bucket.
+        'backups' => [
+            'driver' => 's3',
+            'key' => env('BACKUP_S3_KEY'),
+            'secret' => env('BACKUP_S3_SECRET'),
+            'region' => env('BACKUP_S3_REGION', 'fra1'),
+            'bucket' => env('BACKUP_S3_BUCKET'),
+            'endpoint' => env('BACKUP_S3_ENDPOINT', 'https://fra1.digitaloceanspaces.com'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
         'spaces' => [
             'driver' => 's3',
             'key' => env('DO_SPACES_KEY'),
