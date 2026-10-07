@@ -1,4 +1,4 @@
-# Handoff — state as of 2026-10-07
+# Handoff — state as of 2026-10-07 (end of session 2)
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
 Rules: [`docs/DEVELOPMENT-RULES.md`](DEVELOPMENT-RULES.md). Change log: `DEV_HANDOFF.md` in each repo.
@@ -66,6 +66,11 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - Frontend PR CI plus a fix for broken beach/beach-map links in da/pt/nl/el/sq: Beachrex/web-client#4.
   - MCP server rewrite and the `country_code` alias: Beachrex/backend#8, deploy run 90.
   - Itineraries rebuilt (TASK-001): Beachrex/backend#9, deploy run 92.
+  - Backups prod-only policy (docs): Beachrex/backend#11.
+  - **Promoted dev → uat** (owner request): Beachrex/backend#12 (uat deploy run 99) and Beachrex/web-client#5 (uat deploy run 44).
+  - MCP deploy fix: the legacy root-owned `beachrex-mcp` held :3100, so the new process crash-looped while the deploy reported success. The deploy now removes the legacy process and **verifies `/health` reports the env**. Also: Imagor bypass for image paths with šumniki. Beachrex/backend#13, dev deploy run 103. **Verified live on dev**: filters, name search ("zlatni rat"), beach type/lifeguard/family data, and image URLs all work.
+  - TASK-002 spec written: Beachrex/backend#14.
+  - **Not yet on uat:** Beachrex/backend#13 and Beachrex/backend#14. Promote when the owner asks.
 
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
   Beachrex/backend#3 and Beachrex/web-client#1 merged to dev; Beachrex/backend#4 and Beachrex/web-client#2 promoted to uat.
@@ -91,13 +96,20 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 2. **Ops safety net**: daily DB backups to a private bucket, scheduler service, Docker log rotation,
    `/api/v1/health`, PR CI. *(Built; backups need the owner step below)*
 3. **Prod launch runbook**: [`docs/runbooks/prod-launch.md`](runbooks/prod-launch.md) covers the prod DB from UAT, env checklist, deploy, DNS, SSL and rollback. *(written; launch date is the owner's decision)*
-4. **MCP server quality**: fixed. Filters, country, name search, weather, URLs, attribute filters, 19 locales and per-env pm2 (`DEV_HANDOFF.md` 2026-10-07). *(Built; live check on dev is an owner action)*
+4. **MCP server quality**: fixed and **verified live on dev** (2026-10-07). The owner tested it in Claude and is happy with it, including the AI adding general knowledge (e.g. lifeguard season) on top of Beachrex data.
 5. **AI itineraries**: rebuilt (TASK-001; ADR "code plans, LLM narrates"; pgvector deferred). *(Built; live quality check on dev is an owner action, and `OPENAI_MODEL` in the server env should be `gpt-4o-mini`)*
    **Next: TASK-002 ASCII-only storage paths** (owner request 2026-10-07; spec: `docs/tasks/TASK-002-ascii-storage-paths.md`).
    Then TASK-003 AI chat: multilingual intent and filter extraction via function calling instead of English keyword matching; the same candidate service.
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
 
 ## Open items (found, not yet scheduled)
+
+- **Data quality (not code), seen via MCP 2026-10-07:**
+  - many `beach_translation.name` values contain the English prefix "Beach …" in every locale (e.g. sl "Beach Zlatni Rat");
+  - region translations are missing for most locales (sl shows "Dalmatia - Split");
+  - only ~21% of beaches have a description (Zlatni Rat has none).
+  
+  Candidates for an AI translation/cleanup pass (`beaches:translate` exists) once TASK-002 is done.
 
 - `.gitlab-ci.yml` in both repos is unused (GitHub Actions replaced it).
 - Local `sail artisan test`: `phpunit.xml` points at `127.0.0.1` / `beachrex_test`, as in CI. Inside Sail this probably fails.
