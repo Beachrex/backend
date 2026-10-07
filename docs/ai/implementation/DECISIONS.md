@@ -781,6 +781,32 @@ Use **Stripe Checkout (hosted payment page)** where:
 
 ---
 
+## [2026-10-07] Itineraries: Code Plans, LLM Narrates. pgvector Deferred
+
+**Status**: Accepted
+
+**Context**: The owner reported that itineraries are of very poor quality and suggested pgvector. The diagnosis (TASK-001) found the main causes outside semantic search:
+- filters on nonexistent columns;
+- the model received almost no beach data and no coordinates;
+- there was no geographic logic;
+- no JSON mode, a fixed token limit, gpt-3.5-turbo.
+
+Only 21% of beaches have descriptions (legacy data), so embeddings would have little text to work with.
+
+**Decision**:
+1. The **code** builds the plan: candidate beaches from real attributes (beach type, facilities, accessibility, user types, activities), k-means day clusters, nearest-neighbour order and haversine distances.
+2. The **LLM** only writes the narrative around the fixed skeleton, in JSON mode. Beach facts in the response always come from the database.
+3. Default model `gpt-4o-mini`, which is both cheaper and better than `gpt-3.5-turbo`. It can be overridden with `OPENAI_MODEL`.
+4. **pgvector is deferred.** Semantic re-ranking of free-text preferences is a later, optional step. It will be evaluated against Meilisearch hybrid search, which is already deployed, once descriptions are filled in for more beaches.
+
+**Alternatives Considered**:
+1. Add pgvector now. Rejected: it fixes none of the root causes above. It also needs a custom Postgres image (PostGIS + pgvector) on the VPS and in CI, while there is too little description text to embed.
+2. Let the LLM keep choosing and grouping beaches with better prompts. Rejected: the model has no reliable geographic sense and invents distances.
+
+**Related**: `docs/tasks/TASK-001-itinerary-quality.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

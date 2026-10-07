@@ -21,6 +21,8 @@ class ChatCompletionRequest
         public readonly ?int $n = null,
         public readonly ?array $stop = null,
         public readonly ?string $user = null,
+        // e.g. ['type' => 'json_object'] (OpenAI JSON mode)
+        public readonly ?array $responseFormat = null,
     ) {}
     
     /**

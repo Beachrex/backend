@@ -83,8 +83,8 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    `/api/v1/health`, PR CI. *(Built; backups need the owner step below)*
 3. **Prod launch runbook**: [`docs/runbooks/prod-launch.md`](runbooks/prod-launch.md) covers the prod DB from UAT, env checklist, deploy, DNS, SSL and rollback. *(written; launch date is the owner's decision)*
 4. **MCP server quality**: fixed. Filters, country, name search, weather, URLs, attribute filters, 19 locales and per-env pm2 (`DEV_HANDOFF.md` 2026-10-07). *(Built; live check on dev is an owner action)*
-5. **AI itineraries/chat quality** — the owner reports poor results and suggests pgvector. Diagnosis first,
-   then an ADR and a phased plan. *(planned)*
+5. **AI itineraries**: rebuilt (TASK-001; ADR "code plans, LLM narrates"; pgvector deferred). *(Built; live quality check on dev is an owner action, and `OPENAI_MODEL` in the server env should be `gpt-4o-mini`)*
+   **Next: TASK-002 AI chat.** Multilingual intent and filter extraction via function calling instead of English keyword matching; the same candidate service.
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
 
 ## Open items (found, not yet scheduled)
@@ -103,4 +103,4 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Latest numbers
 
-- Next TASK number: TASK-001 (none created yet) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-002 (TASK-001 = itinerary quality) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)

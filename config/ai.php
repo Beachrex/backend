@@ -24,7 +24,7 @@ return [
         'openai' => [
             'api_key' => env('OPENAI_API_KEY'),
             'organization' => env('OPENAI_ORGANIZATION', null),
-            'default_model' => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
+            'default_model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // ADR 2026-10-07
             'timeout' => env('OPENAI_TIMEOUT', 30), // seconds
         ],
         'anthropic' => [
