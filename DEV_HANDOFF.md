@@ -51,6 +51,35 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - Real Sea Temperature (Open-Meteo Marine)
+
+### Overview
+`sea_temperature` in every weather endpoint was the OpenWeatherMap **air** temperature. The owner chose option B on 2026-10-07: a real sea surface temperature.
+
+### Changes Made
+- `WeatherService::getSeaTemperature()` calls the Open-Meteo Marine API (`current=sea_surface_temperature`):
+  - rounded to 0.1 °C and cached for 3 h;
+  - "no marine data" (lakes, inland points) is cached as null;
+  - API errors return null and are not cached;
+  - timeout 5 s.
+- `ProvidesWeather` (beach, country, region, island and city weather) returns that value. The frontend `SeaTempWidget` shows "--°" for null.
+- New optional env var `OPEN_METEO_API_KEY` (`config/services.php` `open_meteo.api_key`):
+  - empty → free endpoint `marine-api.open-meteo.com`, which Open-Meteo allows for **non-commercial use only**;
+  - set → commercial endpoint `customer-marine-api.open-meteo.com`.
+- OpenAPI `sea_temperature` description updated; `api-docs.json` regenerated.
+- NOT RUN: a live call to Open-Meteo, because the agent sandbox has no outbound access (proxy 403). The response shape follows the Open-Meteo docs and is covered by `Http::fake` tests.
+
+### Affected endpoints
+`GET /api/v1/beach-details/{identifier}/weather` and the country, region, island and city `/weather` endpoints: `sea_temperature` is now the sea, not the air.
+
+### Testing
+```bash
+php artisan test tests/Feature/SeaTemperatureTest.php tests/Feature/BeachWeatherSeaTemperatureTest.php
+```
+On the old `ProvidesWeather`, the endpoint test fails: `Failed asserting that 28 matches expected 21.4`.
+
+---
+
 ## 2026-10-07 - API Fixes: View Counts, Filter Aliases, `/beaches` Docs, 360° Tour Path
 
 ### Overview

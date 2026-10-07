@@ -88,7 +88,11 @@ trait ProvidesWeather
                     'longitude' => $entity->longitude,
                 ],
                 'weather' => $weatherData,
-                'sea_temperature' => $weatherData['temperature'] ?? null,
+                // Real sea surface temperature (Open-Meteo Marine); null where there is no marine data.
+                'sea_temperature' => app(WeatherService::class)->getSeaTemperature(
+                    (float) $entity->latitude,
+                    (float) $entity->longitude
+                ),
                 'cached_at' => now()->toIso8601String(),
             ]
         ], 200);

@@ -89,6 +89,8 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
+- **Open-Meteo licence (sea temperature):** the free Marine API is for non-commercial use only. Before the commercial launch, take an Open-Meteo API plan and set `OPEN_METEO_API_KEY` in `.env.prod` (and `.env.uat` if wanted). Without a key the code uses the free endpoint.
+
 - **TASK-002 inventory (read-only):** deployed to dev (Beachrex/backend#17, run 109), run `storage:ascii-paths --inventory` on dev and uat
   per [`docs/runbooks/ascii-storage-paths.md`](runbooks/ascii-storage-paths.md) and send the summary + CSVs to the agent.
   Nothing on Spaces moves until the owner has reviewed the inventory.
@@ -140,7 +142,6 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 - MCP on uat/prod: the processes run on 3101/3102, but there is no Nginx route or DNS (`mcp-uat`/`mcp`) yet. Owner decision.
 - `MediaService::upload` (API `/media/upload`) stores the client's original name in `media.file_name`, but the file is stored under a slug + time + random name. `BeachDetailsController` (previous/next beach `main_image`) builds URLs from `folder_name` + `file_name`, so such images would 404 there. Found during TASK-002, not fixed.
 - API issues found while fixing the MCP (2026-10-07), not fixed yet:
-  - `ProvidesWeather` sets `sea_temperature` = air temperature (fake). **Owner decision:** show "--°" (null), or add a real sea surface temperature source (e.g. Open-Meteo Marine API, free, no key).
 
 ## Latest numbers
 

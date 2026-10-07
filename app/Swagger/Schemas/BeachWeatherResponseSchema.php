@@ -169,8 +169,8 @@ namespace App\Swagger\Schemas;
  *             type="number",
  *             format="float",
  *             nullable=true,
- *             description="Sea surface temperature in Celsius (approximation from weather data)",
- *             example=9.9
+ *             description="Sea surface temperature in Celsius from the Open-Meteo Marine API (cached 3 h). Null where there is no marine data (e.g. lakes) or the API is unavailable.",
+ *             example=21.4
  *         ),
  *         @OA\Property(
  *             property="cached_at",

@@ -833,6 +833,22 @@ Only 21% of beaches have descriptions (legacy data), so embeddings would have li
 
 ---
 
+## [2026-10-07] Sea Temperature from Open-Meteo Marine
+
+**Status**: Accepted (owner chose option B)
+
+**Context**: `sea_temperature` was the OpenWeatherMap air temperature, shown on every beach page. The options were to show nothing ("--°") or to use a real sea surface temperature source.
+
+**Decision**:
+- Use the Open-Meteo Marine API (`sea_surface_temperature`) through `WeatherService`, cached for 3 h.
+- An optional `OPEN_METEO_API_KEY` switches to the commercial endpoint. The free endpoint is licensed for non-commercial use only, so production needs a key (owner action).
+
+**Alternatives Considered**:
+1. `null` everywhere: honest, but an empty widget on every beach page.
+2. Copernicus Marine or NOAA OISST directly: free for any use, but much heavier (gridded datasets, accounts, or ERDDAP queries) for one number per beach.
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions
