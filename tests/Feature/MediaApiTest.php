@@ -33,8 +33,8 @@ class MediaApiTest extends TestCase
             \Database\Seeders\MediaCollectionSeeder::class,
         ]);
 
-        // Create test user
-        $this->user = User::factory()->create();
+        // Create test user (media writes are admin-only)
+        $this->user = User::factory()->admin()->create();
 
         // Create test beach
         $this->beach = Beach::factory()->create();
@@ -112,6 +112,42 @@ class MediaApiTest extends TestCase
         ]);
 
         $response->assertStatus(401);
+    }
+
+    #[Test]
+    public function non_admin_cannot_modify_media()
+    {
+        $nonAdmin = User::factory()->create();
+        $media = Media::factory()->create([
+            'mediable_type' => 'App\Models\Beach',
+            'mediable_id' => $this->beach->id,
+            'media_type_id' => $this->imageType->id,
+            'media_collection_id' => $this->beachGallery->id,
+        ]);
+
+        $this->actingAs($nonAdmin, 'sanctum')
+            ->postJson('/api/v1/media/upload', [
+                'file' => UploadedFile::fake()->image('beach.jpg'),
+                'mediable_type' => 'Beach',
+                'mediable_id' => $this->beach->id,
+                'media_type_code' => 'image',
+            ])
+            ->assertStatus(403);
+
+        $this->actingAs($nonAdmin, 'sanctum')
+            ->putJson("/api/v1/media/{$media->id}", ['alt_text' => 'hacked'])
+            ->assertStatus(403);
+
+        $this->actingAs($nonAdmin, 'sanctum')
+            ->deleteJson("/api/v1/media/{$media->id}")
+            ->assertStatus(403);
+
+        $this->actingAs($nonAdmin, 'sanctum')
+            ->postJson('/api/v1/media/reorder', ['media_ids' => [$media->id]])
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('media', ['id' => $media->id]);
+        $this->assertNotEquals('hacked', $media->fresh()->alt_text);
     }
 
     #[Test]
