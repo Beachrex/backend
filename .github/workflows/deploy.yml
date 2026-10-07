@@ -83,9 +83,27 @@ jobs:
             exit 1
           fi
 
+  mcp-test:
+    name: MCP server (build + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck:test
+      - run: npm test
+
   deploy:
     name: Deploy
-    needs: test
+    needs: [test, mcp-test]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -176,7 +194,11 @@ jobs:
               cd \$MCP_DIR
               npm install 2>&1
               npm run build 2>&1
-              pm2 restart beachrex-mcp 2>&1 || pm2 start ecosystem.config.cjs 2>&1
+              # One pm2 process per environment: beachrex-mcp-<env> (ports 3100/3101/3102).
+              # One-time migration: the legacy shared 'beachrex-mcp' process is the dev one on :3100.
+              if [ '${ENV_NAME}' = 'dev' ]; then pm2 delete beachrex-mcp 2>&1 || true; fi
+              MCP_ENV=${ENV_NAME} pm2 startOrReload ecosystem.config.cjs --update-env 2>&1
+              pm2 save 2>&1 || true
               echo 'MCP server rebuilt and restarted.'
             fi
 

@@ -82,6 +82,42 @@ Now the **code builds the plan** and the **LLM only writes the text** (ADR 2026-
 ./vendor/bin/sail artisan test --filter='ItineraryQualityTest|ItineraryControllerTest|ItineraryPlannerTest'
 ```
 Real DB with 12 seeded beaches in 3 areas; only the LLM is mocked. Details and deliberate breaks: `docs/tasks/TASK-001.feedback.md`.
+## 2026-10-07 - MCP Server Fixes + `country_code` Filter Alias
+
+### Overview
+Live testing of the Beachrex MCP server on dev found it was broken in several ways:
+- `get_beach_filters` crashed;
+- `search_beaches` with `country_code=HR` returned beaches from every country;
+- lookup by name never worked ("zlatni rat" → not found);
+- weather returned all zeros;
+- nearby results had flat, broken beach URLs.
+
+The MCP server is rewritten against the real API shapes. The API now also accepts `country_code` wherever it accepted `country`.
+
+### Changes Made
+- **API:** `BeachFilterService::applyFilters()` and `buildRawFilters()` accept `country` **or** `country_code`. `/beaches` used to read only `country`, so the MCP's `country_code` was ignored. Regression tests are in `tests/Unit/BeachFilterServiceRawFiltersTest.php`; on the old code the two `country_code` cases fail.
+- **MCP** (`mcp-server/`, v1.1.0; details in `mcp-server/README.md`):
+  - New tool `find_beach_by_name`, backed by `/api/v1/search` (Meilisearch). `get_beach_details` and `get_beach_weather` resolve names the same way: ID → slug → search.
+  - `search_beaches` and `find_beaches_nearby` take attribute filters (beach_type, location_infrastructure, user_type, sporting_activity, …, the same params as `BeachFilterService`). `get_beach_filters` returns the codes.
+  - `find_beaches_nearby` now uses `/spatial/beaches/within-radius`, which supports a radius and filters and returns full hierarchical URLs. It corrects the API's EPSG:3857 distance error client-side (see the open item below).
+  - Weather is mapped from the real response; when there is no data it says "weather unavailable" instead of zeros.
+  - Details show localized region, island and city names, the description, facilities, activities and user types. "0 views" is hidden.
+  - All 19 locales are supported (`si`→`sl` for the API, `si` in URLs).
+  - `ecosystem.config.cjs` is per environment via `MCP_ENV`: `beachrex-mcp-{dev,uat,prod}` on ports 3100/3101/3102. Before this, every deploy restarted the dev process.
+  - Tests: `npm test` (30 tests; `fetch` mocked with fixtures derived from the PHP Resources).
+- **CI** (`.github/workflows/deploy.yml`):
+  - New `mcp-test` job (`npm ci`, build, typecheck, tests) on PRs and pushes; the deploy needs it.
+  - The deploy runs `MCP_ENV=<env> pm2 startOrReload ecosystem.config.cjs`. A dev deploy deletes the legacy `beachrex-mcp` process once.
+
+### Affected Endpoints
+- `GET /api/v1/beaches`, `GET /api/v1/spatial/beaches/*`: `country_code` now filters (same as `country`).
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter=BeachFilterServiceRawFiltersTest
+cd mcp-server && npm ci && npm run build && npm test
+```
+After the dev deploy: in Claude (with the MCP connected) ask for "Zlatni rat", "beaches in Croatia" and "sandy beaches with a lifeguard near Split".
 
 ---
 
