@@ -44,6 +44,7 @@ uat/prod, anything irreversible. Everything else it decides, does and documents.
 | `DEV_HANDOFF.md` (both repos) | Dated change log: what changed, affected endpoints, how to test |
 | `docs/tasks/TASK-XXX-*.md` | Task specs + `TASK-XXX.feedback.md` with real outputs (for non-trivial tasks) |
 | `docs/runbooks/*.md` | Rare step-by-step procedures (prod launch, restore a backup) |
+| `docs/qa/dev-review-tracker.md` | Tester findings from the owner's spreadsheet: verdict, fix PR, retest status per row |
 | `docs/deployment/DEPLOYMENT_GUIDE.md` | Infrastructure as it is today (VPS, CI/CD, env isolation) |
 
 Rules:
@@ -63,6 +64,7 @@ Rules:
 3. **Prove** — run every check; real outputs go in the feedback file / PR.
 4. **Document** — `DEV_HANDOFF.md`, technical docs, OpenAPI, HANDOFF (§7).
 5. **Ship** — PR → CI green → merge to `dev` → verify the Deploy run for the merge SHA → note "Live on dev".
+6. **QA rows** — a fix for a row of the dev review tracker (`docs/qa/dev-review-tracker.md`) references `QA #<row>` in the PR and, after the dev deploy, sets the row to **Retest** with the PR and deploy run.
 
 A task that needs an owner step (secret, server, DNS) stays **PARTIAL** until the owner confirms it.
 
