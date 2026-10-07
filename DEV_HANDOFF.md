@@ -51,6 +51,28 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - Fix: Beach Distances Were ~37% Too Long (EPSG:3857 → geography)
+
+### Overview
+`PostGISService` and `BeachDetailsController` measured distances after `ST_Transform(…, 3857)`. Web Mercator stretches lengths by 1/cos(latitude), so at Croatian latitudes (~43°) every `distance_km` came out ~37% too long and radius searches missed beaches. Example: Split riva → Zlatni rat was 44.19 km instead of 32.08 km.
+
+### Changes Made
+- Every `ST_Distance`/`ST_DWithin` on `beach.location` now uses `::geography`, which measures in metres on the spheroid:
+  - `getBeachesWithinRadius`, `getNearestBeaches`, `calculateDistance`, `calculateCentroid` (radius filter);
+  - previous/next beach in `BeachDetailsController`.
+- Migration `2026_10_07_180000_add_geography_index_to_beach_location`: GIST expression index on `(location::geography)`, so `ST_DWithin` on geography can use an index. Additive and backward compatible.
+
+### Affected endpoints
+Every endpoint that returns `distance_km` or filters by radius (nearby beaches, map radius search, MCP `find_beaches_nearby`, previous/next beach). Values are now real distances, about 27% smaller than before at these latitudes. A radius now includes beaches that were wrongly excluded before.
+
+### Testing
+```bash
+php artisan test tests/Feature/PostGISDistanceTest.php
+```
+Against the old code, 2 of the 3 tests fail (44.19 km vs ≈32.08 km).
+
+---
+
 ## 2026-10-07 - TASK-002 Step 3: `--copy`, `--update-db`, `--delete-old` (Built, Not Run)
 
 ### Overview

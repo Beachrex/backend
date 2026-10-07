@@ -277,8 +277,8 @@ class BeachDetailsController extends Controller
                      LIMIT 1)
                 ) as main_image,
                 ST_Distance(
-                    ST_Transform(b.location, 3857),
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                    b.location::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
@@ -357,8 +357,8 @@ class BeachDetailsController extends Controller
                      LIMIT 1)
                 ) as main_image,
                 ST_Distance(
-                    ST_Transform(b.location, 3857),
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                    b.location::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
