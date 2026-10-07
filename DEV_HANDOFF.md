@@ -51,6 +51,40 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - AI Itineraries Rebuilt: Real Beaches, Geographic Days, LLM Writes Narrative Only (TASK-001)
+
+### Overview
+The owner reported very poor itineraries. The root causes (`docs/tasks/TASK-001-itinerary-quality.md`) were:
+- filters on nonexistent columns;
+- no beach data or coordinates in the prompt;
+- no geographic logic;
+- no JSON mode, a fixed token limit, and gpt-3.5-turbo.
+
+Now the **code builds the plan** and the **LLM only writes the text** (ADR 2026-10-07). pgvector is deferred (same ADR).
+
+### Changes Made
+- `ItineraryContextBuilderService` (rewritten): real filters and translations, scoring, relaxation rules (accessibility is never relaxed).
+- `Itinerary\ItineraryPlanner` (new): k-means day clusters, nearest-neighbour order, haversine distances, max km per day.
+- `ItineraryService` (rewritten): skeleton → LLM narrative (JSON mode, scaled `max_tokens`, language name, one retry) → merge with DB facts. If the LLM fails, a deterministic fallback text is used (`metadata.narrative="fallback"`).
+- `ItineraryController`: **422 `not_enough_beaches`** (`found`, `needed`) when fewer beaches match than days. No credit is used.
+- `ChatCompletionRequest::$responseFormat`, passed by `OpenAIProvider` as `response_format`.
+- `config/ai.php`: the default `OPENAI_MODEL` is now `gpt-4o-mini`.
+
+### Affected Endpoints
+- `POST /api/v1/ai/itineraries`
+  - The response schema is unchanged at the top level.
+  - New fields: `beach.type`, `beach.suitable_for`, `beach.latitude`, `beach.longitude`, `logistics.notes`, `metadata.narrative`, `metadata.candidates_considered`.
+  - `beach.surface` = localized beach-type name; `beach.distance_km` = straight-line km from the previous stop; `logistics.estimated_travel_km` is computed.
+  - New 422 `not_enough_beaches`.
+
+### Testing
+```bash
+./vendor/bin/sail artisan test --filter='ItineraryQualityTest|ItineraryControllerTest|ItineraryPlannerTest'
+```
+Real DB with 12 seeded beaches in 3 areas; only the LLM is mocked. Details and deliberate breaks: `docs/tasks/TASK-001.feedback.md`.
+
+---
+
 ## 2026-10-07 - Ops Safety Net: Daily DB Backups, Scheduler, Health Endpoint, Log Rotation, PR CI
 
 ### Overview

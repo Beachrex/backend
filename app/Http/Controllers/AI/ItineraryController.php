@@ -65,7 +65,7 @@ class ItineraryController extends Controller
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
+     *         description="Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.), or error=not_enough_beaches with {message, found, needed} when fewer beaches match than days (no credit used)",
      *         @OA\JsonContent(
      *             type="object",
      *             required={"message", "errors"},
@@ -199,6 +199,14 @@ class ItineraryController extends Controller
             return response()->json($itinerary, 200)
                 ->header('X-Request-ID', $requestId);
 
+        } catch (\App\Services\AI\Itinerary\NotEnoughBeachesException $e) {
+            // Nothing generated, no credit used: tell the user to widen the request.
+            return response()->json([
+                'error' => 'not_enough_beaches',
+                'message' => $e->getMessage() . ' Try a larger area, fewer must-have facilities, or a shorter trip.',
+                'found' => $e->found,
+                'needed' => $e->needed,
+            ], 422)->header('X-Request-ID', $requestId);
         } catch (\Exception $e) {
             // Log error (no PII)
             \Log::error('Itinerary generation failed', [

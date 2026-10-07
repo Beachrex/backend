@@ -209,7 +209,7 @@
                         }
                     },
                     "422": {
-                        "description": "Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
+                        "description": "Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.), or error=not_enough_beaches with {message, found, needed} when fewer beaches match than days (no credit used)",
                         "content": {
                             "application/json": {
                                 "schema": {
