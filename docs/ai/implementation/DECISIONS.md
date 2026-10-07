@@ -748,6 +748,39 @@ Use **Stripe Checkout (hosted payment page)** where:
 
 ---
 
+## [2026-10-07] Project-wide Development Rules and Working Mode B
+
+**Status**: Accepted
+
+**Context**: The owner shared a general rules file from another project and asked to apply what makes sense for Beachrex. Until now, agent work had no single entry point, no handoff file, and no PR CI.
+
+**Decision**:
+- `docs/DEVELOPMENT-RULES.md` (backend repo, covers both repos) is the rules file. `CLAUDE.md` in each repo points to it.
+- `docs/HANDOFF.md` holds the current state.
+- **Mode B:** the agent merges green PRs into `dev`. Promotion `dev → uat → main` happens only via PRs and only when the owner asks.
+- This file stays the project-wide ADR log, so there is no separate `03-DECISIONS.md`.
+- `DEV_HANDOFF.md` stays the change log, so the full `docs/` restructure from the general rules is not adopted.
+
+**Alternatives Considered**:
+1. Copy the general rules file verbatim and restructure `docs/` into 00-MANIFEST/01-SPEC/02-ARCHITECTURE. Rejected: ~140 existing docs would have to move, and it adds churn without value.
+2. Mode A, where the owner commits. Rejected: the owner explicitly asked the agent to open and merge PRs.
+
+**Related**: `docs/DEVELOPMENT-RULES.md`, `docs/HANDOFF.md`, `CLAUDE.md`, `.claude/settings.json` (deny list for ssh/scp/rsync, force-push, env files)
+
+---
+
+## [2026-10-07] Production Database Is Created from UAT (No Laravel Cloud)
+
+**Status**: Accepted (supersedes the "final pg_dump from Laravel Cloud" step in `docs/deployment/VPS_MIGRATION_PLAN.md` and `DEPLOYMENT_GUIDE.md` §9)
+
+**Context**: Laravel Cloud no longer exists for this project. `beachrex.com` still serves an old site from another host. Only dev and uat run on the VPS.
+
+**Decision**: At prod launch, `beachrex_prod` is loaded from a `pg_dump` of `beachrex_uat`, which holds the curated content. The procedure, including dry run and verification, is in the prod launch runbook. Test users, AI sessions and purchases created on UAT must be reviewed and cleaned before or after the load. That is an owner decision at launch time.
+
+**Related**: `docs/runbooks/prod-launch.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions
