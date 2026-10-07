@@ -33,7 +33,7 @@ class FirstPageContentTranslation extends Model
      */
     protected static function booted(): void
     {
-        $locales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+        $locales = \App\Http\Middleware\SetLocaleFromHeader::SUPPORTED_LOCALES;
 
         static::saved(function (FirstPageContentTranslation $tr) use ($locales) {
             foreach ($locales as $locale) {

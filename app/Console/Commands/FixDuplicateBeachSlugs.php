@@ -27,7 +27,7 @@ class FixDuplicateBeachSlugs extends Command
     /**
      * All supported locales
      */
-    private const LOCALES = ['en', 'si', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk'];
+    private const LOCALES = \App\Http\Middleware\SetLocaleFromHeader::SUPPORTED_LOCALES;
 
     /**
      * Execute the console command.
