@@ -57,18 +57,21 @@ class StaticPageController extends Controller
         $locale = app()->getLocale();
         $cacheKey = "static_pages:footer:{$locale}";
 
+        // Cache the resolved resource array, not Eloquent models.
         $pages = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
-            return StaticPage::with('translations')
+            $pages = StaticPage::with('translations')
                 ->active()
                 ->inFooter()
                 ->orderBy('sort_order')
                 ->orderBy('id')
                 ->get();
+
+            return StaticPageFooterResource::collection($pages)->resolve();
         });
 
         return response()->json([
             'success' => true,
-            'data' => StaticPageFooterResource::collection($pages),
+            'data' => $pages,
             'message' => 'Static pages retrieved successfully',
         ], 200);
     }
@@ -110,13 +113,16 @@ class StaticPageController extends Controller
         $locale = app()->getLocale();
         $cacheKey = "static_pages:show:{$locale}:{$slug}";
 
+        // Cache the resolved resource array, not Eloquent models.
         $page = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($slug, $locale) {
-            return StaticPage::with('translations')
+            $page = StaticPage::with('translations')
                 ->active()
                 ->whereHas('translations', function ($q) use ($slug, $locale) {
                     $q->where('slug', $slug)->whereIn('locale', [$locale, 'en']);
                 })
                 ->first();
+
+            return $page ? (new StaticPageResource($page))->resolve() : null;
         });
 
         if (!$page) {
@@ -128,7 +134,7 @@ class StaticPageController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => new StaticPageResource($page),
+            'data' => $page,
             'message' => 'Static page retrieved successfully',
         ], 200);
     }

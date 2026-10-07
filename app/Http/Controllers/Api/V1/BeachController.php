@@ -273,8 +273,9 @@ class BeachController extends Controller
      * @OA\Post(
      *     path="/api/v1/beaches",
      *     operationId="createBeach",
-     *     summary="Create a new beach",
+     *     summary="Create a new beach (admin only)",
      *     tags={"Beaches"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\RequestBody(
      *         required=true,
@@ -300,6 +301,8 @@ class BeachController extends Controller
      *         description="Beach created",
      *         @OA\JsonContent(ref="#/components/schemas/BeachSchema")
      *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - admin only"),
      *     @OA\Response(response=422, description="Validation error")
      * )
      */

@@ -9,9 +9,10 @@ use Illuminate\Support\Facades\App;
 class SetLocaleFromHeader
 {
     /**
-     * Supported locales for the application
+     * Supported locales for the application (database codes - Slovenian is 'sl').
+     * Single source of truth: reference this constant instead of copying the list.
      */
-    private array $supportedLocales = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
+    public const SUPPORTED_LOCALES = ['en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru', 'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq'];
 
     /**
      * Locale mappings for frontend compatibility
@@ -31,7 +32,7 @@ class SetLocaleFromHeader
             $mappedLocale = $this->localeMappings[$locale] ?? $locale;
 
             // Only set locale if it's supported
-            if (in_array($mappedLocale, $this->supportedLocales)) {
+            if (in_array($mappedLocale, self::SUPPORTED_LOCALES)) {
                 App::setLocale($mappedLocale);
             }
         }

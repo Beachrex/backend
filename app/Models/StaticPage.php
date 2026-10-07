@@ -32,10 +32,7 @@ class StaticPage extends Model
      * Locales supported by the application (matches SetLocaleFromHeader supported locales,
      * using the database codes — Slovenian is 'sl', not the frontend 'si').
      */
-    private const SUPPORTED_LOCALES = [
-        'en', 'sl', 'de', 'hr', 'fr', 'es', 'it', 'ua', 'ru',
-        'pl', 'cs', 'hu', 'bg', 'sk', 'da', 'pt', 'nl', 'el', 'sq',
-    ];
+    private const SUPPORTED_LOCALES = \App\Http\Middleware\SetLocaleFromHeader::SUPPORTED_LOCALES;
 
     /**
      * Get the English title from translations (used for Filament list / global search).

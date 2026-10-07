@@ -16,9 +16,9 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 
 ### The Platform (80% Complete)
 - **Frontend**: Next.js 14 (TypeScript, React Query, next-intl, 19 languages)
-- **Backend**: Laravel 11 API (PostgreSQL + PostGIS, Meilisearch, Redis)
+- **Backend**: Laravel 12 API (PostgreSQL + PostGIS, Meilisearch, Redis)
 - **Admin**: Filament 3.x for data management
-- **Data**: 2,445+ beaches across Croatia, Slovenia, Montenegro (40+ attributes each)
+- **Data**: ~3,774 beaches (UAT/DEV DB, Sept 2026) across Croatia, Slovenia, Montenegro and more (40+ attributes each)
 - **Features**: Natural language search, spatial queries, weather integration, multi-language
 
 ### The AI Agent (Core Business Model)
@@ -82,7 +82,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 - ✅ A **decision engine** that helps users choose the right beach
 - ✅ A **trip planner** that generates optimized itineraries (PAID)
 - ✅ A **recommendation system** based on user constraints
-- ✅ A **multi-language interface** to 2,445+ beaches
+- ✅ A **multi-language interface** to ~3,774 beaches (UAT/DEV DB, Sept 2026)
 - ✅ A **B2B analytics tool** for tourism boards and hotels
 
 ### The AI Agent is NOT:
@@ -100,7 +100,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 **Phase**: **MVP Implementation** (80% platform complete, AI agent in development)
 
 **What is DONE**:
-- ✅ Beach database (2,445+ beaches, 40+ attributes, 19 languages)
+- ✅ Beach database (~3,774 beaches (UAT/DEV DB, Sept 2026), 40+ attributes, 19 languages)
 - ✅ Search API (natural language via Meilisearch)
 - ✅ Spatial queries (PostGIS: radius, nearest, bounding-box)
 - ✅ Weather integration (OpenWeatherMap)
@@ -174,7 +174,7 @@ This is the **ONLY** file you need to read first. Everything else is referenced 
 
 **Auth Model**: Google OAuth 2.0 → Sanctum Bearer Token
 - Frontend: Next.js 14 (different domain than backend)
-- Backend: Laravel 11 API (Sanctum Personal Access Tokens)
+- Backend: Laravel 12 API (Sanctum Personal Access Tokens)
 - Flow: Authorization Code Flow with PKCE
 - Token: Bearer token (cross-domain compatible)
 - Storage: Frontend stores token (memory/localStorage)
@@ -494,7 +494,7 @@ Please advise:
 **See**: `docs/ai/implementation/PROMPTS.md` for full system prompt
 
 **Core Directive**:
-> "You are a beach discovery assistant. Your job is to help users confidently choose the right beach for their specific situation. You have access to 2,445+ beaches with 40+ attributes each. You can search, compare, and recommend beaches. For multi-day trip planning, you offer paid itinerary generation ($19-$59). You NEVER give away multi-day itineraries for free."
+> "You are a beach discovery assistant. Your job is to help users confidently choose the right beach for their specific situation. You have access to ~3,774 beaches with 40+ attributes each. You can search, compare, and recommend beaches. For multi-day trip planning, you offer paid itinerary generation ($19-$59). You NEVER give away multi-day itineraries for free."
 
 **Tone**: Helpful, confident, concise (not chatty)  
 **Language**: Match user's language (14 supported)  
@@ -538,7 +538,7 @@ Api/
 ## Quick Reference: Key Numbers
 
 **Platform**:
-- 2,445+ beaches
+- ~3,774 beaches (UAT/DEV DB, Sept 2026)
 - 40+ attributes per beach
 - 19 languages supported
 - 80% implementation complete

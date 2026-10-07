@@ -1,48 +1,37 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Beachrex API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend for **Beachrex** ([beachrex.com](https://beachrex.com)), a multilingual beach discovery platform. It serves beach data (around 3,774 beaches in the UAT/DEV DB as of Sept 2026, 40+ attributes each, with media and 360° tours), geographic navigation, spatial search, weather, CMS content, AI chat and paid AI itineraries to the Next.js frontend and to AI agents (via the [MCP server](mcp-server/README.md)). The API is versioned under `/api/v1` and localized through `Accept-Language` (19 locales).
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel 12**, **PHP 8.4** (Sail runtime and `Dockerfile.prod`)
+- **PostgreSQL 15 + PostGIS** (`postgis/postgis:15-3.4`), **Redis** (cache)
+- **Meilisearch** via Laravel Scout (global search). Not part of `docker-compose.yml`; see [docs/MEILISEARCH_SETUP.md](docs/MEILISEARCH_SETUP.md)
+- **Filament 3** admin panel
+- **Sanctum** tokens + **Google OAuth** (Socialite)
+- **Stripe** (itinerary payments), **OpenAI** (AI chat/itineraries)
+- OpenAPI docs via l5-swagger (`/api/documentation`)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Local development (Sail)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+composer install                      # provides vendor/bin/sail
+cp .env.example .env                  # then switch DB_* to pgsql (see comments in .env.example)
+./vendor/bin/sail up -d               # app, pgsql (PostGIS), redis
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan l5-swagger:generate   # regenerate OpenAPI docs
+```
 
-## Learning Laravel
+External keys (OpenAI, OpenWeather, Stripe, Google, DigitalOcean Spaces, Meilisearch) go in `.env`. See `.env.example`.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tests
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```bash
+./vendor/bin/sail artisan test
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Known environment-dependent failures: **`PlanEnforcementTest`** (needs an OpenAI API key) and **`CountrySlugSupportTest`** weather tests (need an OpenWeather API key). CI tolerates exactly these two (`.github/workflows/deploy.yml`). Any other failure blocks the deploy.
 
 ## Development Setup
 
@@ -63,18 +52,31 @@ To run tests manually:
 
 See [hooks/README.md](hooks/README.md) for more details.
 
-## Contributing
+## Environments
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+All environments run on one Hetzner VPS and are deployed by GitHub Actions on push.
 
-## Code of Conduct
+| Branch | Env  | API                              | Admin (Filament, at domain root) |
+|--------|------|----------------------------------|----------------------------------|
+| `dev`  | DEV  | https://dev-api.beachrex.com     | https://dock-dev.beachrex.com    |
+| `uat`  | UAT  | https://uat-api.beachrex.com     | https://dock-uat.beachrex.com    |
+| `main` | PROD | https://api.beachrex.com         | https://dock.beachrex.com        |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Each environment has its own code directory, database (`beachrex_{env}`), Redis DB (`REDIS_DB`), Scout prefix and admin domain (`FILAMENT_DOMAIN`).
 
-## Security Vulnerabilities
+## Rules
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. **PR flow:** `feature/xxx` → PR → `dev` → PR → `uat` → PR → `main`. Never push directly to `uat` or `main`.
+2. **Never copy files to the VPS manually** (`scp`/`rsync`/`ssh`). All changes go through the CI/CD pipeline.
+3. **API changes require docs:** update the OpenAPI annotations/schemas (`app/Swagger/`, controller `@OA` blocks), regenerate with `l5-swagger:generate`, and add a dated entry to [DEV_HANDOFF.md](DEV_HANDOFF.md).
+4. **Never cache Eloquent models.** Resolve the Resource inside the cache callback (`Resource::collection($models)->resolve()`) so Redis stores plain arrays.
+5. **Data-mutating API routes are admin-only.** Put them under `auth:sanctum` + `admin` (`EnsureUserIsAdmin`). Anyone can get a Sanctum token via `/register` or Google sign-in, so a token alone is not authorization.
+6. **Locales:** never hardcode a locale list. Use `SetLocaleFromHeader::SUPPORTED_LOCALES` (DB codes; Slovenian is `sl`, the frontend uses `si`).
 
-## License
+## Key docs
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- [DEV_HANDOFF.md](DEV_HANDOFF.md): change log for API/backend changes (newest first)
+- [docs/ai/AI_INDEX.md](docs/ai/AI_INDEX.md): product/AI context and doc index
+- [docs/deployment/DEPLOYMENT_GUIDE.md](docs/deployment/DEPLOYMENT_GUIDE.md): VPS, CI/CD, env isolation (authoritative infra doc)
+- [mcp-server/README.md](mcp-server/README.md): Beachrex MCP server
+- [docs/README.md](docs/README.md): index of the remaining technical docs
