@@ -82,14 +82,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 2. **Ops safety net**: daily DB backups to a private bucket, scheduler service, Docker log rotation,
    `/api/v1/health`, PR CI. *(Built; backups need the owner step below)*
 3. **Prod launch runbook**: [`docs/runbooks/prod-launch.md`](runbooks/prod-launch.md) covers the prod DB from UAT, env checklist, deploy, DNS, SSL and rollback. *(written; launch date is the owner's decision)*
-4. **MCP server quality** — known bugs found 2026-10-07:
-   - `get_beach_filters` crashes;
-   - `search_beaches` ignores `country_code` (the API reads `country`) and returns beaches from all countries;
-   - weather returns all zeros;
-   - `find_beaches_nearby` builds flat beach URLs, while details builds hierarchical ones;
-   - no name or free-text search, so "zlatni rat" is not found;
-   - region shown as a raw slug.
-   *(planned)*
+4. **MCP server quality**: fixed. Filters, country, name search, weather, URLs, attribute filters, 19 locales and per-env pm2 (`DEV_HANDOFF.md` 2026-10-07). *(Built; live check on dev is an owner action)*
 5. **AI itineraries/chat quality** — the owner reports poor results and suggests pgvector. Diagnosis first,
    then an ADR and a phased plan. *(planned)*
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
@@ -99,7 +92,14 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 - `.gitlab-ci.yml` in both repos is unused (GitHub Actions replaced it).
 - Local `sail artisan test`: `phpunit.xml` points at `127.0.0.1` / `beachrex_test`, as in CI. Inside Sail this probably fails.
 - Cache invalidation on admin edits for other cached models (Beach, Country, …): `DEPLOYMENT_GUIDE` §9.
-- The MCP pm2 process name `beachrex-mcp` is shared by all envs, so a uat deploy restarts the dev MCP process. This will be fixed with item 4 (MCP).
+- MCP on uat/prod: the processes run on 3101/3102, but there is no Nginx route or DNS (`mcp-uat`/`mcp`) yet. Owner decision.
+- API issues found while fixing the MCP (2026-10-07), not fixed yet:
+  - `PostGISService` measures distances in EPSG:3857, so `distance_km` and the radius are about 37% too large in Croatia. It should use `geography` (`ST_DWithin(...::geography)`), which also enables the spatial index.
+  - `beach-details` increments `beach_views` on every call, including AI/MCP calls.
+  - `ProvidesWeather` sets `sea_temperature` = air temperature (fake).
+  - `/beaches` Swagger documents `region`/`island`/`city`, but `applyFilters` reads only the `*_code` names.
+  - `FilterController` reads only `country` (not `country_code`).
+  - The spatial 360° tour path ignores `mobile_upload`.
 
 ## Latest numbers
 
