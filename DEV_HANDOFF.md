@@ -51,6 +51,30 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - TASK-002 Step 1: `AsciiPath` + Read-Only Inventory of Non-ASCII Storage Paths
+
+### Overview
+First part of TASK-002 (ASCII-only storage paths). It adds the transliteration rule and a **read-only** inventory command. Nothing on Spaces or in the DB changes yet. The owner runs the inventory on the VPS and reviews the CSV before any copy step is built and run.
+
+### Changes Made
+- `app/Support/AsciiPath.php`: `fromPath()` normalises to NFC, then čšžć → cszc and đ → dj (plus the uppercase forms). Other scripts go through `Str::ascii`. Per segment, anything outside `[A-Za-z0-9._-]` becomes `-` and repeated `-` collapse. Case and `/` are kept, and the function is idempotent. Also `isAscii()` and `unicodeForm()` (NFC/NFD/mixed).
+- `php artisan storage:ascii-paths --inventory` (`app/Console/Commands/AsciiStoragePaths.php`):
+  - scans Spaces keys under `public/img/`;
+  - scans path-like text/JSON DB columns, discovered from the schema (`beach.folder_name`, `media.file_path`, `media.file_name`, `*.main_image`, `countries.image_path`, …);
+  - finds vtour text files that reference non-ASCII names;
+  - writes an `old → new` CSV and flags collisions (two old keys map to one new key, or the new key already exists).
+- Runbook: `docs/runbooks/ascii-storage-paths.md`.
+
+### Affected endpoints
+None.
+
+### Testing
+```bash
+php artisan test tests/Unit/AsciiPathTest.php tests/Feature/AsciiStoragePathsInventoryTest.php
+```
+
+---
+
 ## 2026-10-07 - MCP: Deploy Actually Replaces the Legacy Process; Image URLs With Šumniki
 
 ### Overview
