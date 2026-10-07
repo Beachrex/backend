@@ -1,5 +1,9 @@
 # Handoff — state as of 2026-10-07 (end of session 2)
 
+> **Next session, start here:** (1) the owner runs the TASK-002 inventory and sends the result (runbook step 1);
+> (2) work the **dev review tracker** [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md), P1 crashes first;
+> (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
+
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
 Rules: [`docs/DEVELOPMENT-RULES.md`](DEVELOPMENT-RULES.md). Change log: `DEV_HANDOFF.md` in each repo.
 
@@ -81,7 +85,11 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/backend#21 | distances via `geography`; migration `add_geography_index_to_beach_location` ran on dev | 117 |
   | Beachrex/backend#22 | MCP name match | 119 |
   | Beachrex/backend#23 | API fixes: view count, filter aliases, `/beaches` docs, mobile tour path | 121 |
-  - **Not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#23. Promote when the owner asks.
+  | Beachrex/backend#25 | real sea temperature (Open-Meteo Marine) | 125 |
+  | Beachrex/backend#26 | TASK-003: AI chat understands any language, real DB candidates | 127 |
+
+  **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
+  - **Not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#26. Promote when the owner asks.
 
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
   Beachrex/backend#3 and Beachrex/web-client#1 merged to dev; Beachrex/backend#4 and Beachrex/web-client#2 promoted to uat.
@@ -120,8 +128,16 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    Step 2 (prevention) merged: Beachrex/backend#19. New or changed paths are stored ASCII (`HasAsciiPaths`, ASCII upload names).
    Step 3 merged (Beachrex/backend#20): `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
    After step 6: cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
-   **TASK-003 AI chat** (owner: "ja, začni task", 2026-10-07): structured multilingual query understanding + real DB candidates. Built; live check on dev is an owner action (5 questions in sl/hr/de/it/en, `docs/tasks/TASK-003.feedback.md`).
+   **TASK-003 AI chat** (owner: "ja, začni task", 2026-10-07): structured multilingual query understanding + real DB candidates. **Done**: Beachrex/backend#26, dev run 127; the owner confirmed it on dev.
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
+7. **Dev review tracker** (owner, 2026-10-07): a tester reviews dev and logs findings in the owner's spreadsheet
+   `dev.beachrex_pregled_napak_delovanja.xlsx` (77 rows as of 2026-10-07). The spreadsheet stays with the owner (e-mail links, personal data).
+   The agent's copy with a first-pass verdict per row is **[`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md)**. Owner's instructions:
+   - assess every row before fixing (some are already fixed, some are nonsense, some are only missing translations), so we don't break anything;
+   - record what was fixed, so the owner can mark the row in the spreadsheet for the tester to retest.
+
+   Process: one fix = one PR referencing `QA #<row>`. After the dev deploy the tracker row gets `Fixed in` + **Retest**. The owner updates the spreadsheet; the tester retests. When the owner sends a newer spreadsheet, re-sync the tracker by row number.
+   Next: the P1 crashes (continent/country pages, non-EN search → empty page, locale jumps); they are mostly in web-client.
 
 ## Open items (found, not yet scheduled)
 

@@ -69,3 +69,6 @@ Deliberate breaks, each run against the two test files above:
 | 3 | de: "ruhiger Strand mit Parkplatz in Istrien" | Istria, parking |
 | 4 | it: "spiaggia accessibile in sedia a rotelle vicino a Dubrovnik" | accessible beaches only (or 402 for the free tier) |
 | 5 | en: "most popular beaches in Croatia" | popularity order, HR |
+
+## Live check (owner, 2026-10-07)
+After the dev deploy (run 127) the owner tested the chat on dev with the questions above: **"chat je ok"**.
