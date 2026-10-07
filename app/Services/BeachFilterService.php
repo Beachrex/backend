@@ -712,6 +712,8 @@ class BeachFilterService
      */
     public function buildRawFilters(Request $request): array
     {
+        // Region/island/city accept both the *_code names used by /beaches and the
+        // plain names documented on the spatial endpoints (region, island, city).
         $conditions = [];
         $bindings = [];
 
@@ -794,8 +796,8 @@ class BeachFilterService
         }
 
         // Region filter (single or multiple) - supports both codes and IDs
-        if ($request->has('region_code')) {
-            $regions = $this->parseFilterValue($request->region_code);
+        if ($request->hasAny(['region_code', 'region'])) {
+            $regions = $this->parseFilterValue($request->input('region_code', $request->input('region')));
 
             $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
             $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
@@ -831,8 +833,8 @@ class BeachFilterService
         }
 
         // Island filter - supports both codes and IDs
-        if ($request->has('island_code')) {
-            $islands = $this->parseFilterValue($request->island_code);
+        if ($request->hasAny(['island_code', 'island'])) {
+            $islands = $this->parseFilterValue($request->input('island_code', $request->input('island')));
 
             $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
             $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
@@ -868,8 +870,8 @@ class BeachFilterService
         }
 
         // City filter - supports both code and ID
-        if ($request->has('city')) {
-            $cities = $this->parseFilterValue($request->city);
+        if ($request->hasAny(['city_code', 'city'])) {
+            $cities = $this->parseFilterValue($request->input('city_code', $request->input('city')));
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($cities)->contains(fn($val) => is_numeric($val));
