@@ -72,7 +72,16 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - TASK-002 spec written: Beachrex/backend#14.
   - TASK-002 step 1 (`AsciiPath` + read-only `storage:ascii-paths --inventory`): Beachrex/backend#17, dev deploy run 109 green.
     Not yet run against real data (owner action below).
-  - **Not yet on uat:** Beachrex/backend#13, #14 and #17. Promote when the owner asks.
+- 2026-10-07 (session 2, later): **Live on dev**. All Deploy runs are green.
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/backend#19 | TASK-002 prevention | 113 |
+  | Beachrex/backend#20 | TASK-002 `--copy` / `--update-db` / `--delete-old` (not run) | 115 |
+  | Beachrex/backend#21 | distances via `geography`; migration `add_geography_index_to_beach_location` ran on dev | 117 |
+  | Beachrex/backend#22 | MCP name match | 119 |
+  | Beachrex/backend#23 | API fixes: view count, filter aliases, `/beaches` docs, mobile tour path | 121 |
+  - **Not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#23. Promote when the owner asks.
 
 - 2026-10-07: security/locale/filter/cache fixes and a docs catch-up —
   Beachrex/backend#3 and Beachrex/web-client#1 merged to dev; Beachrex/backend#4 and Beachrex/web-client#2 promoted to uat.
