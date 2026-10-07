@@ -18,9 +18,13 @@ nightly run shows up in `/api/v1/health` (`backup.last_success_at`).
 
 ## Enable (owner, once per environment)
 
+> **Policy (owner, 2026-10-07):** only **production** is backed up. UAT is backed up **temporarily**, until prod
+> is live, because it holds the curated content prod will be created from. After the prod launch, set
+> `BACKUP_ENABLED=false` in `.env.uat` (prod launch runbook, phase D5). Dev is never backed up.
+
 1. DigitalOcean → Spaces → create a **new private bucket**, e.g. `beachrex-backups` in `fra1`. File listing: **restricted**.
 2. DigitalOcean → API → Spaces Keys → create a key **only for backups**. Store your own copy, because DO shows the secret once.
-3. On the VPS, add to `/opt/beachrex/envs/.env.uat` (and later `.env.prod`):
+3. On the VPS, add to `/opt/beachrex/envs/.env.prod` (until the prod launch: `.env.uat`):
    `BACKUP_ENABLED=true`, `BACKUP_S3_KEY`, `BACKUP_S3_SECRET`, `BACKUP_S3_BUCKET=beachrex-backups`
    (region and endpoint default to fra1).
 4. Redeploy the environment: re-run the latest "Deploy to VPS" workflow for that branch. That recreates the containers with the new env.
