@@ -24,6 +24,8 @@ class BeachFilterServiceRawFiltersTest extends TestCase
             'island'      => ['island', 'krk', 'isl.code IN'],
             'city_code'   => ['city_code', 'zadar', 'city.code IN'],
             'city'        => ['city', 'zadar', 'city.code IN'],
+            'country'      => ['country', 'HR', 'country_code IN'],
+            'country_code' => ['country_code', 'HR', 'country_code IN'],
         ];
     }
 
@@ -36,5 +38,24 @@ class BeachFilterServiceRawFiltersTest extends TestCase
 
         $this->assertStringContainsString($expectedSql, $filters['sql']);
         $this->assertContains($value, $filters['bindings']);
+    }
+
+    #[Test]
+    #[DataProvider('countryParams')]
+    public function beaches_endpoint_filters_by_country_with_either_param_name(string $param): void
+    {
+        // /api/v1/beaches uses applyFilters(); the MCP server and the frontend send country_code
+        $query = app(BeachFilterService::class)->applyFilters(
+            \App\Models\Beach::query(),
+            Request::create('/', 'GET', [$param => 'HR'])
+        );
+
+        $this->assertStringContainsString('country_code', $query->toSql());
+        $this->assertContains('HR', $query->getBindings());
+    }
+
+    public static function countryParams(): array
+    {
+        return ['country' => ['country'], 'country_code' => ['country_code']];
     }
 }

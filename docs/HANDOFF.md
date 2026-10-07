@@ -82,14 +82,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 2. **Ops safety net**: daily DB backups to a private bucket, scheduler service, Docker log rotation,
    `/api/v1/health`, PR CI. *(Built; backups need the owner step below)*
 3. **Prod launch runbook** — prod DB from UAT, DNS, SSL, Nginx, MCP process names. *(planned)*
-4. **MCP server quality** — known bugs found 2026-10-07:
-   - `get_beach_filters` crashes;
-   - `search_beaches` ignores `country_code` (the API reads `country`) and returns beaches from all countries;
-   - weather returns all zeros;
-   - `find_beaches_nearby` builds flat beach URLs, while details builds hierarchical ones;
-   - no name or free-text search, so "zlatni rat" is not found;
-   - region shown as a raw slug.
-   *(planned)*
+4. **MCP server quality**: fixed. Filters, country, name search, weather, URLs, attribute filters, 19 locales and per-env pm2 (`DEV_HANDOFF.md` 2026-10-07). *(Built; live check on dev is an owner action)*
 5. **AI itineraries/chat quality** — the owner reports poor results and suggests pgvector. Diagnosis first,
    then an ADR and a phased plan. *(planned)*
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
