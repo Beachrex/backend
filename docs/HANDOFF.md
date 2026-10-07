@@ -107,7 +107,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    **Now: TASK-002 ASCII-only storage paths** (owner request 2026-10-07; spec: `docs/tasks/TASK-002-ascii-storage-paths.md`).
    Step 1 built: `AsciiPath` + read-only `storage:ascii-paths --inventory` (runbook `docs/runbooks/ascii-storage-paths.md`).
    Step 2 (prevention) merged: Beachrex/backend#19. New or changed paths are stored ASCII (`HasAsciiPaths`, ASCII upload names).
-   Step 3 built: `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
+   Step 3 merged (Beachrex/backend#20): `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
    After step 6: cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
    Then TASK-003 AI chat: multilingual intent and filter extraction via function calling instead of English keyword matching; the same candidate service.
 6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
@@ -132,7 +132,6 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 - MCP on uat/prod: the processes run on 3101/3102, but there is no Nginx route or DNS (`mcp-uat`/`mcp`) yet. Owner decision.
 - `MediaService::upload` (API `/media/upload`) stores the client's original name in `media.file_name`, but the file is stored under a slug + time + random name. `BeachDetailsController` (previous/next beach `main_image`) builds URLs from `folder_name` + `file_name`, so such images would 404 there. Found during TASK-002, not fixed.
 - API issues found while fixing the MCP (2026-10-07), not fixed yet:
-  - `PostGISService` measures distances in EPSG:3857, so `distance_km` and the radius are about 37% too large in Croatia. It should use `geography` (`ST_DWithin(...::geography)`), which also enables the spatial index.
   - `beach-details` increments `beach_views` on every call, including AI/MCP calls.
   - `ProvidesWeather` sets `sea_temperature` = air temperature (fake).
   - `/beaches` Swagger documents `region`/`island`/`city`, but `applyFilters` reads only the `*_code` names.

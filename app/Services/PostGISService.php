@@ -58,8 +58,8 @@ class PostGISService
                 m.disk as main_image_disk,
                 tags.tags_json,
                 ST_Distance(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857)
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
@@ -133,8 +133,8 @@ class PostGISService
               AND b.status_id = 1
               AND b.location IS NOT NULL
               AND ST_DWithin(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857),
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography,
                     ?
                   )
               {$filterSql}
@@ -179,8 +179,8 @@ class PostGISService
                 m.disk as main_image_disk,
                 tags.tags_json,
                 ST_Distance(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857)
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
@@ -235,8 +235,8 @@ class PostGISService
               AND b.status_id = 1
               AND b.location IS NOT NULL
             ORDER BY ST_Distance(
-                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                ST_Transform(b.location, 3857)
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                b.location::geography
             )
             LIMIT ?
         ", [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $limit]);
@@ -257,8 +257,8 @@ class PostGISService
     {
         $result = DB::selectOne("
             SELECT ST_Distance(
-                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
             ) / 1000.0 as distance_km
         ", [$lon1, $lat1, $lon2, $lat2]);
 
@@ -517,8 +517,8 @@ class PostGISService
               AND b.status_id = 1
               AND b.location IS NOT NULL
               AND ST_DWithin(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857),
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography,
                     ?
                   )
               {$filterSql}
