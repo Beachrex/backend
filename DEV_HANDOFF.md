@@ -51,6 +51,24 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - MCP: "Zlatni rat" Is an Exact Match for "Beach Zlatni Rat"
+
+### Overview
+Owner feedback after a live test: `get_beach_details("Zlatni rat")` said "No beach is named exactly" and then showed "Beach Zlatni Rat". Many legacy names carry the English prefix "Beach" in every locale.
+
+### Changes Made
+- `mcp-server/src/api-client.ts` `nameKey()`: besides case and diacritics, it now ignores one leading or trailing generic beach word:
+  - beach, plaža/plaz, plazha, plage, playa, praia, spiaggia, strand, paralia;
+  - a name that is only that word keeps it, and inner words are kept ("Long Beach Bay").
+- Tests in `mcp-server/test/api-client.test.ts`: 34/34 pass. On the old `nameKey`, the 2 new tests fail.
+
+### Testing
+```bash
+cd mcp-server && npm run build && npm test
+```
+
+---
+
 ## 2026-10-07 - Fix: Beach Distances Were ~37% Too Long (EPSG:3857 → geography)
 
 ### Overview

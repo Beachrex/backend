@@ -64,7 +64,7 @@ export const filters = {
   },
 };
 
-const searchBeach = (over: Record<string, unknown>) => ({
+export const searchBeach = (over: Record<string, unknown>) => ({
   id: 126,
   name: 'Zlatni rat',
   slug: 'zlatni-rat-beach',

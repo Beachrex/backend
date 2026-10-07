@@ -247,9 +247,21 @@ export function slugify(s: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Name comparison key: case- and diacritics-insensitive. */
-function nameKey(s: string): string {
-  return slugify(s).replace(/-/g, ' ');
+/**
+ * Generic "beach" words (slugified) that legacy names carry as a prefix or suffix,
+ * e.g. "Beach Zlatni Rat" in every locale, "Plaža Zlatni rat", "Spiaggia dei Conigli".
+ */
+const BEACH_WORDS = new Set(['beach', 'plaza', 'plaz', 'plazha', 'plage', 'playa', 'praia', 'spiaggia', 'strand', 'paralia']);
+
+/**
+ * Name comparison key: case- and diacritics-insensitive, ignoring a leading or trailing
+ * generic beach word, so "Zlatni rat" matches "Beach Zlatni Rat" and "Plaža Zlatni rat".
+ */
+export function nameKey(s: string): string {
+  const words = slugify(s).split('-').filter(Boolean);
+  if (words.length > 1 && BEACH_WORDS.has(words[0])) words.shift();
+  if (words.length > 1 && BEACH_WORDS.has(words[words.length - 1])) words.pop();
+  return words.join(' ');
 }
 
 /**

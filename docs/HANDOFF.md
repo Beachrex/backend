@@ -115,7 +115,6 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 ## Open items (found, not yet scheduled)
 
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
-  - Name match: `get_beach_details("Zlatni rat")` says "no exact match" and then shows "Beach Zlatni Rat". The exact-match check should ignore case, diacritics and the "Beach "/"Plaža " prefix. Small fix in `mcp-server/src/api-client.ts` (name resolution).
   - **MCP must become production-only** once prod is live (prod launch runbook D5b). Links will then point to `beachrex.com`.
   - **Images only from `s3.beachrex.com`** once TASK-002 removes non-ASCII paths (TASK-002 §5 removes the Spaces bypass).
 
