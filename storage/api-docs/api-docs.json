@@ -10165,52 +10165,67 @@
                         "nullable": true
                     },
                     "filters_applied": {
-                        "description": "Filters used in search",
+                        "description": "Filters the API actually queried (TASK-003), named like the /beaches query parameters. Relaxed filters are left out and explained in metadata.assumptions. On the keyword fallback (metadata.understanding = fallback) this is the model's own summary.",
                         "properties": {
-                            "country": {
+                            "country_code": {
                                 "type": "string",
                                 "example": "HR",
                                 "nullable": true
                             },
-                            "region": {
+                            "island_code": {
                                 "type": "string",
-                                "example": "Dalmatia",
+                                "example": "BRA",
                                 "nullable": true
                             },
-                            "city": {
+                            "city_code": {
                                 "type": "string",
-                                "example": "Split",
+                                "example": "makarska",
                                 "nullable": true
                             },
-                            "surface": {
+                            "region_code": {
+                                "type": "string",
+                                "example": "HR-ISTRIA",
+                                "nullable": true
+                            },
+                            "beach_type": {
                                 "type": "array",
                                 "items": {
                                     "type": "string"
                                 },
                                 "example": [
-                                    "sand",
-                                    "pebble"
+                                    "sand"
                                 ],
                                 "nullable": true
                             },
-                            "facilities": {
+                            "location_infrastructure": {
                                 "type": "array",
                                 "items": {
                                     "type": "string"
                                 },
                                 "example": [
-                                    "parking"
+                                    "shower",
+                                    "access_for_disabled"
                                 ],
                                 "nullable": true
                             },
-                            "family_friendly": {
-                                "type": "boolean",
-                                "example": true,
+                            "user_type": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "example": [
+                                    "family"
+                                ],
                                 "nullable": true
                             },
-                            "wheelchair_accessible": {
-                                "type": "boolean",
-                                "example": false,
+                            "sporting_activities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "example": [
+                                    "snorkeling"
+                                ],
                                 "nullable": true
                             }
                         },
@@ -10950,7 +10965,7 @@
                     "model": {
                         "description": "LLM model used",
                         "type": "string",
-                        "example": "gpt-3.5-turbo"
+                        "example": "gpt-4o-mini"
                     },
                     "response_time_ms": {
                         "description": "Response time in milliseconds",
@@ -10961,6 +10976,30 @@
                         "description": "Was response cached?",
                         "type": "boolean",
                         "example": false
+                    },
+                    "understanding": {
+                        "description": "Chat only (TASK-003): how the message was understood. llm = structured extraction; fallback = English keyword detection after the extraction failed.",
+                        "type": "string",
+                        "enum": [
+                            "llm",
+                            "fallback"
+                        ],
+                        "example": "llm"
+                    },
+                    "language": {
+                        "description": "Chat only: language of the answer (the user's language as detected, else the session locale).",
+                        "type": "string",
+                        "example": "sl"
+                    },
+                    "assumptions": {
+                        "description": "Chat only: what the API could not apply (unknown place, relaxed filters).",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "Not enough beaches matched all requested user_types; that filter was relaxed."
+                        ]
                     }
                 },
                 "type": "object"

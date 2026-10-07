@@ -26,7 +26,7 @@ class ContextBuilderService
     /**
      * Max beaches per tier (HARD LIMITS)
      */
-    private const MAX_BEACHES = [
+    public const MAX_BEACHES = [
         'free' => 5,
         'basic' => 10,
         'premium' => 20,
@@ -87,9 +87,17 @@ class ContextBuilderService
             ],
         ];
 
+        // TASK-003: candidates already chosen by the code from the understood query (place, attributes, GPS)
+        if (isset($params['candidates'])) {
+            $beaches = $this->candidateBeaches($params['candidates'], $locale);
+            $context['beaches'] = $beaches;
+            $context['metadata']['beaches_fetched'] = count($beaches);
+            $context['metadata']['beaches_returned'] = count($beaches);
+            $context['metadata']['candidates'] = true;
+        }
         // RULE: Popularity queries do NOT require location
         // Fetch beaches by popularity (beach_views) if intent is popularity_query
-        if ($intent === 'popularity_query') {
+        elseif ($intent === 'popularity_query') {
             $beaches = $this->fetchPopularBeaches($tier, $filters, $locale);
             $context['beaches'] = $beaches;
             $context['metadata']['beaches_fetched'] = count($beaches);
@@ -197,6 +205,45 @@ class ContextBuilderService
         return $beaches->map(function ($beach) use ($locale) {
             return $this->sanitizeBeachForPopularity($beach, $locale);
         })->toArray();
+    }
+
+    /**
+     * TASK-003: chat beaches from candidate rows (ItineraryContextBuilderService::fetchChatCandidates), in the
+     * candidates' order. Keeps the existing fields (slugs, main_image) and adds the localized facts.
+     */
+    private function candidateBeaches(array $candidates, string $locale): array
+    {
+        $ids = array_column($candidates, 'id');
+        if (! $ids) {
+            return [];
+        }
+        $models = Beach::query()
+            ->whereIn('id', $ids)
+            ->with(['continent.translations', 'country.translations', 'region.translations', 'island.translations', 'city.translations'])
+            ->get()
+            ->keyBy('id');
+
+        $beaches = [];
+        foreach ($candidates as $candidate) {
+            $model = $models->get($candidate['id']);
+            if (! $model) {
+                continue;
+            }
+            $beaches[] = array_merge($this->sanitizeBeachForPopularity($model, $locale), [
+                'name' => $candidate['name'],
+                'slug' => $candidate['slug'],
+                'city' => $candidate['city'],
+                'region' => $candidate['region'],
+                'description' => $candidate['description'],
+                'surface' => $candidate['type_code'],
+                'type' => $candidate['type'],
+                'facilities' => $candidate['facilities'],
+                'suitable_for' => $candidate['suitable_for'],
+                'distance_km' => $candidate['distance_km'] ?? null,
+            ]);
+        }
+
+        return $beaches;
     }
 
     /**
@@ -421,6 +468,9 @@ class ContextBuilderService
                 $text .= "BEACHES (ordered by popularity - beach_views):\n";
                 $text .= "IMPORTANT: Use transparent language like 'frequently viewed' or 'based on visitor interest'.\n";
                 $text .= "Do NOT claim 'highest rated' or 'best reviewed' (we don't have verified ratings).\n\n";
+            } elseif (! empty($context['metadata']['candidates'])) {
+                $text .= "BEACHES (chosen from the Beachrex database to match the user's request; best match first):\n";
+                $text .= "IMPORTANT: Recommend only these beaches and use only the facts listed here.\n\n";
             } elseif ($locationProvided) {
                 $text .= "BEACHES (nearest to your location):\n\n";
             } elseif ($intent === 'beach_search') {
@@ -436,6 +486,26 @@ class ContextBuilderService
                 $text .= "Beach {$num}:\n";
                 $text .= "- ID: {$beach['id']}\n";
                 $text .= "- Name: {$beach['name']}\n";
+
+                // TASK-003 candidate facts (only candidate beaches carry these as plain strings/lists)
+                if (! empty($context['metadata']['candidates'])) {
+                    $place = implode(', ', array_filter([$beach['city'] ?? null, $beach['region'] ?? null, $beach['country_code'] ?? null], 'is_string'));
+                    if ($place !== '') {
+                        $text .= "- Place: {$place}\n";
+                    }
+                    if (! empty($beach['type'])) {
+                        $text .= "- Type: {$beach['type']}\n";
+                    }
+                    if (! empty($beach['facilities'])) {
+                        $text .= '- Facilities: '.implode(', ', $beach['facilities'])."\n";
+                    }
+                    if (! empty($beach['suitable_for'])) {
+                        $text .= '- Suitable for: '.implode(', ', $beach['suitable_for'])."\n";
+                    }
+                    if (($beach['distance_km'] ?? null) !== null) {
+                        $text .= "- Distance from the user: {$beach['distance_km']} km\n";
+                    }
+                }
 
                 if (isset($beach['location']['country_name'])) {
                     $text .= "- Location: {$beach['location']['country_name']}";

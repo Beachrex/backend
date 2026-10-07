@@ -51,6 +51,51 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - AI Chat Understands Any Language and Queries Real Beaches (TASK-003)
+
+### Overview
+`POST /api/v1/ai/chat` used English keywords for the intent and for 3 countries. Without GPS it usually had no beaches to recommend, and it never queried places, surface or facilities. It now extracts the query with structured output, resolves the place, and recommends beaches the code selected from the DB. ADR "Chat: Code Queries, LLM Understands and Narrates".
+
+### Changes Made
+- `App\Services\AI\Chat\QueryUnderstandingService`:
+  - one LLM call, temperature 0, strict `json_schema`;
+  - extracts intent, place, country, beach types, facilities, user types, activities, near_me, days, beach names and language;
+  - code enums come from the DB (cached 1 h);
+  - uses the last 4 messages;
+  - returns null on any failure.
+- `App\Services\AI\Chat\PlaceResolver`: island, city or region from translated names and slugs in all locales, ignoring diacritics and generic words ("otok"). Handles inflections such as "Braču" and "Pagu". On a name clash the island wins. Cached index.
+- `ItineraryContextBuilderService::fetchChatCandidates()`:
+  - optional country, place, beach IDs, attributes and GPS radius (`geography`);
+  - relaxes user types, activities, facilities, then beach types, only when nothing matches;
+  - accessibility is never relaxed;
+  - sorted by score, distance or popularity.
+- `ContextBuilderService`: a candidate path that keeps slugs and `main_image` and adds place, type, facilities, suitable-for and distance to the prompt. `MAX_BEACHES` is public.
+- `ChatController`:
+  - plan enforcement uses the understood intent and days;
+  - the answer is written in the user's language;
+  - `filters_applied` comes from the code;
+  - the understanding tokens and cost are added to the session and the `ai_usages` row;
+  - the keyword fallback uses word boundaries ("stop" no longer means "top");
+  - **bug fix**: the conversation history was out of order (same timestamp), so it is now ordered by `id` too.
+- OpenAPI: `filters_applied` uses real param names; new `metadata.understanding`, `language` and `assumptions`. `api-docs.json` is regenerated. The web client does not read `filters_applied`.
+
+### Affected endpoints
+`POST /api/v1/ai/chat`: same top-level fields; `filters_applied` keys changed; 3 new metadata fields.
+
+### Testing
+```bash
+php artisan test tests/Feature/AI/ChatQueryUnderstandingTest.php tests/Feature/AI/PlaceResolverTest.php
+```
+18 tests. Deliberate breaks (each caught):
+- place filter ignored;
+- model `filters_applied` kept;
+- no inflection matching;
+- accessibility relaxable.
+
+Live check after the dev deploy: see `docs/tasks/TASK-003.feedback.md`.
+
+---
+
 ## 2026-10-07 - Real Sea Temperature (Open-Meteo Marine)
 
 ### Overview
