@@ -51,6 +51,45 @@ How to test the changes
 
 ---
 
+## 2026-10-07 - TASK-002 Step 3: `--copy`, `--update-db`, `--delete-old` (Built, Not Run)
+
+### Overview
+The migration steps of `storage:ascii-paths`, each with `--dry-run`. Nothing has been run against Spaces or an env DB. The owner runs them per `docs/runbooks/ascii-storage-paths.md` after reviewing the inventory.
+
+### Changes Made
+- `app/Console/Commands/AsciiStoragePaths.php`:
+  - **Key plan**: one listing with sizes; each non-ASCII key gets a status:
+    - to copy;
+    - `copied` (the target holds the same file: same size and same checksum/ETag);
+    - `collision` (two old keys map to one target, or a *different* file is already at the target).
+  - `--copy`: aborts on any collision. Otherwise it copies server-side with `public` visibility and keeps the old keys, then rewrites vtour text files:
+    - only references that match migrated folder or file names change, so titles stay;
+    - a tour at a non-ASCII key is rewritten at its ASCII copy;
+    - a tour at an ASCII key is rewritten in place, with a local backup.
+
+    Idempotent.
+  - `--update-db`: refuses while any key is not copied. In one transaction it rewrites non-ASCII values in path-like columns, including strings inside JSON columns. Values with `://` (full URLs) are skipped and listed. Idempotent.
+  - `--delete-old`: needs `--confirm-delete`. It refuses on collisions, on keys without a copy, or while the current env DB still has non-ASCII paths.
+  - Exactly one step per run.
+- The inventory CSV `issue` column can now also be `copied` or `skipped_url`.
+- Runbook steps 2–6 written.
+
+### Affected endpoints
+None until the owner runs the steps. After that, image paths in API responses become ASCII.
+
+### Testing
+```bash
+php artisan test tests/Feature/AsciiStoragePathsMigrationTest.php
+```
+12 tests. Deliberate breaks (each caught):
+- collision abort removed;
+- vtour rewrite disabled;
+- URL skip removed;
+- delete-old DB guard removed;
+- size-only comparison.
+
+---
+
 ## 2026-10-07 - TASK-002 Step 2: No New Non-ASCII Storage Paths (Prevention)
 
 ### Overview

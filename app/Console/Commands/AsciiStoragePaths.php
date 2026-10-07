@@ -4,26 +4,36 @@ namespace App\Console\Commands;
 
 use App\Support\AsciiPath;
 use Illuminate\Console\Command;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\FileAttributes;
 
 /**
- * TASK-002: find and (in later steps) migrate non-ASCII storage paths.
+ * TASK-002: find and migrate non-ASCII storage paths. Runbook: docs/runbooks/ascii-storage-paths.md
  *
- * --inventory is read-only: it lists non-ASCII keys in the Spaces bucket, non-ASCII values in
- * path-like DB columns and vtour text files that reference non-ASCII names, and writes an
- * old → new CSV with collision detection. Nothing is copied, written or deleted.
+ * Order (the bucket is shared by dev, uat and prod):
+ *   --inventory   read-only scan of Spaces keys, DB path columns and vtour references → CSV
+ *   --copy        copy every non-ASCII key to its ASCII key (old keys stay) and rewrite vtour references
+ *   --update-db   rewrite non-ASCII DB paths in the current environment's DB (run once per env)
+ *   --delete-old  delete the old non-ASCII keys (needs --confirm-delete; only after every env DB is updated)
+ * --copy, --update-db and --delete-old accept --dry-run.
  */
 class AsciiStoragePaths extends Command
 {
     protected $signature = 'storage:ascii-paths
                             {--inventory : Read-only scan of Spaces keys and DB path columns}
+                            {--copy : Copy non-ASCII keys to ASCII keys and rewrite vtour references}
+                            {--update-db : Rewrite non-ASCII paths in this environment\'s DB}
+                            {--delete-old : Delete old non-ASCII keys that were copied}
+                            {--dry-run : Show what --copy, --update-db or --delete-old would do, change nothing}
+                            {--confirm-delete : Required by --delete-old (owner-confirmed step)}
                             {--disk=spaces : Storage disk that holds the images}
                             {--prefix=public/img : Key prefix to scan}
-                            {--output= : CSV path (default: storage/app/private/ascii-paths/inventory-<env>-<time>.csv)}';
+                            {--output= : Inventory CSV path (default: storage/app/private/ascii-paths/inventory-<env>-<time>.csv)}';
 
-    protected $description = 'TASK-002: inventory of non-ASCII storage paths (Spaces keys + DB) with an old → new mapping';
+    protected $description = 'TASK-002: inventory and migration of non-ASCII storage paths (Spaces keys + DB)';
 
     /** Column names that hold a path, folder, file name or URL. */
     private const COLUMN_PATTERN = '/(path|url|folder|image|icon|file_name|photo|logo|thumbnail|avatar)/i';
@@ -33,64 +43,319 @@ class AsciiStoragePaths extends Command
 
     private const CSV_HEADER = ['source', 'location', 'old', 'new', 'form', 'issue', 'detail'];
 
+    private const STEPS = ['inventory', 'copy', 'update-db', 'delete-old'];
+
     public function handle(): int
     {
-        if (! $this->option('inventory')) {
-            $this->error('Choose a step. Only --inventory is available so far.');
+        $steps = array_values(array_filter(self::STEPS, fn ($step) => $this->option($step)));
+        if (count($steps) !== 1) {
+            $this->error('Choose exactly one step: --'.implode(', --', self::STEPS).'.');
 
             return self::INVALID;
         }
 
-        return $this->inventory();
+        return match ($steps[0]) {
+            'inventory' => $this->inventory(),
+            'copy' => $this->copy(),
+            'update-db' => $this->updateDb(),
+            'delete-old' => $this->deleteOld(),
+        };
     }
+
+    // ------------------------------------------------------------------ steps
 
     private function inventory(): int
     {
-        $disk = Storage::disk($this->option('disk'));
-        $prefix = trim((string) $this->option('prefix'), '/');
-
-        $this->info("Listing keys under '{$prefix}/' on disk '{$this->option('disk')}' …");
-        $allKeys = $disk->allFiles($prefix);
-        $existing = array_fill_keys($allKeys, true);
-
+        $disk = $this->disk();
+        [$sizes, $plan] = $this->keyPlan($disk);
         $rows = [];
         $asciiButUnsafe = 0;
 
-        // 1. Spaces keys
-        $targets = [];
-        foreach ($allKeys as $key) {
-            if (AsciiPath::isAscii($key)) {
-                if (AsciiPath::fromPath($key) !== $key) {
-                    $asciiButUnsafe++;
-                }
+        foreach (array_keys($sizes) as $key) {
+            if (AsciiPath::isAscii($key) && AsciiPath::fromPath($key) !== $key) {
+                $asciiButUnsafe++;
+            }
+        }
+        foreach ($plan as $item) {
+            $rows[] = ['spaces', $item['old'], $item['old'], $item['new'], AsciiPath::unicodeForm($item['old']),
+                $item['status'], $item['detail']];
+        }
+
+        $vtour = $this->vtourRewrites($disk, $sizes, $plan);
+        foreach ($vtour as $file) {
+            $rows[] = ['vtour_ref', $file['key'], '', $file['target'], '', 'rewrite_refs',
+                count($file['tokens']).' non-ASCII token(s): '.implode(' | ', array_slice($file['tokens'], 0, 10))];
+        }
+
+        $db = $this->dbChanges();
+        foreach ($db as $change) {
+            $rows[] = ['db', $change['location'], $change['old'], $change['new'], AsciiPath::unicodeForm($change['old']),
+                $change['skip'] ? 'skipped_url' : '', ''];
+        }
+
+        $output = $this->option('output')
+            ?: storage_path('app/private/ascii-paths/inventory-'.app()->environment().'-'.now()->format('Ymd-His').'.csv');
+        $this->writeCsv($output, $rows);
+
+        $count = fn (callable $filter) => count(array_filter($plan, $filter));
+        $this->newLine();
+        $this->table(['What', 'Count'], [
+            ['Keys scanned under '.$this->prefix().'/', count($sizes)],
+            ['Non-ASCII Spaces keys', count($plan)],
+            ['  of which NFD', $count(fn ($i) => AsciiPath::unicodeForm($i['old']) === 'NFD')],
+            ['  of which NFC', $count(fn ($i) => AsciiPath::unicodeForm($i['old']) === 'NFC')],
+            ['  of which mixed', $count(fn ($i) => AsciiPath::unicodeForm($i['old']) === 'mixed')],
+            ['  already copied', $count(fn ($i) => $i['status'] === 'copied')],
+            ['Collisions (must be resolved first)', $count(fn ($i) => $i['status'] === 'collision')],
+            ['vtour text files with non-ASCII references', count($vtour)],
+            ['Non-ASCII DB values', count($db)],
+            ['  of which skipped (full URLs, fix by hand)', count(array_filter($db, fn ($c) => $c['skip']))],
+            ['ASCII keys with spaces/other chars (info, not migrated)', $asciiButUnsafe],
+        ]);
+
+        $perColumn = [];
+        foreach ($db as $change) {
+            $column = strtok($change['location'], '#');
+            $perColumn[$column] = ($perColumn[$column] ?? 0) + 1;
+        }
+        ksort($perColumn);
+        foreach ($perColumn as $column => $n) {
+            $this->line("  DB {$column}: {$n}");
+        }
+        $this->reportCollisions($plan);
+
+        $this->newLine();
+        $this->info("CSV written to {$output}");
+        $this->line('Read-only: nothing was copied, changed or deleted.');
+
+        return self::SUCCESS;
+    }
+
+    private function copy(): int
+    {
+        $dryRun = (bool) $this->option('dry-run');
+        $disk = $this->disk();
+        [$sizes, $plan] = $this->keyPlan($disk);
+
+        if ($this->reportCollisions($plan) > 0) {
+            $this->error('Collisions found. Resolve them before --copy. Nothing was copied.');
+
+            return self::FAILURE;
+        }
+
+        $copied = 0;
+        foreach ($plan as $item) {
+            if ($item['status'] === 'copied') {
                 continue;
             }
-            $new = AsciiPath::fromPath($key);
-            $targets[$new][] = $key;
-            $rows[] = ['spaces', $key, $key, $new, AsciiPath::unicodeForm($key), '', ''];
+            $this->line(($dryRun ? '[dry-run] copy ' : 'copy ')."{$item['old']} → {$item['new']}");
+            if (! $dryRun) {
+                $disk->getDriver()->copy($item['old'], $item['new'], ['visibility' => 'public']);
+            }
+            $copied++;
         }
 
-        // Collisions: two old keys → one new key, or the new key already exists in the bucket.
-        $collisions = 0;
-        foreach ($rows as $i => $row) {
-            $others = array_values(array_diff($targets[$row[3]], [$row[2]]));
-            if ($others !== []) {
-                $rows[$i][5] = 'collision';
-                $rows[$i][6] = 'same new key as: '.implode(' | ', $others);
-                $collisions++;
-            } elseif (isset($existing[$row[3]])) {
-                $rows[$i][5] = 'collision';
-                $rows[$i][6] = 'new key already exists in the bucket';
-                $collisions++;
+        // Rewrite references after the copy, so a rewritten tour only points at keys that exist.
+        $rewritten = 0;
+        foreach ($this->vtourRewrites($disk, $sizes, $plan) as $file) {
+            if ($file['content'] === $file['rewritten']) {
+                continue;
+            }
+            $this->line(($dryRun ? '[dry-run] rewrite ' : 'rewrite ')."{$file['target']} (".count($file['tokens']).' reference(s))');
+            if (! $dryRun) {
+                if ($file['target'] === $file['key']) {
+                    $this->backup($file['key'], $file['content']);
+                }
+                $disk->put($file['target'], $file['rewritten'], ['visibility' => 'public']);
+            }
+            $rewritten++;
+        }
+
+        $this->newLine();
+        $this->info(($dryRun ? '[dry-run] would copy ' : 'Copied ')."{$copied} key(s) and ".($dryRun ? 'rewrite ' : 'rewrote ')."{$rewritten} vtour file(s). Old keys were kept.");
+
+        return self::SUCCESS;
+    }
+
+    private function updateDb(): int
+    {
+        $dryRun = (bool) $this->option('dry-run');
+        [, $plan] = $this->keyPlan($this->disk());
+
+        $pending = array_filter($plan, fn ($i) => $i['status'] !== 'copied');
+        if ($pending !== []) {
+            $this->error(count($pending).' non-ASCII key(s) are not copied yet. Run --copy first, so the new DB paths resolve. Nothing was changed.');
+
+            return self::FAILURE;
+        }
+
+        $changes = $this->dbChanges();
+        $updated = 0;
+        $skipped = 0;
+        DB::transaction(function () use ($changes, $dryRun, &$updated, &$skipped) {
+            foreach ($this->groupByRow($changes) as $row) {
+                if ($row['skip']) {
+                    $skipped++;
+                    $this->warn("skip {$row['location']}: full URL, fix by hand ({$row['old']})");
+
+                    continue;
+                }
+                $this->line(($dryRun ? '[dry-run] ' : '')."{$row['location']}: {$row['old']} → {$row['new']}");
+                if (! $dryRun) {
+                    DB::table($row['table'])->where($row['keyColumn'], $row['id'])->update([$row['column'] => $row['value']]);
+                }
+                $updated++;
+            }
+        });
+
+        $this->newLine();
+        $this->info(($dryRun ? '[dry-run] would update ' : 'Updated ')."{$updated} DB value(s) in '".app()->environment()."'; skipped {$skipped}.");
+        if (! $dryRun && $updated > 0) {
+            $this->line('Next: php artisan cache:clear && php artisan search:index (see the runbook).');
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function deleteOld(): int
+    {
+        $dryRun = (bool) $this->option('dry-run');
+        if (! $dryRun && ! $this->option('confirm-delete')) {
+            $this->error('--delete-old deletes keys for every environment. Add --confirm-delete once every env DB is updated and verified.');
+
+            return self::INVALID;
+        }
+
+        $disk = $this->disk();
+        [, $plan] = $this->keyPlan($disk);
+
+        if ($this->reportCollisions($plan) > 0) {
+            $this->error('Collisions found. Nothing was deleted.');
+
+            return self::FAILURE;
+        }
+        $notCopied = array_filter($plan, fn ($i) => $i['status'] !== 'copied');
+        if ($notCopied !== []) {
+            $this->error(count($notCopied).' old key(s) have no copy yet. Run --copy first. Nothing was deleted.');
+
+            return self::FAILURE;
+        }
+        $remaining = array_filter($this->dbChanges(), fn ($c) => ! $c['skip']);
+        if ($remaining !== []) {
+            $this->error(count($remaining).' non-ASCII DB value(s) remain in \''.app()->environment().'\'. Run --update-db first. Nothing was deleted.');
+
+            return self::FAILURE;
+        }
+
+        foreach ($plan as $item) {
+            $this->line(($dryRun ? '[dry-run] delete ' : 'delete ').$item['old']);
+            if (! $dryRun) {
+                $disk->delete($item['old']);
             }
         }
-        $spacesCount = count($rows);
 
-        // 2. vtour text files that reference non-ASCII names (their own key may be ASCII)
-        $vtourFiles = 0;
-        foreach ($allKeys as $key) {
-            $ext = strtolower(pathinfo($key, PATHINFO_EXTENSION));
-            if (! str_contains($key, '/vtour/') || ! in_array($ext, self::VTOUR_TEXT_EXTENSIONS, true)) {
+        $this->newLine();
+        $this->info(($dryRun ? '[dry-run] would delete ' : 'Deleted ').count($plan).' old key(s).');
+
+        return self::SUCCESS;
+    }
+
+    // ---------------------------------------------------------------- helpers
+
+    private function disk(): FilesystemAdapter
+    {
+        return Storage::disk($this->option('disk'));
+    }
+
+    private function prefix(): string
+    {
+        return trim((string) $this->option('prefix'), '/');
+    }
+
+    /**
+     * Every non-ASCII key under the prefix with its ASCII target and a status:
+     * '' (to copy), 'copied' (the target holds the same file, or is a rewritten vtour text file)
+     * or 'collision' (two old keys share a target, or a different file already sits at the target).
+     *
+     * @return array{0: array<string, int>, 1: list<array{old: string, new: string, status: string, detail: string}>}
+     */
+    private function keyPlan(FilesystemAdapter $disk): array
+    {
+        $this->info("Listing keys under '{$this->prefix()}/' on disk '{$this->option('disk')}' …");
+        $sizes = [];
+        foreach ($disk->getDriver()->listContents($this->prefix(), true) as $item) {
+            if ($item instanceof FileAttributes) {
+                $sizes[$item->path()] = (int) $item->fileSize();
+            }
+        }
+        ksort($sizes);
+
+        $targets = [];
+        foreach (array_keys($sizes) as $key) {
+            if (! AsciiPath::isAscii($key)) {
+                $targets[AsciiPath::fromPath($key)][] = $key;
+            }
+        }
+
+        $plan = [];
+        foreach ($targets as $new => $olds) {
+            foreach ($olds as $old) {
+                $status = '';
+                $detail = '';
+                if (count($olds) > 1) {
+                    $status = 'collision';
+                    $detail = 'same new key as: '.implode(' | ', array_diff($olds, [$old]));
+                } elseif (isset($sizes[$new])) {
+                    if ($this->isVtourText($old) || $this->sameFile($disk, $sizes, $old, $new)) {
+                        $status = 'copied';
+                    } else {
+                        $status = 'collision';
+                        $detail = 'a different file already exists at the new key';
+                    }
+                }
+                $plan[] = ['old' => $old, 'new' => $new, 'status' => $status, 'detail' => $detail];
+            }
+        }
+
+        return [$sizes, $plan];
+    }
+
+    /** Same size and same checksum (ETag on S3). */
+    private function sameFile(FilesystemAdapter $disk, array $sizes, string $a, string $b): bool
+    {
+        return $sizes[$a] === $sizes[$b] && $disk->checksum($a) === $disk->checksum($b);
+    }
+
+    private function isVtourText(string $key): bool
+    {
+        return str_contains($key, '/vtour/')
+            && in_array(strtolower(pathinfo($key, PATHINFO_EXTENSION)), self::VTOUR_TEXT_EXTENSIONS, true);
+    }
+
+    /**
+     * vtour text files that reference non-ASCII names. References are rewritten only where they match a
+     * non-ASCII key segment (folder or file name), so other text such as titles stays unchanged.
+     *
+     * @return list<array{key: string, target: string, tokens: list<string>, content: string, rewritten: string}>
+     */
+    private function vtourRewrites(FilesystemAdapter $disk, array $sizes, array $plan): array
+    {
+        $segments = [];
+        foreach ($plan as $item) {
+            foreach (explode('/', $item['old']) as $segment) {
+                if (! AsciiPath::isAscii($segment)) {
+                    $ascii = AsciiPath::fromPath($segment);
+                    $segments[\Normalizer::normalize($segment, \Normalizer::FORM_C)] = $ascii;
+                    $segments[\Normalizer::normalize($segment, \Normalizer::FORM_D)] = $ascii;
+                }
+            }
+        }
+
+        $files = [];
+        foreach (array_keys($sizes) as $key) {
+            // A file at a non-ASCII key is read from there and written to its ASCII copy (target);
+            // a file at an ASCII key is rewritten in place (target === key).
+            if (! $this->isVtourText($key)) {
                 continue;
             }
             $content = (string) $disk->get($key);
@@ -98,60 +363,97 @@ class AsciiStoragePaths extends Command
                 continue;
             }
             preg_match_all('/[^\s"\'<>=]*[^\x00-\x7F][^\s"\'<>=]*/u', $content, $m);
-            $names = array_values(array_unique($m[0] ?? []));
-            $rows[] = ['vtour_ref', $key, '', '', '', 'rewrite_refs',
-                count($names).' non-ASCII token(s): '.implode(' | ', array_slice($names, 0, 10))];
-            $vtourFiles++;
+            $files[] = [
+                'key' => $key,
+                'target' => AsciiPath::fromPath($key),
+                'tokens' => array_values(array_unique($m[0] ?? [])),
+                'content' => $content,
+                'rewritten' => strtr($content, $segments),
+            ];
         }
 
-        // 3. DB path columns
-        $dbCount = 0;
+        return $files;
+    }
+
+    /**
+     * Non-ASCII values in path-like DB columns. Values that contain "://" are full URLs; AsciiPath would
+     * break them, so they are reported with skip=true and left for a manual fix.
+     *
+     * @return list<array{location: string, table: string, column: string, keyColumn: string, id: mixed, isJson: bool, raw: string, pointer: string, old: string, new: string, skip: bool}>
+     */
+    private function dbChanges(): array
+    {
+        $changes = [];
         foreach ($this->pathColumns() as [$table, $column, $isJson, $keyColumn]) {
             $query = DB::table($table)->whereNotNull($column)->select([$keyColumn, $column])->orderBy($keyColumn);
             foreach ($query->cursor() as $record) {
-                $value = (string) $record->{$column};
+                $raw = (string) $record->{$column};
                 $location = "{$table}.{$column}#{$record->{$keyColumn}}";
-                $strings = $isJson ? $this->jsonStrings(json_decode($value, true)) : ['' => $value];
+                $strings = $isJson ? $this->jsonStrings(json_decode($raw, true)) : ['' => $raw];
                 foreach ($strings as $pointer => $string) {
                     if (! is_string($string) || AsciiPath::isAscii($string)) {
                         continue;
                     }
-                    $rows[] = ['db', $location.($pointer === '' ? '' : ':'.$pointer), $string,
-                        AsciiPath::fromPath($string), AsciiPath::unicodeForm($string), '', ''];
-                    $dbCount++;
+                    $changes[] = [
+                        'location' => $location.($pointer === '' ? '' : ':'.$pointer),
+                        'table' => $table, 'column' => $column, 'keyColumn' => $keyColumn,
+                        'id' => $record->{$keyColumn}, 'isJson' => $isJson, 'raw' => $raw, 'pointer' => (string) $pointer,
+                        'old' => $string, 'new' => AsciiPath::fromPath($string), 'skip' => str_contains($string, '://'),
+                    ];
                 }
             }
         }
 
-        $output = $this->option('output')
-            ?: storage_path('app/private/ascii-paths/inventory-'.app()->environment().'-'.now()->format('Ymd-His').'.csv');
-        $this->writeCsv($output, $rows);
+        return $changes;
+    }
 
-        $this->newLine();
-        $this->table(['What', 'Count'], [
-            ['Keys scanned under '.$prefix.'/', count($allKeys)],
-            ['Non-ASCII Spaces keys', $spacesCount],
-            ['  of which NFD', count(array_filter($rows, fn ($r) => $r[0] === 'spaces' && $r[4] === 'NFD'))],
-            ['  of which NFC', count(array_filter($rows, fn ($r) => $r[0] === 'spaces' && $r[4] === 'NFC'))],
-            ['  of which mixed', count(array_filter($rows, fn ($r) => $r[0] === 'spaces' && $r[4] === 'mixed'))],
-            ['Collisions (must be resolved first)', $collisions],
-            ['vtour text files with non-ASCII references', $vtourFiles],
-            ['Non-ASCII DB values', $dbCount],
-            ['ASCII keys with spaces/other chars (info, not migrated)', $asciiButUnsafe],
-        ]);
+    /**
+     * Folds the per-value changes into one update per DB row and column (a JSON column can hold several values).
+     *
+     * @return list<array{location: string, table: string, column: string, keyColumn: string, id: mixed, old: string, new: string, value: string, skip: bool}>
+     */
+    private function groupByRow(array $changes): array
+    {
+        $rows = [];
+        foreach ($changes as $change) {
+            $id = "{$change['table']}.{$change['column']}#{$change['id']}";
+            if ($change['skip']) {
+                $rows[] = $change + ['value' => $change['raw']];
 
-        foreach ($this->dbSummary($rows) as $column => $count) {
-            $this->line("  DB {$column}: {$count}");
+                continue;
+            }
+            if (! $change['isJson']) {
+                $rows[$id] = $change + ['value' => $change['new']];
+
+                continue;
+            }
+            $data = isset($rows[$id]) ? json_decode($rows[$id]['value'], true) : json_decode($change['raw'], true);
+            data_set($data, substr($change['pointer'], 2), $change['new']);
+            $rows[$id] = ['location' => $id, 'old' => $change['raw'], 'value' => json_encode($data), 'skip' => false] + $change;
+            $rows[$id]['new'] = $rows[$id]['value'];
         }
-        foreach (array_filter($rows, fn ($r) => $r[5] === 'collision') as $row) {
-            $this->warn("COLLISION {$row[2]} → {$row[3]} ({$row[6]})");
+
+        return array_values($rows);
+    }
+
+    private function reportCollisions(array $plan): int
+    {
+        $collisions = array_filter($plan, fn ($i) => $i['status'] === 'collision');
+        foreach ($collisions as $item) {
+            $this->warn("COLLISION {$item['old']} → {$item['new']} ({$item['detail']})");
         }
 
-        $this->newLine();
-        $this->info("CSV written to {$output}");
-        $this->line('Read-only: nothing was copied, changed or deleted.');
+        return count($collisions);
+    }
 
-        return self::SUCCESS;
+    /** Keeps the original of a tour file that is overwritten in place (local disk, not public). */
+    private function backup(string $key, string $content): void
+    {
+        $path = storage_path('app/private/ascii-paths/vtour-backup/'.now()->format('Ymd-His').'/'.$key);
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0775, true);
+        }
+        file_put_contents($path, $content);
     }
 
     /**
@@ -192,21 +494,6 @@ class AsciiStoragePaths extends Command
         }
 
         return $out;
-    }
-
-    /** @return array<string, int> "table.column" → count */
-    private function dbSummary(array $rows): array
-    {
-        $summary = [];
-        foreach ($rows as $row) {
-            if ($row[0] === 'db') {
-                $column = strtok($row[1], '#');
-                $summary[$column] = ($summary[$column] ?? 0) + 1;
-            }
-        }
-        ksort($summary);
-
-        return $summary;
     }
 
     private function writeCsv(string $path, array $rows): void
