@@ -55,10 +55,12 @@ The audit is shown to the owner **before any fix**. The owner sets the order and
 - Deliverable: real content for every footer page in **all 19 locales** (title, localized slug, content HTML,
   meta title, meta description), versioned in the repo and loaded by an idempotent artisan command with
   `--dry-run` (updates by `code` + `locale`; it never deletes a page and never touches pages it does not know).
-- **Owner input needed before writing legal text:** company name, address, registration/VAT number, contact
-  e-mail, data controller, processors in use (Google sign-in, Stripe, OpenAI, analytics, newsletter provider),
-  cookie usage. Without them, privacy policy and terms are drafted with clearly marked gaps and are **not**
-  published. The agent drafts; legal texts are the owner's responsibility (and ideally a lawyer's review).
+- **Owner input (2026-10-08):** the operator and data controller is MOJA PLAŽA, d.o.o., Prušnikova ulica 22,
+  2000 Maribor, Slovenia, contact `info@beachrex.com` (tax and registration numbers given by the owner).
+  External services: Google sign-in, Google Analytics; newsletter sign-ups are stored in the Beachrex DB;
+  cookie consent via CookieYes. The code also uses Stripe (payments) and OpenAI (AI features); the drafts
+  list them only if they are active at launch (agent verifies in code/env names, owner confirms).
+  The agent drafts; legal texts are the owner's responsibility (ideally reviewed by a lawyer).
 - Slugs are localized but stay ASCII and unique per locale (TASK-002 rule).
 - Run order: dev (owner runs the command) → owner checks on dev → later the same command on uat/prod.
 
@@ -72,14 +74,28 @@ The audit is shown to the owner **before any fix**. The owner sets the order and
 - Render server-side (overlaps SEO step 5). Regression test: no mock names in the rendered output.
 - After deploy: tracker row #48 → Retest.
 
-### Step 5 — SEO (HANDOFF work order item 6)
+### Step 5 — SEO and AI search (HANDOFF work order item 6)
 
 - SSR for `/beaches` and `/beach-map` (content and metadata in the initial HTML).
 - `about` metadata; every page has a unique title/description, canonical and `hreflang` for 19 locales.
 - Exactly one `<h1>` per page; meaningful `alt` texts on images.
 - Sitemaps (`/sitemap/*.xml`) and `robots`: indexable only on `beachrex.com` (`isProductionSite()`), `noindex`
   on dev/uat. Structured data (JSON-LD) checked where it exists.
-- Unit tests (`e2e/*.unit.spec.ts`) for the helpers; live checks with `curl` by the owner if the sandbox is blocked.
+- **AI search engines (owner, 2026-10-08):** content readable without JavaScript (SSR), JSON-LD
+  (`Organization`, `WebSite` + `SearchAction`, `Beach`/`TouristAttraction`, `BreadcrumbList`), `llms.txt`,
+  a `robots` policy for AI crawlers (owner decides: allow search/answer bots such as `OAI-SearchBot`,
+  `PerplexityBot`, `Claude-SearchBot`; training bots such as `GPTBot`, `ClaudeBot`, `Google-Extended` separately).
+- **Analytics and consent:** Google Analytics (script from the owner) loads only after consent through CookieYes
+  (Google Consent Mode v2, default denied). IDs go in `NEXT_PUBLIC_*` env vars (not secrets; baked in at build),
+  named in `.env.example` and in the runbook env list; prod only unless the owner wants them on dev.
+- Unit tests (`e2e/*.unit.spec.ts`) for the helpers.
+
+### Live QA
+
+The sandbox cannot reach `*.beachrex.com` (network policy). Live QA therefore runs with Playwright against a
+**local stack**: the backend on local PostgreSQL + PostGIS with seeded data, and `next start` pointed at it.
+This catches crashes, empty pages, dead links, missing strings and SSR/SEO output; data-specific checks on dev
+stay an owner action and are marked `NOT RUN` in the audit.
 
 ### Step 6 — Prod launch runbook review (`docs/runbooks/prod-launch.md`)
 
