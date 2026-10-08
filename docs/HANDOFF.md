@@ -135,7 +135,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
   **Step 6 done (2026-10-08):** the dry run listed 10 685 keys; after the owner's explicit "da", `--delete-old --confirm-delete` deleted 10 685 old keys. The control inventory shows 0 non-ASCII keys, 0 collisions and 0 non-ASCII DB values.
 
-  Cleanup PRs (TASK-002 §5): the Imagor/Spaces bypass is removed from MCP (backend) and web-client; non-ASCII paths get no URL (ADR 2026-10-08).
+  Cleanup PRs (TASK-002 §5): the Imagor/Spaces bypass is removed from MCP (Beachrex/backend#35) and web-client (Beachrex/web-client#10). ADR 2026-10-08.
 
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.

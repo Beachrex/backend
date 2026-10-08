@@ -58,7 +58,7 @@ The bucket is **shared by dev, uat and prod**, so the order matters:
 
 ### 5. Cleanup after the migration (separate PRs)
 
-Status 2026-10-08: step 6 done (10 685 old keys deleted). MCP bypass removed in this repo; web-client in a separate PR. Non-ASCII paths now get no URL (ADR 2026-10-08).
+Status 2026-10-08: step 6 done (10 685 old keys deleted). MCP bypass removed (Beachrex/backend#35); web-client bypass removed (Beachrex/web-client#10). ADR 2026-10-08.
 
 - web-client: `buildCdnUrl` can drop the non-ASCII bypass and always use Imagor; keep a test that rejects non-ASCII paths.
 - MCP: remove the `cdn()` bypass, so **all images come only from `s3.beachrex.com` (Imagor)** (owner decision 2026-10-07). Today details show `fra1.digitaloceanspaces.com` for paths with šumniki and search shows `s3.beachrex.com`.

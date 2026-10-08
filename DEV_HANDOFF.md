@@ -61,7 +61,7 @@ Runbook step 6 ran on dev (owner, after an explicit confirmation): `--delete-old
 - `mcp-server/src/api-client.ts` `cdn()`: the Spaces bypass for non-ASCII paths is removed. Every image URL goes through Imagor (`s3.beachrex.com`). A non-ASCII path gets an empty URL; empty gallery entries are dropped.
 - `cfg().cdnAssets` and `BEACHREX_CDN_ASSETS` (`mcp-server/.env.example`) are removed.
 - `mcp-server/test/api-client.test.ts`: the bypass test is replaced by one that fails on the old code.
-- Docs: runbook step 6 and TASK-002 status, ADR "Non-ASCII Image Paths Get No URL", HANDOFF.
+- Docs: runbook step 6 and TASK-002 status, ADR "No Spaces Bypass for Non-ASCII Image Paths", HANDOFF.
 
 ### Affected Endpoints
 None in the Laravel API. MCP tools: `image_url`, `image_thumb` and `media[].url` in search and beach details.
