@@ -44,6 +44,25 @@ $COMPOSE --env-file /opt/beachrex/envs/.env.uat exec -T api_uat cat /tmp/invento
 
 Send the agent the summary table printed by the command and the two CSV files.
 
+### Long scans: run it detached
+
+The bucket holds hundreds of thousands of keys (360° tour tiles), so listing can take many minutes. Since 2026-10-08 the command prints `listed N keys (Ns, N MB) … last: <key>` every 10 000 keys (`--progress=N`, `0` = off).
+If the SSH session or terminal times out, the scan dies with it. Run the scan detached inside the container and follow its log:
+
+```bash
+$COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -d -T api_dev sh -c \
+  'php artisan storage:ascii-paths --inventory --output=/tmp/inventory-dev.csv > /tmp/inventory-dev.log 2>&1'
+
+# check progress (repeat until the summary table and "CSV written to" appear)
+$COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -T api_dev tail -n 25 /tmp/inventory-dev.log
+
+# when done
+$COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -T api_dev cat /tmp/inventory-dev.csv > ~/inventory-dev.csv
+```
+
+- A deploy recreates `api_dev` and kills a running scan. Nobody merges to `dev` while it runs.
+- The `NEXT_PUBLIC_* variable is not set` warnings come from Docker Compose reading the frontend services in the same file. They are harmless here.
+
 ### CSV columns
 
 | Column | Meaning |

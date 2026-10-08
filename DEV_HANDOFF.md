@@ -1,5 +1,6 @@
 # Development Handoff / Change Log
 
+
 ## 📋 Documentation Rules
 
 **IMPORTANT:** This file MUST be updated whenever making changes to the API or codebase. Follow these rules:
@@ -48,6 +49,23 @@ Brief description of the change
 ### Testing
 How to test the changes
 ```
+
+---
+
+## 2026-10-08 - TASK-002: Progress Output for the inventory scan
+
+### Overview
+The owner's first `storage:ascii-paths --inventory` run on dev printed only "Listing keys under 'public/img/' …" and then hit a timeout. Listing the whole bucket (tour tiles included) takes long, and the command printed nothing until the listing was done.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`: new `--progress=N` option (default 10000, `0` = off). It prints `listed N keys (Ns, N MB) … last: <key>` while listing and `listing done: N keys in Ns` at the end. Nothing else changes; the command is still read-only for `--inventory`.
+- `docs/runbooks/ascii-storage-paths.md`: how to run the scan detached (`exec -d … > /tmp/inventory-dev.log`) and follow the log, so an SSH or terminal timeout does not kill it.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths`: 19 passed. The new `test_listing_prints_progress_lines` fails on the old command (`The "--progress" option does not exist`).
 
 ---
 

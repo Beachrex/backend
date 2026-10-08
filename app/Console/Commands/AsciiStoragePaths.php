@@ -31,6 +31,7 @@ class AsciiStoragePaths extends Command
                             {--confirm-delete : Required by --delete-old (owner-confirmed step)}
                             {--disk=spaces : Storage disk that holds the images}
                             {--prefix=public/img : Key prefix to scan}
+                            {--progress=10000 : Print a progress line every N listed keys (0 = off)}
                             {--output= : Inventory CSV path (default: storage/app/private/ascii-paths/inventory-<env>-<time>.csv)}';
 
     protected $description = 'TASK-002: inventory and migration of non-ASCII storage paths (Spaces keys + DB)';
@@ -283,12 +284,22 @@ class AsciiStoragePaths extends Command
     {
         $this->info("Listing keys under '{$this->prefix()}/' on disk '{$this->option('disk')}' …");
         $sizes = [];
+        $every = max(0, (int) $this->option('progress'));
+        $started = microtime(true);
         foreach ($disk->getDriver()->listContents($this->prefix(), true) as $item) {
             if ($item instanceof FileAttributes) {
                 $sizes[$item->path()] = (int) $item->fileSize();
+
+                // The bucket holds hundreds of thousands of tour tiles; show that the scan is alive.
+                if ($every > 0 && count($sizes) % $every === 0) {
+                    $this->line(sprintf('  listed %d keys (%ds, %d MB) … last: %s',
+                        count($sizes), (int) (microtime(true) - $started),
+                        intdiv(memory_get_usage(true), 1024 * 1024), $item->path()));
+                }
             }
         }
         ksort($sizes);
+        $this->line(sprintf('  listing done: %d keys in %ds', count($sizes), (int) (microtime(true) - $started)));
 
         $targets = [];
         foreach (array_keys($sizes) as $key) {

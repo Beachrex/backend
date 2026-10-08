@@ -62,6 +62,20 @@ class AsciiStoragePathsInventoryTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_listing_prints_progress_lines(): void
+    {
+        $spaces = Storage::disk('spaces');
+        foreach (['a', 'b', 'c', 'd', 'e'] as $name) {
+            $spaces->put("public/img/beaches/x/{$name}.jpg", $name);
+        }
+
+        $this->artisan('storage:ascii-paths', ['--inventory' => true, '--output' => $this->csv, '--progress' => 2])
+            ->expectsOutputToContain('listed 2 keys')
+            ->expectsOutputToContain('listed 4 keys')
+            ->expectsOutputToContain('listing done: 5 keys')
+            ->assertSuccessful();
+    }
+
     public function test_finds_nfc_and_nfd_keys_and_maps_them_to_ascii(): void
     {
         $spaces = Storage::disk('spaces');
