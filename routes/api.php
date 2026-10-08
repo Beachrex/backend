@@ -118,7 +118,7 @@ Route::prefix('api/v1')
         Route::get('/resolve-slug/{slug}', [SlugResolverController::class, 'resolve']);
 
         // Old beachrex.com URLs → new pages (TASK-004 step 5b)
-        Route::get('/legacy-redirect', [LegacyRedirectController::class, 'resolve'])->middleware('throttle:120,1');
+        Route::get('/legacy-redirect', [LegacyRedirectController::class, 'resolve']);
 
         // Continent routes
         Route::get('/continents', [ContinentController::class, 'index']);

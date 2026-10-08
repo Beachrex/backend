@@ -67,7 +67,7 @@ The owner put many old beach URLs on Google Maps and other sites. Each old URL m
   - country: a country slug in any locale, or a near match (old typo `hrvaska`);
   - `/{lang}/beach-filter` → the map.
   It returns `{type, language, segments}`, with segments = localized slugs after the beaches word.
-- `app/Http/Controllers/Api/V1/LegacyRedirectController.php` (new) + route `GET /api/v1/legacy-redirect?path=…` (public, read-only, `throttle:120,1`). The resolved array is cached for 1 day per locale and path. Nothing matched → 404.
+- `app/Http/Controllers/Api/V1/LegacyRedirectController.php` (new) + route `GET /api/v1/legacy-redirect?path=…` (public, read-only; no throttle: the frontend server calls it for every visitor, like the other read endpoints). The resolved array is cached for 1 day per locale and path. Nothing matched → 404.
 - OpenAPI annotations; `api-docs.json` regenerated.
 
 ### Affected Endpoints
