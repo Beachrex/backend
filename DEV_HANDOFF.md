@@ -52,6 +52,31 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Footer pages: content in 19 languages + `static-pages:sync` (TASK-004 step 3)
+
+### Overview
+The footer "Key information" column shows the CMS pages (`static_pages`). Only English placeholders existed ("Placeholder privacy policy content. Edit in admin."), so every locale showed English titles (likely QA #27, #29). The content of six pages now lives in the repo in all 19 locales and is loaded with one command.
+
+### Changes Made
+- `database/content/static-pages/{locale}.json` (new, 19 files): about-us, contact, privacy-policy, cookie-policy (new page), terms-of-use, contribution-rules. Each has title, localized ASCII slug, meta title/description and HTML content. Company data from the owner (MOJA PLAŽA, d.o.o., 2026-10-08). The cookie policy embeds the CookieYes cookie table (`<div class="cky-audit-table-element"></div>`). Internal links use each locale's slugs (Slovenian `/si/p/...`).
+- `app/Console/Commands/SyncStaticPages.php` (new): `php artisan static-pages:sync [--dry-run] [--locale=..]`.
+  - Validates first: known locale, all fields, ASCII slugs, unique per locale, not used by another page.
+  - Matches pages by `code` and translations by (page, locale). A missing page is created active and in the footer.
+  - Existing pages keep status, footer flag and order. Pages deleted in the admin are skipped.
+  - Never deletes. Runs in one transaction. Caches are cleared by the model events.
+- Legal texts are drafts for the owner's review (ideally a lawyer's). They also name OpenAI and Stripe, which the code uses.
+
+### Affected Endpoints
+`GET /api/v1/static-pages`, `GET /api/v1/static-pages/{slug}`: data only, after the command runs.
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest` (8 tests: create, update keeps page settings, idempotent, dry run, never deletes / skips deleted pages, invalid content, slug taken by another page, served by the API in its locale, committed content covers all 19 locales). Local DB: dry run 6 pages / 114 translations, real run the same, second run 114 unchanged; `/si/p/politika-piskotkov` renders with the CookieYes table element.
+
+### Deploy note
+After the deploy, run once per environment (owner): `php artisan static-pages:sync --dry-run`, then without `--dry-run`.
+
+---
+
 ## 2026-10-08 - Old beachrex.com URLs: resolver for redirects (TASK-004 step 5b)
 
 ### Overview
