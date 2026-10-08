@@ -62,6 +62,7 @@ class BeachCardFeaturesApiTest extends TestCase
             'parking_capacity_id' => ParkingCapacity::where('code', '50')->value('id'),
             'beach_views' => 10,
         ]);
+        $this->bare->userTypes()->attach(UserType::where('code', 'adventurer')->value('id'));
     }
 
     private function assertFeatures(array $byId): void
@@ -77,6 +78,14 @@ class BeachCardFeaturesApiTest extends TestCase
         $this->assertNull(data_get($byId[$this->bare->id], 'features.beach_type'));
         $this->assertFalse(data_get($byId[$this->bare->id], 'features.family'));
         $this->assertTrue(data_get($byId[$this->bare->id], 'features.parking'), 'capacity 50 is parking');
+
+        // Adventurer and youth (party) user types (owner, 2026-10-08)
+        $this->assertFalse(data_get($byId[$this->sandFamily->id], 'features.adventurer'));
+        $this->assertFalse(data_get($byId[$this->sandFamily->id], 'features.youth'));
+        $this->assertTrue(data_get($byId[$this->rockParking->id], 'features.youth'));
+        $this->assertFalse(data_get($byId[$this->rockParking->id], 'features.adventurer'));
+        $this->assertTrue(data_get($byId[$this->bare->id], 'features.adventurer'));
+        $this->assertFalse(data_get($byId[$this->bare->id], 'features.youth'));
     }
 
     private function byId(array $rows): array

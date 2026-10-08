@@ -13075,7 +13075,7 @@
                         "type": "object"
                     },
                     "features": {
-                        "description": "Card icons (QA #45): beach type, family friendly and parking. family = user type `family`; parking = infrastructure `parking` or a parking capacity other than none/private.",
+                        "description": "Card icons (QA #45): beach type, user types and parking. family / adventurer / youth (party) = the beach has that user type; parking = infrastructure `parking` or a parking capacity other than none/private.",
                         "properties": {
                             "beach_type": {
                                 "properties": {
@@ -13095,6 +13095,15 @@
                             "family": {
                                 "type": "boolean",
                                 "example": true
+                            },
+                            "adventurer": {
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "youth": {
+                                "description": "Party / youth beach",
+                                "type": "boolean",
+                                "example": false
                             },
                             "parking": {
                                 "type": "boolean",
@@ -15252,7 +15261,7 @@
                         "type": "object"
                     },
                     "features": {
-                        "description": "Card icons (QA #45): beach type, family friendly and parking. family = user type `family`; parking = infrastructure `parking` or a parking capacity other than none/private.",
+                        "description": "Card icons (QA #45): beach type, user types and parking. family / adventurer / youth (party) = the beach has that user type; parking = infrastructure `parking` or a parking capacity other than none/private.",
                         "properties": {
                             "beach_type": {
                                 "properties": {
@@ -15272,6 +15281,15 @@
                             "family": {
                                 "type": "boolean",
                                 "example": true
+                            },
+                            "adventurer": {
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "youth": {
+                                "description": "Party / youth beach",
+                                "type": "boolean",
+                                "example": false
                             },
                             "parking": {
                                 "type": "boolean",

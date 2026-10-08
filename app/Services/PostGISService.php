@@ -864,7 +864,7 @@ class PostGISService
                 'main_image' => $mainImage,
                 'media' => $media,
                 'tags' => isset($beach->tags_json) ? json_decode($beach->tags_json, true) : [],
-                'features' => $featuresByBeach[$beach->id] ?? ['beach_type' => null, 'family' => false, 'parking' => false],
+                'features' => $featuresByBeach[$beach->id] ?? ['beach_type' => null, 'family' => false, 'adventurer' => false, 'youth' => false, 'parking' => false],
                 'distance_km' => $beach->distance_km ?? null,
             ];
         });
@@ -893,6 +893,16 @@ class PostGISService
                     JOIN user_type ut ON ut.id = utb.user_type_id
                     WHERE utb.beach_id = b.id AND ut.code = 'family'
                 ) AS family,
+                EXISTS (
+                    SELECT 1 FROM user_type_beach utb
+                    JOIN user_type ut ON ut.id = utb.user_type_id
+                    WHERE utb.beach_id = b.id AND ut.code = 'adventurer'
+                ) AS adventurer,
+                EXISTS (
+                    SELECT 1 FROM user_type_beach utb
+                    JOIN user_type ut ON ut.id = utb.user_type_id
+                    WHERE utb.beach_id = b.id AND ut.code = 'youth'
+                ) AS youth,
                 (
                     EXISTS (
                         SELECT 1 FROM location_infrastructure_beach lib
@@ -916,6 +926,8 @@ class PostGISService
                     ? ['code' => $row->beach_type_code, 'name' => $row->beach_type_name]
                     : null,
                 'family' => (bool) $row->family,
+                'adventurer' => (bool) $row->adventurer,
+                'youth' => (bool) $row->youth,
                 'parking' => (bool) $row->parking,
             ];
         }

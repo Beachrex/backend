@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\Beach;
 
 /**
- * Card icons (QA #45): beach type, family friendly and parking.
+ * Card icons (QA #45): beach type, user types (family, adventurer, youth = party) and parking.
  *
  * Same rules as the beach page badges and PostGISService::loadCardFeatures():
  * family = user type `family`; parking = infrastructure `parking` or a parking
@@ -15,7 +15,7 @@ class BeachCardFeatures
 {
     public const NO_PARKING_CAPACITY = ['0', 'private_parking_only'];
 
-    /** @return array{beach_type: ?array{code: string, name: string}, family: bool, parking: bool} */
+    /** @return array{beach_type: ?array{code: string, name: string}, family: bool, adventurer: bool, youth: bool, parking: bool} */
     public static function fromModel(Beach $beach, string $locale): array
     {
         $type = $beach->beachType;
@@ -31,6 +31,8 @@ class BeachCardFeatures
         return [
             'beach_type' => $type ? ['code' => $type->code, 'name' => $typeName] : null,
             'family' => $beach->userTypes->contains('code', 'family'),
+            'adventurer' => $beach->userTypes->contains('code', 'adventurer'),
+            'youth' => $beach->userTypes->contains('code', 'youth'),
             'parking' => $beach->locationInfrastructures->contains('code', 'parking')
                 || ($capacity !== null && ! in_array($capacity, self::NO_PARKING_CAPACITY, true)),
         ];
