@@ -86,7 +86,16 @@ page · **P3** polish (SEO/a11y/logs).
 | F3 | `localhost` fallbacks for `NEXT_PUBLIC_API_ENDPOINT` in 5 places (safe while the build sets the var) | Code (P3) |
 | F4 | Unused `routes.*` messages namespace with wrong de/ru map slugs | Code |
 
-## Proposed PR order (after the owner's decisions)
+## Owner decisions (2026-10-08)
+
+All proposals accepted (ADR "TASK-004: What Visitors See at Launch"):
+- Hide: accommodation everywhere (B2, B7 part, C2 part, D2, D9 part), favorites and my account (B6), shop (B7), blog (D9), GetYourGuide (D4). Every hidden item → `docs/features/hidden-for-launch.md`.
+- C2 `/destinations` → `/beaches`. D10/B4 "About us" → CMS page `about-us`. D11 `noindex` + out of the sitemap.
+- B1/B10 burger menu from API continents + beach map + AI (agent picks the rest). D9 counts from the API.
+- A8 short SEO description in 19 locales. D12 Stripe is live → payment pages fixed and translated.
+- E4 AI crawlers: search bots yes, training bots no. E5 GA + AdSense + CookieYes behind consent; cookie policy with the CookieYes table shortcode. Facebook Pixel: not added (commented out on the old site).
+
+## Proposed PR order
 
 1. **A1 + A5 + A7**: Slovenian `Auth`/`AI`, remove hardcoded SL strings, key-parity unit test (CI).
 2. **D3 + D2 + D9 numbers**: no Lorem Ipsum, no fake accommodations / "569", no fake counts.
