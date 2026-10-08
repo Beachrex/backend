@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // http:// asset URLs behind an https:// frontend (mixed content).
         $middleware->trustProxies(at: '*');
 
+        // API, admin and docs are never indexed (any environment).
+        $middleware->append(\App\Http\Middleware\NoIndex::class);
+
         $middleware->group('api', [
             \App\Http\Middleware\SetLocaleFromHeader::class,
             \App\Http\Middleware\ForceJsonMiddleware::class,

@@ -139,6 +139,10 @@ Every PR updates, in the same PR:
   needs invalidation on save/delete.
 - **Locales:** never hardcode a locale list — use `SetLocaleFromHeader::SUPPORTED_LOCALES` (DB code `sl`,
   frontend URL code `si`).
+- **Visibility (owner, 2026-10-08):** only the production website (`beachrex.com`) may be visible to search engines,
+  AI crawlers or anyone else. dev and uat frontends: `robots.txt` `Disallow: /`, `X-Robots-Tag: noindex` and meta
+  `noindex`; no analytics, ads or `llms.txt`. The backend (API, admin, docs) is never indexed on any environment
+  (`NoIndex` middleware + `robots.txt`). Any new environment or domain starts hidden.
 - Backups: daily `db:backup` to a private bucket (see HANDOFF for status) + Hetzner server backups.
   A restore drill is done at least once (`docs/runbooks/restore-backup.md`).
 - Irreversible data steps (prod DB load, data migrations on prod): dry run → real run → verification,

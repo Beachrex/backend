@@ -52,6 +52,24 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Backend never indexed: X-Robots-Tag + robots.txt (TASK-004)
+
+### Overview
+Owner, 2026-10-08: dev and uat must stay invisible to Google, AI crawlers and everyone else; only the production website may be visible. The backend domains (`dev-api`, `uat-api`, `api`, `dock-*`) are never pages for search engines on any environment.
+
+### Changes Made
+- `app/Http/Middleware/NoIndex.php` (new), appended globally in `bootstrap/app.php`: every response (API, admin, docs, errors) carries `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`.
+- `public/robots.txt`: `Disallow: /` (was Laravel's allow-all default).
+- `docs/DEVELOPMENT-RULES.md` §9: the visibility rule.
+
+### Affected Endpoints
+All (response header only).
+
+### Testing
+`php artisan test --filter=NoIndexTest` (3 tests). Deliberate break: without the middleware, 2 fail. Full suite: 443 passed, only the 4 known env-dependent failures.
+
+---
+
 ## 2026-10-08 - Footer pages: content in 19 languages + `static-pages:sync` (TASK-004 step 3)
 
 ### Overview
