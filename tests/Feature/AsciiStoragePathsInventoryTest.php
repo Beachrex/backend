@@ -130,6 +130,25 @@ class AsciiStoragePathsInventoryTest extends TestCase
         $this->assertStringContainsString('panos/brač_1.tiles/pano.jpg', $vtour[0]['detail']);
     }
 
+    public function test_does_not_keep_vtour_file_contents_in_memory(): void
+    {
+        // On dev, 51 350 tour files hit the 512 MB memory_limit because every non-ASCII file was kept twice.
+        $spaces = Storage::disk('spaces');
+        $body = str_repeat('<text value="Plaža čista"/>', 20000); // ~0.6 MB, non-ASCII
+        for ($i = 0; $i < 150; $i++) {
+            $spaces->put("public/img/beaches/b-{$i}/vtour/tour.xml", $body);
+        }
+
+        memory_reset_peak_usage();
+        $before = memory_get_usage();
+        $this->runInventory();
+        $peakMb = (memory_get_peak_usage() - $before) / 1024 / 1024;
+
+        $vtour = array_filter($this->rows(), fn ($r) => $r['source'] === 'vtour_ref');
+        $this->assertCount(150, $vtour);
+        $this->assertLessThan(40, $peakMb, "inventory peak grew by {$peakMb} MB");
+    }
+
     public function test_finds_non_ascii_db_paths(): void
     {
         $beach = Beach::factory()->create();
