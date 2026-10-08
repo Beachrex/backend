@@ -151,7 +151,7 @@ class SyncStaticPagesTest extends TestCase
     {
         $dir = base_path('database/content/static-pages');
         $en = json_decode(File::get("{$dir}/en.json"), true);
-        $this->assertSame(['about-us', 'contact', 'privacy-policy', 'cookie-policy', 'terms-of-use', 'contribution-rules'], array_keys($en));
+        $this->assertSame(['about-us', 'contact', 'privacy-policy', 'cookie-policy', 'terms-of-use', 'contribution-rules', 'ai-assistant-connector'], array_keys($en));
 
         foreach (SetLocaleFromHeader::SUPPORTED_LOCALES as $locale) {
             $this->assertFileExists("{$dir}/{$locale}.json", "missing content for {$locale}");
