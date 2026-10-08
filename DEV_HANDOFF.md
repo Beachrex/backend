@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Footer page: Beachrex in your AI assistant (MCP connector)
+
+### Overview
+Owner, 2026-10-08: add the MCP server and its installation steps somewhere in the footer. New CMS page `ai-assistant-connector` (footer order 7) with the connector URL `https://mcp.beachrex.com/mcp` and setup steps for Claude, ChatGPT and other MCP clients, in all 19 locales.
+
+### Changes Made
+- `database/content/static-pages/{19 locales}.json`: new `ai-assistant-connector` page (en slug `beachrex-in-ai-assistants`). Menu names of the Claude/ChatGPT apps stay in English in every locale.
+- `SyncStaticPages::SORT_ORDER`: `ai-assistant-connector => 7`.
+
+### Affected Endpoints
+`GET /api/v1/static-pages`, `/static-pages/{slug}` after `php artisan static-pages:sync` (data only, no API change).
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest` (8 tests). Old content (without the page) fails the committed-content test.
+
+---
+
 ## 2026-10-08 - Card features: adventurer and party (youth) beaches
 
 ### Overview
