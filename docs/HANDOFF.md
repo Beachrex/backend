@@ -1,8 +1,9 @@
-# Handoff — state as of 2026-10-08 (end of session 6)
+# Handoff — state as of 2026-10-08 (end of session 7)
 
 > **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-08).
 > Session 6 (all **live on dev**, table below): footer pages (MCP connector, media kit) synced on dev, map quick filters, adventurer/party icons, footer redesign, site icons + share images, share menu on beach pages, copyright (terms §6, IPTC in uploads, ImageObject JSON-LD, © line), author page `/{locale}/gregor-balazic`.
-> Open (code): SSR for region/island/city pages; small audit fixes (B9, D5–D7, D12, D13, A4, F1–F4); runbook PR (prod launch review); **security: `MigrateUsersFromOldDb` (see Open items)**.
+> Session 7 (all **live on dev**, table below): region/island/city pages server-rendered (SEO), audit fixes B9, D5–D7, D12, D13, A4, F1–F4, Organization logo from the brand package.
+> Open (code): runbook PR (prod launch review, go/no-go list); alt texts (A6); **security: `MigrateUsersFromOldDb` (see Open items)**.
 > Owner answers pending: user migration password approach (a/b); real old URLs for tests; CookieYes "Google Consent Mode"; when to run `media:embed-copyright`; larger author photos.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
@@ -91,6 +92,22 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
   - **Code not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#34, and Beachrex/web-client#6–#8. Promote when the owner asks. The uat **DB** already holds the migrated dev data (2026-10-08).
+
+- 2026-10-08 (session 7): **TASK-004 SEO follow-up and small audit fixes. Live on dev** (web-client; each finding verified in code first, all deploy runs green):
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/web-client#34 | Region, island and city pages render on the server: name in `<h1>`, beach cards, localized title/description, canonical, Place + BreadcrumbList JSON-LD | 75 |
+  | Beachrex/web-client#35 | D7: "All beaches (n)" jumps to the beach list on the page, total count | 76 |
+  | Beachrex/web-client#36 | Organization JSON-LD logo = brand package PNG (`/logo.png` did not exist) | 77 |
+  | Beachrex/web-client#37 | D5, F1: no `console.log` for visitors; guard test | 78 |
+  | Beachrex/web-client#38 | B9: language switch for all 19 locales and the beach map word | 79 |
+  | Beachrex/web-client#39 | D12, D13: payment result pages (no `/internal/...` 404s, 19 languages), sign-in error link without `/en` | 80 |
+  | Beachrex/web-client#40 | A4: remaining hard-coded English UI text in 19 languages | 81 |
+  | Beachrex/web-client#41 | F2, F3: 19 unused files removed, API URL only from `env` (F4 was already done) | 82 |
+
+  Verified: D6 (`'Malinska'` fallback) went with #34; the beach page's distance dropdown already worked (D5 was only the city page). New translations are machine-made by the agent, not native-checked.
+  Local check for #34: `next build` + `next start` against a mock API (server HTML has title, description, canonical, h1, cards, JSON-LD; no hydration errors). Live check on dev: owner (view source of a region page).
 
 - 2026-10-08 (session 6): **owner requests after the TASK-004 review. Live on dev** (all deploy runs green):
 
@@ -233,7 +250,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    Step 3 merged (Beachrex/backend#20): `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
    After step 6: cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
    **TASK-003 AI chat** (owner: "ja, začni task", 2026-10-07): structured multilingual query understanding + real DB candidates. **Done**: Beachrex/backend#26, dev run 127; the owner confirmed it on dev.
-6. **SEO before launch** — TASK-004: robots/AI policy, sitemap index, h1, hreflang, `/beaches` SSR, beach map metadata *(done or in review)*; SSR of region/island/city pages and alt texts *(open)*.
+6. **SEO before launch** — TASK-004: robots/AI policy, sitemap index, h1, hreflang, `/beaches` SSR, beach map metadata, SSR of region/island/city pages *(done)*; alt texts (A6) *(open)*.
 7. **Dev review tracker** (owner, 2026-10-07): a tester reviews dev and logs findings in the owner's spreadsheet
    `dev.beachrex_pregled_napak_delovanja.xlsx` (77 rows as of 2026-10-07). The spreadsheet stays with the owner (e-mail links, personal data).
    The agent's copy with a first-pass verdict per row is **[`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md)**. Owner's instructions:
@@ -257,7 +274,6 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 - **Security — old user migration (`app/Console/Commands/MigrateUsersFromOldDb.php`), owner decision pending, do not run it:**
   the old passwords are 32-character MD5 hashes stored raw, and the User model's `'password' => 'hashed'` cast bcrypts them, so the MD5 string itself becomes the password (anyone with the dump could log in); users without a password get "password". Proposed: (a) random unusable password + sign-in via Google or password reset (needs `MAIL_*`), or (b) keep the MD5 in a separate column and rehash on first login. Migrate users only into production (GDPR). Do **not** remove `database/sql/user.sql` (owner).
 - **Mobile side padding:** the global `.container { padding: 0 5px }` overrides Tailwind padding on every container; owner: leave for now (2026-10-08).
-- `buildOrganizationSchema()` in web-client points `logo` at `/logo.png`, which does not exist; use the brand package logo.
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
   - **MCP must become production-only** once prod is live (prod launch runbook D5b). Links will then point to `beachrex.com`.
   - **Images only from `s3.beachrex.com`** once TASK-002 removes non-ASCII paths (TASK-002 §5 removes the Spaces bypass).
@@ -269,11 +285,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   
   Candidates for an AI translation/cleanup pass (`beaches:translate` exists) once TASK-002 is done.
 
-- Frontend links found during QA #24/#25/#74, not fixed (allowlisted in `web-client/e2e/locale-links.unit.spec.ts`):
-  - `payment/success` and `payment/cancel` pages use locale-less `next/link` hrefs (`/`, `/ai/...`, `/internal/...`);
-  - `auth/callback` links to a hard-coded `/en`;
-  - `BurgerMenu` links to `/beach-accommodation` and `/mobile-app`, and the footer `browse.links` messages link to `/destinations` and `/accommodations`. None of these routes exist (404);
-  - `src/hooks/useLocalizedPath.ts` has its own beaches-word map without da/pt/nl/el/sq, so the language switch from those locales' beach pages is not recognised.
+- An unknown URL under `/{locale}/{beaches}/{continent}/...` shows the 404 page with HTTP status **200**: `src/app/[locale]/beaches/[continent]/loading.tsx` makes the response stream before `notFound()`. The page is `noindex`, so search engines drop it; a real 404 status needs the loading UI moved below the route that resolves the slug. Found 2026-10-08 (session 7), not fixed.
 - `.gitlab-ci.yml` in both repos is unused (GitHub Actions replaced it).
 - Local `sail artisan test`: `phpunit.xml` points at `127.0.0.1` / `beachrex_test`, as in CI. Inside Sail this probably fails.
 - Cache invalidation on admin edits for other cached models (Beach, Country, …): `DEPLOYMENT_GUIDE` §9.
