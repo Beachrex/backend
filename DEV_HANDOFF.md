@@ -52,6 +52,32 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Old beachrex.com URLs: resolver for redirects (TASK-004 step 5b)
+
+### Overview
+The owner put many old beach URLs on Google Maps and other sites. Each old URL must redirect to the exact new page. Beach IDs were kept by the old-DB migration, and the old dump holds one English nice URL per beach (`beach_nice_url`). The new endpoint maps an old path to the new page; the frontend answers with a permanent redirect.
+
+### Changes Made
+- `app/Console/Commands/BuildLegacyUrlMap.php` (new): `php artisan legacy-urls:build` reads `database/sql/beachrex_old.sql` and writes `database/legacy/old-beach-urls.json` (4 238 nice URLs → beach id). The JSON is committed, so no server step is needed.
+- `app/Services/LegacyUrlResolver.php` (new): the most specific match wins:
+  - beach: the last segment, also with the old language's first word swapped (`plaza-tisno`, `strand-tisno` → `beach-tisno`); active beaches only;
+  - city: a `{city}-{beaches}` segment, matched against `city.code` (the old `city_nice_url`);
+  - island: `island.code` or an island slug;
+  - region: `region.code`, a region slug, or a unique code prefix;
+  - country: a country slug in any locale, or a near match (old typo `hrvaska`);
+  - `/{lang}/beach-filter` → the map.
+  It returns `{type, language, segments}`, with segments = localized slugs after the beaches word.
+- `app/Http/Controllers/Api/V1/LegacyRedirectController.php` (new) + route `GET /api/v1/legacy-redirect?path=…` (public, read-only, `throttle:120,1`). The resolved array is cached for 1 day per locale and path. Nothing matched → 404.
+- OpenAPI annotations; `api-docs.json` regenerated.
+
+### Affected Endpoints
+`GET /api/v1/legacy-redirect` (new).
+
+### Testing
+`php artisan test --filter=LegacyRedirectTest` (11 tests, real old URLs from search results). Deliberate break: without the language-word swap, 4 tests fail.
+
+---
+
 ## 2026-10-08 - Beach Card Features: Beach Type, Family, Parking (QA #45)
 
 ### Overview

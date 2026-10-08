@@ -5052,6 +5052,91 @@
                 }
             }
         },
+        "/api/v1/legacy-redirect": {
+            "get": {
+                "tags": [
+                    "Slug Resolver"
+                ],
+                "summary": "Resolve an old beachrex.com URL to the new page",
+                "description": "Maps a path of the old site (e.g. /hr/hrvatska/dalmacija/tisno-plaze/plaza-tisno) to the new page. The most specific match wins: beach, city, island, region, country. `segments` are the localized slugs after the beaches word: the new URL is /{locale}/{beaches}/{segments...}. Type `map` means the beach map. `language` is the old language prefix of the path (sl, en, hr, de, fr, es, it, ua, ru), if any.",
+                "operationId": "resolveLegacyUrl",
+                "parameters": [
+                    {
+                        "name": "path",
+                        "in": "query",
+                        "description": "Old URL path, with or without the query string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "example": "/hr/hrvatska/dalmacija/tisno-plaze/plaza-tisno"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Old URL resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "beach",
+                                                        "city",
+                                                        "island",
+                                                        "region",
+                                                        "country",
+                                                        "map"
+                                                    ],
+                                                    "example": "beach"
+                                                },
+                                                "language": {
+                                                    "type": "string",
+                                                    "example": "hr",
+                                                    "nullable": true
+                                                },
+                                                "segments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "example": [
+                                                        "europa",
+                                                        "hrvatska",
+                                                        "dalmacija",
+                                                        "tisno",
+                                                        "plaza-tisno"
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No page matches the old URL"
+                    },
+                    "422": {
+                        "description": "Missing or too long path"
+                    }
+                }
+            }
+        },
         "/api/v1/location-infrastructure": {
             "get": {
                 "tags": [
@@ -15860,6 +15945,10 @@
             "description": "System"
         },
         {
+            "name": "Slug Resolver",
+            "description": "Slug Resolver"
+        },
+        {
             "name": "Location Infrastructure",
             "description": "Location Infrastructure"
         },
@@ -15894,10 +15983,6 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
-        },
-        {
-            "name": "Slug Resolver",
-            "description": "Slug Resolver"
         },
         {
             "name": "Sporting Activities",

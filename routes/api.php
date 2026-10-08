@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\FilterController;
 use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
+use App\Http\Controllers\Api\V1\LegacyRedirectController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\StaticPageController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriberController;
@@ -115,6 +116,9 @@ Route::prefix('api/v1')
 
         // Slug Resolver - determine entity type from slug
         Route::get('/resolve-slug/{slug}', [SlugResolverController::class, 'resolve']);
+
+        // Old beachrex.com URLs → new pages (TASK-004 step 5b)
+        Route::get('/legacy-redirect', [LegacyRedirectController::class, 'resolve'])->middleware('throttle:120,1');
 
         // Continent routes
         Route::get('/continents', [ContinentController::class, 'index']);
