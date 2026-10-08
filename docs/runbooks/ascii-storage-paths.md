@@ -13,7 +13,7 @@ deleted until every environment DB is updated and verified.
 | 3. Update DB paths (dev only; uat via DB promotion) | `--update-db` | DB rows | **Done on dev** (2026-10-08: 2 413 values) |
 | 4. Caches + search reindex | `cache:clear`, `search:index` | Caches | **Done on dev** (2026-10-08) |
 | 5. Verify | `--inventory` again + image checks | No | **Done on dev** (2026-10-08: 0 DB values, all keys copied) |
-| 6. Delete old keys (owner confirms) | `--delete-old --confirm-delete` | Deletes keys | **Built** (not run; uat DB promoted from dev 2026-10-08) |
+| 6. Delete old keys (owner confirms) | `--delete-old --confirm-delete` | Deletes keys | **Done** (2026-10-08: 10 685 keys deleted; control inventory 0 non-ASCII keys) |
 
 `--copy`, `--update-db` and `--delete-old` accept `--dry-run`. Always run the dry run first and read its output.
 New paths are already guarded: since TASK-002 prevention, models store new or changed paths ASCII-only.
@@ -155,3 +155,5 @@ $COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -d -T api_dev sh -c 'php ar
 - Refuses if there is a collision, an old key without a copy, or a non-ASCII DB value left in the env it runs in.
 - Before it runs, confirm that nothing outside dev/uat (for example the old beachrex.com site) still reads the old keys from the `beachrex` bucket. Deleted keys cannot be restored.
 - After it: `--inventory` reports 0 non-ASCII keys. Then the cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
+
+**Done 2026-10-08.** The dry run listed 10 685 keys. After the owner's explicit confirmation, the real run printed `Deleted 10685 old key(s).` The control inventory (`--inventory --output=/tmp/inventory-after-delete.csv`) showed 206 174 keys, 0 non-ASCII keys, 0 collisions, 0 non-ASCII DB values and 0 vtour files that reference a migrated key. 22 072 vtour files still contain non-ASCII text (scene titles), which is expected.
