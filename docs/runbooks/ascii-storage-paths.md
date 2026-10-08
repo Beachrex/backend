@@ -26,7 +26,7 @@ value in a path-like DB column (`beach.folder_name`, `media.file_path`, `media.f
 path/url/folder/image/icon/file_name/…), and every vtour text file (`tour.xml`, `*.html`, `*.js` …) that references
 a non-ASCII name. It writes an `old → new` CSV and flags collisions.
 
-Spaces are the same for every env, so the Spaces part only needs to run once (dev). The DB part is per env.
+Spaces are the same for every env, so the Spaces part only needs to run once (dev). Owner decision 2026-10-08: the DB part also runs on dev only. uat gets the migrated dev DB by promotion, so the uat commands below are not needed.
 
 ```bash
 COMPOSE="docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml"
@@ -105,7 +105,7 @@ $COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan stor
 ```bash
 $COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan storage:ascii-paths --update-db --dry-run
 $COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan storage:ascii-paths --update-db
-# uat: same with .env.uat / api_uat (after uat has this code)
+# uat: not needed. uat gets the migrated dev DB by promotion (owner, 2026-10-08)
 ```
 
 - Refuses while any non-ASCII key is not copied yet.

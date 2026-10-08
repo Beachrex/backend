@@ -874,6 +874,24 @@ Structured output was chosen over a tool-calling loop: one predictable extra cal
 
 ---
 
+## [2026-10-08] TASK-002: Migrate the DB on Dev Only; uat Gets the dev DB
+
+**Status**: Accepted (owner, 2026-10-08: "popisa na uat ne potrebujemo ker je identično kot dev. In bomo naredili promote dev baze na uat, da uredimo zapise. ne rabimo kaj ločeno početi.")
+
+**Context**: The runbook planned an inventory and `--update-db` per environment (dev, then uat). The Spaces bucket is shared, and the owner says the uat data is the same as dev.
+
+**Decision**:
+1. The inventory runs on dev only (done 2026-10-08: 0 collisions).
+2. `--copy` (shared bucket) and `--update-db` run on dev only.
+3. uat gets its paths by a promotion of the dev DB to uat (owner action). Anything that exists only in the uat DB is overwritten by that promotion.
+4. `--delete-old` runs only after the uat DB holds the migrated dev data. Prod is created from uat, as in the prod launch runbook.
+
+**Alternatives Considered**: A separate `--update-db` on uat. Not needed, because the dev DB replaces the uat DB.
+
+**Related**: `docs/runbooks/ascii-storage-paths.md`, `docs/tasks/TASK-002-ascii-storage-paths.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

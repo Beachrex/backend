@@ -1,6 +1,6 @@
 # Handoff — state as of 2026-10-07 (session 3)
 
-> **Next session, start here:** (1) TASK-002: still waiting for the owner's inventory output (runbook step 1);
+> **Next session, start here:** (1) TASK-002: inventory done on dev (0 collisions). Next is `--copy --dry-run` on dev after the owner confirms (runbook step 2). uat gets the dev DB by promotion (ADR 2026-10-08);
 > (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
@@ -108,9 +108,15 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 - **Open-Meteo licence (sea temperature):** the free Marine API is for non-commercial use only. Before the commercial launch, take an Open-Meteo API plan and set `OPEN_METEO_API_KEY` in `.env.prod` (and `.env.uat` if wanted). Without a key the code uses the free endpoint.
 
-- **TASK-002 inventory (read-only):** deployed to dev (Beachrex/backend#17, run 109), run `storage:ascii-paths --inventory` on dev and uat
-  per [`docs/runbooks/ascii-storage-paths.md`](runbooks/ascii-storage-paths.md) and send the summary + CSVs to the agent.
-  Nothing on Spaces moves until the owner has reviewed the inventory.
+- **TASK-002**: the inventory ran on dev on 2026-10-08, after the scan fixes in Beachrex/backend#29, #30 and #31 (dev run 137). Results:
+  - 206 174 keys, of which 10 685 are non-ASCII (10 680 NFD, 5 NFC) in 202 beach folders.
+  - **0 collisions**.
+  - 399 vtour files reference a migrated key.
+  - 2 413 DB values: `media.file_name` 1183, `media.file_path` 982, `beach.folder_name` 202, `city.main_image` 40, `island.main_image` 5, `region.main_image` 1.
+  - The agent checked the CSV: every DB value maps to an existing migrated key.
+
+  Per the owner, no uat inventory is needed: uat gets the dev DB by promotion (ADR 2026-10-08).
+  Next: the owner confirms `--copy --dry-run` on dev (runbook step 2). Nothing on Spaces moves before that.
 
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.
