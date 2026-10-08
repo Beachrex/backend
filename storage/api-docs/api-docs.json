@@ -12989,6 +12989,35 @@
                         },
                         "type": "object"
                     },
+                    "features": {
+                        "description": "Card icons (QA #45): beach type, family friendly and parking. family = user type `family`; parking = infrastructure `parking` or a parking capacity other than none/private.",
+                        "properties": {
+                            "beach_type": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "sand"
+                                    },
+                                    "name": {
+                                        "description": "Translated via Accept-Language",
+                                        "type": "string",
+                                        "example": "Sand"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "family": {
+                                "type": "boolean",
+                                "example": true
+                            },
+                            "parking": {
+                                "type": "boolean",
+                                "example": false
+                            }
+                        },
+                        "type": "object"
+                    },
                     "tags": {
                         "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions, occupancy rate) translated based on Accept-Language header. Empty array if none available.",
                         "type": "array",
@@ -15133,6 +15162,35 @@
                                     }
                                 },
                                 "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "features": {
+                        "description": "Card icons (QA #45): beach type, family friendly and parking. family = user type `family`; parking = infrastructure `parking` or a parking capacity other than none/private.",
+                        "properties": {
+                            "beach_type": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "sand"
+                                    },
+                                    "name": {
+                                        "description": "Translated via Accept-Language",
+                                        "type": "string",
+                                        "example": "Sand"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "family": {
+                                "type": "boolean",
+                                "example": true
+                            },
+                            "parking": {
+                                "type": "boolean",
+                                "example": false
                             }
                         },
                         "type": "object"

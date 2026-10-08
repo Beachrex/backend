@@ -227,6 +227,7 @@ class BeachController extends Controller
                               ->orderBy('order')
                               ->orderBy('created_at');
                     },
+                    ...\App\Support\BeachCardFeatures::RELATIONS,
                     'sportingActivities.translations',
                     'culinaryOffers.translations',
                     'naturalLocationConditions.translations',
@@ -534,6 +535,7 @@ class BeachController extends Controller
                               ->orderBy('order')
                               ->orderBy('created_at');
                     },
+                    ...\App\Support\BeachCardFeatures::RELATIONS,
                     'sportingActivities.translations',
                     'culinaryOffers.translations',
                     'naturalLocationConditions.translations',

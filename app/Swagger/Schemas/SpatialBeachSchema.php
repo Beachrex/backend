@@ -68,6 +68,20 @@ namespace App\Swagger\Schemas;
  *         )
  *     ),
  *     @OA\Property(
+ *         property="features",
+ *         type="object",
+ *         description="Card icons (QA #45): beach type, family friendly and parking. family = user type `family`; parking = infrastructure `parking` or a parking capacity other than none/private.",
+ *         @OA\Property(
+ *             property="beach_type",
+ *             type="object",
+ *             nullable=true,
+ *             @OA\Property(property="code", type="string", example="sand"),
+ *             @OA\Property(property="name", type="string", example="Sand", description="Translated via Accept-Language")
+ *         ),
+ *         @OA\Property(property="family", type="boolean", example=true),
+ *         @OA\Property(property="parking", type="boolean", example=false)
+ *     ),
+ *     @OA\Property(
  *         property="tags",
  *         type="array",
  *         description="Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions, occupancy rate) translated based on Accept-Language header. Empty array if none available.",
