@@ -1,6 +1,6 @@
 # Handoff — state as of 2026-10-07 (session 3)
 
-> **Next session, start here:** (1) TASK-002: steps 1–5 are done on dev (2026-10-08). Next, the owner promotes the dev DB to uat. Then comes step 6, `--delete-old`, which needs the owner's confirmation. After that come the cleanup PRs (TASK-002 §5);
+> **Next session, start here:** (1) TASK-002: steps 1–5 are done on dev, and the uat DB was promoted from dev (2026-10-08). Next is step 6, `--delete-old` from `api_dev`, which needs the owner's confirmation. After that come the cleanup PRs (TASK-002 §5);
 > (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
@@ -124,11 +124,16 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - The control inventory shows 0 non-ASCII DB values and all old keys `copied`.
   - The acceptance URL works.
 
+  **dev → uat DB promotion done (2026-10-08, owner):**
+  - uat backup saved as `/root/beachrex_uat-before-promote-20261008-0906.dump`.
+  - Counts match dev: 3 774 beaches, 43 335 media, 4 users. uat has 0 non-ASCII paths.
+  - `cache:clear` and `search:index` ran on uat, and uat health is ok.
+  - Everything that existed only in the uat DB was replaced by dev data.
+
   **Next (owner):**
-  1. Promote the dev DB to uat.
-  2. Clear the cache and reindex search on uat.
-  3. Check a few beach pages on uat.
-  4. Run `--delete-old --dry-run`, then `--delete-old --confirm-delete` (runbook step 6), only after the owner confirms. Until then the old keys stay, so nothing breaks.
+  1. Check a few beach pages with šumniki on uat.
+  2. Confirm that nothing outside dev/uat (the old site?) reads the `beachrex` bucket.
+  3. Runbook step 6, from `api_dev`: `--delete-old --dry-run`, then `--delete-old --confirm-delete`, only after the owner confirms. Until then the old keys stay, so nothing breaks.
 
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.

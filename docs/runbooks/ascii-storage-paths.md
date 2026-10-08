@@ -13,7 +13,7 @@ deleted until every environment DB is updated and verified.
 | 3. Update DB paths (dev only; uat via DB promotion) | `--update-db` | DB rows | **Done on dev** (2026-10-08: 2 413 values) |
 | 4. Caches + search reindex | `cache:clear`, `search:index` | Caches | **Done on dev** (2026-10-08) |
 | 5. Verify | `--inventory` again + image checks | No | **Done on dev** (2026-10-08: 0 DB values, all keys copied) |
-| 6. Delete old keys (owner confirms) | `--delete-old --confirm-delete` | Deletes keys | **Built** (not run) |
+| 6. Delete old keys (owner confirms) | `--delete-old --confirm-delete` | Deletes keys | **Built** (not run; uat DB promoted from dev 2026-10-08) |
 
 `--copy`, `--update-db` and `--delete-old` accept `--dry-run`. Always run the dry run first and read its output.
 New paths are already guarded: since TASK-002 prevention, models store new or changed paths ASCII-only.
@@ -130,14 +130,28 @@ Same for uat. The frontend uses the API, so no frontend redeploy is needed.
 - The acceptance URL works through Imagor on 10 consecutive requests:
   `https://s3.beachrex.com/unsafe/fit-in/800x800/img/beaches/hr-114-o-brac/hr-114-o-brac-sl17.jpg`
 
+## dev → uat DB promotion (done 2026-10-08)
+
+Owner decision (ADR 2026-10-08): uat gets the migrated dev DB instead of its own `--update-db`.
+
+1. Back up uat: `pg_dump -Fc beachrex_uat`, saved as `/root/beachrex_uat-before-promote-20261008-0906.dump`.
+2. Dump dev: `pg_dump -Fc --no-owner --no-privileges beachrex_dev`.
+3. `stop api_uat scheduler_uat`.
+4. `dropdb --force beachrex_uat`, `createdb -T template0`, create the `postgis` and `postgis_topology` extensions, then `pg_restore --no-owner --no-privileges`. Exit code 1 comes from the ignored "already exists" notices.
+5. Verified: dev and uat both have 3 774 beaches, 43 335 media and 4 users; uat has 0 non-ASCII `media.file_path` values.
+6. Started the containers again, then ran `cache:clear` and `search:index`. `/api/v1/health` reported ok.
+
 ## Step 6 — Delete old keys (owner confirms; affects every env)
 
 Only after steps 3–5 are done on **every** env DB. Prod is created from uat, so dev + uat are enough before prod exists.
 
+2026-10-08: the uat DB is a copy of the migrated dev DB (promotion, see below). The uat containers still run older code without this command, so step 6 runs from **dev**. The dev DB check covers uat as well, because uat holds the same data.
+
 ```bash
-$COMPOSE --env-file /opt/beachrex/envs/.env.uat exec -T api_uat php artisan storage:ascii-paths --delete-old --dry-run
-$COMPOSE --env-file /opt/beachrex/envs/.env.uat exec -T api_uat php artisan storage:ascii-paths --delete-old --confirm-delete
+$COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -d -T api_dev sh -c 'php artisan storage:ascii-paths --delete-old --dry-run > /tmp/delete-dry.log 2>&1'
+$COMPOSE --env-file /opt/beachrex/envs/.env.dev exec -d -T api_dev sh -c 'php artisan storage:ascii-paths --delete-old --confirm-delete > /tmp/delete.log 2>&1'
 ```
 
-- Refuses if there is a collision, an old key without a copy, or a non-ASCII DB value left in the env it runs in. Run it from uat, so the uat DB is checked; dev was checked in step 5.
+- Refuses if there is a collision, an old key without a copy, or a non-ASCII DB value left in the env it runs in.
+- Before it runs, confirm that nothing outside dev/uat (for example the old beachrex.com site) still reads the old keys from the `beachrex` bucket. Deleted keys cannot be restored.
 - After it: `--inventory` reports 0 non-ASCII keys. Then the cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
