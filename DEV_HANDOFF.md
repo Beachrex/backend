@@ -52,6 +52,22 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Terms of use §6: photos are works of MOJA PLAŽA, d.o.o.
+
+### Overview
+Owner, 2026-10-08: section 6 (intellectual property) said content belongs "to us or our partners", which is vague. It now states that photos, 360° views and videos are original works of MOJA PLAŽA, d.o.o., which holds the copyright (unless another author is named, e.g. user contributions), that texts, data, logo and design also belong to the company, and that copying, editing, scraping and AI training use need prior written permission. All 19 locales. Owner decisions recorded: no watermark; trademark to be registered at EUIPO (owner's task).
+
+### Changes Made
+- `database/content/static-pages/{19 locales}.json`: `terms-of-use` section 6.
+
+### Affected Endpoints
+`GET /api/v1/static-pages/{slug}` after `php artisan static-pages:sync` (data only).
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest`. Translations not reviewed by a lawyer or native speakers.
+
+---
+
 ## 2026-10-08 - Footer page: Media kit
 
 ### Overview
