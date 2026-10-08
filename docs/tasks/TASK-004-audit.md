@@ -105,3 +105,7 @@ All proposals accepted (ADR "TASK-004: What Visitors See at Launch"):
 6. **Small code fixes**: B9, D5–D8, D12, D13, A4, F1–F4.
 7. **SEO + AI search + GA/CookieYes** (E1–E5, A6, A8, D14).
 8. **Runbook review**.
+
+## Status (2026-10-08, session 7)
+
+Fixed and live on dev (web-client): D6, D7, B9, D5, F1, D12, D13, A4, F2, F3 (Beachrex/web-client#34–#41); F4 was already done. Region/island/city SSR (E1 follow-up) in Beachrex/web-client#34. Still open: A6 (alt texts).
