@@ -1,7 +1,7 @@
 # Handoff — state as of 2026-10-08 (end of session 3)
 
 > **Next session, start here:** (1) TASK-002: all steps are done, including step 6 (10 685 old keys deleted, 2026-10-08). Only the §5 cleanup PRs remain (check their status below);
-> (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): P1 rows and P2 rows 36, 45, 46, 65, 67, 68 are fixed (Retest). QA #69 waits for the owner's decision (all beaches are waterbody `sea`). Remaining P2 rows: 43 (static mini map), 48 (`/beaches` mock data), 45 cards (needs API fields), 70, 72 and 40 (need a repro);
+> (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): P1 rows and P2 rows 36, 45, 46, 65, 67, 68 are fixed (Retest). QA #69 is data (all beaches are waterbody `sea`); the owner will add lake/river/pool data. Remaining P2 rows: 43 (static mini map), 48 (`/beaches` mock data), 45 cards (needs API fields), 70, 72 and 40 (need a repro);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
@@ -103,7 +103,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/web-client#11 | QA #36, #65, #68: one webcam rule; webcam on the beach page | 50 |
   | Beachrex/web-client#12 | QA #67: cards use uploaded videos like the beach page | 51 |
 
-  QA #69 is data: every beach is waterbody `sea`. It is now an owner decision.
+  QA #69 is data: every beach is waterbody `sea`. The owner keeps the tiles and will add the data (2026-10-08).
 - 2026-10-07 (session 3): **dev review tracker P1 rows fixed, Live on dev** and set to Retest. Each root cause was verified in the code first:
 
   | PR | QA rows | Root cause | Deploy run |
@@ -118,6 +118,8 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   Deploys green: backend dev run 82, uat run 83; frontend dev run 40, uat run 41.
 
 ## Owner's open actions
+
+- **Waterbody data (QA #69):** every beach has waterbody `sea` (3 774 on dev, 2026-10-08), so the lake/river/pool tiles and filters find nothing. Owner decision 2026-10-08: keep the tiles and add the data ("to zaenkrat pusti, samo zabeleži, moramo dodati podatke"). No code change.
 
 - **Open-Meteo licence (sea temperature):** the free Marine API is for non-commercial use only. Before the commercial launch, take an Open-Meteo API plan and set `OPEN_METEO_API_KEY` in `.env.prod` (and `.env.uat` if wanted). Without a key the code uses the free endpoint.
 
