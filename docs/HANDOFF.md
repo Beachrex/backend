@@ -1,9 +1,9 @@
-# Handoff — state as of 2026-10-08 (end of session 5)
+# Handoff — state as of 2026-10-08 (end of session 6)
 
-> **Next session, start here:** TASK-004 pre-launch review ([spec](tasks/TASK-004-pre-launch-review.md), [audit](tasks/TASK-004-audit.md)).
-> Done and on dev: audit, translations guard, placeholder content hidden, menu/footer/404, old-URL redirects, footer pages (19 languages, needs `static-pages:sync` on dev), `/beaches` (QA #48), robots/AI-crawler policy, consent + GA + AdSense, backend noindex.
-> Open: SEO part 2 PR (Beachrex/web-client#22), SSR for region/island/city pages, the small code fixes in the audit (B9, D5–D7, D12, D13, A4, F1–F4), runbook PR (prod launch review).
-> Owner answers pending: real old URLs for tests; removing `database/sql/user.sql` (≈1 250 e-mails) from the repo; CookieYes "Google Consent Mode" switch.
+> **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-08).
+> Session 6 (all **live on dev**, table below): footer pages (MCP connector, media kit) synced on dev, map quick filters, adventurer/party icons, footer redesign, site icons + share images, share menu on beach pages, copyright (terms §6, IPTC in uploads, ImageObject JSON-LD, © line), author page `/{locale}/gregor-balazic`.
+> Open (code): SSR for region/island/city pages; small audit fixes (B9, D5–D7, D12, D13, A4, F1–F4); runbook PR (prod launch review); **security: `MigrateUsersFromOldDb` (see Open items)**.
+> Owner answers pending: user migration password approach (a/b); real old URLs for tests; CookieYes "Google Consent Mode"; when to run `media:embed-copyright`; larger author photos.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
 Rules: [`docs/DEVELOPMENT-RULES.md`](DEVELOPMENT-RULES.md). Change log: `DEV_HANDOFF.md` in each repo.
@@ -92,6 +92,29 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
   - **Code not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#34, and Beachrex/web-client#6–#8. Promote when the owner asks. The uat **DB** already holds the migrated dev data (2026-10-08).
 
+- 2026-10-08 (session 6): **owner requests after the TASK-004 review. Live on dev** (all deploy runs green):
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/web-client#22 | SEO part 2: one h1, hreflang, sitemap index, map metadata | 63 |
+  | Beachrex/backend#50 + Beachrex/web-client#23 | Adventurer / party (youth) icons on cards and the beach page | 179 / 64 |
+  | Beachrex/backend#51 | Footer page "Beachrex in your AI assistant" (MCP connector, 19 languages) | 181 |
+  | Beachrex/web-client#24 + Beachrex/backend#52 | Map quick filters (advanced off); H13 = filters not shown yet | 65 / 183 |
+  | Beachrex/web-client#25 + Beachrex/backend#53 | Media kit: brand package (CGP v1.0) in `web-client/public/brand/`, downloads under CMS page `media-kit` | 66 / 185 |
+  | Beachrex/web-client#26 | Footer layout for laptops | 67 |
+  | Beachrex/web-client#27 | `favicon.ico`, phone icons, manifest, default share image | 68 |
+  | Beachrex/web-client#28 | Beach banner: share menu (X, Facebook, LinkedIn, WhatsApp, Telegram, e-mail, native); ratings + save hidden (H14) | 69 |
+  | Beachrex/web-client#29 | Footer: "© {year} MOJA PLAŽA, d.o.o. · BeachRex. All rights reserved." (19 languages) | 70 |
+  | Beachrex/backend#54 | Terms of use §6: photos are works of MOJA PLAŽA, d.o.o. (19 languages) | 187 |
+  | Beachrex/backend#55 | IPTC copyright in uploaded JPEGs; `media:embed-copyright` backfill (not run) | 189 |
+  | Beachrex/web-client#30 | Beach photos as `ImageObject` (creator, licence) in JSON-LD | 71 |
+  | Beachrex/web-client#31 | Beach share image = primary photo as 1200×630 JPEG via Imagor | 72 |
+  | Beachrex/web-client#32, #33 | Author page `/{locale}/gregor-balazic` (platform design, 19 languages, footer link); role "Founder of Beachrex" | 73 / 74 |
+
+  The owner ran `static-pages:sync` on dev for the MCP page, the media kit and terms §6.
+  Owner decisions 2026-10-08: no watermark; trademark to be registered at EUIPO (owner); the author page text stays in `messages/*.json` (no CMS for now); the mobile side padding (global `.container { padding: 0 5px }` in `web-client/src/styles/globals.css`) stays as it is for now.
+  X shows no link card for dev URLs because dev's robots.txt is `Disallow: /` (by design); production will.
+
 - 2026-10-08 (session 5): **TASK-004 pre-launch review. Live on dev** (each finding verified in code first):
 
   | PR | Change | Deploy run |
@@ -142,6 +165,11 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
+- **Footer pages on uat/prod:** `static-pages:sync` (dry run first) at promotion (prod launch runbook B6). Dev is synced (2026-10-08).
+- **Copyright backfill:** `php artisan media:embed-copyright --dry-run`, then without `--dry-run`, when the owner decides (rewrites existing JPEG originals on Spaces; best on prod after launch).
+- **Author page photos:** the two photos are 750 px; larger originals (≥1920 px) would sharpen the banner.
+- **Icon files on Spaces:** confirm `categories_icons/user_type-adventurer.png` and `user_type-youth.png` exist (adventurer/party icons).
+- **Legal translations:** terms §6 and the footer pages were machine-translated; have the main languages checked.
 - **Footer pages on dev (TASK-004):** run `static-pages:sync --dry-run`, then without `--dry-run` (commands in DEV_HANDOFF / the chat). Same on uat/prod at promotion (prod launch runbook B6).
 - **CookieYes:** enable "Google Consent Mode"; domain `beachrex.com`.
 - **Legal texts:** the privacy policy, cookie policy and terms are drafts (they name OpenAI and Stripe, which the code uses); review, ideally with a lawyer.
@@ -226,6 +254,10 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Open items (found, not yet scheduled)
 
+- **Security — old user migration (`app/Console/Commands/MigrateUsersFromOldDb.php`), owner decision pending, do not run it:**
+  the old passwords are 32-character MD5 hashes stored raw, and the User model's `'password' => 'hashed'` cast bcrypts them, so the MD5 string itself becomes the password (anyone with the dump could log in); users without a password get "password". Proposed: (a) random unusable password + sign-in via Google or password reset (needs `MAIL_*`), or (b) keep the MD5 in a separate column and rehash on first login. Migrate users only into production (GDPR). Do **not** remove `database/sql/user.sql` (owner).
+- **Mobile side padding:** the global `.container { padding: 0 5px }` overrides Tailwind padding on every container; owner: leave for now (2026-10-08).
+- `buildOrganizationSchema()` in web-client points `logo` at `/logo.png`, which does not exist; use the brand package logo.
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
   - **MCP must become production-only** once prod is live (prod launch runbook D5b). Links will then point to `beachrex.com`.
   - **Images only from `s3.beachrex.com`** once TASK-002 removes non-ASCII paths (TASK-002 §5 removes the Spaces bypass).
