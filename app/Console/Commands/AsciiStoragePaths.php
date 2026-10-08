@@ -3,7 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Support\AsciiPath;
+use Aws\CommandPool;
+use Aws\ResultInterface;
 use Illuminate\Console\Command;
+use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +35,7 @@ class AsciiStoragePaths extends Command
                             {--disk=spaces : Storage disk that holds the images}
                             {--prefix=public/img : Key prefix to scan}
                             {--progress=10000 : Print a progress line every N listed keys (0 = off)}
+                            {--concurrency=32 : Parallel GETs when reading vtour text files from S3}
                             {--output= : Inventory CSV path (default: storage/app/private/ascii-paths/inventory-<env>-<time>.csv)}';
 
     protected $description = 'TASK-002: inventory and migration of non-ASCII storage paths (Spaces keys + DB)';
@@ -362,14 +366,12 @@ class AsciiStoragePaths extends Command
             }
         }
 
+        $keys = array_values(array_filter(array_keys($sizes), fn ($key) => $this->isVtourText($key)));
+
         $files = [];
-        foreach (array_keys($sizes) as $key) {
-            // A file at a non-ASCII key is read from there and written to its ASCII copy (target);
-            // a file at an ASCII key is rewritten in place (target === key).
-            if (! $this->isVtourText($key)) {
-                continue;
-            }
-            $content = (string) $disk->get($key);
+        // A file at a non-ASCII key is read from there and written to its ASCII copy (target);
+        // a file at an ASCII key is rewritten in place (target === key).
+        foreach ($this->readTexts($disk, $keys) as $key => $content) {
             if (AsciiPath::isAscii($content)) {
                 continue;
             }
@@ -384,6 +386,63 @@ class AsciiStoragePaths extends Command
         }
 
         return $files;
+    }
+
+    /**
+     * Contents of the given keys, keyed by key, in chunks so memory stays flat.
+     * On S3 the GETs run in parallel (one GET at a time took over an hour for the ~tens of thousands
+     * of vtour text files); other disks (local, tests) read sequentially.
+     *
+     * @param  list<string>  $keys
+     * @return \Generator<string, string>
+     */
+    private function readTexts(FilesystemAdapter $disk, array $keys): \Generator
+    {
+        $total = count($keys);
+        $this->info("Reading {$total} vtour text files …");
+        $started = microtime(true);
+        $done = 0;
+
+        foreach (array_chunk($keys, 500) as $chunk) {
+            if ($disk instanceof AwsS3V3Adapter) {
+                yield from $this->readTextsFromS3($disk, $chunk);
+            } else {
+                foreach ($chunk as $key) {
+                    yield $key => (string) $disk->get($key);
+                }
+            }
+
+            $done += count($chunk);
+            if ((int) $this->option('progress') > 0) {
+                $this->line(sprintf('  read %d/%d vtour text files (%ds)', $done, $total, (int) (microtime(true) - $started)));
+            }
+        }
+    }
+
+    /**
+     * @param  list<string>  $keys
+     * @return array<string, string>
+     */
+    private function readTextsFromS3(AwsS3V3Adapter $disk, array $keys): array
+    {
+        $client = $disk->getClient();
+        $bucket = $disk->getConfig()['bucket'];
+        $commands = array_map(
+            fn ($key) => $client->getCommand('GetObject', ['Bucket' => $bucket, 'Key' => $disk->path($key)]),
+            $keys,
+        );
+        $results = CommandPool::batch($client, $commands, ['concurrency' => max(1, (int) $this->option('concurrency'))]);
+
+        $contents = [];
+        foreach ($keys as $i => $key) {
+            $result = $results[$i];
+            if (! $result instanceof ResultInterface) {
+                throw new \RuntimeException("Could not read {$key}: ".($result instanceof \Throwable ? $result->getMessage() : 'unknown error'));
+            }
+            $contents[$key] = (string) $result['Body'];
+        }
+
+        return $contents;
     }
 
     /**

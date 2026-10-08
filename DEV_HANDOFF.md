@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - TASK-002: Parallel vtour Reads in the Inventory
+
+### Overview
+With the progress output (below), the owner's dev run showed that listing the bucket takes 17 s for 206 174 keys. The slow part came next, with no output: the command read every vtour text file (`tour.xml`, `tour.html`, `tour.js`, `plugins/*.js`, `skin/*` of every tour), one GET at a time.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`: on S3 disks the vtour text files are fetched in parallel through `Aws\CommandPool`. A new `--concurrency=N` option sets the number of parallel GETs (default 32). Keys are read in chunks of 500 so memory stays flat. Progress lines show `Reading N vtour text files …` and `read X/N vtour text files (Ns)`. A failed GET aborts with the key in the message. Other disks (local, tests) still read sequentially. `--copy` uses the same reader.
+- `tests/Feature/AsciiStoragePathsS3ReadTest.php` (new): drives the S3 path through a mocked S3 handler. It checks 602 files read once each, no image downloads, the vtour reference found, and the progress lines.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths`: 20 passed. The new test fails on the previous command (`Output does not contain "Reading 602 vtour text files"`).
+
+---
+
 ## 2026-10-08 - TASK-002: Progress Output for the inventory scan
 
 ### Overview

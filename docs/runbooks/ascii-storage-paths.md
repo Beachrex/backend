@@ -47,6 +47,7 @@ Send the agent the summary table printed by the command and the two CSV files.
 ### Long scans: run it detached
 
 The bucket holds hundreds of thousands of keys (360° tour tiles), so listing can take many minutes. Since 2026-10-08 the command prints `listed N keys (Ns, N MB) … last: <key>` every 10 000 keys (`--progress=N`, `0` = off).
+On dev the listing takes ~17 s (206 174 keys). Reading the vtour text files takes longer. They are fetched in parallel (`--concurrency=32`), with a `read X/N vtour text files` line every 500 files.
 If the SSH session or terminal times out, the scan dies with it. Run the scan detached inside the container and follow its log:
 
 ```bash
