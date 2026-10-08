@@ -52,6 +52,31 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - TASK-002: Migration Run on Dev; Copy Check Uses Listing ETags
+
+### Overview
+The owner ran TASK-002 steps 2–5 on dev (2026-10-08):
+- `--copy` copied 10 685 keys and rewrote 399 vtour files at their ASCII copies. The old keys were kept.
+- A `pg_dump` of `beachrex_dev` was taken before `--update-db`.
+- `--update-db` updated 2 413 DB values and skipped 0.
+- `cache:clear` and `search:index` ran.
+- The control inventory shows 0 non-ASCII DB values, all 10 685 old keys `copied`, and 0 collisions.
+- The acceptance URL `s3.beachrex.com/unsafe/fit-in/800x800/img/beaches/hr-114-o-brac/hr-114-o-brac-sl17.jpg` works.
+
+`--update-db` and the control inventory each spent 5–15 silent minutes checking every copy with one HEAD request per key.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`: the listing keeps each key's ETag (S3 `ListObjectsV2` returns it), and `sameFile()` uses it. Disks without ETags in the listing (local) still call `checksum()`.
+- `tests/Feature/AsciiStoragePathsS3ReadTest.php`: a new test checks that an identical copy is `copied` and a different file is `collision`, without any HeadObject call. The mocked S3 handler throws on calls it does not expect.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths` → 22 passed. The new test fails on the old code, which makes a HeadObject call the mock rejects.
+
+---
+
 ## 2026-10-08 - TASK-002: Inventory Memory Fix (vtour contents not kept)
 
 ### Overview

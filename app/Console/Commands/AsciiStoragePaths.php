@@ -40,6 +40,9 @@ class AsciiStoragePaths extends Command
 
     protected $description = 'TASK-002: inventory and migration of non-ASCII storage paths (Spaces keys + DB)';
 
+    /** @var array<string, string> key => ETag from the last listing (S3 only) */
+    private array $etags = [];
+
     /** Column names that hold a path, folder, file name or URL. */
     private const COLUMN_PATTERN = '/(path|url|folder|image|icon|file_name|photo|logo|thumbnail|avatar)/i';
 
@@ -291,11 +294,17 @@ class AsciiStoragePaths extends Command
     {
         $this->info("Listing keys under '{$this->prefix()}/' on disk '{$this->option('disk')}' …");
         $sizes = [];
+        $this->etags = [];
         $every = max(0, (int) $this->option('progress'));
         $started = microtime(true);
         foreach ($disk->getDriver()->listContents($this->prefix(), true) as $item) {
             if ($item instanceof FileAttributes) {
                 $sizes[$item->path()] = (int) $item->fileSize();
+                // S3 listings carry the ETag; keeping it saves one HEAD request per key in sameFile().
+                $etag = $item->extraMetadata()['ETag'] ?? null;
+                if (is_string($etag) && $etag !== '') {
+                    $this->etags[$item->path()] = trim($etag, '"');
+                }
 
                 // The bucket holds hundreds of thousands of tour tiles; show that the scan is alive.
                 if ($every > 0 && count($sizes) % $every === 0) {
@@ -338,10 +347,17 @@ class AsciiStoragePaths extends Command
         return [$sizes, $plan];
     }
 
-    /** Same size and same checksum (ETag on S3). */
+    /**
+     * Same size and same checksum (ETag on S3). The ETags come from the listing when available
+     * (on dev, ~10 700 HEAD requests one by one took 5–15 minutes); otherwise they are fetched.
+     */
     private function sameFile(FilesystemAdapter $disk, array $sizes, string $a, string $b): bool
     {
-        return $sizes[$a] === $sizes[$b] && $disk->checksum($a) === $disk->checksum($b);
+        if ($sizes[$a] !== $sizes[$b]) {
+            return false;
+        }
+
+        return ($this->etags[$a] ?? $disk->checksum($a)) === ($this->etags[$b] ?? $disk->checksum($b));
     }
 
     private function isVtourText(string $key): bool

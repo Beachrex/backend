@@ -70,7 +70,7 @@ class AsciiStoragePathsS3ReadTest extends TestCase
             $contents = [];
             foreach ($this->objects as $key => $body) {
                 if (str_starts_with($key, $prefix)) {
-                    $contents[] = ['Key' => $key, 'Size' => strlen($body), 'LastModified' => new \DateTimeImmutable];
+                    $contents[] = ['Key' => $key, 'Size' => strlen($body), 'ETag' => '"'.md5($body).'"', 'LastModified' => new \DateTimeImmutable];
                 }
             }
 
@@ -108,5 +108,31 @@ class AsciiStoragePathsS3ReadTest extends TestCase
         $this->assertCount(1, $vtour);
         $this->assertSame('public/img/beaches/hr-9/vtour/tour.xml', $vtour[0]['location']);
         $this->assertStringContainsString('brač_1.tiles/pano.jpg', $vtour[0]['detail']);
+    }
+
+    public function test_copied_keys_are_recognised_from_listing_etags_without_head_requests(): void
+    {
+        // An old NFD key with an identical ASCII copy, and one whose ASCII key holds a different file.
+        $this->objects = [
+            \Normalizer::normalize('public/img/beaches/hr-114-o-brač/a.jpg', \Normalizer::FORM_D) => 'same',
+            'public/img/beaches/hr-114-o-brac/a.jpg' => 'same',
+            'public/img/beaches/hr-1-o-šolta/b.jpg' => 'old',
+            'public/img/beaches/hr-1-o-solta/b.jpg' => 'new',
+        ];
+
+        // respond() throws on any call other than ListObjectsV2/GetObject, so a HeadObject would fail the run.
+        $this->artisan('storage:ascii-paths', ['--inventory' => true, '--disk' => 's3mock', '--output' => $this->csv])
+            ->assertSuccessful();
+
+        $lines = array_map('str_getcsv', file($this->csv, FILE_IGNORE_NEW_LINES));
+        $header = array_shift($lines);
+        $issues = [];
+        foreach ($lines as $line) {
+            $row = array_combine($header, $line);
+            $issues[$row['new']] = $row['issue'];
+        }
+
+        $this->assertSame('copied', $issues['public/img/beaches/hr-114-o-brac/a.jpg']);
+        $this->assertSame('collision', $issues['public/img/beaches/hr-1-o-solta/b.jpg']);
     }
 }

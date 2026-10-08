@@ -9,10 +9,10 @@ deleted until every environment DB is updated and verified.
 | Step | Flag | Changes anything? | Status |
 |---|---|---|---|
 | 1. Inventory | `--inventory` | No (read-only) | **Built** (deployed to dev) |
-| 2. Copy keys + rewrite vtour references | `--copy` | Adds new keys to Spaces; rewrites tour files | **Built** (not run) |
-| 3. Update DB paths (per env) | `--update-db` | DB rows | **Built** (not run) |
-| 4. Caches + search reindex | `cache:clear`, `search:index` | Caches | existing commands |
-| 5. Verify | `--inventory` again + image checks | No | manual |
+| 2. Copy keys + rewrite vtour references | `--copy` | Adds new keys to Spaces; rewrites tour files | **Done** (2026-10-08: 10 685 keys, 399 vtour files) |
+| 3. Update DB paths (dev only; uat via DB promotion) | `--update-db` | DB rows | **Done on dev** (2026-10-08: 2 413 values) |
+| 4. Caches + search reindex | `cache:clear`, `search:index` | Caches | **Done on dev** (2026-10-08) |
+| 5. Verify | `--inventory` again + image checks | No | **Done on dev** (2026-10-08: 0 DB values, all keys copied) |
 | 6. Delete old keys (owner confirms) | `--delete-old --confirm-delete` | Deletes keys | **Built** (not run) |
 
 `--copy`, `--update-db` and `--delete-old` accept `--dry-run`. Always run the dry run first and read its output.
