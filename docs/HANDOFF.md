@@ -1,7 +1,7 @@
 # Handoff — state as of 2026-10-08 (end of session 3)
 
 > **Next session, start here:** (1) TASK-002: all steps are done, including step 6 (10 685 old keys deleted, 2026-10-08). Only the §5 cleanup PRs remain (check their status below);
-> (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
+> (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): P1 rows and P2 rows 36, 45, 46, 65, 67, 68 are fixed (Retest). Remaining P2 rows: 43 (static mini map), 48 (`/beaches` mock data), 45 cards (needs API fields), 70, 72 and 40 (need a repro);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
@@ -91,6 +91,19 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
   - **Code not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#34, and Beachrex/web-client#6–#8. Promote when the owner asks. The uat **DB** already holds the migrated dev data (2026-10-08).
 
+- 2026-10-08 (session 4): **TASK-002 finished and P2 rows started. Live on dev**:
+  - Step 6 is done: 10 685 old keys were deleted after the owner's explicit "da", and the control inventory is clean.
+  - Each QA root cause below was verified in the code (and for webcam/waterbody in the dev DB) first.
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/backend#35 | TASK-002 §5: MCP images only via Imagor; step 6 docs | 148 |
+  | Beachrex/web-client#10 | TASK-002 §5: `buildCdnUrl` without the Spaces bypass | 49 |
+  | Beachrex/web-client#9 | QA #45, #46: beach page badges from real data | 48 |
+  | Beachrex/web-client#11 | QA #36, #65, #68: one webcam rule; webcam on the beach page | 50 |
+  | Beachrex/web-client#12 | QA #67: cards use uploaded videos like the beach page | see PR |
+
+  QA #69 is data: every beach is waterbody `sea`. It is now an owner decision.
 - 2026-10-07 (session 3): **dev review tracker P1 rows fixed, Live on dev** and set to Retest. Each root cause was verified in the code first:
 
   | PR | QA rows | Root cause | Deploy run |
