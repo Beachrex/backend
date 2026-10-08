@@ -3,6 +3,7 @@
 namespace App\Filament\BrAdmin\Resources\BeachResource\RelationManagers;
 
 use App\Support\AsciiPath;
+use App\Support\ImageCopyright;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -51,6 +52,12 @@ class MediaRelationManager extends RelationManager
                         $folderName = $beach->folder_name ?? 'beach-' . $beach->id;
                         return 'Upload multiple images (max 20 files, 10MB each). Will be saved to: public/img/beaches/' . $folderName . '/';
                     })
+                    ->hiddenOn('edit'),
+
+                Forms\Components\Toggle::make('add_copyright')
+                    ->label('Our photo: write "© MOJA PLAŽA, d.o.o." into the file (JPEG)')
+                    ->helperText('Turn off for photos by another author (e.g. user contributions).')
+                    ->default(true)
                     ->hiddenOn('edit'),
 
                 Forms\Components\Section::make('File Information')
@@ -221,7 +228,7 @@ class MediaRelationManager extends RelationManager
                         // If single file or manual entry, use default behavior
                         if (isset($data['file_path']) && isset($data['file_name'])) {
                             $beach = $livewire->getOwnerRecord();
-                            unset($data['file_uploads']);
+                            unset($data['file_uploads'], $data['add_copyright']);
                             return $beach->media()->create($data);
                         }
 
@@ -288,7 +295,19 @@ class MediaRelationManager extends RelationManager
 
                 // Try to get image dimensions
                 $tempFile = tempnam(sys_get_temp_dir(), 'beach_img_');
-                file_put_contents($tempFile, $disk->get($uploadedFilePath));
+                $bytes = (string) $disk->get($uploadedFilePath);
+
+                // Photos are works of MOJA PLAŽA, d.o.o. (terms §6): IPTC copyright into the JPEG original
+                if ($formData['add_copyright'] ?? true) {
+                    $withCopyright = ImageCopyright::embed($bytes);
+                    if ($withCopyright !== null) {
+                        $disk->put($uploadedFilePath, $withCopyright, 'public');
+                        $bytes = $withCopyright;
+                        $mediaData['size'] = strlen($bytes);
+                    }
+                }
+
+                file_put_contents($tempFile, $bytes);
 
                 if (@getimagesize($tempFile)) {
                     $imageInfo = getimagesize($tempFile);
