@@ -1,8 +1,11 @@
-# Handoff — state as of 2026-10-08 (end of session 3)
+# Handoff — state as of 2026-10-08 (end of session 4)
 
-> **Next session, start here:** (1) TASK-002: all steps are done, including step 6 (10 685 old keys deleted, 2026-10-08). Only the §5 cleanup PRs remain (check their status below);
-> (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): P1 rows and P2 rows 36, 45, 46, 65, 67, 68 are fixed (Retest). QA #69 is data (all beaches are waterbody `sea`); the owner will add lake/river/pool data. Remaining P2 rows: 48 (`/beaches` mock data); 72 waits for the tester; 45 (cards) and 70 are in Retest;
-> (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
+> **Next session, start here:** the owner plans to **launch production in the next few days** (owner, 2026-10-08). Priority is TASK-004 *pre-launch review* (spec to write first, see "Agreed work order" item 8):
+> (1) review the whole frontend on dev page by page and list what is unfinished: empty footer pages, dead links, mock data, missing translations;
+> (2) fill the footer / static page content in the DB for **all 19 locales** (`/static-pages`, CMS-managed);
+> (3) rebuild `/si/plaze` (`/[locale]/beaches`, QA #48): it renders mock data and does not look like the other pages; make it match the site's design and show real data;
+> (4) then SEO (item 6) and the prod launch runbook (`docs/runbooks/prod-launch.md`). Promotion to uat/prod only when the owner asks.
+> TASK-002 is finished. Dev review tracker: P2 rows are done or in Retest except #48 (part of (3)) and #72 (waits for the tester).
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
 Rules: [`docs/DEVELOPMENT-RULES.md`](DEVELOPMENT-RULES.md). Change log: `DEV_HANDOFF.md` in each repo.
@@ -107,6 +110,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/web-client#13 | QA #70: home pool tiles send `pool_type` | 52 |
   | Beachrex/backend#40 | QA #45 cards: `features` (beach type, family, parking) in list/map results | 158 |
   | Beachrex/web-client#14 | QA #45 cards: icons follow `features` | 53 |
+  | Beachrex/web-client#15 | QA #45: real beach type / family / parking icons from Spaces `categories_icons` (owner confirmed on dev: "odlično") | 54 |
 
   QA #69 is data: every beach is waterbody `sea`. The owner keeps the tiles and will add the data (2026-10-08).
   Owner 2026-10-08: QA #43 was already fixed (the spreadsheet was not updated); QA #72 waits until the tester explains it; QA #40 is skipped (probably fixed). The tester does not always update statuses, so verify before fixing.
@@ -194,6 +198,15 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    Process: one fix = one PR referencing `QA #<row>`. After the dev deploy the tracker row gets `Fixed in` + **Retest**. The owner updates the spreadsheet; the tester retests. When the owner sends a newer spreadsheet, re-sync the tracker by row number.
    Next: the P1 crashes (continent/country pages, non-EN search → empty page, locale jumps); they are mostly in web-client.
 
+8. **TASK-004 Pre-launch review** (owner, 2026-10-08: "celotno stran je treba pregledat, kaj še ni narejeno, v nogi ko so prazne strani … bazo napolnit vsebino za nogo v vseh jezikih … podstran /si/plaze … grafično popravit in napolnit z relevantnimi podatki … stran dali v produkcijo v naslednjih dneh"). *(planned; write `docs/tasks/TASK-004-pre-launch-review.md` first)*
+   Known inputs:
+   - the footer `browse.links` and `BurgerMenu` link to routes that do not exist (see Open items);
+   - static pages are CMS-managed (`/api/v1/static-pages`, `StaticPageSeeder`);
+   - `/[locale]/beaches` (`web-client/src/app/[locale]/beaches/page.tsx`) uses `mockCountries` and a mock "Plaža Ladinka" ×4;
+   - missing translations (tracker P3 rows 1, 26–29, 35, 75, 76);
+   - data quality (beach names with an English "Beach" prefix, missing region translations, about 21% of beaches have a description).
+   The sandbox cannot reach `*.beachrex.com` or `beachrex.fra1.digitaloceanspaces.com` (proxy 403), so the page-by-page review needs the owner's screenshots, or the owner adds those hosts under the environment's Allowed domains.
+
 ## Open items (found, not yet scheduled)
 
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
@@ -221,4 +234,4 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Latest numbers
 
-- Next TASK number: TASK-004 (TASK-001 = itinerary quality, TASK-002 = ASCII storage paths, TASK-003 = chat understanding) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-004 (planned: pre-launch review; TASK-001 = itinerary quality, TASK-002 = ASCII storage paths, TASK-003 = chat understanding) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
