@@ -1,6 +1,6 @@
 # Handoff — state as of 2026-10-07 (session 3)
 
-> **Next session, start here:** (1) TASK-002: inventory done on dev (0 collisions). Next is `--copy --dry-run` on dev after the owner confirms (runbook step 2). uat gets the dev DB by promotion (ADR 2026-10-08);
+> **Next session, start here:** (1) TASK-002: steps 1–5 are done on dev (2026-10-08). Next, the owner promotes the dev DB to uat. Then comes step 6, `--delete-old`, which needs the owner's confirmation. After that come the cleanup PRs (TASK-002 §5);
 > (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
@@ -116,7 +116,19 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - The agent checked the CSV: every DB value maps to an existing migrated key.
 
   Per the owner, no uat inventory is needed: uat gets the dev DB by promotion (ADR 2026-10-08).
-  Next: the owner confirms `--copy --dry-run` on dev (runbook step 2). Nothing on Spaces moves before that.
+  **Steps 2–5 done on dev (2026-10-08):**
+  - `--copy` copied 10 685 keys and rewrote 399 vtour files. The old keys were kept.
+  - `pg_dump` saved as `/root/beachrex_dev-before-ascii-20261008-0825.dump` on the VPS.
+  - `--update-db` updated 2 413 values and skipped 0.
+  - `cache:clear` and `search:index` ran.
+  - The control inventory shows 0 non-ASCII DB values and all old keys `copied`.
+  - The acceptance URL works.
+
+  **Next (owner):**
+  1. Promote the dev DB to uat.
+  2. Clear the cache and reindex search on uat.
+  3. Check a few beach pages on uat.
+  4. Run `--delete-old --dry-run`, then `--delete-old --confirm-delete` (runbook step 6), only after the owner confirms. Until then the old keys stay, so nothing breaks.
 
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.
