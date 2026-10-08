@@ -1,11 +1,9 @@
-# Handoff — state as of 2026-10-08 (end of session 4)
+# Handoff — state as of 2026-10-08 (end of session 5)
 
-> **Next session, start here:** the owner plans to **launch production in the next few days** (owner, 2026-10-08). Priority is TASK-004 *pre-launch review* (spec to write first, see "Agreed work order" item 8):
-> (1) review the whole frontend on dev page by page and list what is unfinished: empty footer pages, dead links, mock data, missing translations;
-> (2) fill the footer / static page content in the DB for **all 19 locales** (`/static-pages`, CMS-managed);
-> (3) rebuild `/si/plaze` (`/[locale]/beaches`, QA #48): it renders mock data and does not look like the other pages; make it match the site's design and show real data;
-> (4) then SEO (item 6) and the prod launch runbook (`docs/runbooks/prod-launch.md`). Promotion to uat/prod only when the owner asks.
-> TASK-002 is finished. Dev review tracker: P2 rows are done or in Retest except #48 (part of (3)) and #72 (waits for the tester).
+> **Next session, start here:** TASK-004 pre-launch review ([spec](tasks/TASK-004-pre-launch-review.md), [audit](tasks/TASK-004-audit.md)).
+> Done and on dev: audit, translations guard, placeholder content hidden, menu/footer/404, old-URL redirects, footer pages (19 languages, needs `static-pages:sync` on dev), `/beaches` (QA #48), robots/AI-crawler policy, consent + GA + AdSense, backend noindex.
+> Open: SEO part 2 PR (Beachrex/web-client#22), SSR for region/island/city pages, the small code fixes in the audit (B9, D5–D7, D12, D13, A4, F1–F4), runbook PR (prod launch review).
+> Owner answers pending: real old URLs for tests; removing `database/sql/user.sql` (≈1 250 e-mails) from the repo; CookieYes "Google Consent Mode" switch.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
 Rules: [`docs/DEVELOPMENT-RULES.md`](DEVELOPMENT-RULES.md). Change log: `DEV_HANDOFF.md` in each repo.
@@ -94,6 +92,21 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
   - **Code not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#34, and Beachrex/web-client#6–#8. Promote when the owner asks. The uat **DB** already holds the migrated dev data (2026-10-08).
 
+- 2026-10-08 (session 5): **TASK-004 pre-launch review. Live on dev** (each finding verified in code first):
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/backend#43, #44, #45 | TASK-004 spec, audit, owner decisions, hidden-for-launch list, step 5b | docs |
+  | Beachrex/web-client#16 | Slovenian `Auth`/`AI` strings; locale key parity test | 55 |
+  | Beachrex/web-client#17 | Placeholder accommodation/GetYourGuide hidden (`FEATURES`), no Lorem Ipsum | 56 |
+  | Beachrex/web-client#18 | Menu/footer from real data, dead buttons hidden, `/about` → CMS, localized 404 | 57 |
+  | Beachrex/backend#46 + Beachrex/web-client#19 | Old beachrex.com URLs → 308 to the same beach/city/island/region/country | 171 / 58 |
+  | Beachrex/backend#47 | Footer CMS pages in 19 languages + `static-pages:sync` | 173 |
+  | Beachrex/web-client#20 | `/beaches` on real data, shared cards (QA #48) | 59 (manual dispatch; the push event was not delivered) |
+  | Beachrex/web-client#21 | Production `robots.txt` (a static file blocked all crawlers), AI crawler policy, consent + GA + AdSense, `ads.txt`, `llms.txt` | 59 |
+  | Beachrex/backend#48 | Backend never indexed (`X-Robots-Tag`, `robots.txt`); visibility rule | 175 |
+
+  Owner decisions 2026-10-08: ADR "TASK-004: What Visitors See at Launch"; dev/uat invisible to search engines and AI, only production visible (`DEVELOPMENT-RULES.md` §9).
 - 2026-10-08 (session 4): **TASK-002 finished and P2 rows started. Live on dev**:
   - Step 6 is done: 10 685 old keys were deleted after the owner's explicit "da", and the control inventory is clean.
   - Each QA root cause below was verified in the code (and for webcam/waterbody in the dev DB) first.
@@ -128,6 +141,10 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   Deploys green: backend dev run 82, uat run 83; frontend dev run 40, uat run 41.
 
 ## Owner's open actions
+
+- **Footer pages on dev (TASK-004):** run `static-pages:sync --dry-run`, then without `--dry-run` (commands in DEV_HANDOFF / the chat). Same on uat/prod at promotion (prod launch runbook B6).
+- **CookieYes:** enable "Google Consent Mode"; domain `beachrex.com`.
+- **Legal texts:** the privacy policy, cookie policy and terms are drafts (they name OpenAI and Stripe, which the code uses); review, ideally with a lawyer.
 
 - **Waterbody data (QA #69):** every beach has waterbody `sea` (3 774 on dev, 2026-10-08), so the lake/river/pool tiles and filters find nothing. Owner decision 2026-10-08: keep the tiles and add the data ("to zaenkrat pusti, samo zabeleži, moramo dodati podatke"). No code change.
 
@@ -188,7 +205,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    Step 3 merged (Beachrex/backend#20): `--copy` / `--update-db` / `--delete-old`, each with `--dry-run`, plus runbook steps 2–6. Not run yet; it waits for the owner's inventory and collision review.
    After step 6: cleanup PRs (TASK-002 §5) remove the Imagor bypass in web-client and MCP.
    **TASK-003 AI chat** (owner: "ja, začni task", 2026-10-07): structured multilingual query understanding + real DB candidates. **Done**: Beachrex/backend#26, dev run 127; the owner confirmed it on dev.
-6. **SEO before launch** — SSR for `/beaches` and `/beach-map`, `about` metadata, single H1, alt texts. *(planned)*
+6. **SEO before launch** — TASK-004: robots/AI policy, sitemap index, h1, hreflang, `/beaches` SSR, beach map metadata *(done or in review)*; SSR of region/island/city pages and alt texts *(open)*.
 7. **Dev review tracker** (owner, 2026-10-07): a tester reviews dev and logs findings in the owner's spreadsheet
    `dev.beachrex_pregled_napak_delovanja.xlsx` (77 rows as of 2026-10-07). The spreadsheet stays with the owner (e-mail links, personal data).
    The agent's copy with a first-pass verdict per row is **[`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md)**. Owner's instructions:
@@ -234,4 +251,4 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Latest numbers
 
-- Next TASK number: TASK-004 (planned: pre-launch review; TASK-001 = itinerary quality, TASK-002 = ASCII storage paths, TASK-003 = chat understanding) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-005 (planned: pre-launch review; TASK-001 = itinerary quality, TASK-002 = ASCII storage paths, TASK-003 = chat understanding) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)

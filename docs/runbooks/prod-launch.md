@@ -1,6 +1,6 @@
 # Runbook — Production launch (beachrex.com on the VPS)
 
-**Status:** Planned. Owner-run, with the agent preparing PRs and checks.
+**Status:** Planned. Owner-run, with the agent preparing PRs and checks. Reviewed against the code on 2026-10-08 (TASK-004): env list, footer pages, www → apex, SEO/visibility, old URLs and consent checks added.
 **Decision:** the prod DB is created from **UAT**. There is no Laravel Cloud anymore
 (ADR "Production Database Is Created from UAT", `docs/ai/implementation/DECISIONS.md`).
 
@@ -34,6 +34,13 @@ Steps are in order. Each has a **check** to pass before you continue.
 - `STRIPE_ENABLED`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PRODUCT_ITINERARY_{3DAY,7DAY,14DAY}_PRICE_ID`. Live mode needs new live price IDs.
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `FRONTEND_URL=https://beachrex.com`.
 - `DO_SPACES_*`, plus the `BACKUP_*` variables (`docs/runbooks/restore-backup.md`) with `BACKUP_ENABLED=true`.
+
+Also in `.env.prod` (checked against `.env.example` on 2026-10-08, TASK-004):
+- `APP_ENV=production`, `APP_DEBUG=false` (never `true` on prod: it shows stack traces), `LOG_LEVEL=warning` or `error`.
+- `SESSION_DOMAIN=.beachrex.com`, `SESSION_SECURE=true`, `SANCTUM_STATEFUL_DOMAINS=beachrex.com,www.beachrex.com,dock.beachrex.com`.
+- `OPENAI_MODEL=gpt-4o-mini`; feature flags `AI_ENABLED`, `AI_PAYMENTS_ENABLED` (Stripe live at launch, owner 2026-10-08), `AI_FREE_TIER_ENABLED`, `AI_FREE_TIER_DAILY_LIMIT`, `GOOGLE_AUTH_ENABLED=true`.
+- `OPEN_METEO_API_KEY`: the commercial Open-Meteo plan (the free endpoint is non-commercial only).
+- `MAIL_*` (mailer, host, port, username, password, `MAIL_FROM_ADDRESS=info@beachrex.com`, `MAIL_FROM_NAME=Beachrex`) if the site sends e-mail.
 
 `.env.front.prod`:
 - `NEXT_PUBLIC_API_ENDPOINT=https://api.beachrex.com`
@@ -77,6 +84,13 @@ select count(*) from ai_sessions;   select count(*) from purchases;   select cou
 ```
 Then `$DC exec -T pgsql rm /tmp/uat.dump`.
 
+**B6. Footer pages and caches** (after C1, once the prod code is deployed). The UAT copy may already hold them; the command is idempotent and shows what it would change:
+```bash
+$DC exec -T api_prod php artisan static-pages:sync --dry-run
+$DC exec -T api_prod php artisan static-pages:sync
+$DC exec -T api_prod php artisan cache:clear
+```
+
 ## Phase C — Deploy prod code (no user impact, DNS still points elsewhere)
 
 | # | Who | Step | Check |
@@ -91,11 +105,15 @@ Then `$DC exec -T pgsql rm /tmp/uat.dump`.
 |---|---|---|---|
 | D1 | Owner | DNS: A records `beachrex.com`, `www.beachrex.com`, `api.beachrex.com` → `2.28.76.142` | `dig +short beachrex.com` = `2.28.76.142` (wait for TTL) |
 | D2 | Owner | Issue certificates **without letting certbot edit nginx** (the repo owns the config): `sudo certbot certonly --nginx -d beachrex.com -d www.beachrex.com -d api.beachrex.com` | `sudo ls /etc/letsencrypt/live/beachrex.com/` shows `fullchain.pem` |
-| D3 | Agent | PR: replace the HTTP-only prod blocks in `deploy/nginx/beachrex.conf` with 80→301 + 443 blocks using `/etc/letsencrypt/live/beachrex.com/` (template below). Merge **only after D2**, otherwise `nginx reload` fails for all environments | Deploy green |
+| D3 | Agent | PR: replace the HTTP-only prod blocks in `deploy/nginx/beachrex.conf` with 80→301 + 443 blocks using `/etc/letsencrypt/live/beachrex.com/` (template below). `www.beachrex.com` gets its own 443 block that 301s to `https://beachrex.com$request_uri` (one canonical host; old links to `www` keep working). Merge **only after D2**, otherwise `nginx reload` fails for all environments | Deploy green; `curl -sI https://www.beachrex.com/en` → `301` to `https://beachrex.com/en` |
 | D4 | Owner | `https://beachrex.com/en`, `https://api.beachrex.com/api/v1/health`, `https://dock.beachrex.com` | Pages load; health `ok`; `curl -sI https://beachrex.com/en \| grep -i x-robots-tag` is **empty** (prod is indexable) |
 | D5 | Owner | Stripe live webhook (if live), UptimeRobot monitor for `https://api.beachrex.com/api/v1/health`, enable backups on prod (`BACKUP_ENABLED=true` in `.env.prod`), then **turn them off on UAT** (`BACKUP_ENABLED=false` in `.env.uat` + redeploy uat) | First prod backup appears next night; `uat-api…/api/v1/health` shows `backup.enabled: false` |
 | D5b | Agent + Owner | **MCP becomes production-only** (owner decision 2026-10-07). The agent adds an Nginx route `mcp.beachrex.com` → `127.0.0.1:3102` (prod process `beachrex-mcp-prod`, API `https://api.beachrex.com`, links to `https://beachrex.com`). The owner adds DNS and the certificate (`certbot certonly`) and switches the Claude connector to `https://mcp.beachrex.com/mcp`. Then the dev MCP route (`mcp-dev.beachrex.com`) is removed or kept for testing only (owner's choice) | In Claude, beach links point to `beachrex.com` |
 | D6 | Owner | Google Search Console: add the `beachrex.com` property and submit `https://beachrex.com/sitemap.xml` | Sitemap accepted |
+| D7 | Owner | **Visibility and SEO checks** (TASK-004). Run each `curl` and compare: `curl -s https://beachrex.com/robots.txt` · `curl -s https://beachrex.com/sitemap.xml \| head -3` · `curl -s https://beachrex.com/ads.txt` · `curl -s -o /dev/null -w "%{http_code}" https://beachrex.com/llms.txt` · `curl -sI https://api.beachrex.com/api/v1/health \| grep -i x-robots-tag` · `curl -s https://dev.beachrex.com/robots.txt` · `curl -s https://uat.beachrex.com/robots.txt` | prod robots: `Allow: /`, AI training bots `Disallow: /`, `Sitemap:` line; sitemap starts with `<sitemapindex`; ads.txt has `pub-5133469552990533`; llms.txt `200`; the API has `X-Robots-Tag: noindex…`; dev and uat robots: `Disallow: /` only |
+| D8 | Owner | **Old URLs redirect** (Google Maps links). Open 5–10 old beach URLs (e.g. `https://www.beachrex.com/hr/hrvatska/dalmacija/tisno-plaze/plaza-tisno`) | Each ends on the same beach (308/301 chain), not on the home page or a 404 |
+| D9 | Owner | **Consent and analytics.** CookieYes dashboard: domain `beachrex.com`, "Google Consent Mode" on. Open `https://beachrex.com/en` in a private window | The banner shows; before consent no `_ga` cookie; after "Accept" GA Realtime shows the visit; the cookie policy page shows the CookieYes table |
+| D10 | Owner | Google Search Console: request indexing of the home page; AdSense: add the site `beachrex.com` and wait for the review | Search Console sees the sitemap; AdSense "Ready" |
 
 Template for D3 (443 block; the 80 block becomes `return 301 https://$host$request_uri;`):
 ```nginx
