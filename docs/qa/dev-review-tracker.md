@@ -5,7 +5,8 @@ The spreadsheet itself is **not** in the repo: it holds e-mail attachment links 
 `#` below = the spreadsheet's "Zap. št.", so rows can be matched 1:1.
 
 ## How we work with it
-1. **Assess before fixing.** Every row gets a verdict here first:
+1. **Assess before fixing.** The tester does not always update the spreadsheet status (owner, 2026-10-08): many rows are already fixed. Check the code, git history and this tracker first, and ask the owner when unsure, so nothing is fixed twice or wrongly.
+    Every row gets a verdict here first:
    - some rows are already fixed;
    - some are missing translations (data, not code);
    - some are feature requests or questions that need the owner's decision;
@@ -89,7 +90,7 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 40 | Map search results hidden behind the map | bug | Checked in code (2026-10-08): no z-index defect found. **Owner 2026-10-08:** probably already fixed, skip for now | P2 | Likely fixed, retest | |
 | 41 | Searching "Zadar" shows "Zara, città di Zara" | bug | The Meilisearch city name uses a non-local translation (IT name in the EN index?). Check the search locale fallback | P3 | Bug, to verify | |
 | 42 | Hover on map elements: show region/city, link | question | Define the intended behaviour | P3 | Decision | |
-| 43 | City and beach level: side map shows the region, not the city | bug | Verified in code: the small 144×144 map tile in the banner (`BannerSection/MapWidget.tsx`, `banner-map.png`, a fixed map of Krk with an expand icon) is the same on every city, region, beach and world page. The large banner photo behind it does change per place. Fix: a real mini map from the city/beach coordinates | P2 | Bug | |
+| 43 | City and beach level: side map shows the region, not the city | bug | Meaning (owner, 2026-10-08): clicking the banner map must open the beach map pre-filtered to the page it came from; region level worked, city and beach level showed the region. **Owner 2026-10-08: already fixed, the spreadsheet was not updated.** Code note: the map link sends the localized city slug as `city`, and the API matches `city.code` or id; if a city's code differs from its slug, retest that city | P2 | Likely fixed, retest | |
 | 44 | Map filter: Croatia shows no results; URL words flicker | bug | Probably the `country`/`country_code` mismatch (fixed in Beachrex/backend#23: `/beaches/filters` accepts `country_code`) **or** a frontend loop. Retest first, then fix the flicker | P1 | Likely fixed, retest | Beachrex/backend#23 (partly) |
 | 45 | Same beach-type, family and parking icon on every beach | bug | Verified in code: the beach page badge strip was a hardcoded placeholder list (`BeachBannerSection.tsx` TODO). Badges now come from beach type, user types, parking, accessibility, infrastructure and sports. **Still open:** listing/map cards (`PropertyCard`) show 3 static icons; they need beach type, user type and parking from the search/map API (separate PR) | P2 | Retest (beach page) | Beachrex/web-client#9, dev run 48 |
 | 46 | Beach page: wrong beach type (sand shown as rock), duplicates, no sphere | bug | Verified in code: the hardcoded "stony" badge appeared on every beach, and `BottomBadgesBeach` repeated badges to fill 9 slots. Both fixed. "No sphere": see #17 (TASK-002 done 2026-10-08) | P2 | Retest | Beachrex/web-client#9, dev run 48 |
@@ -118,7 +119,7 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 69 | Lake/river beaches filter shows nothing on the map | bug | Verified: the filter code is correct (codes `lake`/`river`/`pool` end to end). Data: all 3 774 dev beaches have waterbody `sea`, 0 lake/river/pool (2026-10-08). **Owner decision 2026-10-08:** keep the tiles; lake/river/pool data will be added ("to zaenkrat pusti, samo zabeleži, moramo dodati podatke") | P2 | Translation/data | |
 | 70 | Map does not separate indoor and outdoor pool like home | bug | Verified in code: both home tiles sent `waterbody=pool`; the admin already stores `indoor_pools_count`/`outdoor_pools_count`. New `pool_type` filter (backend) and the tiles send it (frontend). Results need pool data (#69) | P3 | Fix in PR | |
 | 71 | These functions are not programmed; how should they work? | question | Decision | – | Decision | |
-| 72 | Map needs a double click to show a beach | bug | Likely mechanism from code: below zoom 15 the first click only expands the cluster; an opened popup can be closed by the refetch after its autopan. Needs a browser repro before a fix | P2 | Bug, to verify | |
+| 72 | Map needs a double click to show a beach | bug | Likely mechanism from code: below zoom 15 the first click only expands the cluster; an opened popup can be closed by the refetch after its autopan. **Owner 2026-10-08: on hold until the tester explains what they mean** | P2 | Decision | |
 | 73 | Map card: place and country clickable | feature | Small feature | P3 | Decision | |
 | 74 | DE → map → logo: language resets to EN (all languages) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The header and footer logos used `/`; now `/${locale}` | P1 | Retest | Beachrex/web-client#8, dev run 47 |
 | 75 | RU, UA, EL, BG: beach page text not in their script | bug | Missing translations (DB `*_translation` + UI strings) | P3 | Translation/data | |
