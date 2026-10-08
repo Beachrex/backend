@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "Uspešno ste se naročili na novice.",
   "You are already subscribed.": "Na novice ste že naročeni.",
-  "You have been re-subscribed successfully.": "Uspešno ste se ponovno naročili na novice."
+  "You have been re-subscribed successfully.": "Uspešno ste se ponovno naročili na novice.",
+  "Pool type": "Vrsta bazena",
+  "Indoor pool": "Notranji bazen",
+  "Outdoor pool": "Zunanji bazen"
 }

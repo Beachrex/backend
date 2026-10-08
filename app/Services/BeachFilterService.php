@@ -696,6 +696,16 @@ class BeachFilterService
             $query->where('has_swimming_pool', $request->boolean('has_swimming_pool'));
         }
 
+        // Pool type filter (QA #70): indoor and/or outdoor pools, from the pool counts set in the admin.
+        $poolTypes = $this->poolTypes($request);
+        if ($poolTypes !== []) {
+            $query->where(function ($q) use ($poolTypes) {
+                foreach ($poolTypes as $type) {
+                    $q->orWhere("{$type}_pools_count", '>', 0);
+                }
+            });
+        }
+
         // Boat only filter (boolean)
         if ($request->has('boat_only')) {
             $query->where('boat_only', $request->boolean('boat_only'));
@@ -1075,6 +1085,12 @@ class BeachFilterService
         if ($request->has('has_swimming_pool')) {
             $conditions[] = "b.has_swimming_pool = ?";
             $bindings[] = $request->boolean('has_swimming_pool') ? 1 : 0;
+        }
+
+        // Pool type filter (QA #70)
+        $poolTypes = $this->poolTypes($request);
+        if ($poolTypes !== []) {
+            $conditions[] = '('.implode(' OR ', array_map(fn ($type) => "b.{$type}_pools_count > 0", $poolTypes)).')';
         }
 
         // Boat only filter
@@ -1644,6 +1660,28 @@ class BeachFilterService
         return [$value];
     }
 
+    /** Pool types accepted by `pool_type` (whitelisted: the values become column names). */
+    public const POOL_TYPES = ['indoor', 'outdoor'];
+
+    /**
+     * Parse `pool_type` (indoor, outdoor; comma-separated or array). Unknown values are ignored.
+     *
+     * @return list<string>
+     */
+    private function poolTypes(Request $request): array
+    {
+        if (! $request->has('pool_type')) {
+            return [];
+        }
+
+        $values = array_map(
+            fn ($v) => is_scalar($v) ? strtolower(trim((string) $v)) : '',
+            $this->parseFilterValue($request->input('pool_type'))
+        );
+
+        return array_values(array_intersect(self::POOL_TYPES, $values));
+    }
+
     /**
      * Generate a cache key suffix based on active filters
      * Returns a consistent, sorted string representation of all active filters
@@ -1689,6 +1727,7 @@ class BeachFilterService
             'swimming_depth',
             'occupancy_rate',
             'has_swimming_pool',
+            'pool_type',
             'boat_only',
             'limit'
         ];

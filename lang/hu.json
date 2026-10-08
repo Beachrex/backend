@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "Sikeresen feliratkozott a hírlevélre.",
   "You are already subscribed.": "Már feliratkozott a hírlevélre.",
-  "You have been re-subscribed successfully.": "Sikeresen újra feliratkozott a hírlevélre."
+  "You have been re-subscribed successfully.": "Sikeresen újra feliratkozott a hírlevélre.",
+  "Pool type": "Medence típusa",
+  "Indoor pool": "Fedett medence",
+  "Outdoor pool": "Szabadtéri medence"
 }

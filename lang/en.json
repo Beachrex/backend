@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "You have been subscribed successfully.",
   "You are already subscribed.": "You are already subscribed.",
-  "You have been re-subscribed successfully.": "You have been re-subscribed successfully."
+  "You have been re-subscribed successfully.": "You have been re-subscribed successfully.",
+  "Pool type": "Pool type",
+  "Indoor pool": "Indoor pool",
+  "Outdoor pool": "Outdoor pool"
 }

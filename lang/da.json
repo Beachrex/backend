@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "Du er nu tilmeldt nyhedsbrevet.",
   "You are already subscribed.": "Du er allerede tilmeldt.",
-  "You have been re-subscribed successfully.": "Du er nu tilmeldt nyhedsbrevet igen."
+  "You have been re-subscribed successfully.": "Du er nu tilmeldt nyhedsbrevet igen.",
+  "Pool type": "Pooltype",
+  "Indoor pool": "Indendørs pool",
+  "Outdoor pool": "Udendørs pool"
 }

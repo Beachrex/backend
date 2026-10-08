@@ -176,6 +176,13 @@ class BeachController extends Controller
      *         @OA\Schema(type="boolean", example=true)
      *     ),
      *     @OA\Parameter(
+     *         name="pool_type",
+     *         in="query",
+     *         description="Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="indoor")
+     *     ),
+     *     @OA\Parameter(
      *         name="has_swimming_pool",
      *         in="query",
      *         description="Filter by swimming pool availability (true/false)",
