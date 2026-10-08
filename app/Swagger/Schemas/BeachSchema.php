@@ -69,7 +69,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(
  *         property="features",
  *         type="object",
- *         description="Card icons (QA #45): beach type, family friendly and parking. family = user type `family`; parking = infrastructure `parking` or a parking capacity other than none/private.",
+ *         description="Card icons (QA #45): beach type, user types and parking. family / adventurer / youth (party) = the beach has that user type; parking = infrastructure `parking` or a parking capacity other than none/private.",
  *         @OA\Property(
  *             property="beach_type",
  *             type="object",
@@ -78,6 +78,8 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="name", type="string", example="Sand", description="Translated via Accept-Language")
  *         ),
  *         @OA\Property(property="family", type="boolean", example=true),
+ *         @OA\Property(property="adventurer", type="boolean", example=false),
+ *         @OA\Property(property="youth", type="boolean", example=false, description="Party / youth beach"),
  *         @OA\Property(property="parking", type="boolean", example=false)
  *     ),
  *     @OA\Property(

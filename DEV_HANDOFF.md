@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Card features: adventurer and party (youth) beaches
+
+### Overview
+Owner, 2026-10-08: cards showed only the family user type; adventurer and party beaches need their icons too.
+
+### Changes Made
+- `features` in list/map results gains `adventurer` and `youth` (party beach) booleans, with the same rule as `family` (the beach has that user type): `PostGISService::loadCardFeatures()` and `App\Support\BeachCardFeatures`.
+- OpenAPI `BeachSchema` / `SpatialBeachSchema`; `api-docs.json` regenerated.
+
+### Affected Endpoints
+`GET /api/v1/beaches`, `/beaches/most-visited`, `/spatial/beaches/within-radius`, `/spatial/beaches/nearest`, `/spatial/beaches/bounding-box` (additive).
+
+### Testing
+`php artisan test --filter=BeachCardFeaturesApiTest` (4 tests). Deliberate break (old services): 3 fail.
+
+---
+
 ## 2026-10-08 - Backend never indexed: X-Robots-Tag + robots.txt (TASK-004)
 
 ### Overview
