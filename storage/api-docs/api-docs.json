@@ -1586,6 +1586,16 @@
                         }
                     },
                     {
+                        "name": "pool_type",
+                        "in": "query",
+                        "description": "Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "indoor"
+                        }
+                    },
+                    {
                         "name": "has_swimming_pool",
                         "in": "query",
                         "description": "Filter by swimming pool availability (true/false)",
@@ -3898,7 +3908,7 @@
                     "Filters"
                 ],
                 "summary": "Get beach filter options with optional cascading filters",
-                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean).",
+                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean), pool_type (indoor/outdoor).",
                 "operationId": "getBeachFilters",
                 "parameters": [
                     {
@@ -3970,7 +3980,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
-                                            "description": "Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool. All filters follow the same structure with title, icon, input_type/type, and options array.",
+                                            "description": "Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool, pool_type. All filters follow the same structure with title, icon, input_type/type, and options array.",
                                             "properties": {
                                                 "country": {
                                                     "properties": {
@@ -6817,6 +6827,16 @@
                         }
                     },
                     {
+                        "name": "pool_type",
+                        "in": "query",
+                        "description": "Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "indoor"
+                        }
+                    },
+                    {
                         "name": "has_swimming_pool",
                         "in": "query",
                         "description": "Filter by swimming pool availability (boolean)",
@@ -7260,6 +7280,16 @@
                         "schema": {
                             "type": "string",
                             "example": "urban,rural"
+                        }
+                    },
+                    {
+                        "name": "pool_type",
+                        "in": "query",
+                        "description": "Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "indoor"
                         }
                     },
                     {

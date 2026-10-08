@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "Ви успішно підписалися на розсилку.",
   "You are already subscribed.": "Ви вже підписані на розсилку.",
-  "You have been re-subscribed successfully.": "Ви успішно повторно підписалися на розсилку."
+  "You have been re-subscribed successfully.": "Ви успішно повторно підписалися на розсилку.",
+  "Pool type": "Тип басейну",
+  "Indoor pool": "Критий басейн",
+  "Outdoor pool": "Відкритий басейн"
 }

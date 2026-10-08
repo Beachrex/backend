@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "Te has suscrito correctamente.",
   "You are already subscribed.": "Ya estás suscrito.",
-  "You have been re-subscribed successfully.": "Te has vuelto a suscribir correctamente."
+  "You have been re-subscribed successfully.": "Te has vuelto a suscribir correctamente.",
+  "Pool type": "Tipo de piscina",
+  "Indoor pool": "Piscina cubierta",
+  "Outdoor pool": "Piscina al aire libre"
 }

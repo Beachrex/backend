@@ -52,6 +52,30 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Pool Type Filter (indoor / outdoor) (QA #70)
+
+### Overview
+The home page has separate "outdoor pools" and "indoor pools & spas" tiles, but there was no way to filter by pool type. The admin already stores `indoor_pools_count` and `outdoor_pools_count` on `beach`. The new `pool_type` filter uses them. A beach with both kinds matches either value.
+
+### Changes Made
+- `app/Services/BeachFilterService.php`: `pool_type` (`indoor`, `outdoor`; comma-separated or array) is handled in both `applyFilters` (Eloquent) and `buildRawFilters` (map/search SQL), and is part of the cache key.
+  - A value matches `<type>_pools_count > 0`, and several values are ORed.
+  - Values are whitelisted (`BeachFilterService::POOL_TYPES`). Unknown values are ignored.
+- `app/Http/Controllers/Api/V1/FilterController.php`: `/beaches/filters` returns `pool_type` (checkbox, options `indoor` / `outdoor`), translated through `lang/*.json` (19 locales).
+- OpenAPI: `pool_type` query parameter on `/beaches`, `/spatial/beaches/within-radius` and `/spatial/beaches/bounding-box`, and the filters description. `storage/api-docs/api-docs.json` is regenerated.
+- `tests/Feature/PoolTypeFilterApiTest.php` (new).
+
+### Affected Endpoints
+- `GET /api/v1/beaches?pool_type=indoor|outdoor|indoor,outdoor`
+- `GET /api/v1/spatial/beaches/bounding-box?…&pool_type=…`
+- `GET /api/v1/spatial/beaches/within-radius?…&pool_type=…`
+- `GET /api/v1/beaches/filters` (new `pool_type` entry)
+
+### Testing
+`php artisan test --filter=PoolTypeFilterApiTest`. Data: pool counts are entered in the admin (BeachResource: "Indoor pools count" / "Outdoor pools count"). On dev today no beach has a pool (QA #69), so the filter returns 0 results until data exists.
+
+---
+
 ## 2026-10-08 - TASK-002: Old Keys Deleted; MCP Images Only via Imagor
 
 ### Overview

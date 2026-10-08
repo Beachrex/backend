@@ -1,5 +1,8 @@
 {
   "You have been subscribed successfully.": "U bent succesvol ingeschreven.",
   "You are already subscribed.": "U bent al ingeschreven.",
-  "You have been re-subscribed successfully.": "U bent opnieuw succesvol ingeschreven."
+  "You have been re-subscribed successfully.": "U bent opnieuw succesvol ingeschreven.",
+  "Pool type": "Type zwembad",
+  "Indoor pool": "Binnenzwembad",
+  "Outdoor pool": "Buitenzwembad"
 }

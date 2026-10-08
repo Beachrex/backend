@@ -44,7 +44,7 @@ class FilterController extends Controller
      *     path="/api/v1/beaches/filters",
      *     operationId="getBeachFilters",
      *     summary="Get beach filter options with optional cascading filters",
-     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean).",
+     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean), pool_type (indoor/outdoor).",
      *     tags={"Filters"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
@@ -234,7 +234,7 @@ class FilterController extends Controller
      *                         )
      *                     )
      *                 ),
-     *                 description="Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool. All filters follow the same structure with title, icon, input_type/type, and options array."
+     *                 description="Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool, pool_type. All filters follow the same structure with title, icon, input_type/type, and options array."
      *             )
      *         )
      *     )
@@ -399,6 +399,8 @@ class FilterController extends Controller
             if ($swimmingPoolData) {
                 $filters['has_swimming_pool'] = $swimmingPoolData;
             }
+
+            $filters['pool_type'] = $this->getPoolTypeFilterData($locale);
 
             return $filters;
         });
@@ -1585,6 +1587,23 @@ class FilterController extends Controller
                     'label' => 'Yes',
                     'icon' => null,
                 ],
+            ],
+        ];
+    }
+
+    /**
+     * Pool type filter (QA #70): indoor / outdoor, from the pool counts set in the admin.
+     * A beach with both kinds matches either option.
+     */
+    private function getPoolTypeFilterData(string $locale): array
+    {
+        return [
+            'title' => __('Pool type', [], $locale),
+            'icon' => null,
+            'input_type' => 'checkbox',
+            'options' => [
+                ['code' => 'indoor', 'value' => 'indoor', 'label' => __('Indoor pool', [], $locale), 'name' => __('Indoor pool', [], $locale), 'icon' => null],
+                ['code' => 'outdoor', 'value' => 'outdoor', 'label' => __('Outdoor pool', [], $locale), 'name' => __('Outdoor pool', [], $locale), 'icon' => null],
             ],
         ];
     }
