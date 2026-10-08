@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Footer page: Media kit
+
+### Overview
+Owner, 2026-10-08: a media kit page in the footer with the brand guidelines and all logos for download. New CMS page `media-kit` (footer order 8): how to use the logo (versions, backgrounds, clear space, minimum sizes, misuse), colours, photo copyright and contact, in all 19 locales. The download section (logos, guidelines PDF, palette, ZIP) is rendered by the web-client under the page with this code; the files live in the web-client `public/brand/`.
+
+### Changes Made
+- `database/content/static-pages/{19 locales}.json`: new `media-kit` page.
+- `SyncStaticPages::SORT_ORDER`: `media-kit => 8`.
+
+### Affected Endpoints
+`GET /api/v1/static-pages`, `/static-pages/{slug}` after `php artisan static-pages:sync` (data only).
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest`.
+
+---
+
 ## 2026-10-08 - Footer page: Beachrex in your AI assistant (MCP connector)
 
 ### Overview
