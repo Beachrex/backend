@@ -1,6 +1,6 @@
-# Handoff — state as of 2026-10-07 (session 3)
+# Handoff — state as of 2026-10-08 (end of session 3)
 
-> **Next session, start here:** (1) TASK-002: steps 1–5 are done on dev, and the uat DB was promoted from dev (2026-10-08). Next is step 6, `--delete-old` from `api_dev`, which needs the owner's confirmation. After that come the cleanup PRs (TASK-002 §5);
+> **Next session, start here:** (1) TASK-002: steps 1–5 are done on dev, the uat DB was promoted from dev, and the owner verified images on uat (2026-10-08). Next is step 6, `--delete-old` from `api_dev`: a dry run first, then the owner's explicit confirmation. After that come the cleanup PRs (TASK-002 §5);
 > (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
@@ -89,7 +89,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/backend#26 | TASK-003: AI chat understands any language, real DB candidates | 127 |
 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
-  - **Not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#26. Promote when the owner asks.
+  - **Code not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#34, and Beachrex/web-client#6–#8. Promote when the owner asks. The uat **DB** already holds the migrated dev data (2026-10-08).
 
 - 2026-10-07 (session 3): **dev review tracker P1 rows fixed, Live on dev** and set to Retest. Each root cause was verified in the code first:
 
@@ -130,10 +130,15 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - `cache:clear` and `search:index` ran on uat, and uat health is ok.
   - Everything that existed only in the uat DB was replaced by dev data.
 
-  **Next (owner):**
-  1. Check a few beach pages with šumniki on uat.
-  2. Confirm that nothing outside dev/uat (the old site?) reads the `beachrex` bucket.
-  3. Runbook step 6, from `api_dev`: `--delete-old --dry-run`, then `--delete-old --confirm-delete`, only after the owner confirms. Until then the old keys stay, so nothing breaks.
+  - The owner checked beach pages with šumniki on uat on 2026-10-08: images work.
+  - The old beachrex.com site also reads the `beachrex` bucket. The owner accepts that its images with šumniki break after step 6: "to nima veze, zato pa pohitimo z razvojem, da damo novo strani čimprej ven" (2026-10-08).
+
+  **Next:** runbook step 6 from `api_dev`.
+  1. The agent gives the `--delete-old --dry-run` command; the owner runs it.
+  2. The agent reviews the output.
+  3. The owner explicitly confirms `--delete-old --confirm-delete`.
+
+  After that come the cleanup PRs (TASK-002 §5) that remove the Imagor/Spaces bypass in web-client and MCP.
 
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.
