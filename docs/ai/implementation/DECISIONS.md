@@ -906,6 +906,28 @@ Structured output was chosen over a tool-calling loop: one predictable extra cal
 
 ---
 
+## [2026-10-08] TASK-004: What Visitors See at Launch
+
+**Status**: Accepted (owner, 2026-10-08, answers to the TASK-004 audit)
+
+**Context**: The pre-launch audit (`docs/tasks/TASK-004-audit.md`) found features that are only shells: dead buttons, 404 links and fake data.
+
+**Decision**:
+1. Hide every unfinished feature for launch: accommodation (menu, search bar, home, footer, page sections), favorites, my account, shop, blog, the GetYourGuide section. Each hidden item is listed in `docs/features/hidden-for-launch.md` so it can be built later.
+2. `/beach-type` and `/user-type` stay as routes but are `noindex` and leave the sitemap.
+3. Footer `/destinations` → `/beaches`. "About us" (`/about` and the quick menu) → the CMS page `about-us`.
+4. The burger menu is built from API data (continents) plus the beach map and the AI pages.
+5. Home counts come from the API; the fake accommodation count is removed. A short SEO site description is written for 19 locales.
+6. Stripe is live at launch, so the payment pages are fixed and translated.
+7. AI crawlers: search/answer bots are allowed (e.g. `OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `Claude-SearchBot`, `Claude-User`); training bots are disallowed (e.g. `GPTBot`, `ClaudeBot`, `Google-Extended`, `CCBot`).
+8. Analytics and ads load only through CookieYes consent (Google Consent Mode v2, default denied): Google Analytics `G-WK9LGF32VW`, AdSense `ca-pub-5133469552990533` (owner sent both), the CookieYes banner script. IDs are public client IDs and live in `NEXT_PUBLIC_*` vars. The Facebook Pixel snippet the owner sent is commented out on the old site and is not added unless the owner asks. The cookie policy page embeds the CookieYes cookie table shortcode.
+
+**Alternatives Considered**: Building the missing features before launch (not possible in days); leaving the buttons visible (dead ends hurt trust and SEO).
+
+**Related**: `docs/tasks/TASK-004-pre-launch-review.md`, `docs/tasks/TASK-004-audit.md`, `docs/features/hidden-for-launch.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions
