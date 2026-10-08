@@ -97,6 +97,33 @@ The sandbox cannot reach `*.beachrex.com` (network policy). Live QA therefore ru
 This catches crashes, empty pages, dead links, missing strings and SSR/SEO output; data-specific checks on dev
 stay an owner action and are marked `NOT RUN` in the audit.
 
+### Step 5b — Old beachrex.com URLs redirect to the new pages (owner, 2026-10-08)
+
+"URLJI iz stare strani, morajo znat preusmerit na novo stran": old beach URLs are on Google Maps and other
+sites, so each must 301 to the exact new page.
+
+Facts (verified 2026-10-08):
+- New beach IDs equal the old IDs (`MigrateBeachesFromOldDb`: `$beach->id = $oldData['id']`).
+- The old dump `database/sql/beachrex_old.sql` has `beach_nice_url` (4 245 English nice URLs → `beach_id`) and,
+  per beach, `country_code_nice_url`, `region_nice_url`, `region_full_name_nice_url`, `city_nice_url`,
+  `island_name_nice_url`.
+- Old languages: `sl`, `en`, `hr`, `de`, `fr`, `es`, `it`, `ua`, `ru` (new Slovenian code is `si`).
+- Old URL shapes (from search engine results):
+  - beach: `/{lang}/{country}/{region}/{city}-{beaches}/{beach}` (e.g. `/hr/hrvatska/dalmacija/tisno-plaze/plaza-tisno`,
+    `/de/kroatien/istra/dajla-strande/strand-strunac`), and `/{lang}/beach/{beach}`; query strings like `?c=…`, `?bt=…`;
+  - city `/{lang}/{country}/{region}/{city}-{beaches}`, island `/{lang}/{country}/{region}/island-{name}`,
+    region `/{lang}/{country}/{region}`, country `/{lang}/{country}`;
+  - beach type `/{lang}/{country}/{type}-beaches`, map/filter `/{lang}/beach-filter`.
+
+Design:
+1. Backend: a `legacy_urls` lookup built from the dump by an idempotent artisan command (beach nice URL → beach id;
+   city/region/island/country nice URL → id), and a public read-only endpoint that resolves an old path to the
+   new entity (beach → city → island → region → country → home, most specific match wins).
+2. Frontend: unknown URLs already reach `[locale]/[...rest]`; it asks the resolver and answers **301** to the new
+   localized URL (built with the existing URL builders), else the 404. The middleware maps the old `sl` prefix to `si`.
+3. Tests: a table of real old URLs (from search results and the owner) → expected new URL; resolver unit tests.
+4. The owner checks a sample of old URLs on dev after the deploy.
+
 ### Step 6 — Prod launch runbook review (`docs/runbooks/prod-launch.md`)
 
 - Check every step against the current code, compose, nginx, deploy workflow and env names
