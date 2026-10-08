@@ -346,7 +346,7 @@ describe('helpers', () => {
   });
 });
 
-describe('image URLs with non-ASCII paths (Imagor bypass)', () => {
+describe('image URLs (Imagor only, TASK-002)', () => {
   test('ASCII paths go through Imagor', () => {
     assert.equal(
       imageUrl('img/beaches/hr-540-k-odalmacija/hr-540-k-odalmacija-sl9.jpg'),
@@ -354,12 +354,10 @@ describe('image URLs with non-ASCII paths (Imagor bypass)', () => {
     );
   });
 
-  test('paths with č/š/ž go directly to Spaces with NFD-encoded segments (same as web-client)', () => {
-    // "brač" (NFC) must become "brac" + U+030C → c%CC%8C, not %C4%8D (which Imagor/Spaces fail on)
-    assert.equal(
-      imageUrl('img/beaches/hr-114-o-brač/hr-114-o-brač-sl17.jpg'),
-      'https://beachrex.fra1.digitaloceanspaces.com/public/img/beaches/hr-114-o-brac%CC%8C/hr-114-o-brac%CC%8C-sl17.jpg',
-    );
-    assert.ok(imageThumbUrl('img/beaches/hr-114-o-brač/x.jpg').startsWith('https://beachrex.fra1.digitaloceanspaces.com/public/'), 'thumbs bypass Imagor too');
+  test('non-ASCII paths get no URL and never a Spaces link', () => {
+    // The old non-ASCII keys were deleted (TASK-002 step 6); such a path cannot resolve.
+    assert.equal(imageUrl('img/beaches/hr-114-o-brač/hr-114-o-brač-sl17.jpg'), '');
+    assert.equal(imageThumbUrl('img/beaches/hr-114-o-brač/x.jpg'), '');
+    assert.equal(imageUrl('img/beaches/hr-114-o-brac\u030C/x.jpg'), '', 'NFD form too');
   });
 });

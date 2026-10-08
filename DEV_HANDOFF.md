@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - TASK-002: Old Keys Deleted; MCP Images Only via Imagor
+
+### Overview
+Runbook step 6 ran on dev (owner, after an explicit confirmation): `--delete-old --dry-run` listed 10 685 keys, `--delete-old --confirm-delete` printed `Deleted 10685 old key(s).` The control inventory afterwards: 206 174 keys scanned, 0 non-ASCII keys, 0 collisions, 0 non-ASCII DB values, 0 vtour files that reference a migrated key. TASK-002 §5 cleanup for the MCP server follows.
+
+### Changes Made
+- `mcp-server/src/api-client.ts` `cdn()`: the Spaces bypass for non-ASCII paths is removed. Every image URL goes through Imagor (`s3.beachrex.com`). A non-ASCII path gets an empty URL; empty gallery entries are dropped.
+- `cfg().cdnAssets` and `BEACHREX_CDN_ASSETS` (`mcp-server/.env.example`) are removed.
+- `mcp-server/test/api-client.test.ts`: the bypass test is replaced by one that fails on the old code.
+- Docs: runbook step 6 and TASK-002 status, ADR "Non-ASCII Image Paths Get No URL", HANDOFF.
+
+### Affected Endpoints
+None in the Laravel API. MCP tools: `image_url`, `image_thumb` and `media[].url` in search and beach details.
+
+### Testing
+`cd mcp-server && npm test` (35 pass); on the old `api-client.ts` the new test fails (1 of 35).
+
+---
+
 ## 2026-10-08 - TASK-002: Migration Run on Dev; Copy Check Uses Listing ETags
 
 ### Overview

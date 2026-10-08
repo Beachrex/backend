@@ -23,8 +23,6 @@ function cfg() {
     apiKey: process.env.BEACHREX_API_KEY || '',
     cdnBase: process.env.BEACHREX_CDN_URL || 'https://s3.beachrex.com/unsafe/fit-in/800x800/',
     cdnThumb: process.env.BEACHREX_CDN_THUMB || 'https://s3.beachrex.com/unsafe/fit-in/200x200/',
-    // Direct DigitalOcean Spaces URL for paths with non-ASCII characters (Imagor can't serve them reliably).
-    cdnAssets: process.env.BEACHREX_CDN_ASSETS || 'https://beachrex.fra1.digitaloceanspaces.com/public/',
     frontendUrl: (process.env.BEACHREX_FRONTEND_URL || 'https://dev.beachrex.com').replace(/\/+$/, ''),
     timeoutMs: Number(process.env.BEACHREX_API_TIMEOUT_MS) || 15000,
   };
@@ -221,14 +219,9 @@ function cdn(base: string, relPath: string | null | undefined): string {
   if (!relPath) return '';
   if (/^https?:\/\//i.test(relPath)) return relPath;
   const path = relPath.replace(/^\/+/, '');
-  // Same rule as the web-client (src/lib/utils/beach-images.ts buildCdnUrl): Imagor does not handle
-  // UTF-8 paths (č, š, ž …) reliably, so bypass it and link the original on Spaces. Object keys were
-  // uploaded in NFD form (c + combining caron), so each segment is NFD-normalised before encoding.
-  if (!/^[\x00-\x7F]*$/.test(path)) {
-    const assets = cfg().cdnAssets;
-    const encoded = path.split('/').map((seg) => (/^[\x00-\x7F]*$/.test(seg) ? seg : encodeURIComponent(seg.normalize('NFD')))).join('/');
-    return `${assets.endsWith('/') ? assets : `${assets}/`}${encoded}`;
-  }
+  // Since TASK-002 every storage key is ASCII and the old non-ASCII keys are deleted, so a non-ASCII
+  // path cannot resolve. Return no URL rather than a broken one. All images come from Imagor.
+  if (!/^[\x00-\x7F]*$/.test(path)) return '';
   return `${base.endsWith('/') ? base : `${base}/`}${path}`;
 }
 export function imageUrl(relPath: string | null | undefined): string { return cdn(cfg().cdnBase, relPath); }
@@ -644,7 +637,8 @@ export function mapBeachDetail(b: any, locale?: string): BeachDetail {
     }, loc),
     media: gallery
       .filter((m) => m?.url)
-      .map((m) => ({ url: imageUrl(m.url), is_primary: Boolean(m.is_primary) })),
+      .map((m) => ({ url: imageUrl(m.url), is_primary: Boolean(m.is_primary) }))
+      .filter((m) => m.url),
   };
 }
 

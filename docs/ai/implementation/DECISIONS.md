@@ -892,6 +892,20 @@ Structured output was chosen over a tool-calling loop: one predictable extra cal
 
 ---
 
+## [2026-10-08] TASK-002 Cleanup: Non-ASCII Image Paths Get No URL
+
+**Status**: Accepted (agent's reading of TASK-002 §5 "keep a test that rejects non-ASCII paths"; owner decision 2026-10-07: all images only from `s3.beachrex.com`)
+
+**Context**: Step 6 deleted the 10 685 old non-ASCII keys on 2026-10-08. The control inventory shows 0 non-ASCII keys and 0 non-ASCII DB values. The Imagor bypass in web-client `buildCdnUrl` and MCP `cdn()` linked non-ASCII paths directly to Spaces; those links can no longer resolve.
+
+**Decision**: Both builders always use Imagor. A path that still contains non-ASCII characters gets no URL (web-client `null`, MCP empty string), so the UI shows its usual fallback instead of a broken image. Tests guard this.
+
+**Alternatives Considered**: Transliterating the path on the client (would duplicate `App\Support\AsciiPath` in TypeScript and hide data errors); sending the path to Imagor URL-encoded (always 404 now).
+
+**Related**: `docs/tasks/TASK-002-ascii-storage-paths.md` §5, `docs/runbooks/ascii-storage-paths.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

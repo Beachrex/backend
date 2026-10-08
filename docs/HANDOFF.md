@@ -1,6 +1,6 @@
 # Handoff — state as of 2026-10-08 (end of session 3)
 
-> **Next session, start here:** (1) TASK-002: steps 1–5 are done on dev, the uat DB was promoted from dev, and the owner verified images on uat (2026-10-08). Next is step 6, `--delete-old` from `api_dev`: a dry run first, then the owner's explicit confirmation. After that come the cleanup PRs (TASK-002 §5);
+> **Next session, start here:** (1) TASK-002: all steps are done, including step 6 (10 685 old keys deleted, 2026-10-08). Only the §5 cleanup PRs remain (check their status below);
 > (2) dev review tracker [`docs/qa/dev-review-tracker.md`](qa/dev-review-tracker.md): the P1 rows are in **Retest** (session 3); next are the P2 rows (proposed order step 3);
 > (3) item 6 (SEO) after that. Promotion to uat only when the owner asks.
 
@@ -133,12 +133,9 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   - The owner checked beach pages with šumniki on uat on 2026-10-08: images work.
   - The old beachrex.com site also reads the `beachrex` bucket. The owner accepts that its images with šumniki break after step 6: "to nima veze, zato pa pohitimo z razvojem, da damo novo strani čimprej ven" (2026-10-08).
 
-  **Next:** runbook step 6 from `api_dev`.
-  1. The agent gives the `--delete-old --dry-run` command; the owner runs it.
-  2. The agent reviews the output.
-  3. The owner explicitly confirms `--delete-old --confirm-delete`.
+  **Step 6 done (2026-10-08):** the dry run listed 10 685 keys; after the owner's explicit "da", `--delete-old --confirm-delete` deleted 10 685 old keys. The control inventory shows 0 non-ASCII keys, 0 collisions and 0 non-ASCII DB values.
 
-  After that come the cleanup PRs (TASK-002 §5) that remove the Imagor/Spaces bypass in web-client and MCP.
+  Cleanup PRs (TASK-002 §5): the Imagor/Spaces bypass is removed from MCP (backend) and web-client; non-ASCII paths get no URL (ADR 2026-10-08).
 
 - **DB backups** (`docs/runbooks/restore-backup.md`). Policy (owner, 2026-10-07): prod only; uat temporarily until prod is live.
   - 2026-10-07: the owner created the `beachrex-backups` bucket and key and set the `BACKUP_*` vars in `.env.uat`.
