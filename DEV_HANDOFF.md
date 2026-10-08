@@ -52,6 +52,26 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Copyright (IPTC) in JPEG photos: on upload and `media:embed-copyright`
+
+### Overview
+Owner, 2026-10-08: photos are works of MOJA PLAŽA, d.o.o.; a downloaded file should name its owner. The backend does no image processing (originals go to Spaces unchanged, Imagor resizes on the fly), so the IPTC block is written with PHP's built-in `iptcembed()` — no new library, pixels are not re-encoded. JPEG only.
+
+### Changes Made
+- `App\Support\ImageCopyright`: IPTC By-line `MOJA PLAŽA, d.o.o.`, Credit/Source `Beachrex`, Copyright notice `© {year} MOJA PLAŽA, d.o.o.` (UTF-8).
+- Filament beach media upload: new toggle "Our photo" (default on) writes the block into the uploaded JPEG on Spaces; turn off for other authors' photos.
+- `MediaService::upload` (API): writes the block unless `add_copyright` is false.
+- `php artisan media:embed-copyright [--dry-run] [--limit=N]`: existing JPEGs under `img/beaches/` (skips `img/beaches_mobile/`, files that already have the notice, and missing files). Rewrites files on the bucket — owner decides when to run it on prod.
+- `docs/features/hidden-for-launch.md`: H14 beach banner ratings + save hidden.
+
+### Notes
+Whether Imagor keeps metadata in resized/WebP copies depends on its config (not in these repos); originals keep it.
+
+### Testing
+`php artisan test --filter=ImageCopyrightTest` (4).
+
+---
+
 ## 2026-10-08 - Terms of use §6: photos are works of MOJA PLAŽA, d.o.o.
 
 ### Overview
