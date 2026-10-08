@@ -82,19 +82,19 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 33 | Home shows 2876 beaches, map 2877 | bug | Two different counts (cached vs live, or a status filter). Verify | P3 | Bug, to verify | |
 | 34 | Element links nowhere: to define | question | Content decision | – | Decision | |
 | 35 | Map element always in EN | bug | Missing translation (UI string or DB) | P3 | Translation/data | |
-| 36 | Map says webcam exists, but click shows nothing and the beach page has none | bug | Data (webcam URL) or frontend. Verify against `media.embeds.webcam` | P2 | Bug, to verify | |
+| 36 | Map says webcam exists, but click shows nothing and the beach page has none | bug | Verified in code and dev data: any string in `beach.webcam` counted as a webcam (2 junk values `bret`/`bre`), the card opened only an `href` (2 bare whatsupcams URLs never opened), and the beach page had no webcam at all. Now one rule (`parseWebcamUrl`) and a "Live cam" card on the beach page | P2 | Retest | Beachrex/web-client#11, dev run 50 |
 | 37 | Map card images cropped (logo cut) | bug | CSS `object-fit` / Imagor `fit-in`. Verify | P3 | Bug, to verify | |
 | 38 | Many beaches show no sphere (map or beach page) | bug | See #17 | P2 | Likely fixed, retest | Beachrex/backend#23 (+ TASK-002) |
 | 39 | Map search does not leave the selected zone (Istria → Zadar) | bug | Behaviour decision: searching a place should change the zone. Probably a small frontend change once agreed | P2 | Decision | |
-| 40 | Map search results hidden behind the map | bug | z-index / CSS | P2 | Bug | |
+| 40 | Map search results hidden behind the map | bug | Checked in code (2026-10-08): no z-index defect found (header dropdown `z-[10000]`, leaflet-geosearch bar `z-index:1000`). Long result lists are clipped by the map's `overflow-hidden`. Needs a screenshot to know which search box | P2 | Bug, to verify | |
 | 41 | Searching "Zadar" shows "Zara, città di Zara" | bug | The Meilisearch city name uses a non-local translation (IT name in the EN index?). Check the search locale fallback | P3 | Bug, to verify | |
 | 42 | Hover on map elements: show region/city, link | question | Define the intended behaviour | P3 | Decision | |
-| 43 | City and beach level: side map shows the region, not the city | bug | Frontend map bounds use the region. Verify | P2 | Bug | |
+| 43 | City and beach level: side map shows the region, not the city | bug | Verified in code: `BannerSection/MapWidget.tsx` is a static image (`banner-map.png`) shown on every city, region and beach page. Fix: a real mini map from the city/beach coordinates | P2 | Bug | |
 | 44 | Map filter: Croatia shows no results; URL words flicker | bug | Probably the `country`/`country_code` mismatch (fixed in Beachrex/backend#23: `/beaches/filters` accepts `country_code`) **or** a frontend loop. Retest first, then fix the flicker | P1 | Likely fixed, retest | Beachrex/backend#23 (partly) |
 | 45 | Same beach-type, family and parking icon on every beach | bug | Verified in code: the beach page badge strip was a hardcoded placeholder list (`BeachBannerSection.tsx` TODO). Badges now come from beach type, user types, parking, accessibility, infrastructure and sports. **Still open:** listing/map cards (`PropertyCard`) show 3 static icons; they need beach type, user type and parking from the search/map API (separate PR) | P2 | Retest (beach page) | Beachrex/web-client#9, dev run 48 |
 | 46 | Beach page: wrong beach type (sand shown as rock), duplicates, no sphere | bug | Verified in code: the hardcoded "stony" badge appeared on every beach, and `BottomBadgesBeach` repeated badges to fill 9 slots. Both fixed. "No sphere": see #17 (TASK-002 done 2026-10-08) | P2 | Retest | Beachrex/web-client#9, dev run 48 |
 | 47 | Parking and pool are "YES only": was it like that on the old site? | question | The owner checks the old site; the agent can check `MigrateBeachesFromOldDb` mapping | – | Decision | |
-| 48 | `/si/plaze`: image error, media switch (image/video/sphere) broken, inactive buttons | bug | Verify on dev | P2 | Bug, to verify | |
+| 48 | `/si/plaze`: image error, media switch (image/video/sphere) broken, inactive buttons | bug | Verified in code: the `/beaches` page renders mock data (`beaches/page.tsx`: "Plaža Ladinka" ×4, `mockCountries`), without video/sphere/webcam. Fix: wire it to the real API (overlaps SEO item 6) | P2 | Bug | |
 | 49 | Define what these buttons do | feature | Decision | – | Decision | |
 | 50 | Search result priority: country → region → city/island → beach | feature | Sensible; small change in search ranking or grouping once agreed | P3 | Decision | |
 | 51 | SL search: all levels only for Albania and Montenegro; "Belgij" ≠ "Belgija" | bug | Meilisearch index or locale data inconsistency. Verify | P2 | Bug, to verify | |
@@ -110,15 +110,15 @@ Priority: **P1** = page crash or broken navigation · **P2** = wrong data or bro
 | 61 | Map sphere click → `NoSuchKey` (Albania); beach page works | bug | Matches the bug fixed in Beachrex/backend#23 (map/search tour URL ignored `mobile_upload`) | P2 | Likely fixed, retest | Beachrex/backend#23 |
 | 62 | Click beach on map → open the beach page | feature | Small feature | P3 | Decision | |
 | 63 | No videos for some Albania and Germany beaches | bug | Data (no video media rows) or frontend. Verify per beach | P2 | Bug, to verify | |
-| 64 | No webcams for Albania and Belgium | bug | Data. Verify | P2 | Bug, to verify | |
-| 65 | Germany/Denmark: map shows webcam, card click and beach page do not | bug | Same family as #36 | P2 | Bug, to verify | |
+| 64 | No webcams for Albania and Belgium | bug | Data: only 256 of 3 774 beaches have a webcam value (dev, 2026-10-08) | P2 | Translation/data | |
+| 65 | Germany/Denmark: map shows webcam, card click and beach page do not | bug | Same as #36 | P2 | Retest | Beachrex/web-client#11, dev run 50 |
 | 66 | Spain: no videos for several beaches | bug | Data or frontend. Verify | P2 | Bug, to verify | |
-| 67 | Media switch differs between map and beach page | bug | Frontend consistency | P3 | Bug | |
-| 68 | Beach page webcam toggle disabled (red symbol) | bug | Probably an invalid or missing webcam URL. Verify | P2 | Bug, to verify | |
-| 69 | Lake/river beaches filter shows nothing on the map | bug | `waterbody` filter mapping. Verify | P2 | Bug, to verify | |
-| 70 | Map does not separate indoor and outdoor pool like home | bug | Filter parity | P3 | Bug | |
+| 67 | Media switch differs between map and beach page | bug | Verified in code: cards took the video only from `embeds.video_url`, the beach page also from uploaded videos (`media.videos`). Now one rule (`buildBeachVideoUrl`). The beach page also gained the webcam (#36) | P3 | Retest | Beachrex/web-client#12, dev run 51 |
+| 68 | Beach page webcam toggle disabled (red symbol) | bug | Verified in code: the disabled toggle is in the "similar beaches" section and counted invalid webcam values; the beach's own webcam was never shown. Fixed with #36 (beach page "Live cam" card; the toggle counts only real webcams) | P2 | Retest | Beachrex/web-client#11, dev run 50 |
+| 69 | Lake/river beaches filter shows nothing on the map | bug | Verified: the filter code is correct (codes `lake`/`river`/`pool` end to end). Data: all 3 774 dev beaches have waterbody `sea`, 0 lake/river/pool (2026-10-08). Owner decides: fill the data or hide the lake/river/pool tiles | P2 | Decision | |
+| 70 | Map does not separate indoor and outdoor pool like home | bug | Verified in code: both home tiles send the same `waterbody=pool`; the API has `indoor_pools_count`/`outdoor_pools_count` but no filter for them. Needs a backend filter + frontend. Moot until pool data exists (#69) | P3 | Bug | |
 | 71 | These functions are not programmed; how should they work? | question | Decision | – | Decision | |
-| 72 | Map needs a double click to show a beach | bug | Frontend map click handler | P2 | Bug | |
+| 72 | Map needs a double click to show a beach | bug | Likely mechanism from code: below zoom 15 the first click only expands the cluster; an opened popup can be closed by the refetch after its autopan. Needs a browser repro before a fix | P2 | Bug, to verify | |
 | 73 | Map card: place and country clickable | feature | Small feature | P3 | Decision | |
 | 74 | DE → map → logo: language resets to EN (all languages) | bug | Verified in code: a plain `next/link` with a locale-less href lets the `NEXT_LOCALE` cookie or a stale prefetch pick the language. The header and footer logos used `/`; now `/${locale}` | P1 | Retest | Beachrex/web-client#8, dev run 47 |
 | 75 | RU, UA, EL, BG: beach page text not in their script | bug | Missing translations (DB `*_translation` + UI strings) | P3 | Translation/data | |
