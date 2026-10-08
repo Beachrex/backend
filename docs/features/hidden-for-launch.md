@@ -19,6 +19,7 @@ and what is needed to bring it back. When a feature is built, move its row to "B
 | H10 | GetYourGuide activities | Beach page activities section (heading + filters, no content) | `src/components/Beach/GetYourGuideSection.tsx` | Empty shell | GetYourGuide partner integration | TASK-004 (PR tbd) |
 | H11 | Beach type pages | `/beach-type`, `/beach-type/[type]` (stub, debug heading) | `src/app/[locale]/beach-type/**`, `src/app/sitemap/static.xml` | Placeholder content | Real pages built on the map/search filters | TASK-004 (PR tbd): removed from the sitemap, `noindex` |
 | H12 | User type pages | `/user-type`, `/user-type/[type]` (stub) | `src/app/[locale]/user-type/**`, `src/app/sitemap/static.xml` | Placeholder content | Define user types (families, surfers, …) and their content | TASK-004 (PR tbd): removed from the sitemap, `noindex` |
+| H13 | Map quick filters: free beach, parking nearby, wide beach, naturist beach | Beach map sidebar tiles (design "basic filters") | web-client `src/config/mapQuickFilters.ts` | Free beach, parking nearby and wide beach have no backend filter; naturist (`location_infrastructure.naturist_friendly`) has no icon | Backend filters (free entry, parking distance, beach width) and icons in `public/images/categories/` | Map quick filters PR (2026-10-08) |
 
 ## Brought back
 
