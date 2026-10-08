@@ -198,6 +198,7 @@ class BeachResource extends JsonResource
             'main_image' => $mainImage,
             'media' => $media,
             'tags' => $tags,
+            'features' => \App\Support\BeachCardFeatures::fromModel($this->resource, $locale),
             // 'main_image_imagor' removed - frontend constructs Imagor URLs directly
         ];
     }

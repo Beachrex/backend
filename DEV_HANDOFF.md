@@ -52,6 +52,28 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - Beach Card Features: Beach Type, Family, Parking (QA #45)
+
+### Overview
+List and map cards in the frontend showed the same stones / family / parking icons on every beach, because the search, map and list APIs did not return those fields. Every beach item now carries `features`, built with the same rules as the beach page badges.
+
+### Changes Made
+- `app/Services/PostGISService.php`: `formatBeachResults()` adds `features` to the within-radius, nearest and bounding-box results, loaded for all beaches in one query (`loadCardFeatures()`).
+- `app/Support/BeachCardFeatures.php` (new) and `app/Http/Resources/BeachResource.php`: the same `features` for `/beaches` and `/beaches/most-visited`. `BeachController` eager-loads the needed relations, so there is no N+1.
+- Rules:
+  - `beach_type` = `{code, name}` (name translated, English fallback) or `null`;
+  - `family` = the beach has user type `family`;
+  - `parking` = infrastructure `parking`, or a `parking_capacity` other than `0` / `private_parking_only`.
+- OpenAPI: `features` on `BeachSchema` and `SpatialBeachSchema`; `api-docs.json` regenerated.
+
+### Affected Endpoints
+`GET /api/v1/beaches`, `/beaches/most-visited`, `/spatial/beaches/within-radius`, `/spatial/beaches/nearest`, `/spatial/beaches/bounding-box`. The change is additive; no field was removed.
+
+### Testing
+`php artisan test --filter=BeachCardFeaturesApiTest` (4 tests). On the old code, all 4 fail.
+
+---
+
 ## 2026-10-08 - Pool Type Filter (indoor / outdoor) (QA #70)
 
 ### Overview
