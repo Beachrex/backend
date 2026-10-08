@@ -37,6 +37,7 @@ class SyncStaticPages extends Command
         'contact' => 5,
         'cookie-policy' => 6,
         'ai-assistant-connector' => 7,
+        'media-kit' => 8,
     ];
 
     private const FIELDS = ['title', 'slug', 'meta_title', 'meta_description', 'content'];
