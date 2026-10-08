@@ -52,6 +52,27 @@ How to test the changes
 
 ---
 
+## 2026-10-08 - TASK-002: Inventory Memory Fix (vtour contents not kept)
+
+### Overview
+The owner's dev run (after the parallel reads) listed 206 174 keys in ~10 s. It then read 32 000 of 51 350 vtour text files in 72 s and stopped with `Allowed memory size of 536870912 bytes exhausted`. The cause: every vtour file with any non-ASCII text (titles, script comments) was kept in memory twice, as the original and the rewritten content.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`:
+  - `vtourRewrites` keeps only key, target, up to 10 sample tokens, the token count and a `changed` flag. The flag means the file references a migrated key segment.
+  - `--copy` re-reads only the changed files when it rewrites them.
+  - S3 reads go in chunks of 100.
+  - The summary has a new row: "of which reference a migrated key (rewritten by --copy)".
+- `tests/Feature/AsciiStoragePathsInventoryTest.php`: `test_does_not_keep_vtour_file_contents_in_memory` uses 150 non-ASCII tour files of ~0.6 MB each. Peak growth must stay under 40 MB. On the old code it grew by 88 MB and the test fails.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths` → 21 passed. The copy/rewrite tests in `AsciiStoragePathsMigrationTest` still pass with the re-read.
+
+---
+
 ## 2026-10-08 - TASK-002: Parallel vtour Reads in the Inventory
 
 ### Overview

@@ -89,7 +89,7 @@ class AsciiStoragePaths extends Command
         $vtour = $this->vtourRewrites($disk, $sizes, $plan);
         foreach ($vtour as $file) {
             $rows[] = ['vtour_ref', $file['key'], '', $file['target'], '', 'rewrite_refs',
-                count($file['tokens']).' non-ASCII token(s): '.implode(' | ', array_slice($file['tokens'], 0, 10))];
+                $file['tokenCount'].' non-ASCII token(s): '.implode(' | ', $file['tokens'])];
         }
 
         $db = $this->dbChanges();
@@ -113,6 +113,7 @@ class AsciiStoragePaths extends Command
             ['  already copied', $count(fn ($i) => $i['status'] === 'copied')],
             ['Collisions (must be resolved first)', $count(fn ($i) => $i['status'] === 'collision')],
             ['vtour text files with non-ASCII references', count($vtour)],
+            ['  of which reference a migrated key (rewritten by --copy)', count(array_filter($vtour, fn ($f) => $f['changed']))],
             ['Non-ASCII DB values', count($db)],
             ['  of which skipped (full URLs, fix by hand)', count(array_filter($db, fn ($c) => $c['skip']))],
             ['ASCII keys with spaces/other chars (info, not migrated)', $asciiButUnsafe],
@@ -162,16 +163,18 @@ class AsciiStoragePaths extends Command
 
         // Rewrite references after the copy, so a rewritten tour only points at keys that exist.
         $rewritten = 0;
+        $segments = $this->segmentMap($plan);
         foreach ($this->vtourRewrites($disk, $sizes, $plan) as $file) {
-            if ($file['content'] === $file['rewritten']) {
+            if (! $file['changed']) {
                 continue;
             }
-            $this->line(($dryRun ? '[dry-run] rewrite ' : 'rewrite ')."{$file['target']} (".count($file['tokens']).' reference(s))');
+            $this->line(($dryRun ? '[dry-run] rewrite ' : 'rewrite ')."{$file['target']} ({$file['tokenCount']} reference(s))");
             if (! $dryRun) {
+                $content = (string) $disk->get($file['key']);
                 if ($file['target'] === $file['key']) {
-                    $this->backup($file['key'], $file['content']);
+                    $this->backup($file['key'], $content);
                 }
-                $disk->put($file['target'], $file['rewritten'], ['visibility' => 'public']);
+                $disk->put($file['target'], strtr($content, $segments), ['visibility' => 'public']);
             }
             $rewritten++;
         }
@@ -350,10 +353,42 @@ class AsciiStoragePaths extends Command
     /**
      * vtour text files that reference non-ASCII names. References are rewritten only where they match a
      * non-ASCII key segment (folder or file name), so other text such as titles stays unchanged.
+     * File contents are not kept (51 000+ tour files ran out of memory on dev); --copy re-reads the files to rewrite.
      *
-     * @return list<array{key: string, target: string, tokens: list<string>, content: string, rewritten: string}>
+     * @return list<array{key: string, target: string, tokens: list<string>, tokenCount: int, changed: bool}>
      */
     private function vtourRewrites(FilesystemAdapter $disk, array $sizes, array $plan): array
+    {
+        $segments = $this->segmentMap($plan);
+        $keys = array_values(array_filter(array_keys($sizes), fn ($key) => $this->isVtourText($key)));
+
+        $files = [];
+        // A file at a non-ASCII key is read from there and written to its ASCII copy (target);
+        // a file at an ASCII key is rewritten in place (target === key).
+        foreach ($this->readTexts($disk, $keys) as $key => $content) {
+            if (AsciiPath::isAscii($content)) {
+                continue;
+            }
+            preg_match_all('/[^\s"\'<>=]*[^\x00-\x7F][^\s"\'<>=]*/u', $content, $m);
+            $tokens = array_values(array_unique($m[0] ?? []));
+            $files[] = [
+                'key' => $key,
+                'target' => AsciiPath::fromPath($key),
+                'tokens' => array_slice($tokens, 0, 10),
+                'tokenCount' => count($tokens),
+                'changed' => $segments !== [] && strtr($content, $segments) !== $content,
+            ];
+        }
+
+        return $files;
+    }
+
+    /**
+     * Every non-ASCII key segment (NFC and NFD form) → its ASCII form.
+     *
+     * @return array<string, string>
+     */
+    private function segmentMap(array $plan): array
     {
         $segments = [];
         foreach ($plan as $item) {
@@ -366,26 +401,7 @@ class AsciiStoragePaths extends Command
             }
         }
 
-        $keys = array_values(array_filter(array_keys($sizes), fn ($key) => $this->isVtourText($key)));
-
-        $files = [];
-        // A file at a non-ASCII key is read from there and written to its ASCII copy (target);
-        // a file at an ASCII key is rewritten in place (target === key).
-        foreach ($this->readTexts($disk, $keys) as $key => $content) {
-            if (AsciiPath::isAscii($content)) {
-                continue;
-            }
-            preg_match_all('/[^\s"\'<>=]*[^\x00-\x7F][^\s"\'<>=]*/u', $content, $m);
-            $files[] = [
-                'key' => $key,
-                'target' => AsciiPath::fromPath($key),
-                'tokens' => array_values(array_unique($m[0] ?? [])),
-                'content' => $content,
-                'rewritten' => strtr($content, $segments),
-            ];
-        }
-
-        return $files;
+        return $segments;
     }
 
     /**
@@ -403,7 +419,7 @@ class AsciiStoragePaths extends Command
         $started = microtime(true);
         $done = 0;
 
-        foreach (array_chunk($keys, 500) as $chunk) {
+        foreach (array_chunk($keys, 100) as $chunk) {
             if ($disk instanceof AwsS3V3Adapter) {
                 yield from $this->readTextsFromS3($disk, $chunk);
             } else {
@@ -440,6 +456,7 @@ class AsciiStoragePaths extends Command
                 throw new \RuntimeException("Could not read {$key}: ".($result instanceof \Throwable ? $result->getMessage() : 'unknown error'));
             }
             $contents[$key] = (string) $result['Body'];
+            unset($results[$i]);
         }
 
         return $contents;
