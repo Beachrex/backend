@@ -6,9 +6,10 @@
 
 Today:
 - `beachrex.com` serves the old site from another host.
-- `api.beachrex.com` and `beachrex.com` have HTTP-only placeholder blocks in `deploy/nginx/beachrex.conf`.
+- `beachrex.com` has an HTTP-only placeholder block in `deploy/nginx/beachrex.conf`.
+- `api.beachrex.com` goes live **before** the website (owner 2026-10-09, see "API first" below): 80→301 + 443 block with its own certificate `/etc/letsencrypt/live/api.beachrex.com/`.
 - `dock.beachrex.com` already has SSL.
-- `beachrex_prod` exists but is empty.
+- `beachrex_prod` exists; the prod deploy of 2026-09-08 may have created empty tables (check B2).
 - Prod containers: `api_prod`, `web_prod`, `front_prod`, `scheduler_prod` (deployed from `main`).
 
 Steps are in order. Each has a **check** to pass before you continue.
@@ -123,8 +124,8 @@ $DC exec -T api_prod php artisan cache:clear
 
 | # | Who | Step | Check |
 |---|---|---|---|
-| D1 | Owner | DNS: A records `beachrex.com`, `www.beachrex.com`, `api.beachrex.com` → `2.28.76.142` | `dig +short beachrex.com` = `2.28.76.142` (wait for TTL) |
-| D2 | Owner | Issue certificates **without letting certbot edit nginx** (the repo owns the config): `sudo certbot certonly --nginx -d beachrex.com -d www.beachrex.com -d api.beachrex.com` | `sudo ls /etc/letsencrypt/live/beachrex.com/` shows `fullchain.pem` |
+| D1 | Owner | DNS: A records `beachrex.com`, `www.beachrex.com` → `2.28.76.142` (`api` is already done, see "API first") | `dig +short beachrex.com` = `2.28.76.142` (wait for TTL) |
+| D2 | Owner | Issue certificates **without letting certbot edit nginx** (the repo owns the config): `sudo certbot certonly --nginx -d beachrex.com -d www.beachrex.com` | `sudo ls /etc/letsencrypt/live/beachrex.com/` shows `fullchain.pem` |
 | D3 | Agent | PR: replace the HTTP-only prod blocks in `deploy/nginx/beachrex.conf` with 80→301 + 443 blocks using `/etc/letsencrypt/live/beachrex.com/` (template below). `www.beachrex.com` gets its own 443 block that 301s to `https://beachrex.com$request_uri` (one canonical host; old links to `www` keep working). Merge **only after D2**, otherwise `nginx reload` fails for all environments | Deploy green; `curl -sI https://www.beachrex.com/en` → `301` to `https://beachrex.com/en` |
 | D3b | Owner/Agent | Re-run the web-client prod deploy (Actions → Deploy → `main`, "Run workflow") so the frontend build and its static sitemaps (`/sitemap/countries.xml` is cached for 24 h) are made against the live HTTPS API | Deploy green; `curl -s https://beachrex.com/sitemap/countries.xml \| grep -c "<url>"` > 0 |
 | D4 | Owner | `https://beachrex.com/en`, `https://api.beachrex.com/api/v1/health`, `https://dock.beachrex.com` | Pages load; health `ok`; `curl -sI https://beachrex.com/en \| grep -i x-robots-tag` is **empty** (prod is indexable) |
@@ -156,8 +157,22 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     location / { proxy_pass http://beachrex_front_prod; ... same headers as uat ... }
 }
-# same for api.beachrex.com → beachrex_api_prod (client_max_body_size 25M)
 ```
+
+## API first (owner 2026-10-09)
+
+`api.beachrex.com` goes live before the website (the mobile app needs a production API). The old website on the
+other host must not use `api.beachrex.com`; the owner checks this before the DNS change.
+
+| # | Who | Step | Check |
+|---|---|---|---|
+| P1 | Agent | Promote the backend `dev → uat` (PR), check the uat deploy | Deploy green, `uat-api…/api/v1/health` ok |
+| P2 | Owner | `.env.prod` complete (Phase A list); send the agent the variable **names** only | Names match the list |
+| P3 | Owner | Load `beachrex_prod` from UAT (Phase B; if B2 shows empty tables, drop and recreate the database first) | B4 counts match |
+| P4 | Agent | Promote `uat → main` (PR), check the prod deploy | Deploy green; C2 health `ok` with the merge SHA; C4 search |
+| P5 | Owner | DNS: A record `api.beachrex.com` → `2.28.76.142`, **DNS only** (grey cloud) until the certificate exists | `api.beachrex.com` resolves to the VPS |
+| P6 | Owner | `sudo certbot certonly --nginx -d api.beachrex.com` (certbot must not edit nginx) | `/etc/letsencrypt/live/api.beachrex.com/fullchain.pem` exists |
+| P7 | Agent | Merge the nginx PR with the `api.beachrex.com` 443 block. **Only after P6**, otherwise `nginx reload` fails for every environment | `https://api.beachrex.com/api/v1/health` → `ok`; then the owner may turn the Cloudflare proxy on (SSL mode Full) |
 
 ## Rollback
 
