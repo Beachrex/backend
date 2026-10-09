@@ -235,6 +235,13 @@ return [
         'secret_key' => env('STRIPE_SECRET_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
 
+        // AI-4: version of the terms of sale the buyer accepts at checkout (stored on each Stripe session).
+        'terms_version' => env('STRIPE_TERMS_VERSION', '2026-10-09'),
+        // VAT by the buyer's country via Stripe Tax; needs Stripe Tax enabled and prices with a tax behaviour.
+        'tax_enabled' => (bool) env('STRIPE_TAX_ENABLED', false),
+        // Stripe issues and e-mails an invoice for each payment (Stripe invoicing fee applies).
+        'invoices_enabled' => (bool) env('STRIPE_INVOICES_ENABLED', false),
+
         'products' => [
             'itinerary_3day' => [
                 'price_id' => env('STRIPE_PRICE_ITINERARY_3DAY', env('STRIPE_PRODUCT_ITINERARY_3DAY_PRICE_ID')),

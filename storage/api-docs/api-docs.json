@@ -10357,6 +10357,16 @@
                             }
                         }
                     },
+                    "422": {
+                        "description": "consent_required: accept_terms and waive_withdrawal must be true",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    },
                     "500": {
                         "description": "Payment gateway error",
                         "content": {
@@ -15229,7 +15239,9 @@
             },
             "CheckoutRequest": {
                 "required": [
-                    "product_type"
+                    "product_type",
+                    "accept_terms",
+                    "waive_withdrawal"
                 ],
                 "properties": {
                     "product_type": {
@@ -15241,6 +15253,16 @@
                             "itinerary_14day"
                         ],
                         "example": "itinerary_7day"
+                    },
+                    "accept_terms": {
+                        "description": "The buyer accepts the terms of sale (must be true)",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "waive_withdrawal": {
+                        "description": "The buyer asks for immediate delivery and acknowledges losing the 14-day withdrawal right once a plan is created (must be true)",
+                        "type": "boolean",
+                        "example": true
                     }
                 },
                 "type": "object"

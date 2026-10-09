@@ -30,15 +30,37 @@ class StripeService
         User $user,
         string $productType,
         string $successUrl,
-        string $cancelUrl
+        string $cancelUrl,
+        array $consent = []
     ): Session {
+        return Session::create($this->checkoutSessionParams($user, $productType, $successUrl, $cancelUrl, $consent));
+    }
+
+    /**
+     * Stripe Checkout parameters (AI-4, owner 2026-10-09). The buyer's consent to the terms and to immediate
+     * delivery (losing the 14-day withdrawal right once a plan is created) is stored on the session and the
+     * payment as evidence; the webhook keeps the whole session on the purchase row. Stripe Tax and Stripe
+     * invoices are switched on per environment once the company's Stripe account is set up.
+     */
+    public function checkoutSessionParams(User $user, string $productType, string $successUrl, string $cancelUrl, array $consent = []): array
+    {
         $product = config("ai.stripe.products.{$productType}");
 
         if (!$product || !$product['price_id']) {
             throw new \Exception("Invalid product type or missing price ID: {$productType}");
         }
 
-        return Session::create([
+        $metadata = [
+            'product_type' => $productType,
+            'user_id' => $user->id,
+            'credits' => $product['credits'],
+            'terms_version' => (string) config('ai.stripe.terms_version'),
+            'terms_accepted_at' => $consent['accepted_at'] ?? null,
+            'withdrawal_waiver' => ! empty($consent['waive_withdrawal']) ? 'yes' : 'no',
+            'locale' => $consent['locale'] ?? null,
+        ];
+
+        $params = [
             'payment_method_types' => ['card'],
             'line_items' => [[
                 'price' => $product['price_id'],
@@ -48,12 +70,24 @@ class StripeService
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'client_reference_id' => (string) $user->id,
-            'metadata' => [
-                'product_type' => $productType,
-                'user_id' => $user->id,
-                'credits' => $product['credits'],
-            ],
-        ]);
+            'customer_email' => $user->email,
+            'locale' => 'auto',
+            'metadata' => $metadata,
+            'payment_intent_data' => ['metadata' => $metadata],
+        ];
+
+        if (config('ai.stripe.tax_enabled')) {
+            // VAT by the buyer's country (Stripe Tax); companies can enter their VAT number.
+            $params['automatic_tax'] = ['enabled' => true];
+            $params['billing_address_collection'] = 'required';
+            $params['tax_id_collection'] = ['enabled' => true];
+        }
+        if (config('ai.stripe.invoices_enabled')) {
+            // Stripe issues and e-mails an invoice for the payment (company details come from the Stripe account).
+            $params['invoice_creation'] = ['enabled' => true];
+        }
+
+        return $params;
     }
 
     /**

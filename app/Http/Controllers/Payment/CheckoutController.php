@@ -83,6 +83,11 @@ class CheckoutController extends Controller
      *         @OA\JsonContent(ref="#/components/schemas/PaymentErrorResponse")
      *     ),
      *     @OA\Response(
+     *         response=422,
+     *         description="consent_required: accept_terms and waive_withdrawal must be true",
+     *         @OA\JsonContent(ref="#/components/schemas/PaymentErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=500,
      *         description="Payment gateway error",
      *         @OA\JsonContent(ref="#/components/schemas/PaymentErrorResponse")
@@ -120,6 +125,20 @@ class CheckoutController extends Controller
             ], 400);
         }
 
+        // AI-4: before paying, the buyer accepts the terms of sale and asks for immediate delivery, acknowledging
+        // that the 14-day withdrawal right ends once a plan is created (Directive 2011/83/EU, Art. 16(m)).
+        $consent = Validator::make($request->all(), [
+            'accept_terms' => 'accepted',
+            'waive_withdrawal' => 'accepted',
+        ]);
+        if ($consent->fails()) {
+            return response()->json([
+                'error' => 'consent_required',
+                'message' => 'Accept the terms of sale and confirm immediate delivery to continue.',
+                'errors' => $consent->errors(),
+            ], 422);
+        }
+
         $productType = $request->input('product_type');
         $user = $request->user();
 
@@ -135,14 +154,18 @@ class CheckoutController extends Controller
             }
 
             // Create Stripe Checkout session
-            $successUrl = config('app.frontend_url') . '/payment/success?session_id={CHECKOUT_SESSION_ID}';
-            $cancelUrl = config('app.frontend_url') . '/payment/cancel';
+            // Back to the result pages in the buyer's language (website locale: si for Slovenian).
+            $webLocale = app()->getLocale() === 'sl' ? 'si' : app()->getLocale();
+            $base = rtrim((string) config('app.frontend_url'), '/') . '/' . $webLocale;
+            $successUrl = $base . '/payment/success?session_id={CHECKOUT_SESSION_ID}';
+            $cancelUrl = $base . '/payment/cancel';
 
             $session = $this->stripeService->createCheckoutSession(
                 $user,
                 $productType,
                 $successUrl,
-                $cancelUrl
+                $cancelUrl,
+                ['accepted_at' => now()->toIso8601String(), 'waive_withdrawal' => true, 'locale' => $webLocale]
             );
 
             return response()->json([
