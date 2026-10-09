@@ -52,6 +52,12 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - content:ai: 1 m depth given as a sentence
+
+Second preview: even with the renamed fact the model still wrote "5 m deep a metre from the shore". `BeachContentAi::depthSentence()` now turns the code into a finished statement ("The water becomes 1 m deep about 5 m from the shore."), passed as `shallow_water`. Test: `ContentAiTest` (12).
+
+---
+
 ## 2026-10-09 - content:ai: depth fact read the right way round, no trivia
 
 Owner preview of generated descriptions (2026-10-09): "the sea is 5 m deep a metre from the shore" came from the field `swimming_depth_of_one_m` (distance from the shore where the water is 1 m deep), which the model read as a depth.

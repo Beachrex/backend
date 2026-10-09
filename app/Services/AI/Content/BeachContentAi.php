@@ -248,7 +248,7 @@ Writing:
 - 50-110 words per language in 2-5 sentences: longer when there are many facts, shorter when there are few.
 - The first sentence must work on its own as a search-result summary of at most 155 characters (count them) and name the beach and its town or island.
 - Open with what is most distinctive about this beach (its surface, setting, who it suits, an activity), not with a generic "X is a beach in Y". Vary the sentence structure. Avoid stock phrases such as "hidden gem", "perfect for", "nestled", "paradise", "crystal-clear".
-- distance_from_shore_to_1m_depth is how far out the water becomes 1 m deep (a large distance means shallow water, good for children); it is not the depth itself.
+- shallow_water is already a finished statement about where the water becomes 1 m deep; keep its meaning exactly and never turn the distance into a depth.
 - Leave out trivial amenities such as rubbish bins; mention parking briefly.
 - Mention the area naturally ("in southern Dalmatia, near Dubrovnik"); do not copy region labels such as "Dalmatia - Dubrovnik".
 - Use the beach name given for each language in name_by_language, and place names in that language's usual form.
@@ -286,7 +286,7 @@ TXT;
             'access' => $this->enName($beach->accessibility),
             'crowds' => $this->enName($beach->occupancyRate),
             'slope' => $this->enName($beach->beachInclination),
-            'distance_from_shore_to_1m_depth' => $this->enName($beach->swimmingDepthOfOneM),
+            'shallow_water' => $this->depthSentence($beach->swimmingDepthOfOneM?->code),
             'parking' => $this->enName($beach->parkingCapacity),
             'facilities' => $list($beach->locationInfrastructures),
             'food_and_drink' => $list($beach->culinaryOffers),
@@ -484,6 +484,33 @@ TXT;
         return array_values(array_filter(self::locales(), function ($locale) use ($beach) {
             return trim((string) $beach->translations->firstWhere('locale', $locale)?->description) === '';
         }));
+    }
+
+    /**
+     * `swimming_depth_of_one_m` codes ("0m", "5m", "0m_10m", "more_100m") as a sentence: the model read
+     * the bare "5m" as a depth (owner preview 2026-10-09), it is the distance from the shore to 1 m depth.
+     */
+    public function depthSentence(?string $code): ?string
+    {
+        if ($code === null || $code === '') {
+            return null;
+        }
+        if ($code === '0m') {
+            return 'The water is about 1 m deep right at the shore (it gets deep straight away).';
+        }
+        if ($code === 'more_100m') {
+            return 'The water stays shallower than 1 m for more than 100 m from the shore (very shallow, good for small children).';
+        }
+        if (preg_match('/^0m_(\d+)m(_plus)?$/', $code, $m)) {
+            return "The water becomes 1 m deep somewhere within the first {$m[1]} m from the shore.";
+        }
+        if (preg_match('/^(\d+)m$/', $code, $m)) {
+            $shallow = (int) $m[1] >= 30 ? ' (a long shallow stretch, good for small children)' : '';
+
+            return "The water becomes 1 m deep about {$m[1]} m from the shore{$shallow}.";
+        }
+
+        return null;
     }
 
     /** The beach name per language as stored (names part first), without the import's "Beach". */
