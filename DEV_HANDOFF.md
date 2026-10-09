@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - PHP-FPM: 16 workers instead of 5 (scalability)
+
+### Overview
+Scalability audit 2026-10-09: `Dockerfile.prod` used the `php:8.4-fpm` default pool (`pm.max_children = 5`), so each environment served at most 5 API requests at a time. That limit runs out first under load, before PostgreSQL or Redis.
+
+### Changes Made
+- `Dockerfile.prod`: `php-fpm.d/zz-beachrex-pool.conf` (loaded after the image's `www.conf`): `pm = dynamic`, `pm.max_children = 16`, `start 4`, `spare 2–8`, `pm.max_requests = 1000` (recycles workers, limits memory growth), `request_terminate_timeout = 60s`.
+- The values come from env vars (`PHP_FPM_PM`, `PHP_FPM_MAX_CHILDREN`, `PHP_FPM_START_SERVERS`, `PHP_FPM_MIN_SPARE_SERVERS`, `PHP_FPM_MAX_SPARE_SERVERS`, `PHP_FPM_MAX_REQUESTS`) with the defaults above baked into the image; an environment can override them in its `.env` file (container environment) without a rebuild. Named in `.env.example`.
+- Applies to an environment when its own branch deploys (the Dockerfile is per branch): dev now, uat/prod at promotion.
+
+### Testing
+`php-fpm8.3 -tt` with the generated pool file and the env vars (local php-fpm): `pm.max_children = 16`, `pm.start_servers = 4`, `pm.max_requests = 1000`, `request_terminate_timeout = 60s`; with `PHP_FPM_MAX_CHILDREN=24` it reads 24. Docker build: NOT RUN in the sandbox (no Docker); the dev deploy builds it.
+
+---
+
 ## 2026-10-08 - Copyright (IPTC) in JPEG photos: on upload and `media:embed-copyright`
 
 ### Overview
