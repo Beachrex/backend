@@ -52,6 +52,20 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Nginx: real visitor IP behind Cloudflare
+
+### Overview
+dev/uat sites and APIs are proxied by Cloudflare (owner's `curl -sI` 2026-10-09: `server: cloudflare`, `cf-ray`; older docs said "DNS only"). Nginx therefore saw a Cloudflare edge IP as the client: the API rate limit (20 r/s per IP) and Laravel throttles (forgot-password 5/min, view dedupe, Google auth) counted many visitors together, and the server's own page renders through Cloudflare were limited.
+
+### Changes Made
+- `deploy/nginx/beachrex.conf` (http level, all environments): `set_real_ip_from` for Cloudflare's published IPv4/IPv6 ranges (from cloudflare.com/ips-v4 and ips-v6, 2026-10-09) + `real_ip_header CF-Connecting-IP`. Only connections from those ranges may set the visitor IP; direct connections cannot forge it. `$remote_addr`, the rate-limit key, `X-Forwarded-For` to Laravel and the access log are now the visitor's IP.
+- `docs/HANDOFF.md`: Cloudflare proxy noted; owner decision to keep it on.
+
+### Testing
+Local nginx 1.24 with the repo config + echo upstream on :8083 (test copy also trusted 127.0.0.1 as "Cloudflare"): header `CF-Connecting-IP: 9.9.9.9` → upstream `X-Forwarded-For: 9.9.9.9`; 150 parallel requests per visitor → 108 × 200 + 42 × 429 for 9.9.9.9 **and** separately for 8.8.4.4 (own budgets); 150 with the VPS IP `2.28.76.142` → all 200. With the real config (127.0.0.1 not Cloudflare) a forged header is ignored (`X-Forwarded-For: 127.0.0.1`). `nginx -t` OK.
+
+---
+
 ## 2026-10-09 - Forgot password: `POST /forgot-password`, `POST /reset-password`, localized e-mail
 
 ### Overview
