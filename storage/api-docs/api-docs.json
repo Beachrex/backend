@@ -11281,6 +11281,20 @@
                                 "description": "Was response cached?",
                                 "type": "boolean",
                                 "example": false
+                            },
+                            "narrative": {
+                                "description": "llm = AI-written texts; fallback = the AI failed and the plan has short factual texts",
+                                "type": "string",
+                                "enum": [
+                                    "llm",
+                                    "fallback"
+                                ],
+                                "example": "llm"
+                            },
+                            "credit_used": {
+                                "description": "Paid multi-day plans only: whether a credit was used (false for a fallback plan; the credit was given back)",
+                                "type": "boolean",
+                                "example": true
                             }
                         },
                         "type": "object"
