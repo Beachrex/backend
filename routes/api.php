@@ -274,6 +274,9 @@ Route::prefix('api/v1')
                 // Itinerary endpoint (PRIMARY REVENUE - multi-day trip planning)
                 Route::post('/itineraries', [\App\Http\Controllers\AI\ItineraryController::class, 'generate']);
 
+                // AI-3: paid itinerary generated in the background (worker_<env>), kept for "My plans"
+                Route::middleware('auth:sanctum')->post('/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'store']);
+
                 // Test endpoint (for testing middleware stack)
                 Route::post('/test', [TestController::class, 'chat']);
             });
@@ -291,4 +294,6 @@ Route::prefix('api/v1')
 
         // User entitlements endpoint (requires authentication)
         Route::middleware('auth:sanctum')->get('/me/entitlements', [\App\Http\Controllers\Payment\EntitlementController::class, 'index']);
+        Route::middleware('auth:sanctum')->get('/me/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'index']);
+        Route::middleware('auth:sanctum')->get('/me/itinerary-plans/{id}', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'show'])->whereUuid('id');
     });

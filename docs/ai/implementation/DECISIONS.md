@@ -961,6 +961,25 @@ Structured output was chosen over a tool-calling loop: one predictable extra cal
 
 **Related**: `DEV_HANDOFF.md` (2026-10-09 AI chat entries), `docs/HANDOFF.md` (AI plan), `docs/tasks/TASK-001*`, `docs/tasks/TASK-003*`
 
+## [2026-10-09] Paid itineraries run in a queue worker (AI-3)
+
+**Status**: Accepted (part of the AI plan the owner accepted on 2026-10-09).
+
+**Context**: A 7- or 14-day plan takes 20-120 s (candidate search, planner, LLM narrative with one retry). PHP-FPM stops every web request at 60 s (`request_terminate_timeout`, Dockerfile.prod) and nginx waits 60 s (`fastcgi_read_timeout`), so long plans could die after the credit was taken. `defer()` does not help: deferred work runs in the same FPM request and the same 60 s limit applies. There was no queue worker on the server.
+
+**Decision**:
+1. A `worker_<env>` container per environment (deploy/docker-compose.vps.yml) runs `php artisan queue:work itineraries --queue=itineraries --tries=1 --timeout=240`. It reuses the api image, like `scheduler_<env>`. The deploy recreates it after `migrate`/`config:cache`.
+2. A dedicated `itineraries` queue connection (database driver, `retry_after` 300 s > worker timeout 240 s). The job sets that connection itself, so `QUEUE_CONNECTION` in the server env files does not matter.
+3. `itinerary_plans` table: a plan is queued with its credit reserved; the job writes the result. One attempt only, because a retry would call the LLM again.
+4. The credit goes back exactly once (row lock + `credit_charged`) when the plan fails, has too few beaches, has no AI narrative, or is stuck. A plan is stuck when it has been running for more than 10 minutes or queued for more than 30. The scheduler checks for stuck plans every 5 minutes, and so does `GET /me/itinerary-plans/{id}`.
+5. The synchronous `POST /ai/itineraries` stays for the 1-day/free path and for older clients.
+
+**Consequences**: One more PHP process per environment (one plan at a time per environment). More workers can be added later if plans queue up.
+
+**Related**: `app/Jobs/GenerateItineraryPlan.php`, `app/Services/AI/Itinerary/ItineraryPlanService.php`, `tests/Feature/AI/ItineraryPlanTest.php`
+
+---
+
 ---
 
 **End of DECISIONS.md**
