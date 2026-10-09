@@ -557,7 +557,7 @@ docker compose exec pgsql psql -U $DB_USERNAME -d beachrex_prod -c \
 ### 5.6 Preklop DNS
 1. Trenutno `api.beachrex.com` kaže na Laravel Cloud.
 2. Po uspešnem restore-ju in testu na VPS spremeni A zapis v DNS (Cloudflare) na VPS IP.
-3. **Pomembno:** Po `DEV_HANDOFF.md` za Meilisearch je Cloudflare proxy status "DNS only" (siva oblak) — enako velja tukaj, saj Certbot na VPS-u prevzame SSL.
+3. **Posodobljeno 2026-10-09:** Cloudflare proxy je vklopljen (oranžen oblak) za dev/uat strani in API; nginx bere pravi IP iz `CF-Connecting-IP` (glej `docs/HANDOFF.md`). Certbot certifikati na VPS-u ostanejo (Cloudflare → strežnik po HTTPS).
 4. TTL čim krajši (60s) nekaj ur pred preklopom; po preklopu povrni na 1h.
 5. Po preklopu:
    - `curl https://api.beachrex.com/api/v1/beaches?limit=1 | jq '.data[0] | {id, name, city_name}'`

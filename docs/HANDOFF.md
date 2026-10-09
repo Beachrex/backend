@@ -62,6 +62,7 @@ BASE_URL=http://localhost:9 npx playwright test e2e/*.unit.spec.ts --project=chr
 | prod | `main` | beachrex.com — **not live** (old site, DNS points elsewhere) | api.beachrex.com — not live | dock.beachrex.com |
 
 MCP server: only on dev (`https://mcp-dev.beachrex.com/mcp`).
+**Cloudflare proxy is on** (orange cloud) for the dev/uat sites and APIs (checked 2026-10-09); owner keeps it on (global visitors, DDoS protection). Nginx takes the visitor IP from `CF-Connecting-IP` for Cloudflare's ranges only (`deploy/nginx/beachrex.conf`); if Cloudflare publishes new ranges, update that list. Sessions: `SESSION_DRIVER=database` in all three env files (owner, 2026-10-09).
 There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT DB (see the prod launch runbook).
 
 ## Done
@@ -115,7 +116,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/backend#66 | Old user import: random passwords (owner option a), admin filter "Imported from old site" | 211 |
 
   Decisions: `cache:clear` stays in the deploy (stale cache shapes after code changes are riskier; ISR shields the website). HTTP/2 enabled on all HTTPS sites (Beachrex/backend#68). "Less JavaScript" recorded only (owner).
-  Owner check: `SESSION_DRIVER` in `.env.dev/.env.uat/.env.prod` — if it is `redis`, eviction under memory pressure can sign out admins (then switch to `database`).
+  `SESSION_DRIVER` was `redis` in all env files; the owner switched dev/uat/prod to `database` (2026-10-09), so Redis eviction cannot sign out admins.
 
 - 2026-10-08 (session 7): **TASK-004 SEO follow-up and small audit fixes. Live on dev** (web-client; each finding verified in code first, all deploy runs green):
 
