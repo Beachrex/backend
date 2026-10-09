@@ -177,22 +177,34 @@ class ItineraryController extends Controller
                 return $enforcementCheck;
             }
 
-            // Generate itinerary using ItineraryService
-            $itinerary = $this->itineraryService->generate($request, $requestId);
-
-            // Decrement credits AFTER successful generation (multi-day only)
+            // Reserve the credit BEFORE generating (AI-3, owner 2026-10-09): the old "check, generate, then
+            // decrement" let two parallel requests with one credit both get a paid plan. The atomic decrement
+            // makes the second request fail here; the credit goes back if nothing sellable was produced.
+            $productType = null;
             if ($durationDays >= 2 && $user && config('ai.payments_enabled')) {
                 $productType = $this->entitlementService->mapDaysToProductType($durationDays);
-                $decremented = $this->entitlementService->decrementCredits($user, $productType);
-
-                if (!$decremented) {
-                    // This should never happen (enforcement already checked), but log it
-                    \Log::warning('Failed to decrement credits after successful generation', [
-                        'user_id' => $user->id,
-                        'product_type' => $productType,
-                        'request_id' => $requestId,
-                    ]);
+                if (! $this->entitlementService->decrementCredits($user, $productType)) {
+                    return $this->planEnforcement->checkMultiDayItinerary($user->fresh(), $durationDays)
+                        ?? response()->json(['error' => 'payment_required', 'message' => 'You do not have credits for this itinerary.'], 402);
                 }
+            }
+
+            try {
+                $itinerary = $this->itineraryService->generate($request, $requestId);
+            } catch (\Throwable $e) {
+                if ($productType) {
+                    $this->entitlementService->grantCredits($user, $productType, 1);
+                }
+                throw $e;
+            }
+
+            // A plan without the AI narrative (LLM failed) is still shown, but it is not charged.
+            if ($productType) {
+                $charged = ($itinerary['metadata']['narrative'] ?? 'llm') !== 'fallback';
+                if (! $charged) {
+                    $this->entitlementService->grantCredits($user, $productType, 1);
+                }
+                $itinerary['metadata']['credit_used'] = $charged;
             }
 
             // Add request ID header

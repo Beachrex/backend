@@ -257,6 +257,7 @@ class WebhookControllerTest extends TestCase
             'data' => [
                 'object' => [
                     'id' => 'cs_test_123456',
+                    'payment_status' => 'paid',
                     'payment_intent' => 'pi_test_123456',
                     'amount_total' => 1900, // $19.00 in cents
                     'currency' => 'usd',

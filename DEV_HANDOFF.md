@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Paid itinerary (AI-3a): payments and credits safe to sell
+
+**What changed**
+- `WebhookController`
+  - `checkout.session.completed` grants credits only when `payment_status` is `paid` (or `no_payment_required`). For delayed methods, credits are granted on the new `checkout.session.async_payment_succeeded`.
+  - The purchase row and the credits are written in one DB transaction. The session row is locked, and the unique `stripe_session_id` makes a second delivery of the same payment a no-op, also when two deliveries race.
+  - Credits come from our product config. The `credits` field in the session metadata is ignored.
+  - `charge.refunded` revokes credits only for a full refund (`refunded=true`), and only once: the purchase row is locked, and a purchase that is already refunded is skipped. Before this fix, every repeated refund event revoked again.
+- `ItineraryController`
+  - The credit is reserved with the atomic decrement before generation. Before this fix, two parallel requests with one credit both got a paid plan.
+  - The credit goes back when generation fails or there are too few beaches (422).
+  - A plan without the AI narrative (`metadata.narrative = "fallback"`) is still returned, but the credit goes back. New field `metadata.credit_used` (paid requests only); OpenAPI updated.
+
+**Stripe dashboard (owner):** the webhook endpoint must also send `checkout.session.async_payment_succeeded`.
+
+**Tests:** `tests/Feature/Payment/WebhookSafetyTest.php` (5), `tests/Feature/AI/ItineraryCreditSafetyTest.php` (4). `ItineraryControllerTest::authenticated_user_gets_itinerary` now gives the user a credit; it used to pass only because of the free-plan bug.
+
+---
+
 ## 2026-10-09 - AI chat (AI-2): tool-calling agent like the MCP server, Claude/OpenAI, evaluation command
 
 ### Overview

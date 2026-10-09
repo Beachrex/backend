@@ -83,8 +83,9 @@ class ItineraryControllerTest extends TestCase
     {
         $this->seedItineraryBeaches();
 
-        // Create user with paid tier
+        // Create user with paid tier and a 7-day credit (the credit is reserved before generation)
         $user = User::factory()->create();
+        \App\Models\UserEntitlement::create(['user_id' => $user->id, 'itinerary_3day_credits' => 0, 'itinerary_7day_credits' => 1, 'itinerary_14day_credits' => 0]);
 
         // Mock PlanEnforcementService to return 'basic' tier (has multi_day_itineraries)
         $this->mockPlanEnforcementForBasicTier();
