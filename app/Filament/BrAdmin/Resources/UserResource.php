@@ -5,12 +5,14 @@ namespace App\Filament\BrAdmin\Resources;
 use App\Filament\BrAdmin\Resources\UserResource\Pages;
 use App\Filament\BrAdmin\Resources\UserResource\RelationManagers;
 use App\Models\User;
+use App\Models\UserMigrationStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class UserResource extends Resource
@@ -192,6 +194,15 @@ class UserResource extends Resource
                 Tables\Filters\SelectFilter::make('country')
                     ->relationship('country', 'code')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->name),
+                Tables\Filters\TernaryFilter::make('imported')
+                    ->label('Imported from old site')
+                    ->placeholder('All users')
+                    ->trueLabel('Only imported')
+                    ->falseLabel('Only new')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereIn('id', self::importedUserIds()),
+                        false: fn (Builder $query) => $query->whereNotIn('id', self::importedUserIds()),
+                    ),
                 Tables\Filters\SelectFilter::make('register_type')
                     ->options([
                         'mobile' => 'Mobile',
@@ -214,6 +225,18 @@ class UserResource extends Resource
         return parent::getEloquentQuery()
             ->with(['gender', 'country', 'status'])
             ->withCount('beaches');
+    }
+
+    /**
+     * Users created by `users:migrate-from-old-db` (accounts that already existed are recorded as skipped).
+     */
+    private static function importedUserIds(): QueryBuilder
+    {
+        return UserMigrationStatus::query()
+            ->where('status', 'success')
+            ->whereNotNull('new_user_id')
+            ->select('new_user_id')
+            ->toBase();
     }
 
     public static function getRelations(): array
