@@ -334,6 +334,171 @@
                 ]
             }
         },
+        "/api/v1/ai/itinerary-plans": {
+            "post": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Start a paid itinerary in the background",
+                "description": "Reserves one credit for the trip length and queues the plan. Poll GET /api/v1/me/itinerary-plans/{id} until status is done or failed. Failed plans and plans without the AI narrative give the credit back.",
+                "operationId": "0c6daa719a01185279387ae7245d8f72",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language of the plan",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "sl"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AiItineraryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Queued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ItineraryPlanSummary"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "402": {
+                        "description": "No credit for this trip length"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/itinerary-plans": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "My itinerary plans (newest first, max 50)",
+                "operationId": "e10da97131375fbf16ec38396ecf9bf4",
+                "responses": {
+                    "200": {
+                        "description": "Plans",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ItineraryPlanSummary"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/itinerary-plans/{id}": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "One of my itinerary plans, with the full plan when done",
+                "operationId": "42fc737a971c05555a5aa9478cd76e77",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Plan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ItineraryPlanSummary"
+                                                },
+                                                {
+                                                    "properties": {
+                                                        "itinerary": {
+                                                            "oneOf": [
+                                                                {
+                                                                    "$ref": "#/components/schemas/AiItineraryResponse"
+                                                                }
+                                                            ],
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "404": {
+                        "description": "Not found or not yours"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/accessibilities": {
             "get": {
                 "tags": [
@@ -11448,6 +11613,65 @@
                 },
                 "type": "object"
             },
+            "ItineraryPlanSummary": {
+                "description": "A background itinerary (AI-3)",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "queued",
+                            "running",
+                            "done",
+                            "failed"
+                        ]
+                    },
+                    "country_code": {
+                        "type": "string",
+                        "example": "HR"
+                    },
+                    "region_slug": {
+                        "type": "string",
+                        "example": "istra",
+                        "nullable": true
+                    },
+                    "duration_days": {
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "error": {
+                        "description": "Why a failed plan failed (its credit was given back)",
+                        "type": "string",
+                        "enum": [
+                            "not_enough_beaches",
+                            "error",
+                            "timeout"
+                        ],
+                        "nullable": true
+                    },
+                    "credit_used": {
+                        "description": "false when the credit was given back",
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "finished_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "Accessibility": {
                 "title": "Accessibility",
                 "description": "Accessibility option model (easy, medium, difficult)",
@@ -16287,6 +16511,10 @@
         {
             "name": "AI Agent",
             "description": "AI Agent"
+        },
+        {
+            "name": "AI",
+            "description": "AI"
         },
         {
             "name": "Accessibility",

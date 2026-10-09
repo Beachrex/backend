@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Paid itinerary (AI-3c): background generation in a queue worker, saved plans
+
+**Why:** PHP-FPM stops web requests at 60 s, and a 7/14-day plan can take longer. ADR "Paid itineraries run in a queue worker".
+
+**What changed**
+- New `worker_<env>` containers in `deploy/docker-compose.vps.yml`. The deploy workflow recreates them after migrate/config:cache. They use the new `itineraries` queue connection (`retry_after` 300 s).
+- `POST /api/v1/ai/itinerary-plans` (auth:sanctum, plus the AI rate limit and circuit breaker) takes the same body as `/ai/itineraries`. It reserves the credit, stores an `itinerary_plans` row and queues `GenerateItineraryPlan`, then answers `202 {data: summary}`. Without a credit it answers 402 and queues nothing.
+- `GET /api/v1/me/itinerary-plans` lists the newest 50 summaries. `GET /api/v1/me/itinerary-plans/{id}` returns the summary plus `itinerary` when done; it is owner only (404 otherwise).
+- Summary fields: `status` (queued/running/done/failed), `error` (not_enough_beaches/error/timeout), `credit_used`, country, region, days, title, dates.
+- The credit goes back once on failure, too few beaches, the AI fallback, or a stuck plan. A plan is stuck after 10 min running or 30 min queued; checked every 5 min by the scheduler and on read.
+- `ItineraryService::generateFromInput()` runs a generation without an HTTP request; `generate()` wraps it.
+- OpenAPI: new `ItineraryPlanSummary` schema; docs regenerated.
+
+**Tests:** `tests/Feature/AI/ItineraryPlanTest.php` (11). One of them runs the real database queue with `queue:work itineraries --once`, and one checks that `retry_after` is greater than the worker `--timeout` in the compose file.
+
+**After deploy:** `docker compose ps` should show `worker_dev` running. Owner command (read-only): `docker compose -f docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev ps worker_dev`.
+
+---
+
 ## 2026-10-09 - Paid itinerary (AI-3b): beach page links and photos in the plan, public price list
 
 **What changed**
