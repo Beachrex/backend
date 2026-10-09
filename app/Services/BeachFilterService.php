@@ -16,6 +16,14 @@ class BeachFilterService
      */
     public function applyFilters(Builder $query, Request $request): Builder
     {
+        // `city`, `region`, `island` are aliases of the *_code filters (codes or ids), as in the SQL filter path
+        // used by the map endpoints. Before, GET /beaches ignored them and returned beaches of every country.
+        foreach (['region', 'island', 'city'] as $place) {
+            if ($request->filled($place) && ! $request->has("{$place}_code")) {
+                $request->merge(["{$place}_code" => $request->input($place)]);
+            }
+        }
+
         // Continent filter - supports both code and ID
         if ($request->has('continent_code')) {
             $continents = $this->parseFilterValue($request->continent_code);
@@ -52,8 +60,8 @@ class BeachFilterService
         }
 
         // Country filter (single or multiple) - supports both code and ID
-        if ($request->has('country')) {
-            $countries = $this->parseFilterValue($request->country);
+        if ($request->hasAny(['country', 'country_code'])) {
+            $countries = $this->parseFilterValue($request->input('country', $request->input('country_code')));
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
@@ -87,8 +95,8 @@ class BeachFilterService
         }
 
         // Region filter (single or multiple) - supports both codes and IDs
-        if ($request->has('region')) {
-            $regions = $this->parseFilterValue($request->region);
+        if ($request->has('region_code')) {
+            $regions = $this->parseFilterValue($request->region_code);
 
             $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
             $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
@@ -120,8 +128,8 @@ class BeachFilterService
         }
 
         // Island filter (single or multiple) - supports both codes and IDs
-        if ($request->has('island')) {
-            $islands = $this->parseFilterValue($request->island);
+        if ($request->has('island_code')) {
+            $islands = $this->parseFilterValue($request->island_code);
 
             $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
             $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
@@ -153,8 +161,8 @@ class BeachFilterService
         }
 
         // City filter (single or multiple) - supports both code and ID
-        if ($request->has('city')) {
-            $cities = $this->parseFilterValue($request->city);
+        if ($request->has('city_code')) {
+            $cities = $this->parseFilterValue($request->city_code);
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($cities)->contains(fn($val) => is_numeric($val));
@@ -696,6 +704,16 @@ class BeachFilterService
             $query->where('has_swimming_pool', $request->boolean('has_swimming_pool'));
         }
 
+        // Pool type filter (QA #70): indoor and/or outdoor pools, from the pool counts set in the admin.
+        $poolTypes = $this->poolTypes($request);
+        if ($poolTypes !== []) {
+            $query->where(function ($q) use ($poolTypes) {
+                foreach ($poolTypes as $type) {
+                    $q->orWhere("{$type}_pools_count", '>', 0);
+                }
+            });
+        }
+
         // Boat only filter (boolean)
         if ($request->has('boat_only')) {
             $query->where('boat_only', $request->boolean('boat_only'));
@@ -712,6 +730,8 @@ class BeachFilterService
      */
     public function buildRawFilters(Request $request): array
     {
+        // Region/island/city accept both the *_code names used by /beaches and the
+        // plain names documented on the spatial endpoints (region, island, city).
         $conditions = [];
         $bindings = [];
 
@@ -755,8 +775,8 @@ class BeachFilterService
         }
 
         // Country filter - supports both code and ID
-        if ($request->has('country')) {
-            $countries = $this->parseFilterValue($request->country);
+        if ($request->hasAny(['country', 'country_code'])) {
+            $countries = $this->parseFilterValue($request->input('country', $request->input('country_code')));
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($countries)->contains(fn($val) => is_numeric($val));
@@ -793,9 +813,9 @@ class BeachFilterService
             }
         }
 
-        // Region filter - supports both codes and IDs
-        if ($request->has('region')) {
-            $regions = $this->parseFilterValue($request->region);
+        // Region filter (single or multiple) - supports both codes and IDs
+        if ($request->hasAny(['region_code', 'region'])) {
+            $regions = $this->parseFilterValue($request->input('region_code', $request->input('region')));
 
             $hasNumeric = collect($regions)->contains(fn($val) => is_numeric($val));
             $hasString = collect($regions)->contains(fn($val) => !is_numeric($val));
@@ -831,8 +851,8 @@ class BeachFilterService
         }
 
         // Island filter - supports both codes and IDs
-        if ($request->has('island')) {
-            $islands = $this->parseFilterValue($request->island);
+        if ($request->hasAny(['island_code', 'island'])) {
+            $islands = $this->parseFilterValue($request->input('island_code', $request->input('island')));
 
             $hasNumeric = collect($islands)->contains(fn($val) => is_numeric($val));
             $hasString = collect($islands)->contains(fn($val) => !is_numeric($val));
@@ -868,8 +888,8 @@ class BeachFilterService
         }
 
         // City filter - supports both code and ID
-        if ($request->has('city')) {
-            $cities = $this->parseFilterValue($request->city);
+        if ($request->hasAny(['city_code', 'city'])) {
+            $cities = $this->parseFilterValue($request->input('city_code', $request->input('city')));
 
             // Check if values are numeric (IDs) or strings (codes)
             $hasNumeric = collect($cities)->contains(fn($val) => is_numeric($val));
@@ -1073,6 +1093,12 @@ class BeachFilterService
         if ($request->has('has_swimming_pool')) {
             $conditions[] = "b.has_swimming_pool = ?";
             $bindings[] = $request->boolean('has_swimming_pool') ? 1 : 0;
+        }
+
+        // Pool type filter (QA #70)
+        $poolTypes = $this->poolTypes($request);
+        if ($poolTypes !== []) {
+            $conditions[] = '('.implode(' OR ', array_map(fn ($type) => "b.{$type}_pools_count > 0", $poolTypes)).')';
         }
 
         // Boat only filter
@@ -1642,6 +1668,28 @@ class BeachFilterService
         return [$value];
     }
 
+    /** Pool types accepted by `pool_type` (whitelisted: the values become column names). */
+    public const POOL_TYPES = ['indoor', 'outdoor'];
+
+    /**
+     * Parse `pool_type` (indoor, outdoor; comma-separated or array). Unknown values are ignored.
+     *
+     * @return list<string>
+     */
+    private function poolTypes(Request $request): array
+    {
+        if (! $request->has('pool_type')) {
+            return [];
+        }
+
+        $values = array_map(
+            fn ($v) => is_scalar($v) ? strtolower(trim((string) $v)) : '',
+            $this->parseFilterValue($request->input('pool_type'))
+        );
+
+        return array_values(array_intersect(self::POOL_TYPES, $values));
+    }
+
     /**
      * Generate a cache key suffix based on active filters
      * Returns a consistent, sorted string representation of all active filters
@@ -1657,9 +1705,13 @@ class BeachFilterService
         $filterParams = [
             'continent_code',
             'country',
+            'country_code',
             'region',
+            'region_code',
             'island',
+            'island_code',
             'city',
+            'city_code',
             'waterbody',
             'beach_type',
             'user_type',
@@ -1683,8 +1735,12 @@ class BeachFilterService
             'swimming_depth',
             'occupancy_rate',
             'has_swimming_pool',
+            'pool_type',
             'boat_only',
-            'limit'
+            'limit',
+            'per_page',
+            'page',
+            'sort',
         ];
 
         // Collect all active filters

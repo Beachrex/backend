@@ -50,6 +50,29 @@
 >
 > **Admin panel:** Vsako okolje ima svoj admin panel na lastni `dock*.beachrex.com` domeni (dostop na **root** domene, brez `/admin` končnice — npr. `https://dock-dev.beachrex.com/`), ki je domensko omejena v Filamentu preko `FILAMENT_DOMAIN` env variable. Sprememba v `dev` adminu **ne vpliva** na UAT ali PROD admin — vsak gre v svojo bazo (`beachrex_dev`/`beachrex_uat`/`beachrex_prod`).
 
+### ⚠️ Branch politika (STROGO)
+
+**AI agenti in razvijalci NIKOLI ne smejo pushati direktno na `uat` ali `main`!**
+
+```
+feature/xxx ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
+bugfix/xxx  ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
+```
+
+| Korak | Akcija | Kdo |
+|---|---|---|
+| 1. Nova funkcionalnost | `git checkout -b feature/xxx` (ali `bugfix/xxx`) | Razvijalec/AI |
+| 2. Implementacija | Commit na feature branch | Razvijalec/AI |
+| 3. Push feature branch | `git push origin feature/xxx` | Razvijalec/AI |
+| 4. PR feature → dev | Pull Request na GitHub, review, merge | Razvijalec |
+| 5. Testiranje na DEV | Preverba na `dev.beachrex.com` / `dev-api.beachrex.com` | Razvijalec |
+| 6. PR dev → uat | Pull Request, review, merge | Razvijalec |
+| 7. Testiranje na UAT | Preverba na `uat.beachrex.com` / `uat-api.beachrex.com` | Razvijalec |
+| 8. PR uat → main | Pull Request, review, merge | Razvijalec |
+| 9. Deploy na PROD | Automatic (ali manual trigger) | GitHub Actions |
+
+> **KRITIČNO:** `uat` in `main` sta zaščiteni branchi. Edini dovoljeni način spremembe je Pull Request iz `dev` (za uat) oziroma iz `uat` (za main). Direktni push na `uat` ali `main` je **prepovedan** in bo povzročil nepravilno stanje repozitorija.
+
 ---
 
 ## 3. CI/CD (GitHub Actions)
@@ -67,7 +90,20 @@
    - `rsync` kode na `/opt/beachrex/api_{env}/` (npr. `api_dev/`, `api_uat/`, `api_prod/`)
    - `rsync` deploy datotek na `/opt/beachrex/deploy/` (skupno)
    - `docker compose build` + `up -d` + `migrate` + `cache:clear`
+   - **Samodejni rebuild MCP serverja** (če obstaja `mcp-server/package.json`)
    - Reload host Nginx
+
+> ⚠️ **KRITIČNO — DEPLOY PRAVILA:**
+>
+> 1. **Nikoli ne kopiraj datotek ročno na VPS preko `scp`, `rsync` ali `ssh`!** Vse spremembe gredo skozi GitHub Actions deploy workflow. Ročno kopiranje povzroči:
+>    - Lastništvo `root` namesto `beachrex` → `rsync` iz CI/CD faila (Permission denied)
+>    - `dist/` direktoriji, ki niso v gitu, se pobrišejo pri naslednjem `rsync --delete`
+>    - Kontejnerji zgrajeni iz napačne kode (stara ali nepopolna)
+>    - MCP server crkne, ker `dist/index.js` manjka
+>
+> 2. **`dist/` in `node_modules/` niso v gitu** — sta v `.gitignore`. Po vsakem `rsync --delete` jih je treba ponovno zgraditi na VPS. Deploy workflow ima samodejni korak za to.
+>
+> 3. **Če moraš nekaj ročno popraviti na VPS** (npr. Nginx config, SSL cert), dokumentiraj v `DEPLOYMENT_GUIDE.md` pod "Ročni koraki" in poskrbi, da je popravek v gitu, da ga naslednji deploy ne bo prepisal.
 
 ### Frontend pipeline
 1. **Deploy job** (brez test joba):
@@ -387,16 +423,11 @@ return response()->json(['data' => $data['beaches'], ...]);
 ## 9. Kaj manjka ( Naslednji koraki)
 
 ### PROD migracija
-1. **DNS preklop:** `beachrex.com` in `api.beachrex.com` A record → `2.28.76.142`
-2. **SSL certifikat:** `certbot --nginx -d api.beachrex.com -d beachrex.com -d www.beachrex.com`
-3. **Nginx config:** Posodobiti `beachrex.conf` z PROD SSL bloki (trenutno samo HTTP)
-4. **Baza:** Finalni `pg_dump` iz Laravel Clouda → restore v `beachrex_prod`
-5. **`.env.prod`:** Posodobiti s pravimi PROD tajnostmi (trenutno kaže na UAT API za frontend)
-6. **Frontend rebuild:** Po DNS preklopu push na `main` → build z `.env.front.prod` (ki mora kaže na `https://api.beachrex.com`)
-7. **Preverba:** `https://beachrex.com` in `https://api.beachrex.com/api/v1/beaches?limit=1`
+Celoten postopek je v **[`docs/runbooks/prod-launch.md`](../runbooks/prod-launch.md)**: priprava, prod baza iz **UAT**, deploy, DNS in SSL, rollback.
+Laravel Cloud ne obstaja več, zato končnega `pg_dump` iz Clouda ni (ADR 2026-10-07).
 
 ### Ostalo
-- **Backup cron:** Dnevni `pg_dump` za `beachrex_uat` in `beachrex_prod`
-- **Monitoring:** Razmisliti o uptime monitoring (npr. UptimeRobot)
-- **Log rotation:** Docker logs lahko zasedejo disk — nastaviti log rotation
+- **Backupi baze:** *Built* (2026-10-07). `php artisan db:backup` vsak dan ob 02:30 UTC v kontejnerju `scheduler_<env>` naloži `pg_dump` v **privaten** bucket. Vklop (owner): `docs/runbooks/restore-backup.md`. Drugi sloj: Hetzner Cloud Backups (owner).
+- **Monitoring:** *Built* (2026-10-07). `GET /api/v1/health` vrne status baze in Redisa, deployan SHA (`revision`) in čas zadnjega backupa; ob izpadu vrne 503. Owner: UptimeRobot monitor na `https://{dev,uat}-api.beachrex.com/api/v1/health`.
+- **Log rotation:** *Built* (2026-10-07). App kontejnerji (`api_*`, `web_*`, `front_*`, `scheduler_*`) imajo `json-file` z `max-size: 10m`, `max-file: 5`. `pgsql`/`redis` namerno nista spremenjena, ker bi to ponovno zagnalo bazo za vsa okolja. Za njiju je priporočen daemon-level `log-opts` v `/etc/docker/daemon.json` (owner).
 - **Cache invalidacija za ostale modele:** Preveriti, ali tudi drugi Filament resource-i (Beach, Country, itd.) potrebujejo `Cacheable` trait ali `booted()` eventi za cache invalidacijo

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasAsciiPaths;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,10 @@ use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasAsciiPaths;
+
+    /** Storage paths kept ASCII-only (TASK-002). */
+    protected array $asciiPathAttributes = ['file_path', 'file_name'];
 
     protected $table = 'media';
 

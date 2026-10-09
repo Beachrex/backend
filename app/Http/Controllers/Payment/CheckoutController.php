@@ -16,6 +16,48 @@ class CheckoutController extends Controller
     ) {}
 
     /**
+     * AI-3: the itinerary packages with their prices, so the website shows the price the checkout will charge.
+     *
+     * @OA\Get(
+     *     path="/api/v1/payments/products",
+     *     summary="Itinerary packages and prices",
+     *     tags={"Payments"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Packages, shortest first",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="product_type", type="string", example="itinerary_7day"),
+     *                 @OA\Property(property="days", type="integer", example=7),
+     *                 @OA\Property(property="amount", type="number", format="float", example=39.0),
+     *                 @OA\Property(property="currency", type="string", example="EUR"),
+     *                 @OA\Property(property="credits", type="integer", example=1)
+     *             ))
+     *         )
+     *     )
+     * )
+     */
+    public function products(): JsonResponse
+    {
+        $products = [];
+        foreach ($this->stripeService->getAvailableProducts() as $type => $product) {
+            if (! preg_match('/^itinerary_(\d+)day$/', $type, $m)) {
+                continue;
+            }
+            $products[] = [
+                'product_type' => $type,
+                'days' => (int) $m[1],
+                'amount' => (float) $product['amount'],
+                'currency' => strtoupper((string) $product['currency']),
+                'credits' => (int) ($product['credits'] ?? 1),
+            ];
+        }
+        usort($products, fn ($a, $b) => $a['days'] <=> $b['days']);
+
+        return response()->json(['data' => $products]);
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/v1/payments/stripe/checkout",
      *     summary="Create Stripe Checkout session for itinerary purchase",
@@ -38,6 +80,11 @@ class CheckoutController extends Controller
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/PaymentErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="consent_required: accept_terms and waive_withdrawal must be true",
      *         @OA\JsonContent(ref="#/components/schemas/PaymentErrorResponse")
      *     ),
      *     @OA\Response(
@@ -78,6 +125,20 @@ class CheckoutController extends Controller
             ], 400);
         }
 
+        // AI-4: before paying, the buyer accepts the terms of sale and asks for immediate delivery, acknowledging
+        // that the 14-day withdrawal right ends once a plan is created (Directive 2011/83/EU, Art. 16(m)).
+        $consent = Validator::make($request->all(), [
+            'accept_terms' => 'accepted',
+            'waive_withdrawal' => 'accepted',
+        ]);
+        if ($consent->fails()) {
+            return response()->json([
+                'error' => 'consent_required',
+                'message' => 'Accept the terms of sale and confirm immediate delivery to continue.',
+                'errors' => $consent->errors(),
+            ], 422);
+        }
+
         $productType = $request->input('product_type');
         $user = $request->user();
 
@@ -93,14 +154,18 @@ class CheckoutController extends Controller
             }
 
             // Create Stripe Checkout session
-            $successUrl = config('app.frontend_url') . '/payment/success?session_id={CHECKOUT_SESSION_ID}';
-            $cancelUrl = config('app.frontend_url') . '/payment/cancel';
+            // Back to the result pages in the buyer's language (website locale: si for Slovenian).
+            $webLocale = app()->getLocale() === 'sl' ? 'si' : app()->getLocale();
+            $base = rtrim((string) config('app.frontend_url'), '/') . '/' . $webLocale;
+            $successUrl = $base . '/payment/success?session_id={CHECKOUT_SESSION_ID}';
+            $cancelUrl = $base . '/payment/cancel';
 
             $session = $this->stripeService->createCheckoutSession(
                 $user,
                 $productType,
                 $successUrl,
-                $cancelUrl
+                $cancelUrl,
+                ['accepted_at' => now()->toIso8601String(), 'waive_withdrawal' => true, 'locale' => $webLocale]
             );
 
             return response()->json([

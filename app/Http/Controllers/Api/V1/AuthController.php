@@ -79,9 +79,10 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        $request->validate(['email' => 'required|email', 'password' => 'required|string']);
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $user || (int) $user->status_id === 2 || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials.'],
             ]);
@@ -117,5 +118,47 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out']);
+    }
+
+    /**
+     * Delete my account (B-M2; required by the App Store for apps with sign-up).
+     *
+     * @OA\Delete(
+     *     path="/api/v1/me",
+     *     operationId="deleteMyAccount",
+     *     summary="Delete my account",
+     *     description="Removes personal data (profile, sign-in, tokens, saved beaches, itineraries, AI chat history, credits). Purchases are kept anonymised because accounting law requires it. Confirm with `password`; accounts linked to Google may send `confirm: DELETE` instead. Admin accounts cannot be deleted here.",
+     *     tags={"Auth"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         @OA\Property(property="password", type="string", description="Current password (accounts created with e-mail and password)"),
+     *         @OA\Property(property="confirm", type="string", example="DELETE", description="Accounts linked to Google only (they may have no password of their own)")
+     *     )),
+     *     @OA\Response(response=204, description="Deleted"),
+     *     @OA\Response(response=401, description="Not signed in"),
+     *     @OA\Response(response=403, description="Admin accounts cannot be deleted through the API"),
+     *     @OA\Response(response=422, description="Wrong password or missing confirmation")
+     * )
+     */
+    public function destroy(Request $request, \App\Services\Account\AccountDeletionService $deletion)
+    {
+        $user = $request->user();
+        if ($user->is_admin) {
+            return response()->json(['message' => 'Admin accounts cannot be deleted through the API.'], 403);
+        }
+
+        // Accounts linked to Google may never have chosen a password (random one at sign-up): they can confirm
+        // with confirm: "DELETE" instead. Every other account confirms with its password.
+        $passwordOk = is_string($request->input('password')) && Hash::check($request->input('password'), $user->password);
+        $googleConfirm = $user->google_id && $request->input('confirm') === 'DELETE';
+        if (! $passwordOk && ! $googleConfirm) {
+            throw ValidationException::withMessages([
+                $user->google_id ? 'confirm' : 'password' => [$user->google_id ? 'Send your password or confirm: "DELETE".' : 'The password is not correct.'],
+            ]);
+        }
+
+        $deletion->delete($user);
+
+        return response()->noContent();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachDetailsResource;
 use App\Models\Beach;
+use App\Support\BeachViewCounter;
 use App\Models\BeachTranslation;
 use App\Services\CacheService;
 use App\Traits\CacheAware;
@@ -43,6 +44,13 @@ class BeachDetailsController extends Controller
      *         )
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
+     *     @OA\Parameter(
+     *         name="X-Beachrex-Client",
+     *         in="header",
+     *         required=false,
+     *         description="Set by machine clients (e.g. `mcp`). Requests with this header are not counted in beach_views.",
+     *         @OA\Schema(type="string", example="mcp")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Beach details found",
@@ -93,10 +101,13 @@ class BeachDetailsController extends Controller
             ], 404);
         }
 
-        // Increment view counter outside of cache (always increment)
-        $beach = $this->findBeachByIdentifier($identifier);
-        if ($beach) {
-            $beach->increment('beach_views');
+        // Increment view counter outside of cache. Machine clients (the MCP server, the website's own
+        // server-side rendering, other tools) identify themselves with X-Beachrex-Client and are not counted.
+        // Only the counter is updated (one UPDATE by id from the cached data); loading the beach with all its
+        // relations here cost ~70 queries per view (scalability audit 2026-10-09).
+        $beachId = $data['basic_info']['id'] ?? null;
+        if (! $request->hasHeader('X-Beachrex-Client') && $beachId) {
+            BeachViewCounter::increment((int) $beachId);
         }
 
         return response()->json(['data' => $data]);
@@ -277,8 +288,8 @@ class BeachDetailsController extends Controller
                      LIMIT 1)
                 ) as main_image,
                 ST_Distance(
-                    ST_Transform(b.location, 3857),
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                    b.location::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
@@ -357,8 +368,8 @@ class BeachDetailsController extends Controller
                      LIMIT 1)
                 ) as main_image,
                 ST_Distance(
-                    ST_Transform(b.location, 3857),
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                    b.location::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?

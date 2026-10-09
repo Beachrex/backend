@@ -75,6 +75,9 @@ class OpenAIProvider implements LLMProviderInterface
             if ($request->user !== null) {
                 $params['user'] = $request->user;
             }
+            if ($request->responseFormat !== null) {
+                $params['response_format'] = $request->responseFormat;
+            }
             
             // Make API call
             $response = OpenAI::chat()->create($params);

@@ -9,13 +9,26 @@ use App\Http\Requests\AI\ChatRequest;
 use App\Models\AiMessage;
 use App\Models\AiSession;
 use App\Models\AiUsage;
+use App\Models\Beach;
+use App\Models\BeachTranslation;
+use App\Services\AI\Agent\ChatAgent;
+use App\Services\AI\Chat\PlaceResolver;
+use App\Services\AI\Chat\QueryUnderstandingService;
 use App\Services\AI\ContextBuilderService;
+use App\Services\AI\DTOs\ChatCompletionResponse;
+use App\Services\AI\ItineraryContextBuilderService;
+use App\Services\AI\ItineraryService;
 use App\Services\AI\DTOs\ChatCompletionRequest;
 use App\Services\AI\DTOs\ChatMessage;
+use App\Services\AI\Exceptions\LLMQuotaExceededException;
+use App\Services\AI\Exceptions\LLMRateLimitException;
+use App\Services\AI\Exceptions\LLMTimeoutException;
 use App\Services\AI\LLMService;
 use App\Services\AI\LoggingService;
 use App\Services\AI\PlanEnforcementService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -40,6 +53,10 @@ class ChatController extends Controller
         private readonly LLMService $llmService,
         private readonly PlanEnforcementService $planEnforcement,
         private readonly LoggingService $loggingService,
+        private readonly QueryUnderstandingService $understanding,
+        private readonly PlaceResolver $places,
+        private readonly ItineraryContextBuilderService $candidates,
+        private readonly ChatAgent $agent,
     ) {}
 
     /**
@@ -50,7 +67,7 @@ class ChatController extends Controller
      * @OA\Post(
      *     path="/api/v1/ai/chat",
      *     summary="Send message to AI agent",
-     *     description="Send a message to the AI agent and get a response with beach recommendations. Authentication is optional - anonymous users can use free tier features, authenticated users can access paid features.",
+     *     description="Send a message to the AI agent and get a response with beach recommendations. Authentication is optional - anonymous users can use free tier features, authenticated users can access paid features. Send the returned session_id with every following message to continue the conversation (expires 30 minutes after the last message; an expired or foreign session silently starts a new one). Send Accept-Language = the page language: beach names and URL slugs (continent_slug … slug) are in that language, main_image is the first photo path. Beach fields come from the database only; the model contributes the choice and match_score. Recommended beach names appear verbatim in `message` so the client can link them.",
      *     operationId="aiChat",
      *     tags={"AI Agent"},
      *     security={{"sanctum": {}}, {}},
@@ -142,7 +159,7 @@ class ChatController extends Controller
      *     ),
      *     @OA\Response(
      *         response=503,
-     *         description="Service Unavailable - AI service temporarily disabled",
+     *         description="Service Unavailable - AI service temporarily disabled (error=service_unavailable), or the AI provider is busy / out of quota / timed out (error=ai_unavailable, Retry-After: 60)",
      *         @OA\JsonContent(
      *             ref="#/components/schemas/AiServiceUnavailableError",
      *             example={
@@ -166,31 +183,35 @@ class ChatController extends Controller
         // Get or create session
         $session = $this->getOrCreateSession($request);
 
-        // Check if session is expired
-        if ($session->isExpired()) {
-            return response()->json([
-                'error' => 'session_expired',
-                'message' => 'Session has expired. Please start a new conversation.',
-            ], 410);
-        }
+        // Sliding expiry: an active conversation does not run out after 30 minutes.
+        $session->update(['expires_at' => now()->addMinutes(config('ai.session.ttl', 30))]);
 
         // Get user message
         $userMessage = $request->input('message');
 
-        // Detect intent (simple keyword-based for MVP)
-        $intent = $this->detectIntent($userMessage);
+        // Get conversation history (last 5 messages)
+        $conversationHistory = $this->getConversationHistory($session);
+
+        // AI-2: the model works with the beach tools like the MCP server (config ai.chat.engine).
+        if (config('ai.chat.engine') === 'agent') {
+            return $this->agentReply($request, $session, $userMessage, array_values($conversationHistory), $requestId, $startTime);
+        }
+
+        // TASK-003: understand the message in any language (structured LLM extraction);
+        // keyword detection is the fallback when that call fails.
+        $understood = $this->understanding->understand($userMessage, array_values($conversationHistory));
+        $understandingResponse = $this->understanding->lastResponse;
+        $intent = $understood['intent'] ?? $this->detectIntent($userMessage);
 
         // Check plan enforcement for paid features
-        $enforcementCheck = $this->checkPlanEnforcement($request->user(), $intent, $userMessage);
+        $enforcementCheck = $this->checkPlanEnforcement($request->user(), $intent, $userMessage, $understood['days'] ?? null);
         if ($enforcementCheck !== null) {
             return $enforcementCheck;
         }
 
         // Build context
-        $context = $this->buildContext($request, $session, $intent);
-
-        // Get conversation history (last 5 messages)
-        $conversationHistory = $this->getConversationHistory($session);
+        $context = $this->buildContext($request, $session, $intent, $understood);
+        $context['metadata']['language'] = $understood['language'] ?? $session->locale;
 
         // Build messages for LLM
         $messages = $this->buildLLMMessages($userMessage, $context, $conversationHistory);
@@ -199,9 +220,10 @@ class ChatController extends Controller
         try {
             $llmRequest = new ChatCompletionRequest(
                 messages: $messages,
-                model: config('ai.llm.default_model'),
-                temperature: 0.7,
+                model: config('ai.providers.openai.default_model'),
+                temperature: 0.4,
                 maxTokens: 1000,
+                responseFormat: ['type' => 'json_object'],
             );
 
             $llmResponse = $this->llmService->chatCompletion($llmRequest);
@@ -220,6 +242,11 @@ class ChatController extends Controller
                 }, $parsedResponse['beaches']);
             }
 
+            // TASK-003: report the filters the code actually queried, not what the model claims.
+            if ($understood !== null) {
+                $parsedResponse['filters_applied'] = $context['metadata']['filters_applied'] ?? null;
+            }
+
             // Ensure filters_applied is null (not []) when empty - matches OpenAPI schema (type="object" nullable)
             if (isset($parsedResponse['filters_applied']) && $parsedResponse['filters_applied'] === []) {
                 $parsedResponse['filters_applied'] = null;
@@ -231,9 +258,10 @@ class ChatController extends Controller
             // Save assistant message
             $this->saveMessage($session, 'assistant', $parsedResponse['message'], $intent, $parsedResponse, 0, $llmResponse->outputTokens);
 
-            // Update session
+            // Update session (both LLM calls count)
+            $totalTokens = $llmResponse->totalTokens + ($understandingResponse?->totalTokens ?? 0);
             $session->increment('messages_count', 2);
-            $session->increment('tokens_used', $llmResponse->totalTokens);
+            $session->increment('tokens_used', $totalTokens);
             $session->update(['last_activity_at' => now()]);
 
             // Track usage
@@ -245,6 +273,7 @@ class ChatController extends Controller
                 requestId: $requestId,
                 latencyMs: (int) ((microtime(true) - $startTime) * 1000),
                 intent: $intent,
+                understandingResponse: $understandingResponse,
             );
 
             // Build response
@@ -256,7 +285,10 @@ class ChatController extends Controller
                 'filters_applied' => $parsedResponse['filters_applied'] ?? null,
                 'suggestions' => $parsedResponse['suggestions'] ?? [],
                 'metadata' => [
-                    'tokens_used' => $llmResponse->totalTokens,
+                    'tokens_used' => $totalTokens,
+                    'understanding' => $understood !== null ? 'llm' : 'fallback',
+                    'language' => $context['metadata']['language'],
+                    'assumptions' => $context['metadata']['assumptions'] ?? [],
                     'model' => $llmResponse->model,
                     'response_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
                     'cached' => false,
@@ -265,6 +297,15 @@ class ChatController extends Controller
                 ],
             ]);
 
+        } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException $e) {
+            // The AI provider is busy, out of quota or slow: a clear "try again" instead of a generic 500.
+            Log::warning('AI chat provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'error' => 'ai_unavailable',
+                'message' => 'The AI assistant is busy right now. Please try again in a minute.',
+                'request_id' => $requestId,
+            ], 503, ['Retry-After' => '60']);
         } catch (\Exception $e) {
             Log::error('AI chat error', [
                 'request_id' => $requestId,
@@ -281,6 +322,68 @@ class ChatController extends Controller
     }
 
     /**
+     * AI-2 answer: tool-calling agent; markdown text with links to the beach pages, cards for the linked beaches.
+     */
+    private function agentReply(ChatRequest $request, AiSession $session, string $userMessage, array $history, string $requestId, float $startTime): JsonResponse
+    {
+        $location = $request->input('context.location');
+        try {
+            $answer = $this->agent->answer($userMessage, $history, app()->getLocale(), is_array($location) ? [
+                'latitude' => (float) $location['latitude'], 'longitude' => (float) $location['longitude'],
+            ] : null);
+        } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException|\OpenAI\Exceptions\ErrorException|\Anthropic\Core\Exceptions\APIException $e) {
+            Log::warning('AI chat agent provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'error' => 'ai_unavailable',
+                'message' => 'The AI assistant is busy right now. Please try again in a minute.',
+                'request_id' => $requestId,
+            ], 503, ['Retry-After' => '60']);
+        }
+
+        /** @var \App\Services\AI\Agent\AgentResult $result */
+        $result = $answer['result'];
+        $text = $result->refused || $answer['message'] === ''
+            ? 'Sorry, I cannot help with that. Ask me about beaches, places or what you would like to do at the sea.'
+            : $answer['message'];
+
+        $this->saveMessage($session, 'user', $userMessage, 'agent', ['tool_calls' => $result->toolCalls], $result->inputTokens, 0);
+        $this->saveMessage($session, 'assistant', $text, 'agent', ['beaches' => $answer['beaches']], 0, $result->outputTokens);
+        $session->increment('messages_count', 2);
+        $session->increment('tokens_used', $result->inputTokens + $result->outputTokens);
+        $session->update(['last_activity_at' => now()]);
+
+        $usageResponse = new ChatCompletionResponse(content: $text, model: $result->model, inputTokens: $result->inputTokens,
+            outputTokens: $result->outputTokens, totalTokens: $result->inputTokens + $result->outputTokens,
+            costUsd: $result->costUsd, provider: $result->provider, finishReason: $result->refused ? 'refusal' : 'stop');
+        $this->trackUsage(session: $session, user: $request->user(), llmResponse: $usageResponse,
+            context: ['metadata' => ['beaches_returned' => count($answer['beaches'])]], requestId: $requestId,
+            latencyMs: (int) ((microtime(true) - $startTime) * 1000), intent: 'agent', understandingResponse: null);
+
+        return response()->json([
+            'session_id' => $session->id,
+            'message' => $text,
+            'format' => 'markdown',
+            'intent' => 'agent',
+            'beaches' => $answer['beaches'],
+            'filters_applied' => null,
+            'suggestions' => [],
+            'metadata' => [
+                'tokens_used' => $result->inputTokens + $result->outputTokens,
+                'understanding' => 'agent',
+                'language' => app()->getLocale(),
+                'assumptions' => [],
+                'model' => $result->model,
+                'tool_calls' => count($result->toolCalls),
+                'response_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
+                'cached' => false,
+                'request_id' => $requestId,
+                'location_provided' => is_array($location),
+            ],
+        ]);
+    }
+
+    /**
      * Get or create session.
      */
     private function getOrCreateSession(ChatRequest $request): AiSession
@@ -289,7 +392,10 @@ class ChatController extends Controller
 
         if ($sessionId) {
             $session = AiSession::find($sessionId);
-            if ($session) {
+            // Continue only an unexpired conversation of the same visitor: a signed-in user's session never
+            // continues for someone else (session ids are sent by the browser). Otherwise a new one starts.
+            if ($session && ! $session->isExpired()
+                && ($session->user_id === null || $session->user_id === $request->user()?->id)) {
                 return $session;
             }
         }
@@ -331,49 +437,32 @@ class ChatController extends Controller
         }
 
         // Accessibility query (PAID)
-        if (str_contains($message, 'wheelchair') ||
-            str_contains($message, 'accessible') ||
-            str_contains($message, 'disability') ||
-            str_contains($message, 'accessibility')) {
+        if (preg_match('/\b(wheelchair|accessible|disability|accessibility)\b/', $message)) {
             return 'accessibility_query';
         }
 
         // Popularity query (does NOT require location)
-        if (str_contains($message, 'popular') ||
-            str_contains($message, 'top') ||
-            str_contains($message, 'best') ||
-            str_contains($message, 'most viewed') ||
-            str_contains($message, 'frequently visited')) {
+        if (preg_match('/\b(popular|top|best|most viewed|frequently visited)\b/', $message)) {
             return 'popularity_query';
         }
 
         // Proximity query (REQUIRES location)
-        if (str_contains($message, 'near me') ||
-            str_contains($message, 'nearby') ||
-            str_contains($message, 'closest')) {
+        if (preg_match('/\b(near me|nearby|closest)\b/', $message)) {
             return 'proximity_query';
         }
 
         // Weather query
-        if (str_contains($message, 'weather') ||
-            str_contains($message, 'temperature') ||
-            str_contains($message, 'forecast')) {
+        if (preg_match('/\b(weather|temperature|forecast)\b/', $message)) {
             return 'weather_query';
         }
 
         // Beach comparison
-        if (str_contains($message, 'compare') ||
-            str_contains($message, 'vs') ||
-            str_contains($message, 'versus') ||
-            str_contains($message, 'difference')) {
+        if (preg_match('/\b(compare|vs|versus|difference)\b/', $message)) {
             return 'beach_comparison';
         }
 
         // Beach search (default)
-        if (str_contains($message, 'beach') ||
-            str_contains($message, 'find') ||
-            str_contains($message, 'show') ||
-            str_contains($message, 'search')) {
+        if (preg_match('/\b(beach|beaches|find|show|search)\b/', $message)) {
             return 'beach_search';
         }
 
@@ -383,8 +472,13 @@ class ChatController extends Controller
     /**
      * Check plan enforcement for paid features.
      */
-    private function checkPlanEnforcement($user, string $intent, string $message): ?JsonResponse
+    private function checkPlanEnforcement($user, string $intent, string $message, ?int $days = null): ?JsonResponse
     {
+        // Days understood from the message in any language (TASK-003) win over the English regex below.
+        if ($intent === 'itinerary_request' && $days !== null) {
+            return $days >= 2 ? $this->planEnforcement->checkMultiDayItinerary($user, $days) : null;
+        }
+
         // Multi-day itineraries (2+ days) require payment
         if ($intent === 'itinerary_request') {
             if (preg_match('/\b(\d+)[\s-]*(day|days)\b/i', $message, $matches)) {
@@ -395,18 +489,18 @@ class ChatController extends Controller
             }
         }
 
-        // Accessibility reports require payment
-        if ($intent === 'accessibility_query') {
-            return $this->planEnforcement->checkAccessibilityReport($user);
-        }
+        // Accessibility questions are answered for everyone (owner 2026-10-09); there is nothing to buy for them.
 
         return null;
     }
 
     /**
      * Build context for LLM.
+     *
+     * With an understood query (TASK-003) the code picks the beaches: place, country, attributes and GPS
+     * are real DB filters. Without one (fallback) the pre-TASK-003 behaviour is kept.
      */
-    private function buildContext(ChatRequest $request, AiSession $session, string $intent): array
+    private function buildContext(ChatRequest $request, AiSession $session, string $intent, ?array $understood = null): array
     {
         $location = $request->input('context.location');
         $preferences = $request->input('context.preferences', []);
@@ -414,7 +508,7 @@ class ChatController extends Controller
 
         $params = [
             'tier' => $session->tier,
-            'locale' => $session->locale,
+            'locale' => app()->getLocale(),
             'include_weather' => false, // Only include weather if explicitly requested
             'intent' => $intent, // Pass intent to context builder
         ];
@@ -424,6 +518,29 @@ class ChatController extends Controller
             $params['latitude'] = $location['latitude'];
             $params['longitude'] = $location['longitude'];
             $params['radius'] = $preferences['max_distance_km'] ?? 50;
+        }
+
+        if ($understood !== null) {
+            [$criteria, $assumptions] = $this->criteriaFrom($understood, $preferences, $params, app()->getLocale());
+            $filtersApplied = null;
+            if ($this->shouldFetchCandidates($intent, $criteria, $location !== null)) {
+                $limit = $intent === 'popularity_query' ? 3 : ContextBuilderService::MAX_BEACHES[$session->tier] ?? 5;
+                // Names and URL slugs in the page's language (Accept-Language), so the website links work;
+                // the answer text follows the language of the message.
+                $found = $this->candidates->fetchChatCandidates($criteria, app()->getLocale(), $limit);
+                $params['candidates'] = $found['beaches'];
+                foreach ($found['relaxed'] as $key) {
+                    $criteria[$key] = [];
+                    $assumptions[] = "Not enough beaches matched all requested {$key}; that filter was relaxed.";
+                }
+                $filtersApplied = $this->filtersApplied($criteria);
+            }
+
+            $context = $this->contextBuilder->buildContext($params);
+            $context['metadata']['filters_applied'] = $filtersApplied;
+            $context['metadata']['assumptions'] = $assumptions;
+
+            return $context;
         }
 
         // Add filters from preferences
@@ -442,6 +559,107 @@ class ChatController extends Controller
         }
 
         return $this->contextBuilder->buildContext($params);
+    }
+
+    /**
+     * Understood query + request preferences → candidate criteria, plus assumptions to report.
+     *
+     * @return array{0: array, 1: string[]}
+     */
+    private function criteriaFrom(array $understood, array $preferences, array $params, string $locale): array
+    {
+        $assumptions = [];
+        $criteria = [
+            'country_code' => $understood['country_code'],
+            'beach_types' => $understood['beach_types'],
+            'facilities' => $understood['facilities'],
+            'user_types' => $understood['user_types'],
+            'activities' => $understood['activities'],
+            'accessible' => $understood['intent'] === 'accessibility_query',
+            'order' => $understood['intent'] === 'popularity_query' ? 'popularity' : 'score',
+        ];
+
+        // Structured preferences from the request (UI filters) are merged in.
+        foreach ($preferences['surface_types'] ?? [] as $surface) {
+            array_push($criteria['beach_types'], ...(ItineraryContextBuilderService::SURFACE_TO_BEACH_TYPES[$surface] ?? []));
+        }
+        foreach ($preferences['facilities'] ?? [] as $facility) {
+            $key = str_replace([' ', '-'], '_', mb_strtolower(trim((string) $facility)));
+            if (isset(ItineraryContextBuilderService::FACILITY_TO_INFRASTRUCTURE[$key])) {
+                $criteria['facilities'][] = ItineraryContextBuilderService::FACILITY_TO_INFRASTRUCTURE[$key];
+            }
+        }
+        $criteria['beach_types'] = array_values(array_unique($criteria['beach_types']));
+        $criteria['facilities'] = array_values(array_unique($criteria['facilities']));
+
+        if ($understood['place'] !== null) {
+            $place = $this->places->resolve($understood['place'], $locale);
+            if ($place !== null) {
+                $criteria["{$place['type']}_id"] = $place['id'];
+                $criteria['place'] = $place;
+            } else {
+                $assumptions[] = "\"{$understood['place']}\" is not a place in the Beachrex database, so it was not used as a filter.";
+            }
+        }
+
+        if ($understood['beach_names'] !== []) {
+            $ids = $this->beachIdsByName($understood['beach_names']);
+            if ($ids !== []) {
+                $criteria['beach_ids'] = $ids;
+            }
+        }
+
+        if (isset($params['latitude'], $params['longitude'])) {
+            $criteria['latitude'] = (float) $params['latitude'];
+            $criteria['longitude'] = (float) $params['longitude'];
+            $criteria['radius_km'] = (float) ($params['radius'] ?? 50);
+            if ($criteria['order'] !== 'popularity') {
+                $criteria['order'] = 'distance';
+            }
+        }
+
+        return [$criteria, $assumptions];
+    }
+
+    /** Proximity without a location stays empty (the model asks for the location), as before. */
+    private function shouldFetchCandidates(string $intent, array $criteria, bool $hasLocation): bool
+    {
+        if ($intent === 'proximity_query' && ! $hasLocation) {
+            return false;
+        }
+        $hasCriteria = ! empty($criteria['country_code']) || ! empty($criteria['place']) || ! empty($criteria['beach_ids'])
+            || $criteria['beach_types'] || $criteria['facilities'] || $criteria['user_types'] || $criteria['activities'];
+
+        return $hasLocation || $hasCriteria || $intent !== 'general_question';
+    }
+
+    /** filters_applied with the real /beaches parameter names. */
+    private function filtersApplied(array $criteria): ?array
+    {
+        $place = $criteria['place'] ?? null;
+        $filters = array_filter([
+            'country_code' => $criteria['country_code'] ?? null,
+            ($place ? "{$place['type']}_code" : 'place') => $place['code'] ?? null,
+            'beach_type' => $criteria['beach_types'] ?: null,
+            'location_infrastructure' => array_values(array_unique(array_merge(
+                $criteria['facilities'], ! empty($criteria['accessible']) ? ['access_for_disabled'] : []
+            ))) ?: null,
+            'user_type' => $criteria['user_types'] ?: null,
+            'sporting_activities' => $criteria['activities'] ?: null,
+        ], fn ($v) => $v !== null);
+
+        return $filters ?: null;
+    }
+
+    /** @return int[] active beaches whose translated name or slug matches one of the names */
+    private function beachIdsByName(array $names): array
+    {
+        $slugs = array_map(fn ($n) => Str::slug(Str::ascii($n)), $names);
+
+        return BeachTranslation::query()
+            ->whereIn('slug', $slugs)
+            ->orWhereIn(DB::raw('lower(name)'), array_map('mb_strtolower', $names))
+            ->pluck('beach_id')->unique()->take(5)->values()->all();
     }
 
     /**
@@ -477,16 +695,29 @@ class ChatController extends Controller
      */
     private function getConversationHistory(AiSession $session): array
     {
+        // The user and assistant messages of one turn share a timestamp; id keeps their order.
         return $session->messages()
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->limit(5)
             ->get()
             ->reverse()
             ->map(fn($msg) => [
                 'role' => $msg->role,
-                'content' => $msg->content,
+                'content' => $msg->role === 'assistant' ? $this->withShownBeaches($msg) : $msg->content,
             ])
             ->toArray();
+    }
+
+    /** The assistant's answer plus the beaches it showed (names and ids), so follow-up questions can refer to them. */
+    private function withShownBeaches(AiMessage $message): string
+    {
+        $shown = array_filter(array_map(
+            fn ($b) => is_array($b) && isset($b['id'], $b['name']) ? "{$b['name']} (id {$b['id']})" : null,
+            $message->context['beaches'] ?? []
+        ));
+
+        return $shown ? $message->content."\n[Beaches shown: ".implode(', ', $shown).']' : $message->content;
     }
 
     /**
@@ -522,40 +753,41 @@ class ChatController extends Controller
     {
         $locale = $context['metadata']['locale'] ?? 'en';
 
-        // Base system prompt
-        $prompt = "You are a helpful beach discovery assistant for Beachrex, a platform with 2,445+ beaches across Croatia, Slovenia, and Montenegro.\n\n";
-        $prompt .= "Your role is to help users find the perfect beach based on their preferences.\n\n";
-        $prompt .= "IMPORTANT RULES:\n";
-        $prompt .= "- Always respond in valid JSON format\n";
-        $prompt .= "- Recommend 1-3 beaches maximum (never more)\n";
-        $prompt .= "- Only recommend beaches from the AVAILABLE BEACHES list below\n";
-        $prompt .= "- Include match_score (0-1) for each beach based on relevance\n";
-        $prompt .= "- Provide 2-3 follow-up suggestions\n\n";
+        [$beachCount, $countryCount] = $this->catalogueSize();
+        $language = ItineraryService::LANGUAGE_NAMES[$context['metadata']['language'] ?? $locale] ?? 'English';
+
+        $prompt = "You are the beach assistant of Beachrex (beachrex.com), a guide to {$beachCount} beaches in {$countryCount} countries.\n";
+        $prompt .= "Help the user choose beaches. Write \"message\" and \"suggestions\" in {$language} (the user's language).\n\n";
+        $prompt .= "RULES:\n";
+        $prompt .= "- Recommend only beaches from the BEACHES list below and use only the facts listed there. Never invent beaches, facilities, prices, opening hours or ratings.\n";
+        $prompt .= "- Recommend at most 3 beaches, best first. Put each one in \"beaches\" with its id and a match_score (0-1).\n";
+        $prompt .= "- In \"message\", mention each recommended beach by its name written exactly as in the list (the website turns the names into links). Never write URLs.\n";
+        $prompt .= "- Keep \"message\" short and concrete: 2-5 sentences, say why each beach fits the request.\n";
+        $prompt .= "- If the list is empty or nothing fits, say so honestly and ask one short question to narrow the search.\n";
+        $prompt .= "- \"suggestions\": 2-3 short follow-up messages the user could send next, written as the user would write them.\n\n";
 
         // Inject context
         $prompt .= $this->contextBuilder->formatContextAsText($context);
 
-        $prompt .= "\n\nOUTPUT FORMAT (strict JSON):\n";
-        $prompt .= "{\n";
-        $prompt .= "  \"message\": \"Your helpful response message\",\n";
-        $prompt .= "  \"beaches\": [\n";
-        $prompt .= "    {\n";
-        $prompt .= "      \"id\": 123,\n";
-        $prompt .= "      \"name\": \"Beach Name\",\n";
-        $prompt .= "      \"slug\": \"beach-slug\",\n";
-        $prompt .= "      \"country_code\": \"HR\",\n";
-        $prompt .= "      \"city\": \"City Name\",\n";
-        $prompt .= "      \"surface\": \"sand\",\n";
-        $prompt .= "      \"facilities\": [\"parking\", \"showers\"],\n";
-        $prompt .= "      \"distance_km\": 12.5,\n";
-        $prompt .= "      \"match_score\": 0.95\n";
-        $prompt .= "    }\n";
-        $prompt .= "  ],\n";
-        $prompt .= "  \"filters_applied\": {\"country\": \"HR\", \"facilities\": [\"parking\"]},\n";
-        $prompt .= "  \"suggestions\": [\"Show beaches with playgrounds\", \"Which has best weather?\"]\n";
-        $prompt .= "}\n";
+        $prompt .= "\n\nANSWER with one JSON object only:\n";
+        $prompt .= "{\"message\": \"...\", \"beaches\": [{\"id\": 123, \"match_score\": 0.9}], \"suggestions\": [\"...\", \"...\"]}\n";
 
         return $prompt;
+    }
+
+    /**
+     * Active beaches and countries for the prompt (the old prompt said "2,445+ beaches in 3 countries").
+     *
+     * @return array{0: string, 1: int}
+     */
+    private function catalogueSize(): array
+    {
+        return Cache::remember('ai:chat:catalogue-size', 3600, function () {
+            $active = Beach::query()->where('status_id', 1);
+            $beaches = (clone $active)->count();
+
+            return [number_format($beaches - $beaches % 100).'+', (clone $active)->distinct()->count('country_code')];
+        });
     }
 
     /**
@@ -576,12 +808,21 @@ class ChatController extends Controller
             ];
         }
 
-        // Validate and sanitize
+        // Only ids and match scores are taken from the model; every other beach field comes from the database.
+        $beaches = [];
+        foreach (is_array($json['beaches'] ?? null) ? $json['beaches'] : [] as $beach) {
+            $id = is_array($beach) ? ($beach['id'] ?? null) : $beach;
+            if (is_numeric($id)) {
+                $score = is_array($beach) && is_numeric($beach['match_score'] ?? null) ? (float) $beach['match_score'] : null;
+                $beaches[] = ['id' => (int) $id, 'match_score' => $score === null ? null : max(0.0, min(1.0, $score))];
+            }
+        }
+
         return [
-            'message' => $json['message'] ?? 'I found some beaches for you.',
-            'beaches' => array_slice($json['beaches'] ?? [], 0, 3), // Max 3 beaches
-            'filters_applied' => $json['filters_applied'] ?? null,
-            'suggestions' => array_slice($json['suggestions'] ?? [], 0, 3), // Max 3 suggestions
+            'message' => is_string($json['message'] ?? null) ? $json['message'] : '',
+            'beaches' => array_slice($beaches, 0, 3), // Max 3 beaches
+            'filters_applied' => null,
+            'suggestions' => array_values(array_filter(array_slice(is_array($json['suggestions'] ?? null) ? $json['suggestions'] : [], 0, 3), 'is_string')),
         ];
     }
     /**
@@ -612,13 +853,9 @@ class ChatController extends Controller
             $beachId = $llmBeach['id'] ?? null;
 
             if ($beachId && isset($beachMap[$beachId])) {
-                // Merge LLM beach data with context beach data
-                // LLM data takes precedence for match_score
-                $enrichedBeach = array_merge(
-                    $beachMap[$beachId], // Full data from context
-                    $llmBeach // LLM data (includes match_score)
-                );
-                $enrichedBeaches[] = $enrichedBeach;
+                // Database data only; the model contributes the ranking and match_score. (Before, the model's
+                // made-up "slug" overwrote the real one, so beach links were missing or 404.)
+                $enrichedBeaches[] = array_merge($beachMap[$beachId], ['match_score' => $llmBeach['match_score'] ?? null]);
             } else {
                 // CRITICAL: LLM hallucinated a beach ID that doesn't exist in context
                 // This means either:
@@ -716,20 +953,22 @@ class ChatController extends Controller
         array $context,
         string $requestId,
         int $latencyMs,
-        string $intent
+        string $intent,
+        ?ChatCompletionResponse $understandingResponse = null,
     ): void {
+        $extra = $understandingResponse;
         // Create usage record in database
         AiUsage::create([
             'user_id' => $user?->id,
             'session_id' => $session->id,
             'tier' => $session->tier,
             'event_type' => 'chat',
-            'llm_provider' => 'openai',
+            'llm_provider' => $llmResponse->provider ?? 'openai',
             'llm_model' => $llmResponse->model,
-            'tokens_input' => $llmResponse->inputTokens,
-            'tokens_output' => $llmResponse->outputTokens,
-            'tokens_total' => $llmResponse->totalTokens,
-            'cost_usd' => $llmResponse->costUsd,
+            'tokens_input' => $llmResponse->inputTokens + ($extra?->inputTokens ?? 0),
+            'tokens_output' => $llmResponse->outputTokens + ($extra?->outputTokens ?? 0),
+            'tokens_total' => $llmResponse->totalTokens + ($extra?->totalTokens ?? 0),
+            'cost_usd' => $llmResponse->costUsd + ($extra?->costUsd ?? 0),
             'latency_ms' => $latencyMs,
             'cache_hit' => false,
             'beaches_fetched' => $context['metadata']['beaches_fetched'] ?? 0,

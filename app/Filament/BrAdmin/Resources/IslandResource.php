@@ -2,6 +2,8 @@
 
 namespace App\Filament\BrAdmin\Resources;
 
+use App\Support\AsciiPath;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Filament\BrAdmin\Resources\IslandResource\Pages;
 use App\Filament\BrAdmin\Resources\IslandResource\RelationManagers;
 use App\Models\Island;
@@ -47,6 +49,7 @@ class IslandResource extends Resource
                         '1:1',
                     ])
                     ->disk('spaces')
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => AsciiPath::uploadFileName($file->getClientOriginalName()))
                     ->directory('public/img/islands')
                     ->visibility('public')
                     ->maxSize(10240)

@@ -65,7 +65,7 @@ class ItineraryController extends Controller
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.)",
+     *         description="Unprocessable Entity - Validation failed (missing destination, invalid duration, etc.), or error=not_enough_beaches with {message, found, needed} when fewer beaches match than days (no credit used)",
      *         @OA\JsonContent(
      *             type="object",
      *             required={"message", "errors"},
@@ -177,28 +177,48 @@ class ItineraryController extends Controller
                 return $enforcementCheck;
             }
 
-            // Generate itinerary using ItineraryService
-            $itinerary = $this->itineraryService->generate($request, $requestId);
-
-            // Decrement credits AFTER successful generation (multi-day only)
+            // Reserve the credit BEFORE generating (AI-3, owner 2026-10-09): the old "check, generate, then
+            // decrement" let two parallel requests with one credit both get a paid plan. The atomic decrement
+            // makes the second request fail here; the credit goes back if nothing sellable was produced.
+            $productType = null;
             if ($durationDays >= 2 && $user && config('ai.payments_enabled')) {
                 $productType = $this->entitlementService->mapDaysToProductType($durationDays);
-                $decremented = $this->entitlementService->decrementCredits($user, $productType);
-
-                if (!$decremented) {
-                    // This should never happen (enforcement already checked), but log it
-                    \Log::warning('Failed to decrement credits after successful generation', [
-                        'user_id' => $user->id,
-                        'product_type' => $productType,
-                        'request_id' => $requestId,
-                    ]);
+                if (! $this->entitlementService->decrementCredits($user, $productType)) {
+                    return $this->planEnforcement->checkMultiDayItinerary($user->fresh(), $durationDays)
+                        ?? response()->json(['error' => 'payment_required', 'message' => 'You do not have credits for this itinerary.'], 402);
                 }
+            }
+
+            try {
+                $itinerary = $this->itineraryService->generate($request, $requestId);
+            } catch (\Throwable $e) {
+                if ($productType) {
+                    $this->entitlementService->grantCredits($user, $productType, 1);
+                }
+                throw $e;
+            }
+
+            // A plan without the AI narrative (LLM failed) is still shown, but it is not charged.
+            if ($productType) {
+                $charged = ($itinerary['metadata']['narrative'] ?? 'llm') !== 'fallback';
+                if (! $charged) {
+                    $this->entitlementService->grantCredits($user, $productType, 1);
+                }
+                $itinerary['metadata']['credit_used'] = $charged;
             }
 
             // Add request ID header
             return response()->json($itinerary, 200)
                 ->header('X-Request-ID', $requestId);
 
+        } catch (\App\Services\AI\Itinerary\NotEnoughBeachesException $e) {
+            // Nothing generated, no credit used: tell the user to widen the request.
+            return response()->json([
+                'error' => 'not_enough_beaches',
+                'message' => $e->getMessage() . ' Try a larger area, fewer must-have facilities, or a shorter trip.',
+                'found' => $e->found,
+                'needed' => $e->needed,
+            ], 422)->header('X-Request-ID', $requestId);
         } catch (\Exception $e) {
             // Log error (no PII)
             \Log::error('Itinerary generation failed', [

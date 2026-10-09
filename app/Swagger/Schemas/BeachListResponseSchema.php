@@ -34,7 +34,12 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="max_latitude", type="number", format="float", nullable=true, example=45.8, description="Maximum latitude"),
  *             @OA\Property(property="max_longitude", type="number", format="float", nullable=true, example=15.6, description="Maximum longitude")
  *         ),
- *         @OA\Property(property="total_beaches", type="integer", example=150, description="Total number of beaches returned (respects limit parameter)")
+ *         @OA\Property(property="total_beaches", type="integer", example=150, description="GET /beaches: number of beaches matching the filters (all pages); other endpoints: number returned"),
+ *         @OA\Property(property="total", type="integer", example=150, description="GET /beaches: beaches matching the filters (all pages)"),
+ *         @OA\Property(property="current_page", type="integer", example=1, description="GET /beaches: this page"),
+ *         @OA\Property(property="per_page", type="integer", example=20, description="GET /beaches: page size"),
+ *         @OA\Property(property="last_page", type="integer", example=8, description="GET /beaches: last page number"),
+ *         @OA\Property(property="sort", type="string", enum={"popular","newest"}, example="popular", description="GET /beaches: order used")
  *     )
  * )
  */

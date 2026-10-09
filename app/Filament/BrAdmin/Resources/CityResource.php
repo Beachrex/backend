@@ -2,6 +2,8 @@
 
 namespace App\Filament\BrAdmin\Resources;
 
+use App\Support\AsciiPath;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Filament\BrAdmin\Resources\CityResource\Pages;
 use App\Filament\BrAdmin\Resources\CityResource\RelationManagers;
 use App\Models\City;
@@ -81,6 +83,7 @@ class CityResource extends Resource
                         '1:1',
                     ])
                     ->disk('spaces')
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => AsciiPath::uploadFileName($file->getClientOriginalName()))
                     ->directory('public/img/cities')
                     ->visibility('public')
                     ->maxSize(10240)

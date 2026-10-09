@@ -72,12 +72,18 @@ class CheckoutControllerTest extends TestCase
             ]);
         $mockStripeService->shouldReceive('createCheckoutSession')
             ->once()
+            ->withArgs(fn ($u, $type, $success, $cancel, $consent) => $type === 'itinerary_3day'
+                && str_ends_with($success, '/si/payment/success?session_id={CHECKOUT_SESSION_ID}')
+                && str_ends_with($cancel, '/si/payment/cancel')
+                && $consent['waive_withdrawal'] === true && ! empty($consent['accepted_at']))
             ->andReturn($mockSession);
 
         $this->app->instance(\App\Services\Payment\StripeService::class, $mockStripeService);
 
-        $response = $this->actingAs($user)->postJson('/api/v1/payments/stripe/checkout', [
+        $response = $this->actingAs($user)->withHeader('Accept-Language', 'sl')->postJson('/api/v1/payments/stripe/checkout', [
             'product_type' => 'itinerary_3day',
+            'accept_terms' => true,
+            'waive_withdrawal' => true,
         ]);
 
         $response->assertStatus(200);

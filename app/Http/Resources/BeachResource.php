@@ -6,6 +6,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachResource extends JsonResource
 {
+    /**
+     * Relations a beach card needs (GET /beaches, GET /me/favorites): one list, so every card endpoint returns the
+     * same fields without extra queries.
+     */
+    public static function cardRelations(): array
+    {
+        return [
+            'translations',
+            'continent.translations',
+            'country.translations',
+            'region.translations',
+            'city.translations',
+            'island.translations',
+            'media' => function ($query) {
+                $query->where('status_id', 1)
+                    ->with('mediaCollection')
+                    ->orderBy('is_primary', 'desc')
+                    ->orderBy('order')
+                    ->orderBy('created_at');
+            },
+            ...\App\Support\BeachCardFeatures::RELATIONS,
+            'sportingActivities.translations',
+            'culinaryOffers.translations',
+            'naturalLocationConditions.translations',
+            'occupancyRate.translations',
+        ];
+    }
+
     public function toArray($request)
     {
         $locale = app()->getLocale();
@@ -98,11 +126,17 @@ class BeachResource extends JsonResource
                 ];
             })->values()->toArray();
 
-        // Format 360 spheres - only tour_url needed
+        // Format 360 spheres - only tour_url needed.
+        // The vtour path must respect the mobile_upload flag: mobile-uploaded
+        // beaches store their files under img/beaches_mobile/, while regular
+        // uploads use img/beaches/. Using the wrong base folder caused the 360°
+        // tour to 404 on mobile-uploaded beaches (e.g. Albania beaches).
         $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
-        $vtourUrl = ($this->folder_name && $spheres360Collection->isNotEmpty())
-            ? "img/beaches/{$this->folder_name}/vtour/tour.html"
-            : null;
+        $vtourUrl = null;
+        if ($this->folder_name && $spheres360Collection->isNotEmpty()) {
+            $baseFolder = $this->mobile_upload ? 'beaches_mobile' : 'beaches';
+            $vtourUrl = "img/{$baseFolder}/{$this->folder_name}/vtour/tour.html";
+        }
 
         $spheres360 = [];
         if ($vtourUrl) {
@@ -192,6 +226,7 @@ class BeachResource extends JsonResource
             'main_image' => $mainImage,
             'media' => $media,
             'tags' => $tags,
+            'features' => \App\Support\BeachCardFeatures::fromModel($this->resource, $locale),
             // 'main_image_imagor' removed - frontend constructs Imagor URLs directly
         ];
     }

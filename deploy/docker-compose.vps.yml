@@ -24,6 +24,15 @@
 #   uat:   nginx 8082 | front 3002 | redis DB 1 | pgsql beachrex_uat
 #   dev:   nginx 8083 | front 3003 | redis DB 2 | pgsql beachrex_dev
 
+# Docker log rotation for app containers (json-file grows without limit by default).
+# Not applied to the shared pgsql/redis services: changing their config would
+# recreate them, restarting the database for ALL environments during a dev deploy.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   # ===================== SHARED DATA SERVICES =====================
   pgsql:
@@ -47,7 +56,9 @@ services:
   redis:
     image: redis:alpine
     restart: unless-stopped
-    command: redis-server --databases 16 --save 60 1 --loglevel warning
+    # Used as the cache (.env.example: sessions and queues in the database): 1 GB cap, evict least-recently-used keys,
+    # snapshot less often (a fork every minute was costly). Scalability audit 2026-10-09.
+    command: redis-server --databases 16 --save 900 1 --save 300 100 --maxmemory 1gb --maxmemory-policy allkeys-lru --loglevel warning
     volumes: [redis-data:/data]
     networks: [net_prod, net_uat, net_dev]
     healthcheck:
@@ -58,6 +69,7 @@ services:
 
   # ===================== PRODUCTION =====================
   api_prod:
+    logging: *default-logging
     build:
       context: ../api_prod
       dockerfile: Dockerfile.prod
@@ -76,6 +88,7 @@ services:
       redis: { condition: service_healthy }
 
   web_prod:
+    logging: *default-logging
     image: nginx:alpine
     restart: unless-stopped
     volumes:
@@ -87,7 +100,47 @@ services:
     # Port exposed to host Nginx reverse-proxy
     ports: ["127.0.0.1:8081:80"]
 
+  scheduler_prod:
+    # Runs `php artisan schedule:work` (daily db:backup, see config/backup.php).
+    # Reuses the image built for api_prod; never built or pulled on its own.
+    image: beachrex/api:prod
+    pull_policy: never
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: [../envs/.env.prod]
+    environment:
+      DB_DATABASE: beachrex_prod
+      REDIS_DB: "0"
+      APP_ENV: production
+    volumes:
+      - api-storage-prod:/var/www/html/storage
+    networks: [net_prod]
+    depends_on:
+      api_prod: { condition: service_started }
+
+  worker_prod:
+    # AI-3: runs paid itineraries in the background (20-120 s each; PHP-FPM stops requests at 60 s).
+    # One job at a time; --timeout must stay below retry_after (300 s) of the `itineraries` queue connection.
+    # Reuses the image built for api_prod; never built or pulled on its own.
+    image: beachrex/api:prod
+    pull_policy: never
+    command: ["php", "artisan", "queue:work", "itineraries", "--queue=itineraries", "--tries=1", "--timeout=240", "--sleep=2", "--max-time=3600"]
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: [../envs/.env.prod]
+    environment:
+      DB_DATABASE: beachrex_prod
+      REDIS_DB: "0"
+      APP_ENV: production
+    volumes:
+      - api-storage-prod:/var/www/html/storage
+    networks: [net_prod]
+    depends_on:
+      api_prod: { condition: service_started }
+
   front_prod:
+    logging: *default-logging
     build:
       context: ../front_prod
       dockerfile: Dockerfile.prod
@@ -108,6 +161,7 @@ services:
 
   # ===================== UAT =====================
   api_uat:
+    logging: *default-logging
     build:
       context: ../api_uat
       dockerfile: Dockerfile.prod
@@ -126,6 +180,7 @@ services:
       redis: { condition: service_healthy }
 
   web_uat:
+    logging: *default-logging
     image: nginx:alpine
     restart: unless-stopped
     volumes:
@@ -136,7 +191,47 @@ services:
     depends_on: [api_uat]
     ports: ["127.0.0.1:8082:80"]
 
+  scheduler_uat:
+    # Runs `php artisan schedule:work` (daily db:backup, see config/backup.php).
+    # Reuses the image built for api_uat; never built or pulled on its own.
+    image: beachrex/api:uat
+    pull_policy: never
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: [../envs/.env.uat]
+    environment:
+      DB_DATABASE: beachrex_uat
+      REDIS_DB: "1"
+      APP_ENV: production
+    volumes:
+      - api-storage-uat:/var/www/html/storage
+    networks: [net_uat]
+    depends_on:
+      api_uat: { condition: service_started }
+
+  worker_uat:
+    # AI-3: runs paid itineraries in the background (20-120 s each; PHP-FPM stops requests at 60 s).
+    # One job at a time; --timeout must stay below retry_after (300 s) of the `itineraries` queue connection.
+    # Reuses the image built for api_uat; never built or pulled on its own.
+    image: beachrex/api:uat
+    pull_policy: never
+    command: ["php", "artisan", "queue:work", "itineraries", "--queue=itineraries", "--tries=1", "--timeout=240", "--sleep=2", "--max-time=3600"]
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: [../envs/.env.uat]
+    environment:
+      DB_DATABASE: beachrex_uat
+      REDIS_DB: "1"
+      APP_ENV: production
+    volumes:
+      - api-storage-uat:/var/www/html/storage
+    networks: [net_uat]
+    depends_on:
+      api_uat: { condition: service_started }
+
   front_uat:
+    logging: *default-logging
     build:
       context: ../front_uat
       dockerfile: Dockerfile.prod
@@ -157,6 +252,7 @@ services:
 
   # ===================== DEV =====================
   api_dev:
+    logging: *default-logging
     build:
       context: ../api_dev
       dockerfile: Dockerfile.prod
@@ -175,6 +271,7 @@ services:
       redis: { condition: service_healthy }
 
   web_dev:
+    logging: *default-logging
     image: nginx:alpine
     restart: unless-stopped
     volumes:
@@ -185,7 +282,47 @@ services:
     depends_on: [api_dev]
     ports: ["127.0.0.1:8083:80"]
 
+  scheduler_dev:
+    # Runs `php artisan schedule:work` (daily db:backup, see config/backup.php).
+    # Reuses the image built for api_dev; never built or pulled on its own.
+    image: beachrex/api:dev
+    pull_policy: never
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: [../envs/.env.dev]
+    environment:
+      DB_DATABASE: beachrex_dev
+      REDIS_DB: "2"
+      APP_ENV: local
+    volumes:
+      - api-storage-dev:/var/www/html/storage
+    networks: [net_dev]
+    depends_on:
+      api_dev: { condition: service_started }
+
+  worker_dev:
+    # AI-3: runs paid itineraries in the background (20-120 s each; PHP-FPM stops requests at 60 s).
+    # One job at a time; --timeout must stay below retry_after (300 s) of the `itineraries` queue connection.
+    # Reuses the image built for api_dev; never built or pulled on its own.
+    image: beachrex/api:dev
+    pull_policy: never
+    command: ["php", "artisan", "queue:work", "itineraries", "--queue=itineraries", "--tries=1", "--timeout=240", "--sleep=2", "--max-time=3600"]
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: [../envs/.env.dev]
+    environment:
+      DB_DATABASE: beachrex_dev
+      REDIS_DB: "2"
+      APP_ENV: local
+    volumes:
+      - api-storage-dev:/var/www/html/storage
+    networks: [net_dev]
+    depends_on:
+      api_dev: { condition: service_started }
+
   front_dev:
+    logging: *default-logging
     build:
       context: ../front_dev
       dockerfile: Dockerfile.prod

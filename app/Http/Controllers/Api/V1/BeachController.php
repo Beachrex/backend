@@ -19,6 +19,10 @@ use Illuminate\Http\Request;
  */
 class BeachController extends Controller
 {
+    private const DEFAULT_PER_PAGE = 20;
+
+    private const MAX_PER_PAGE = 100;
+
     use CacheAware;
 
     protected BeachFilterService $filterService;
@@ -106,11 +110,39 @@ class BeachController extends Controller
      *     tags={"Beaches"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Beaches per page (default 20, max 100). Pages are ordered by `sort`; meta has total, current_page, last_page.",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, maximum=100, default=20, example=16)
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number (default 1)",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, default=1, example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="popular (most viewed first, default) or newest",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"popular","newest"}, default="popular")
+     *     ),
+     *     @OA\Parameter(
      *         name="limit",
      *         in="query",
-     *         description="Maximum number of beaches to return (default: 5000)",
+     *         description="Deprecated alias of per_page (max 100). Before 2026-10-09 the default was 5000 and `page` was ignored.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=50, default=5000)
+     *         @OA\Schema(type="integer", example=50, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="city",
+     *         in="query",
+     *         description="Alias of city_code (same for region / island → region_code / island_code). Codes or ids, not slugs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="murter")
      *     ),
      *     @OA\Parameter(
      *         name="continent_code",
@@ -122,28 +154,28 @@ class BeachController extends Controller
      *     @OA\Parameter(
      *         name="country",
      *         in="query",
-     *         description="Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
+     *         description="Filter by country code(s) or ID(s); `country_code` is accepted as an alias. Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="HR,SI,IT")
      *     ),
      *     @OA\Parameter(
-     *         name="region",
+     *         name="region_code",
      *         in="query",
-     *         description="Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
+     *         description="Filter by region code(s) or ID(s). Supports: single value (region_code=algarve), comma-separated (region_code=algarve,lisbon), or array (region_code[]=algarve&region_code[]=lisbon). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="algarve")
      *     ),
      *     @OA\Parameter(
-     *         name="island",
+     *         name="island_code",
      *         in="query",
-     *         description="Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
+     *         description="Filter by island code(s) or ID(s). Supports: single value (island_code=madeira), comma-separated (island_code=madeira,azores), or array (island_code[]=madeira&island_code[]=azores). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="madeira")
      *     ),
      *     @OA\Parameter(
-     *         name="city",
+     *         name="city_code",
      *         in="query",
-     *         description="Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+     *         description="Filter by city code(s) or ID(s). Supports: single value (city_code=sukosan), comma-separated (city_code=sukosan,zadar), or array (city_code[]=sukosan&city_code[]=zadar). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="sukosan")
      *     ),
@@ -176,6 +208,13 @@ class BeachController extends Controller
      *         @OA\Schema(type="boolean", example=true)
      *     ),
      *     @OA\Parameter(
+     *         name="pool_type",
+     *         in="query",
+     *         description="Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="indoor")
+     *     ),
+     *     @OA\Parameter(
      *         name="has_swimming_pool",
      *         in="query",
      *         description="Filter by swimming pool availability (true/false)",
@@ -201,30 +240,17 @@ class BeachController extends Controller
         // serialized blobs (20-28MB per key) that exhaust PHP memory
         // on unserialize. By resolving BeachResource before caching,
         // we store only the flat JSON-able array (~5-10x smaller).
-        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
-            $limit = $request->input('limit', 5000);
+        // Server-side pagination (owner 2026-10-09: listing pages downloaded every beach and paged in the
+        // browser). `limit` stays an alias of `per_page` for older callers; at most 100 per page.
+        $perPage = max(1, min(self::MAX_PER_PAGE, (int) $request->input('per_page', $request->input('limit', self::DEFAULT_PER_PAGE))));
+        $page = max(1, (int) $request->input('page', 1));
+        $sort = $request->input('sort') === 'newest' ? 'newest' : 'popular';
+
+        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request, $perPage, $page, $sort) {
 
             // Only load relationships that are actually used in BeachResource
             $query = Beach::where('status_id', 1)
-                ->with([
-                    'translations',
-                    'continent.translations',
-                    'country.translations',
-                    'region.translations',
-                    'city.translations',
-                    'island.translations',
-                    'media' => function ($query) {
-                        $query->where('status_id', 1)
-                              ->with('mediaCollection')
-                              ->orderBy('is_primary', 'desc')
-                              ->orderBy('order')
-                              ->orderBy('created_at');
-                    },
-                    'sportingActivities.translations',
-                    'culinaryOffers.translations',
-                    'naturalLocationConditions.translations',
-                    'occupancyRate.translations',
-                ]);
+                ->with(BeachResource::cardRelations());
 
             // Apply filters
             $query = $this->filterService->applyFilters($query, $request);
@@ -243,7 +269,12 @@ class BeachController extends Controller
                 ->whereNotNull('location')
                 ->first();
 
-            $beaches = $query->limit($limit)->get();
+            $total = (clone $query)->count();
+            // Stable order, so pages never overlap or skip beaches.
+            $sort === 'newest'
+                ? $query->orderByRaw('created_at DESC NULLS LAST')->orderByDesc('id')
+                : $query->orderByDesc('beach_views')->orderBy('id');
+            $beaches = $query->forPage($page, $perPage)->get();
 
             return [
                 'beaches' => BeachResource::collection($beaches)->resolve(),
@@ -258,7 +289,12 @@ class BeachController extends Controller
                         'max_latitude' => $geoData?->max_lat ? (float) $geoData->max_lat : null,
                         'max_longitude' => $geoData?->max_lng ? (float) $geoData->max_lng : null,
                     ],
-                    'total_beaches' => $beaches->count(),
+                    'total_beaches' => $total,
+                    'total' => $total,
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'last_page' => max(1, (int) ceil($total / $perPage)),
+                    'sort' => $sort,
                 ]
             ];
         });
@@ -273,8 +309,9 @@ class BeachController extends Controller
      * @OA\Post(
      *     path="/api/v1/beaches",
      *     operationId="createBeach",
-     *     summary="Create a new beach",
+     *     summary="Create a new beach (admin only)",
      *     tags={"Beaches"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\RequestBody(
      *         required=true,
@@ -300,6 +337,8 @@ class BeachController extends Controller
      *         description="Beach created",
      *         @OA\JsonContent(ref="#/components/schemas/BeachSchema")
      *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - admin only"),
      *     @OA\Response(response=422, description="Validation error")
      * )
      */
@@ -524,6 +563,7 @@ class BeachController extends Controller
                               ->orderBy('order')
                               ->orderBy('created_at');
                     },
+                    ...\App\Support\BeachCardFeatures::RELATIONS,
                     'sportingActivities.translations',
                     'culinaryOffers.translations',
                     'naturalLocationConditions.translations',

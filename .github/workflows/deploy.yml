@@ -3,6 +3,9 @@ name: Deploy to VPS
 on:
   push:
     branches: [dev, uat, main]
+  # PRs run the test job only (deploy job is skipped), so we can merge on green.
+  pull_request:
+    branches: [dev, uat, main]
   workflow_dispatch:
     inputs:
       environment:
@@ -13,8 +16,10 @@ on:
         options: [dev, uat, prod]
 
 concurrency:
-  group: deploy-backend
-  cancel-in-progress: false
+  # Deploys share one global group (rsync into the same server is not concurrency-safe).
+  # PR test runs get their own group per PR so they never queue behind deploys.
+  group: ${{ github.event_name == 'pull_request' && format('pr-backend-{0}', github.event.pull_request.number) || 'deploy-backend' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -78,9 +83,28 @@ jobs:
             exit 1
           fi
 
+  mcp-test:
+    name: MCP server (build + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck:test
+      - run: npm test
+
   deploy:
     name: Deploy
-    needs: test
+    needs: [test, mcp-test]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,6 +135,9 @@ jobs:
           ssh-add ~/.ssh/id_rsa
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
+      - name: Write REVISION (shown by /api/v1/health)
+        run: echo "${GITHUB_SHA}" > REVISION
+
       - name: Sync backend code
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
@@ -119,6 +146,7 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude '.git' --exclude 'node_modules' --exclude 'vendor' \
+            --exclude 'mcp-server/dist' --exclude 'mcp-server/node_modules' \
             --exclude 'storage/logs/*' --exclude 'storage/framework/cache/data/*' \
             --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' \
             --exclude 'database/database.sqlite' --exclude '.env' \
@@ -147,11 +175,56 @@ jobs:
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} build \${API_SVC}
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d pgsql redis
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate \${WEB_SVC}
+            # Scheduler (daily db:backup) reuses the freshly built api image.
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate --no-deps scheduler_${ENV_NAME}
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan migrate --force
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan config:cache
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
+            # Itinerary worker (AI-3): restarted after migrate and config:cache so it runs the new code and schema.
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate --no-deps worker_${ENV_NAME}
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:index || true
+
+            # Rebuild MCP server if it exists.
+            # dist/ and node_modules/ are excluded from rsync and may contain
+            # root-owned files from a previous build, so clean them with sudo
+            # before npm install/build to avoid EACCES errors.
+            if [ -f /opt/beachrex/api_${ENV_NAME}/mcp-server/package.json ]; then
+              echo 'Rebuilding MCP server...'
+              MCP_DIR=/opt/beachrex/api_${ENV_NAME}/mcp-server
+              sudo rm -rf \$MCP_DIR/dist \$MCP_DIR/node_modules
+              cd \$MCP_DIR
+              npm install 2>&1
+              npm run build 2>&1
+              # One pm2 process per environment: beachrex-mcp-<env> (ports 3100/3101/3102).
+              # One-time migration: the legacy shared 'beachrex-mcp' process is the dev one on :3100.
+              # The legacy process may belong to root's pm2 (it was started by hand before CI managed it),
+              # in which case it keeps port 3100 and the new beachrex-mcp-dev crash-loops (EADDRINUSE).
+              if [ '${ENV_NAME}' = 'dev' ]; then
+                pm2 delete beachrex-mcp 2>&1 || true
+                sudo -n env PATH=\$PATH pm2 delete beachrex-mcp 2>&1 || true
+                sudo -n env PATH=\$PATH pm2 save --force 2>&1 || true
+              fi
+              MCP_ENV=${ENV_NAME} pm2 startOrReload ecosystem.config.cjs --update-env 2>&1
+              pm2 save 2>&1 || true
+
+              # Verify the NEW process answers (its /health reports env). Fail the deploy loudly otherwise.
+              case '${ENV_NAME}' in dev) MCP_PORT=3100 ;; uat) MCP_PORT=3101 ;; prod) MCP_PORT=3102 ;; esac
+              MCP_OK=0
+              for i in 1 2 3 4 5 6 7 8 9 10; do
+                if curl -fsS http://127.0.0.1:\$MCP_PORT/health 2>/dev/null | grep -q '\"env\":\"${ENV_NAME}\"'; then MCP_OK=1; break; fi
+                sleep 2
+              done
+              if [ \$MCP_OK != 1 ]; then
+                echo 'ERROR: MCP did not come up as beachrex-mcp-${ENV_NAME} on port '\$MCP_PORT
+                curl -sS http://127.0.0.1:\$MCP_PORT/health 2>&1 || true
+                sudo -n ss -ltnp \"sport = :\$MCP_PORT\" 2>&1 || true
+                pm2 logs beachrex-mcp-${ENV_NAME} --lines 30 --nostream 2>&1 || true
+                exit 1
+              fi
+              echo 'MCP server rebuilt, restarted and verified on port '\$MCP_PORT
+            fi
+
             echo 'Deploy of ${ENV_NAME} complete.'
           "
 

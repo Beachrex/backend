@@ -9,7 +9,13 @@ use Illuminate\Support\Facades\Log;
 class WeatherService
 {
     private const CACHE_TTL = 3600; // 1 hour cache
-    private const API_TIMEOUT = 10; // 10 seconds timeout
+    // Short: the call runs inside a page request and holds a PHP worker while it waits (audit 2026-10-09)
+    private const API_TIMEOUT = 3;
+    /** A failed lookup is remembered this long, so an outage does not make every request wait again. */
+    private const FAILURE_TTL = 300;
+    private const SEA_CACHE_TTL = 10800; // 3 hours
+    private const MARINE_TIMEOUT = 3;
+    private const NO_VALUE = 'none';
     
     private string $apiKey;
     private string $baseUrl = 'https://api.openweathermap.org/data/2.5';
@@ -35,7 +41,12 @@ class WeatherService
 
         $cacheKey = $this->getCacheKey('weather', $latitude, $longitude);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($latitude, $longitude) {
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached === self::NO_VALUE ? null : $cached;
+        }
+
+        $weather = (function () use ($latitude, $longitude) {
             try {
                 $response = Http::timeout(self::API_TIMEOUT)
                     ->get("{$this->baseUrl}/weather", [
@@ -64,24 +75,55 @@ class WeatherService
                 ]);
                 return null;
             }
-        });
+        })();
+
+        // Cache::remember() does not store null, so a failing API was called again on every request.
+        Cache::put($cacheKey, $weather ?? self::NO_VALUE, $weather === null ? self::FAILURE_TTL : self::CACHE_TTL);
+
+        return $weather;
     }
 
     /**
-     * Get sea surface temperature for a location
-     * Note: OpenWeatherMap doesn't provide dedicated sea temperature in the free tier.
-     * This returns the general temperature which is close to sea temperature for coastal areas.
-     * For more accurate sea temperature, consider using a specialized marine API.
+     * Sea surface temperature (°C) from the Open-Meteo Marine API, or null when unavailable
+     * (no marine data for the point, e.g. inland lakes, or the API failed).
      *
-     * @param float $latitude
-     * @param float $longitude
-     * @return float|null Temperature in Celsius or null if unavailable
+     * Without OPEN_METEO_API_KEY the free endpoint is used, which Open-Meteo allows for
+     * non-commercial use only. With a key, the commercial customer endpoint is used.
      */
     public function getSeaTemperature(float $latitude, float $longitude): ?float
     {
-        $weather = $this->getCurrentWeather($latitude, $longitude);
-        
-        return $weather['temperature'] ?? null;
+        $cacheKey = $this->getCacheKey('sea', $latitude, $longitude);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached === self::NO_VALUE ? null : (float) $cached;
+        }
+
+        $apiKey = (string) config('services.open_meteo.api_key', '');
+        $baseUrl = $apiKey !== '' ? 'https://customer-marine-api.open-meteo.com' : 'https://marine-api.open-meteo.com';
+        $query = ['latitude' => $latitude, 'longitude' => $longitude, 'current' => 'sea_surface_temperature'];
+        if ($apiKey !== '') {
+            $query['apikey'] = $apiKey;
+        }
+
+        try {
+            $response = Http::timeout(self::MARINE_TIMEOUT)->get("{$baseUrl}/v1/marine", $query);
+            if (! $response->successful()) {
+                Log::warning('Open-Meteo Marine API error', ['status' => $response->status()]);
+
+                return null; // not cached: retry on the next request
+            }
+            $value = $response->json('current.sea_surface_temperature');
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch sea temperature', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        $temperature = is_numeric($value) ? round((float) $value, 1) : null;
+        // Sea temperature changes slowly; "no marine data here" is cached too.
+        Cache::put($cacheKey, $temperature ?? self::NO_VALUE, self::SEA_CACHE_TTL);
+
+        return $temperature;
     }
 
     /**

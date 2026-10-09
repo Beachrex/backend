@@ -5,6 +5,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -19,10 +21,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // http:// asset URLs behind an https:// frontend (mixed content).
         $middleware->trustProxies(at: '*');
 
+        // API, admin and docs are never indexed (any environment).
+        $middleware->append(\App\Http\Middleware\NoIndex::class);
+
         $middleware->group('api', [
             \App\Http\Middleware\SetLocaleFromHeader::class,
             \App\Http\Middleware\ForceJsonMiddleware::class,
             \App\Http\Middleware\AddCacheHeaders::class,
+        ]);
+
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -50,6 +59,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'message' => 'Not found.',
                 ], 404);
+            }
+        });
+        // 429 (rate limit), 403 (abort), 405 and other HTTP errors keep their status code and headers
+        // (e.g. Retry-After); before this, the catch-all below turned them into 500.
+        $exceptions->render(function (HttpExceptionInterface $e, $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                $status = $e->getStatusCode();
+
+                return response()->json([
+                    'message' => $e->getMessage() !== '' ? $e->getMessage() : (Response::$statusTexts[$status] ?? 'Error'),
+                ], $status, $e->getHeaders());
             }
         });
         $exceptions->render(function (Throwable $e, $request) {

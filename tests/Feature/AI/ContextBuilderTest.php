@@ -26,7 +26,7 @@ class ContextBuilderTest extends TestCase
      * Test: Free tier gets max 5 beaches
      */
     #[\PHPUnit\Framework\Attributes\Test]
-    public function free_tier_gets_max_5_beaches()
+    public function free_tier_gets_max_6_beaches()
     {
         $context = $this->contextBuilder->buildContext([
             'tier' => 'free',
@@ -39,8 +39,8 @@ class ContextBuilderTest extends TestCase
         $this->assertArrayHasKey('beaches', $context);
         $this->assertArrayHasKey('metadata', $context);
         $this->assertEquals('free', $context['metadata']['tier']);
-        $this->assertEquals(5, $context['metadata']['max_beaches']);
-        $this->assertLessThanOrEqual(5, count($context['beaches']));
+        $this->assertEquals(6, $context['metadata']['max_beaches']);
+        $this->assertLessThanOrEqual(6, count($context['beaches']));
     }
 
     /**
@@ -232,7 +232,7 @@ class ContextBuilderTest extends TestCase
         $text = $this->contextBuilder->formatContextAsText($context);
 
         $this->assertStringContainsString('AVAILABLE CONTEXT:', $text);
-        $this->assertStringContainsString('AVAILABLE FILTERS:', $text);
+        $this->assertStringNotContainsString('AVAILABLE FILTERS:', $text);
 
         // If beaches are present, check for BEACHES section
         if (!empty($context['beaches'])) {

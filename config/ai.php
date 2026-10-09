@@ -24,7 +24,7 @@ return [
         'openai' => [
             'api_key' => env('OPENAI_API_KEY'),
             'organization' => env('OPENAI_ORGANIZATION', null),
-            'default_model' => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
+            'default_model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // ADR 2026-10-07
             'timeout' => env('OPENAI_TIMEOUT', 30), // seconds
         ],
         'anthropic' => [
@@ -32,6 +32,37 @@ return [
             'default_model' => env('ANTHROPIC_MODEL', 'claude-3-haiku-20240307'),
             'timeout' => env('ANTHROPIC_TIMEOUT', 30), // seconds
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Data quality pass (`php artisan content:ai`, owner 2026-10-09)
+    |--------------------------------------------------------------------------
+    | Beach names without the English "Beach", region and description translations and
+    | generated descriptions, sent as Message Batches. Needs ANTHROPIC_API_KEY.
+    */
+    'content' => [
+        'model' => env('AI_CONTENT_MODEL', 'claude-opus-5-5'),
+        // Translation needs little thinking; raise only if the preview shows weak results.
+        'effort' => env('AI_CONTENT_EFFORT', 'low'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Website chat engine (AI-2, owner 2026-10-09)
+    |--------------------------------------------------------------------------
+    | 'pipeline' = TASK-003 understanding + one answer call (default until the evaluation is done);
+    | 'agent'    = the model calls the beach tools like the MCP server (App\Services\AI\Agent\ChatAgent).
+    | Provider 'openai' or 'anthropic' (needs ANTHROPIC_API_KEY). Compare with `php artisan ai:chat-eval`.
+    */
+    'chat' => [
+        'engine' => env('AI_CHAT_ENGINE', 'pipeline'),
+        'provider' => env('AI_CHAT_PROVIDER', 'openai'),
+        'openai_model' => env('AI_CHAT_OPENAI_MODEL', env('OPENAI_MODEL', 'gpt-4o-mini')),
+        'anthropic_model' => env('AI_CHAT_ANTHROPIC_MODEL', 'claude-opus-5-5'),
+        // Claude effort (low/medium/high): chat answers rarely gain from more thinking; measure before raising.
+        'effort' => env('AI_CHAT_EFFORT', 'low'),
+        'max_tool_rounds' => (int) env('AI_CHAT_MAX_TOOL_ROUNDS', 4),
     ],
 
     /*
@@ -216,6 +247,13 @@ return [
         'enabled' => env('STRIPE_ENABLED', false),
         'secret_key' => env('STRIPE_SECRET_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+
+        // AI-4: version of the terms of sale the buyer accepts at checkout (stored on each Stripe session).
+        'terms_version' => env('STRIPE_TERMS_VERSION', '2026-10-09'),
+        // VAT by the buyer's country via Stripe Tax; needs Stripe Tax enabled and prices with a tax behaviour.
+        'tax_enabled' => (bool) env('STRIPE_TAX_ENABLED', false),
+        // Stripe issues and e-mails an invoice for each payment (Stripe invoicing fee applies).
+        'invoices_enabled' => (bool) env('STRIPE_INVOICES_ENABLED', false),
 
         'products' => [
             'itinerary_3day' => [
