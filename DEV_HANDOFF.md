@@ -52,6 +52,28 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Data quality with AI: beach names, region names, descriptions (`content:ai`)
+
+Owner request 2026-10-09: "uredi kakovost podatkov, z AI prevajaj". Runbook: `docs/runbooks/content-ai.md`.
+
+### Changes Made
+- `app/Services/AI/Content/BeachContentAi.php`: selection, Claude requests (structured JSON output) and guarded writes for four parts:
+  - `names`: drops the import's English "Beach" ("Beach Slanica" -> "Slanica"), Cyrillic/Greek spelling for ua/ru/bg/el;
+  - `regions`: region names in all 19 languages ("Dalmatia - Šibenik" -> "Dalmacija - Šibenik");
+  - `descriptions`: translates an existing description into the languages without one;
+  - `generate`: 2–4 sentences from database facts for beaches without any description.
+- Slugs never change; text a person wrote is never overwritten; a name that shares no word with the old one, or keeps the English "Beach", is refused.
+- `app/Console/Commands/ContentAi.php`: `php artisan content:ai plan|preview|submit|status|apply` (Message Batches API, half price; `apply` is a dry run until `--write`).
+- `config/ai.php`: `ai.content.model` (`AI_CONTENT_MODEL`, default `claude-opus-5-5`) and `ai.content.effort` (`AI_CONTENT_EFFORT`, default `low`).
+
+### Affected Endpoints
+- None (data only). After `--write`: `cache:clear-api --type=all` and `search:index`.
+
+### Testing
+- `php artisan test --filter=ContentAiTest`
+
+---
+
 ## 2026-10-09 - Mobile app (B-M2, e-mail only): account deletion, throttled login
 
 The owner decided (2026-10-09) that the app signs in with e-mail + password for now, using the existing `POST /register`, `POST /login` (Sanctum token), `/forgot-password` and `/reset-password`. Google/Apple native sign-in comes later, when the app is in production.

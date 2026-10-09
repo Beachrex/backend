@@ -988,3 +988,18 @@ This file is updated by: All AI agents making architectural decisions
 This file must be updated: When making any significant design decision
 This file is read by: All new AI agents to understand past decisions
 
+---
+
+## [2026-10-09] Data Quality Pass with Claude Batches (`content:ai`)
+
+**Context:** Most beach names carry an English "Beach" added by the import, in every language; region names are English in most languages; about 21% of beaches have a description. The owner asked to fix this with AI ("z AI prevajaj").
+
+**Decision:**
+- One artisan command, `content:ai`, with four parts (names, regions, descriptions, generate). One Claude request per item, sent through the Message Batches API (half price, parallel, results keyed by `custom_id` = `<part>-<id>`, so no local state between submit and apply).
+- Model `claude-opus-5-5` at effort `low` by default, configurable (`AI_CONTENT_MODEL`, `AI_CONTENT_EFFORT`); structured JSON output per request.
+- Names: proper names stay in the local language and spelling for Latin-script languages and are transliterated for ua/ru/bg/el; names are not translated.
+- Generated descriptions use only database facts (no distances, history, ratings).
+- Writes keep slugs (no URL changes), never overwrite human text, and run only with `apply --write` after a dry run; runs on dev only, uat/prod get the data by DB promotion.
+
+**Consequences:** One-off cost (rough estimate printed by `content:ai plan`). The owner reviews `preview` output before submitting. Descriptions written by AI are marked nowhere; if that becomes a legal or editorial need, add a column.
+
