@@ -15,5 +15,8 @@
   "The Beachrex team": "A Beachrex csapata",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Ha ehhez az e-mail-címhez tartozik fiók, elküldtük a jelszó-visszaállító linket.",
   "Your password has been changed. You can now sign in.": "A jelszavad megváltozott. Most már bejelentkezhetsz.",
-  "This password reset link is invalid or has expired.": "Ez a jelszó-visszaállító link érvénytelen vagy lejárt."
+  "This password reset link is invalid or has expired.": "Ez a jelszó-visszaállító link érvénytelen vagy lejárt.",
+  "Parking": "Parkoló",
+  "Swimming pool": "Medence",
+  "Yes": "Igen"
 }

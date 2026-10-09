@@ -15,5 +15,8 @@
   "The Beachrex team": "Beachrex tim",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Ako za ovu e-adresu postoji račun, poslali smo poveznicu za ponovno postavljanje lozinke.",
   "Your password has been changed. You can now sign in.": "Vaša lozinka je promijenjena. Sada se možete prijaviti.",
-  "This password reset link is invalid or has expired.": "Poveznica za ponovno postavljanje lozinke nije valjana ili je istekla."
+  "This password reset link is invalid or has expired.": "Poveznica za ponovno postavljanje lozinke nije valjana ili je istekla.",
+  "Parking": "Parkiralište",
+  "Swimming pool": "Bazen",
+  "Yes": "Da"
 }

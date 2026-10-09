@@ -1573,20 +1573,17 @@ class FilterController extends Controller
     }
 
     /**
-     * Get parking filter data (boolean)
+     * Get parking filter data (boolean). Title and label in the request language (mobile report 2026-10-09).
      */
     private function getParkingFilterData(string $locale): ?array
     {
         return [
-            'title' => 'Parking',
+            'title' => __('Parking', [], $locale),
             'icon' => null,
             'input_type' => 'checkbox',
+            // Same option shape as the other filters (code/name), so clients can match the selected value.
             'options' => [
-                [
-                    'value' => '1',
-                    'label' => 'Yes',
-                    'icon' => null,
-                ],
+                ['code' => '1', 'value' => '1', 'label' => __('Yes', [], $locale), 'name' => __('Yes', [], $locale), 'icon' => null],
             ],
         ];
     }
@@ -1614,15 +1611,12 @@ class FilterController extends Controller
     private function getSwimmingPoolFilterData(string $locale): ?array
     {
         return [
-            'title' => 'Swimming Pool',
+            'title' => __('Swimming pool', [], $locale),
             'icon' => null,
             'input_type' => 'checkbox',
+            // Same option shape as the other filters (code/name), so clients can match the selected value.
             'options' => [
-                [
-                    'value' => '1',
-                    'label' => 'Yes',
-                    'icon' => null,
-                ],
+                ['code' => '1', 'value' => '1', 'label' => __('Yes', [], $locale), 'name' => __('Yes', [], $locale), 'icon' => null],
             ],
         ];
     }

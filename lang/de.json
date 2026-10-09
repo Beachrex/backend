@@ -15,5 +15,8 @@
   "The Beachrex team": "Dein Beachrex-Team",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Falls für diese E-Mail-Adresse ein Konto existiert, haben wir einen Link zum Zurücksetzen des Passworts gesendet.",
   "Your password has been changed. You can now sign in.": "Dein Passwort wurde geändert. Du kannst dich jetzt anmelden.",
-  "This password reset link is invalid or has expired.": "Dieser Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen."
+  "This password reset link is invalid or has expired.": "Dieser Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen.",
+  "Parking": "Parkplatz",
+  "Swimming pool": "Schwimmbad",
+  "Yes": "Ja"
 }

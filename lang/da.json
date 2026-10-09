@@ -15,5 +15,8 @@
   "The Beachrex team": "Beachrex-teamet",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Hvis der findes en konto med denne e-mail, har vi sendt et link til at nulstille adgangskoden.",
   "Your password has been changed. You can now sign in.": "Din adgangskode er ændret. Du kan nu logge ind.",
-  "This password reset link is invalid or has expired.": "Dette link til nulstilling af adgangskoden er ugyldigt eller udløbet."
+  "This password reset link is invalid or has expired.": "Dette link til nulstilling af adgangskoden er ugyldigt eller udløbet.",
+  "Parking": "Parkering",
+  "Swimming pool": "Swimmingpool",
+  "Yes": "Ja"
 }
