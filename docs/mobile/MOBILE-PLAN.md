@@ -71,7 +71,7 @@ GetYourGuide, Google ratings, my account).
 | Sharing / directions | React Native `Share`, `Linking` (Apple Maps / Google Maps URLs) | |
 | Icons | **lucide-react-native** (same family as the web) + beach category icons from Spaces `categories_icons/` | |
 | Fonts | **Figtree** (UI, as on the web) via `expo-font`; **Damion** only for the faded decorative word in banners | Logo is never typeset: SVG from the CGP package |
-| Crash reports | **Sentry** (`@sentry/react-native`, Expo plugin) — owner creates the project; no personal data | |
+| Crash reports | **None in v1** (owner 2026-10-09: no Sentry) | Revisit after release if crash reports are needed |
 | Tests | **Jest** (`jest-expo`) + **React Native Testing Library**; **Maestro** flows for E2E (run by the owner or a CI with emulators) | |
 | Builds / releases | **EAS Build**, **EAS Submit**, **EAS Update** (OTA) | Profiles in §10 |
 
@@ -90,7 +90,7 @@ No other runtime dependency without a reason in the PR (DEVELOPMENT-RULES §10).
 ```
 mobile-app/
   app/                         Expo Router routes
-    _layout.tsx                providers: QueryClient, IntlProvider, fonts, theme, Sentry
+    _layout.tsx                providers: QueryClient, IntlProvider, fonts, theme
     (tabs)/_layout.tsx         tab bar: Discover · Map · Search · Saved · More
     (tabs)/index.tsx           Discover
     (tabs)/map.tsx
@@ -275,7 +275,7 @@ data stays visible. Haptics on save and filter apply (light). Respect "Reduce mo
 - `app.config.ts` reads `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_IMAGOR_URL` and `EXPO_PUBLIC_ENV` from the profile.
   `EXPO_PUBLIC_*` values are baked into the bundle — never put secrets there.
 - Builds run on the owner's computer (`eas build`), so no `EXPO_TOKEN` in CI. Secrets (EAS only, never in the
-  repo or chat): Sentry auth token, Apple / Google service account keys. The agent names them; the owner sets them.
+  repo or chat): Apple / Google service account keys. The agent names them; the owner sets them.
 - **OTA updates** (EAS Update) only for JS/asset changes with the same `runtimeVersion` (policy `appVersion`).
   A native dependency change requires a new build. Never ship an OTA to `production` without the owner's request.
 - Version: `version` (semver, user-visible) in `app.config.ts`; build numbers auto-incremented by EAS
@@ -325,8 +325,8 @@ labels (beach name + place); focus order checked with VoiceOver/TalkBack by the 
 
 ## 13. Privacy, consent and store listing
 
-- v1 collects: approximate/precise location while in use (on device only, for distance and "near me"), crash
-  reports (Sentry, no personal data, IP not stored). No ads, no analytics SDK in v1 (owner decides later; any
+- v1 collects: approximate/precise location while in use (on device only, for distance and "near me"). No crash
+  reports in v1 (no Sentry, owner 2026-10-09). No ads, no analytics SDK in v1 (owner decides later; any
   analytics needs a consent screen and an ADR, like the web CookieYes setup).
 - iOS: `NSLocationWhenInUseUsageDescription` translated (InfoPlist strings for the 19 locales), privacy manifest
   (required reason APIs used by dependencies), App Tracking Transparency **not** needed (no tracking).
@@ -344,7 +344,7 @@ labels (beach name + place); focus order checked with VoiceOver/TalkBack by the 
    Console (organisation).
 4. Bundle ID / package name: `com.datavallis.beachrex` (confirmed 2026-10-09); store name "BeachRex".
 5. ~~Google Maps API key~~ — not needed: the map is Leaflet + OpenStreetMap in a WebView (2026-10-09).
-6. Sentry project (or say no to crash reporting) → DSN as `EXPO_PUBLIC_SENTRY_DSN` (public by design), auth token as EAS secret.
+6. ~~Sentry project~~ — no crash reporting in v1 (owner, 2026-10-09).
 7. Decide later: sign-in (phase 2), paid itineraries via IAP (phase 2), analytics in the app.
 
 ---
