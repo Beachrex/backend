@@ -1485,14 +1485,63 @@
                         "$ref": "#/components/parameters/AcceptLanguage"
                     },
                     {
-                        "name": "limit",
+                        "name": "per_page",
                         "in": "query",
-                        "description": "Maximum number of beaches to return (default: 5000)",
+                        "description": "Beaches per page (default 20, max 100). Pages are ordered by `sort`; meta has total, current_page, last_page.",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": 5000,
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 16
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number (default 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "popular (most viewed first, default) or newest",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "popular",
+                            "enum": [
+                                "popular",
+                                "newest"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Deprecated alias of per_page (max 100). Before 2026-10-09 the default was 5000 and `page` was ignored.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
                             "example": 50
+                        }
+                    },
+                    {
+                        "name": "city",
+                        "in": "query",
+                        "description": "Alias of city_code (same for region / island → region_code / island_code). Codes or ids, not slugs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "murter"
                         }
                     },
                     {
@@ -12770,9 +12819,38 @@
                                 "type": "object"
                             },
                             "total_beaches": {
-                                "description": "Total number of beaches returned (respects limit parameter)",
+                                "description": "GET /beaches: number of beaches matching the filters (all pages); other endpoints: number returned",
                                 "type": "integer",
                                 "example": 150
+                            },
+                            "total": {
+                                "description": "GET /beaches: beaches matching the filters (all pages)",
+                                "type": "integer",
+                                "example": 150
+                            },
+                            "current_page": {
+                                "description": "GET /beaches: this page",
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "per_page": {
+                                "description": "GET /beaches: page size",
+                                "type": "integer",
+                                "example": 20
+                            },
+                            "last_page": {
+                                "description": "GET /beaches: last page number",
+                                "type": "integer",
+                                "example": 8
+                            },
+                            "sort": {
+                                "description": "GET /beaches: order used",
+                                "type": "string",
+                                "enum": [
+                                    "popular",
+                                    "newest"
+                                ],
+                                "example": "popular"
                             }
                         },
                         "type": "object"

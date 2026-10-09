@@ -52,6 +52,24 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - GET /beaches: real pagination, place aliases (city pages showed beaches of every country)
+
+### Overview
+Owner (screenshots of Risskov, DK and Murter, HR): "Brskaj po vseh plažah …" showed beaches from Croatia, Germany and Italy and took seconds to load. The website sends `city=<…>` / `region=` / `island=`, which `GET /beaches` ignored, and the default `limit` was 5000, so every listing page downloaded all ~3,800 beaches (with media) and paged in the browser. `page` was ignored too, so the beach sitemap (`limit=50&page=N`) listed the same 50 beaches 50 times.
+
+### Changes Made
+- `BeachController::index`: `page`, `per_page` (default 20, max 100; `limit` kept as an alias), `sort=popular|newest`; stable order (most viewed, then id; newest with `NULLS LAST`). `meta` adds `total`, `current_page`, `per_page`, `last_page`, `sort`; `total_beaches` is now the number matching the filters. Page/size/sort are part of the cache key.
+- `BeachFilterService::applyFilters`: `city`, `region`, `island` are aliases of `city_code`, `region_code`, `island_code` (codes or ids), as the SQL filter path of the map endpoints already treated them.
+- OpenAPI regenerated. `docs/features/hidden-for-launch.md` H15: city page category tiles (no click action).
+
+### Affected Endpoints
+`GET /api/v1/beaches` (breaking for callers that relied on "everything": the website list is updated in the web PR; the MCP server and the sitemap already send `limit`/`page`).
+
+### Testing
+`tests/Feature/BeachListPaginationTest.php` (5, all fail on the old code): city/region/island aliases (code and id), disjoint complete pages in view order, `limit`+`page` (sitemap), default 20 / max 100, newest sort. Full suite: only the 4 known environment-dependent failures.
+
+---
+
 ## 2026-10-09 - AI chat (AI-1, backend): real beach links and photos, conversation memory, current prompt
 
 ### Overview
