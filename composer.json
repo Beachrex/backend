@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "anthropic-ai/sdk": "^0.56.0",
         "darkaonline/l5-swagger": "^9.0",
         "filament/filament": "^3.2",
         "guava/filament-icon-picker": "^2.3",

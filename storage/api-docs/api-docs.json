@@ -10470,6 +10470,14 @@
                         "format": "uuid",
                         "example": "abc123-def456-ghi789"
                     },
+                    "format": {
+                        "description": "markdown when the tool-calling agent answered (AI_CHAT_ENGINE=agent): beach links as [name](url) to the website; absent/text otherwise",
+                        "type": "string",
+                        "enum": [
+                            "text",
+                            "markdown"
+                        ]
+                    },
                     "message": {
                         "description": "AI response message",
                         "type": "string",

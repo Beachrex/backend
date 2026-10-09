@@ -17,6 +17,12 @@ namespace App\Swagger\Schemas\AI;
  *         example="abc123-def456-ghi789"
  *     ),
  *     @OA\Property(
+ *         property="format",
+ *         type="string",
+ *         enum={"text","markdown"},
+ *         description="markdown when the tool-calling agent answered (AI_CHAT_ENGINE=agent): beach links as [name](url) to the website; absent/text otherwise"
+ *     ),
+ *     @OA\Property(
  *         property="message",
  *         type="string",
  *         description="AI response message",

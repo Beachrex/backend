@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - AI chat (AI-2): tool-calling agent like the MCP server, Claude/OpenAI, evaluation command
+
+### Overview
+Owner: "the MCP in Claude works much better" and "AI chat mora delat v nulo". The MCP answers well because the model calls tools that return ready beach links. The website chat can now work the same way. **Off by default** (`AI_CHAT_ENGINE=pipeline`) until the evaluation shows which model to use.
+
+### Changes Made
+- `App\Services\AI\Agent\BeachTools`: the MCP tools (find_places_and_beaches, search_beaches, find_beaches_nearby, get_beach_details, get_beach_filters, get_beach_weather) on top of our own API, called in-process by `InternalApi` (same data as website/MCP; `X-Beachrex-Client: ai-chat`, so no view is counted). Every beach line carries the ready website link in the page language; beaches linked in the answer become the cards.
+- `ChatAgent` + `AgentModel` with two implementations: `OpenAIAgentModel` (function calling) and `AnthropicAgentModel` (official `anthropic-ai/sdk` 0.56; manual tool loop, whole assistant turn kept, all tool results in one user message, `fallbacks: "default"` with beta `server-side-fallback-2026-07-01`, cached system prompt, `effort` low by default, 25 s per call, `toolChoice: none` after the last allowed round).
+- `ChatController`: with `AI_CHAT_ENGINE=agent` the answer is markdown (`format: "markdown"`, links `[name](url)`), cards for linked beaches, refusal → polite text, provider errors → 503 `ai_unavailable`. Usage rows record the real provider.
+- `php artisan ai:chat-eval --provider=openai|anthropic --model=… [--effort=] [--only=] [--limit=]`: 40 fixed questions in 13 languages (`resources/ai-eval/chat-questions.json`: places, attributes, named beaches, weather, near-me with/without location, follow-up, off-topic, prompt injection, non-existent place). Checks: links point to real active beaches, links present when beaches are expected, right country, no foreign URLs; time, tool calls and cost per question. Report in `storage/app/ai-eval/*.md`. **Calls the paid API.**
+- Config `ai.chat.*` (`AI_CHAT_ENGINE`, `AI_CHAT_PROVIDER`, `AI_CHAT_OPENAI_MODEL`, `AI_CHAT_ANTHROPIC_MODEL` default `claude-opus-5-5`, `AI_CHAT_EFFORT`, `AI_CHAT_MAX_TOOL_ROUNDS`), `.env.example`, OpenAPI (`format`).
+
+### Testing
+`tests/Feature/AI/ChatAgentTest.php` (8): tools against the real API in-process (links, filters, details without a view, unknown tool), cards only for linked beaches, controller in agent mode with OpenAI faked (tool call → markdown + cards + usage row), Claude loop through a scripted HTTP transport (tool_result with the tool_use id, fallbacks/beta header, effort, cache_control, input_schema), refusal and 503, pipeline stays default, evaluation command (pass/fail, broken link detected, report written). Not run: a real model call (needs the owner's run of `ai:chat-eval` on dev).
+
+---
+
 ## 2026-10-09 - GET /beaches: real pagination, place aliases (city pages showed beaches of every country)
 
 ### Overview

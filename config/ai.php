@@ -36,6 +36,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Website chat engine (AI-2, owner 2026-10-09)
+    |--------------------------------------------------------------------------
+    | 'pipeline' = TASK-003 understanding + one answer call (default until the evaluation is done);
+    | 'agent'    = the model calls the beach tools like the MCP server (App\Services\AI\Agent\ChatAgent).
+    | Provider 'openai' or 'anthropic' (needs ANTHROPIC_API_KEY). Compare with `php artisan ai:chat-eval`.
+    */
+    'chat' => [
+        'engine' => env('AI_CHAT_ENGINE', 'pipeline'),
+        'provider' => env('AI_CHAT_PROVIDER', 'openai'),
+        'openai_model' => env('AI_CHAT_OPENAI_MODEL', env('OPENAI_MODEL', 'gpt-4o-mini')),
+        'anthropic_model' => env('AI_CHAT_ANTHROPIC_MODEL', 'claude-opus-5-5'),
+        // Claude effort (low/medium/high): chat answers rarely gain from more thinking; measure before raising.
+        'effort' => env('AI_CHAT_EFFORT', 'low'),
+        'max_tool_rounds' => (int) env('AI_CHAT_MAX_TOOL_ROUNDS', 4),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tier Configuration
     |--------------------------------------------------------------------------
     |
