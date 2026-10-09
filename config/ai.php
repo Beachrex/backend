@@ -36,6 +36,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Data quality pass (`php artisan content:ai`, owner 2026-10-09)
+    |--------------------------------------------------------------------------
+    | Beach names without the English "Beach", region and description translations and
+    | generated descriptions, sent as Message Batches. Needs ANTHROPIC_API_KEY.
+    */
+    'content' => [
+        'model' => env('AI_CONTENT_MODEL', 'claude-opus-5-5'),
+        // Translation needs little thinking; raise only if the preview shows weak results.
+        'effort' => env('AI_CONTENT_EFFORT', 'low'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Website chat engine (AI-2, owner 2026-10-09)
     |--------------------------------------------------------------------------
     | 'pipeline' = TASK-003 understanding + one answer call (default until the evaluation is done);

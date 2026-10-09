@@ -346,7 +346,7 @@ The web agent writes this section from the mobile agent's status relayed by the 
   - region translations are missing for most locales (sl shows "Dalmatia - Split");
   - only ~21% of beaches have a description (Zlatni Rat has none).
   
-  Candidates for an AI translation/cleanup pass (`beaches:translate` exists) once TASK-002 is done.
+  **Tool ready (2026-10-09):** `php artisan content:ai` fixes names, region names and descriptions with Claude batches; runbook `docs/runbooks/content-ai.md`. Next: the owner runs `plan` and `preview` on dev and sends the output.
 
 - An unknown URL under `/{locale}/{beaches}/{continent}/...` shows the 404 page with HTTP status **200**: `src/app/[locale]/beaches/[continent]/loading.tsx` makes the response stream before `notFound()`. The page is `noindex`, so search engines drop it; a real 404 status needs the loading UI moved below the route that resolves the slug. Found 2026-10-08 (session 7), not fixed.
 - `.gitlab-ci.yml` in both repos is unused (GitHub Actions replaced it).
