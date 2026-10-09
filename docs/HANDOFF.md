@@ -313,6 +313,14 @@ ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementati
   - trip map and Save as PDF (#59).
   - Owner, before selling: the Stripe webhook must also send `checkout.session.async_payment_succeeded`. Test a real purchase with Stripe test keys on dev.
 - [ ] **AI-4** EU selling with the owner (EUR, VAT/invoices, withdrawal waiver, pricing page, terms).
+  - **On hold (owner, 2026-10-09):** a new Stripe account is being opened for MOJA PLAŽA d.o.o.; the current account is only for testing. Start AI-4 when the owner has the new account.
+  - Open owner decisions:
+    1. Prices in EUR: keep 19/39/59 for 3/7/14 days?
+    2. VAT: is the company VAT-registered in Slovenia, and should Stripe Tax be on in the new account?
+    3. Invoice details: the company name, address and tax number.
+    4. The 14-day withdrawal waiver for digital content: who reviews the terms text (owner's lawyer, or the agent drafts it)?
+    5. A separate pricing page (e.g. `/cenik`), or prices in the planner only?
+  - When the account exists, the owner puts its keys and price ids in `/opt/beachrex/envs/.env.*`: `AI_PAYMENTS_ENABLED=true`, `STRIPE_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `STRIPE_PRICE_ITINERARY_{3,7,14}DAY`. The webhook must send `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired` and `charge.refunded`.
 
 ## Mobile app
 
