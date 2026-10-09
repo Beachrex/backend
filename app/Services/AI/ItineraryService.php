@@ -4,6 +4,7 @@ namespace App\Services\AI;
 
 use App\Http\Requests\AI\ItineraryRequest;
 use App\Models\AiMessage;
+use App\Models\Beach;
 use App\Models\AiSession;
 use App\Models\AiUsage;
 use App\Services\AI\DTOs\ChatCompletionRequest;
@@ -72,6 +73,7 @@ class ItineraryService
 
         // 4. Merge
         $itinerary = $this->merge($skeleton, $beachesById->all(), $narrative, $destination, $days, $candidates, $constraints);
+        $itinerary = $this->withPageLinks($itinerary, $locale);
         $itinerary['itinerary_id'] = (string) Str::uuid();
         $itinerary['session_id'] = $session->id;
         $itinerary['metadata'] = [
@@ -133,6 +135,63 @@ class ItineraryService
         Log::error('Itinerary narrative fell back to deterministic text after 2 attempts');
 
         return [[], $lastResponse, 'fallback'];
+    }
+
+    /**
+     * AI-3: every beach in the plan gets what the website needs for its page link and photo (place slugs in the
+     * page language, main image), so a bought plan links straight to the beach pages.
+     */
+    private function withPageLinks(array $itinerary, string $locale): array
+    {
+        $ids = [];
+        foreach ($itinerary['days'] as $day) {
+            foreach ($day['items'] as $item) {
+                if (isset($item['beach']['id'])) {
+                    $ids[] = (int) $item['beach']['id'];
+                }
+            }
+        }
+        if (! $ids) {
+            return $itinerary;
+        }
+
+        $locales = array_values(array_unique([$locale, 'en']));
+        $tr = fn ($q) => $q->whereIn('locale', $locales);
+        $beaches = Beach::query()->whereIn('id', array_unique($ids))->with([
+            'translations' => $tr, 'continent.translations' => $tr, 'country.translations' => $tr,
+            'region.translations' => $tr, 'island.translations' => $tr, 'city.translations' => $tr,
+            'media' => fn ($q) => $q->where('status_id', 1)->orderBy('is_primary', 'desc')->orderBy('order')->orderBy('created_at'),
+        ])->get()->keyBy('id');
+
+        $slug = function ($model) use ($locale): ?string {
+            $translations = $model?->translations;
+            if (! $translations) {
+                return null;
+            }
+
+            return ($translations->firstWhere('locale', $locale) ?? $translations->firstWhere('locale', 'en'))?->slug;
+        };
+
+        foreach ($itinerary['days'] as &$day) {
+            foreach ($day['items'] as &$item) {
+                $beach = isset($item['beach']['id']) ? $beaches->get((int) $item['beach']['id']) : null;
+                if (! $beach) {
+                    continue;
+                }
+                $item['beach'] += [
+                    'continent_slug' => $slug($beach->continent),
+                    'country_slug' => $slug($beach->country),
+                    'region_slug' => $slug($beach->region),
+                    'island_slug' => $slug($beach->island),
+                    'city_slug' => $slug($beach->city),
+                    'main_image' => $beach->media->first()?->file_path,
+                ];
+            }
+            unset($item);
+        }
+        unset($day);
+
+        return $itinerary;
     }
 
     private function systemPrompt(string $locale): string

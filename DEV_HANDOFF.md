@@ -52,6 +52,16 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Paid itinerary (AI-3b): beach page links and photos in the plan, public price list
+
+**What changed**
+- `POST /api/v1/ai/itineraries`: every beach in `days[].items[].beach` now has `continent_slug`, `country_slug`, `region_slug`, `island_slug` and `city_slug` in the page language (English fallback), plus `main_image`. With these fields the website links each beach to its page and shows its photo (`buildBeachUrlFromSchema`). The fields are loaded in one query for the plan's beaches (`ItineraryService::withPageLinks`).
+- New public `GET /api/v1/payments/products`: the 3/7/14-day packages with `amount`, `currency` and `credits` from `config/ai.php`, shortest first. Stripe price ids are not exposed. The website shows the price the checkout will charge, so it is never hard-coded.
+
+**Tests:** `ItineraryQualityTest::every_beach_carries_its_page_link_slugs_in_the_page_language`, `tests/Feature/Payment/ProductsEndpointTest.php`.
+
+---
+
 ## 2026-10-09 - Paid itinerary (AI-3a): payments and credits safe to sell
 
 **What changed**

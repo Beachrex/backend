@@ -279,6 +279,8 @@ Route::prefix('api/v1')
             });
 
         // Payment routes (Stripe integration)
+        Route::get('/payments/products', [\App\Http\Controllers\Payment\CheckoutController::class, 'products']);
+
         Route::prefix('payments/stripe')->group(function () {
             // Checkout endpoint (requires authentication)
             Route::middleware('auth:sanctum')->post('/checkout', [\App\Http\Controllers\Payment\CheckoutController::class, 'create']);

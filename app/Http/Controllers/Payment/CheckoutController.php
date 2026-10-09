@@ -16,6 +16,48 @@ class CheckoutController extends Controller
     ) {}
 
     /**
+     * AI-3: the itinerary packages with their prices, so the website shows the price the checkout will charge.
+     *
+     * @OA\Get(
+     *     path="/api/v1/payments/products",
+     *     summary="Itinerary packages and prices",
+     *     tags={"Payments"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Packages, shortest first",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="product_type", type="string", example="itinerary_7day"),
+     *                 @OA\Property(property="days", type="integer", example=7),
+     *                 @OA\Property(property="amount", type="number", format="float", example=39.0),
+     *                 @OA\Property(property="currency", type="string", example="EUR"),
+     *                 @OA\Property(property="credits", type="integer", example=1)
+     *             ))
+     *         )
+     *     )
+     * )
+     */
+    public function products(): JsonResponse
+    {
+        $products = [];
+        foreach ($this->stripeService->getAvailableProducts() as $type => $product) {
+            if (! preg_match('/^itinerary_(\d+)day$/', $type, $m)) {
+                continue;
+            }
+            $products[] = [
+                'product_type' => $type,
+                'days' => (int) $m[1],
+                'amount' => (float) $product['amount'],
+                'currency' => strtoupper((string) $product['currency']),
+                'credits' => (int) ($product['credits'] ?? 1),
+            ];
+        }
+        usort($products, fn ($a, $b) => $a['days'] <=> $b['days']);
+
+        return response()->json(['data' => $products]);
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/v1/payments/stripe/checkout",
      *     summary="Create Stripe Checkout session for itinerary purchase",
