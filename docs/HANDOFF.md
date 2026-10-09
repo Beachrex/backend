@@ -281,7 +281,9 @@ Status: Planned (docs only, 2026-10-09). The mobile agent updates this section (
 
 ## Open items (found, not yet scheduled)
 
-- **Security — old user migration (`app/Console/Commands/MigrateUsersFromOldDb.php`), owner decision pending, do not run it:**
+- **Less JavaScript on every page** (owner 2026-10-09: "zaenkrat ne, ampak si zabeleži"): header/footer as server components, flowbite Dropdown/Sidebar replaced by small own code, lazy burger menu and search results. Expected saving ~60–100 KB gzipped per page (today ~240 KB). Found in the 2026-10-09 performance audit.
+
+- **Security — old user migration (`app/Console/Commands/MigrateUsersFromOldDb.php`): owner chose option (a) on 2026-10-09** (random unusable password; sign-in with Google or password reset). Fix in progress; until it is merged, do not run it:
   the old passwords are 32-character MD5 hashes stored raw, and the User model's `'password' => 'hashed'` cast bcrypts them, so the MD5 string itself becomes the password (anyone with the dump could log in); users without a password get "password". Proposed: (a) random unusable password + sign-in via Google or password reset (needs `MAIL_*`), or (b) keep the MD5 in a separate column and rehash on first login. Migrate users only into production (GDPR). Do **not** remove `database/sql/user.sql` (owner).
 - **Mobile side padding:** the global `.container { padding: 0 5px }` overrides Tailwind padding on every container; owner: leave for now (2026-10-08).
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
