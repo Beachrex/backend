@@ -946,6 +946,23 @@ Structured output was chosen over a tool-calling loop: one predictable extra cal
 
 ---
 
+## [2026-10-09] AI chat and itinerary: plan to make them sellable (AI-1 … AI-4)
+
+**Status**: Accepted (owner, 2026-10-09: "AI chat mora delat v nulo … AI načrtovalec potovanj mora delat 100% … strinjam se z vsem kar si napisal, nadaljuj, uredi")
+
+**Context**: Audit 2026-10-09: the chat gave no working beach links (the model's invented `slug` overwrote the real one), had no memory (the page never sent `session_id`), a stale prompt ("2,445+ beaches in 3 countries"), no images, refused accessibility questions (402 for everyone), and answered from 2-3 beaches. The MCP server answers much better because the model calls tools that return ready links. The paid itinerary flow is not sellable yet (free-text destination silently becomes HR, 1-30 days vs 3/7/14, no saved plans, webhook/credit races, 60 s timeout risk, USD without VAT).
+
+**Decision** (owner accepted all proposals):
+1. **AI-1** quick chat fixes: database fields only (model gives ids + match_score), page-language names/slugs, photo, sliding 30-min session tied to the user, beaches shown kept in the history, JSON mode, current prompt, accessibility answered for everyone, 503 `ai_unavailable` for provider errors; web page sends session/locale/token and links beach names.
+2. **AI-2** chat as a tool-calling agent with the MCP tools (ready links), streaming, and a fixed evaluation set (~40 questions, several languages). Compare OpenAI (stronger model) with Claude on that set and pick by quality and cost; Claude needs an Anthropic API key in the server env files (owner).
+3. **AI-3** sellable itinerary: destination/region picker from the API, 3/7/14 with prices, interest chips; webhook purchase+grant in one transaction, refund idempotency, credit reserved atomically, no credit for a fallback result; generation in the background with progress; saved plans ("My plans" + credits); links, map, photos, PDF/share.
+4. **AI-4** selling in the EU with the owner: prices in EUR (19/39/59 kept unless the owner changes them), separate 3/7/14 packages shown simply, Stripe Tax/VAT and invoices, withdrawal-right waiver for digital content, pricing page, terms review.
+5. The chat stays free for everyone, protected by the daily cost circuit breaker.
+
+**Related**: `DEV_HANDOFF.md` (2026-10-09 AI chat entries), `docs/HANDOFF.md` (AI plan), `docs/tasks/TASK-001*`, `docs/tasks/TASK-003*`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions

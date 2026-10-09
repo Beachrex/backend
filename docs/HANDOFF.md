@@ -299,6 +299,14 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 9. **Mobile app** (owner, 2026-10-09): TASK-005, built by the **mobile agent** in `Beachrex/mobile-app` (Expo, React Native, NativeWind, EAS). Plan `docs/mobile/MOBILE-PLAN.md`, tasks `docs/mobile/MOBILE-TASKS.md`. The web agent owns the backend/web tasks the app needs (MOBILE-TASKS §B: `app-config`, native sign-in, favorites API, app-link files) and keeps `/api/v1` additive-only.
 
+## AI chat and itinerary plan (owner accepted 2026-10-09)
+
+ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementation/DECISIONS.md`. One PR per step, as always.
+- [ ] **AI-1** quick chat fixes: backend (real slugs/photos/page language, session memory, prompt, accessibility free, 503) and web chat page (session, locale, linked beach names, photos, error texts, location).
+- [ ] **AI-2** tool-calling chat like the MCP + evaluation set; OpenAI vs Claude comparison (owner adds `ANTHROPIC_API_KEY` to the env files when we get there).
+- [ ] **AI-3** sellable itinerary (form, payment safety, background generation, saved plans, links/map/PDF).
+- [ ] **AI-4** EU selling with the owner (EUR, VAT/invoices, withdrawal waiver, pricing page, terms).
+
 ## Mobile app
 
 Status: Planned (docs only, 2026-10-09). The mobile agent updates this section (task status, builds, owner checks).
