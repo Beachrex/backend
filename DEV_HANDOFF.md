@@ -52,6 +52,20 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Old user migration: random passwords (owner option a); admin filter for imported users
+
+**What changed**
+- `users:migrate-from-old-db` no longer stores the old site's unsalted MD5 hash as the password (the `hashed` cast bcrypted the MD5 string, so the hash itself worked as a password) and no longer falls back to the literal `password`. Every imported account gets `Str::random(64)` (hashed by the cast) — nobody knows it. Imported users sign in with Google (`GoogleAuthController` links an existing account by e-mail). There is no password-reset endpoint yet (open item in `docs/HANDOFF.md`).
+- Unknown `country_id` / `gender_id` values in the dump are stored as NULL instead of failing the whole account on the foreign key.
+- New `--file=` option (default `database/sql/user.sql`, which stays in the repo).
+- Admin (BrAdmin → User Management → Users, already existed): new filter **Imported from old site** (users created by the command, `user_migration_status.status = success`).
+
+**Run** only in production, after launch (GDPR): `php artisan users:migrate-from-old-db --test`, check, then without `--test`.
+
+**Tests:** `tests/Feature/UserMigrationAndAdminTest.php` (random unusable password, MD5 and "password" rejected, idempotent re-run, admin list + filter via Livewire, non-admin 403, guest redirect).
+
+---
+
 ## 2026-10-09 - Weather: 3 s timeouts and failures remembered; `_nocache` only locally
 
 ### Overview
