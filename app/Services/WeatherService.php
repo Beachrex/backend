@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\Log;
 class WeatherService
 {
     private const CACHE_TTL = 3600; // 1 hour cache
-    private const API_TIMEOUT = 10; // 10 seconds timeout
+    // Short: the call runs inside a page request and holds a PHP worker while it waits (audit 2026-10-09)
+    private const API_TIMEOUT = 3;
+    /** A failed lookup is remembered this long, so an outage does not make every request wait again. */
+    private const FAILURE_TTL = 300;
     private const SEA_CACHE_TTL = 10800; // 3 hours
-    private const MARINE_TIMEOUT = 5;
+    private const MARINE_TIMEOUT = 3;
     private const NO_VALUE = 'none';
     
     private string $apiKey;
@@ -38,7 +41,12 @@ class WeatherService
 
         $cacheKey = $this->getCacheKey('weather', $latitude, $longitude);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($latitude, $longitude) {
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached === self::NO_VALUE ? null : $cached;
+        }
+
+        $weather = (function () use ($latitude, $longitude) {
             try {
                 $response = Http::timeout(self::API_TIMEOUT)
                     ->get("{$this->baseUrl}/weather", [
@@ -67,7 +75,12 @@ class WeatherService
                 ]);
                 return null;
             }
-        });
+        })();
+
+        // Cache::remember() does not store null, so a failing API was called again on every request.
+        Cache::put($cacheKey, $weather ?? self::NO_VALUE, $weather === null ? self::FAILURE_TTL : self::CACHE_TTL);
+
+        return $weather;
     }
 
     /**

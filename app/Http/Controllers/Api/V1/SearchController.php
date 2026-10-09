@@ -206,9 +206,9 @@ class SearchController extends Controller
         // Create cache key based on search parameters including locale
         $cacheKey = 'search:' . md5($query . $limit . ($countryCode ?? '') . implode(',', $types) . $locale);
 
-        // Check if cache should be bypassed (for debugging/testing)
-        // Use ?_nocache=1 query parameter to bypass cache in development
-        $bypassCache = $request->has('_nocache');
+        // ?_nocache=1 bypasses the cache for debugging, only locally: on a public server anyone could use it
+        // to skip the cache on every request (audit 2026-10-09).
+        $bypassCache = $request->has('_nocache') && app()->environment('local', 'testing');
         $cacheTtl = $bypassCache ? 0 : CacheService::SHORT_TTL;
 
         $results = $this->cacheRemember($cacheKey, $cacheTtl, function () use ($query, $limit, $countryCode, $types, $locale) {
