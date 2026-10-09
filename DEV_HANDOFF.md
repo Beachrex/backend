@@ -52,6 +52,27 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Nginx: API rate limit, real client IP, gzip, keepalive
+
+### Overview
+Scalability audit 2026-10-09: no public read endpoint was rate limited (one bot could tie up all PHP workers), JSON was sent uncompressed, every proxied request opened a new connection to the API container, and Laravel's client IP came from a forgeable `X-Forwarded-For` (`trustProxies('*')` + `$proxy_add_x_forwarded_for`).
+
+### Changes Made (`deploy/nginx/beachrex.conf`, host Nginx, all environments)
+- `limit_req_zone` per real client IP, 20 requests/s with a burst of 100, answered with 429; applied to every location that proxies to an API container (api, dev-api, uat-api and the dock admin hosts).
+- Not limited (`geo`): 127.0.0.0/8, private networks (10/8, 172.16/12, 192.168/16: Docker, where the Next.js servers call the APIs from for every render) and the VPS IP 2.28.76.142.
+- `X-Forwarded-For $remote_addr` on API locations: Laravel's `request->ip()` (newsletter/auth/AI limits, view de-duplication) can no longer be forged by a client header.
+- `gzip on` for JSON/JS/CSS/text ≥ 1 KB on API locations (per location, so it does not clash with `gzip on` in the distro's `nginx.conf`).
+- API upstreams: `keepalive 32` with `proxy_http_version 1.1` and an empty `Connection` header.
+
+### Notes
+- `deploy/` is synced by every deploy, so this applies to all environments at the next backend deploy (dev now); Nginx is reloaded by the deploy. A config error would make the reload fail and keep the old config.
+- HTTP/2 not enabled in this change.
+
+### Testing
+Local Nginx 1.24 with this file (self-signed certificates at the same paths): `nginx -t` OK (also the old file). Functional test against a stub upstream on :8083: response `Content-Encoding: gzip`; a spoofed `X-Forwarded-For: 6.6.6.6` reaches the upstream as the real IP; 300 parallel requests from a non-exempt IP (limit 10/s, burst 50 during the test) → 59 × 200, 241 × 429; 300 parallel requests from 127.0.0.1 → 300 × 200. Limits raised to 20/s, burst 100 afterwards (shared mobile/hotel IPs); `nginx -t` OK.
+
+---
+
 ## 2026-10-09 - Beach views: one UPDATE per view, and a browser endpoint for the cached website
 
 ### Overview
