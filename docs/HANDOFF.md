@@ -304,16 +304,14 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementation/DECISIONS.md`. One PR per step, as always.
 - [x] **AI-1** quick chat fixes (Beachrex/backend#72, Beachrex/web-client#51, live on dev): backend (real slugs/photos/page language, session memory, prompt, accessibility free, 503) and web chat page (session, locale, linked beach names, photos, error texts, location).
 - [x] **AI-2** tool-calling chat like the MCP + evaluation set (Beachrex/backend#74, #75, Beachrex/web-client#54). Evaluation 2026-10-09: Claude Opus 5.5 37/40 (3 "fails" = no dog/naturist tags in HR data), ~$0.036/question. **On on dev** with `AI_CHAT_ENGINE=agent`, `AI_CHAT_PROVIDER=anthropic`. uat/prod: only when the owner asks; they also need `ANTHROPIC_API_KEY`.
-- [ ] **AI-3** sellable itinerary.
-  - Done:
-    - payment safety (Beachrex/backend#76);
-    - beach links/photos + `/payments/products` (#77);
-    - new planner form (Beachrex/web-client#57);
-    - background generation in `worker_<env>` + saved plans API (`/ai/itinerary-plans`, `/me/itinerary-plans`).
-  - Next:
-    - web: use the background API, add a "My plans" page;
-    - map, PDF/share.
-  - Owner: the Stripe webhook must also send `checkout.session.async_payment_succeeded`.
+- [x] **AI-3** sellable itinerary, live on dev 2026-10-09:
+  - payment safety (Beachrex/backend#76);
+  - beach links/photos and `/payments/products` (#77);
+  - background generation in `worker_<env>` and saved plans API (#78; worker checked `Up` by the owner);
+  - planner form (Beachrex/web-client#57);
+  - plan page with progress and "My plans" (#58);
+  - trip map and Save as PDF (#59).
+  - Owner, before selling: the Stripe webhook must also send `checkout.session.async_payment_succeeded`. Test a real purchase with Stripe test keys on dev.
 - [ ] **AI-4** EU selling with the owner (EUR, VAT/invoices, withdrawal waiver, pricing page, terms).
 
 ## Mobile app
