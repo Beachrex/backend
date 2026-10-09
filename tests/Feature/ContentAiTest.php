@@ -200,7 +200,7 @@ class ContentAiTest extends TestCase
         $this->assertStringContainsString('at most 155 characters', $request['params']['system']);
         $this->assertStringContainsString('only when you are certain', $request['params']['system']);
         $this->assertStringContainsString('not with a generic', $request['params']['system']);
-        $this->assertStringContainsString('how far out the water becomes 1 m deep', $request['params']['system'], 'the depth field was read as a depth (preview 2026-10-09)');
+        $this->assertStringContainsString('never turn the distance into a depth', $request['params']['system']);
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
@@ -224,5 +224,18 @@ class ContentAiTest extends TestCase
         $this->artisan('content:ai', ['action' => 'submit', '--part' => ['names']])
             ->expectsOutputToContain('not applied yet: msgbatch_1')
             ->assertFailed();
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function the_1m_depth_code_becomes_a_sentence_the_model_cannot_read_as_a_depth(): void
+    {
+        // Owner preview 2026-10-09: "5m" was written as "5 m deep a metre from the shore".
+        $this->assertSame('The water becomes 1 m deep about 5 m from the shore.', $this->ai->depthSentence('5m'));
+        $this->assertStringContainsString('good for small children', $this->ai->depthSentence('50m'));
+        $this->assertStringContainsString('right at the shore', $this->ai->depthSentence('0m'));
+        $this->assertSame('The water becomes 1 m deep somewhere within the first 10 m from the shore.', $this->ai->depthSentence('0m_10m'));
+        $this->assertStringContainsString('more than 100 m', $this->ai->depthSentence('more_100m'));
+        $this->assertNull($this->ai->depthSentence(null));
+        $this->assertNull($this->ai->depthSentence('unknown'));
     }
 }
