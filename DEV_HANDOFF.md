@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - API: HTTP errors keep their status (429 instead of 500)
+
+### Overview
+`bootstrap/app.php` had a catch-all renderer for API requests that answered **every** exception with `500 Server error.`, including Laravel's HTTP exceptions. A rate-limited request (`throttle:` on Google auth, beach views, AI chat, the new password reset) got 500 instead of 429, `abort(403)` got 500, a wrong method got 500 instead of 405. Found while testing the password reset rate limit.
+
+### Changes Made
+- New renderer before the catch-all: `HttpExceptionInterface` → JSON `{message}` with the exception's status code and headers (`Retry-After` on 429). 404 keeps `Not found.`; other exceptions are still 500.
+
+### Testing
+`tests/Feature/HttpErrorStatusTest.php` (3): 429 + `Retry-After`, 403/405/404, real error still 500. Fails on the old code (2 of 3). Full suite: only the 4 known environment-dependent failures.
+
+---
+
 ## 2026-10-09 - Nginx: HTTP/2 on all HTTPS sites
 
 ### Overview
