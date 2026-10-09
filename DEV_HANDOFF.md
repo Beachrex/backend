@@ -52,6 +52,22 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - /beaches/filters: parking and swimming pool translated
+
+Mobile report (relayed by the owner): `parking` and `has_swimming_pool` had a fixed English title ("Parking", "Swimming Pool") and label "Yes".
+
+### Changes Made
+- `FilterController::getParkingFilterData()` / `getSwimmingPoolFilterData()`: title and label via `__()` in the request language; the option now also has `code: "1"` and `name`, like every other filter option (additive, `value` stays).
+- `lang/*.json` (19): "Parking", "Swimming pool", "Yes".
+
+### Affected Endpoints
+- `GET /api/v1/beaches/filters` (additive: `code`, `name` on the two boolean options). After deploy: `cache:clear-api --type=all` so cached filter lists pick it up.
+
+### Testing
+- `php artisan test --filter=BooleanFiltersLocaleTest`
+
+---
+
 ## 2026-10-09 - content:ai: 1 m depth given as a sentence
 
 Second preview: even with the renamed fact the model still wrote "5 m deep a metre from the shore". `BeachContentAi::depthSentence()` now turns the code into a finished statement ("The water becomes 1 m deep about 5 m from the shore."), passed as `shallow_water`. Test: `ContentAiTest` (12).

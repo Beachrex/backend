@@ -15,5 +15,8 @@
   "The Beachrex team": "Tým Beachrex",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Pokud pro tento e-mail existuje účet, poslali jsme odkaz pro obnovení hesla.",
   "Your password has been changed. You can now sign in.": "Vaše heslo bylo změněno. Nyní se můžete přihlásit.",
-  "This password reset link is invalid or has expired.": "Tento odkaz pro obnovení hesla je neplatný nebo vypršel."
+  "This password reset link is invalid or has expired.": "Tento odkaz pro obnovení hesla je neplatný nebo vypršel.",
+  "Parking": "Parkoviště",
+  "Swimming pool": "Bazén",
+  "Yes": "Ano"
 }

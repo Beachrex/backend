@@ -15,5 +15,8 @@
   "The Beachrex team": "Η ομάδα του Beachrex",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Αν υπάρχει λογαριασμός με αυτό το email, στείλαμε σύνδεσμο επαναφοράς κωδικού.",
   "Your password has been changed. You can now sign in.": "Ο κωδικός σας άλλαξε. Μπορείτε τώρα να συνδεθείτε.",
-  "This password reset link is invalid or has expired.": "Αυτός ο σύνδεσμος επαναφοράς κωδικού δεν είναι έγκυρος ή έχει λήξει."
+  "This password reset link is invalid or has expired.": "Αυτός ο σύνδεσμος επαναφοράς κωδικού δεν είναι έγκυρος ή έχει λήξει.",
+  "Parking": "Στάθμευση",
+  "Swimming pool": "Πισίνα",
+  "Yes": "Ναι"
 }

@@ -15,5 +15,8 @@
   "The Beachrex team": "Команда Beachrex",
   "If an account exists for this e-mail, we have sent a link to reset the password.": "Если для этого адреса существует учётная запись, мы отправили ссылку для сброса пароля.",
   "Your password has been changed. You can now sign in.": "Ваш пароль изменён. Теперь вы можете войти.",
-  "This password reset link is invalid or has expired.": "Эта ссылка для сброса пароля недействительна или устарела."
+  "This password reset link is invalid or has expired.": "Эта ссылка для сброса пароля недействительна или устарела.",
+  "Parking": "Парковка",
+  "Swimming pool": "Бассейн",
+  "Yes": "Да"
 }
