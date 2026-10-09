@@ -6,6 +6,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachResource extends JsonResource
 {
+    /**
+     * Relations a beach card needs (GET /beaches, GET /me/favorites): one list, so every card endpoint returns the
+     * same fields without extra queries.
+     */
+    public static function cardRelations(): array
+    {
+        return [
+            'translations',
+            'continent.translations',
+            'country.translations',
+            'region.translations',
+            'city.translations',
+            'island.translations',
+            'media' => function ($query) {
+                $query->where('status_id', 1)
+                    ->with('mediaCollection')
+                    ->orderBy('is_primary', 'desc')
+                    ->orderBy('order')
+                    ->orderBy('created_at');
+            },
+            ...\App\Support\BeachCardFeatures::RELATIONS,
+            'sportingActivities.translations',
+            'culinaryOffers.translations',
+            'naturalLocationConditions.translations',
+            'occupancyRate.translations',
+        ];
+    }
+
     public function toArray($request)
     {
         $locale = app()->getLocale();
@@ -198,6 +226,7 @@ class BeachResource extends JsonResource
             'main_image' => $mainImage,
             'media' => $media,
             'tags' => $tags,
+            'features' => \App\Support\BeachCardFeatures::fromModel($this->resource, $locale),
             // 'main_image_imagor' removed - frontend constructs Imagor URLs directly
         ];
     }

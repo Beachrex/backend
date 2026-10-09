@@ -34,6 +34,18 @@ return [
             'driver' => 'sync',
         ],
 
+        // AI-3: itinerary generation (20-120 s per plan) runs in the worker_<env> container. Its own connection so
+        // retry_after (300 s) stays above the worker --timeout (240 s); the default 90 s would hand a running plan
+        // to a second worker.
+        'itineraries' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'itineraries',
+            'retry_after' => 300,
+            'after_commit' => true,
+        ],
+
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),

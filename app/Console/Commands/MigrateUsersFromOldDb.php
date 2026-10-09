@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\UserMigrationStatus;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class MigrateUsersFromOldDb extends Command
 {
@@ -19,7 +19,8 @@ class MigrateUsersFromOldDb extends Command
                             {--test : Test mode - migrate only first 10 users}
                             {--limit= : Limit number of users to migrate}
                             {--resume : Resume from last migration}
-                            {--reset : Reset migration status and start fresh}';
+                            {--reset : Reset migration status and start fresh}
+                            {--file= : Path to the SQL dump (default: database/sql/user.sql)}';
 
     /**
      * The console command description.
@@ -59,6 +60,10 @@ class MigrateUsersFromOldDb extends Command
         $this->info('👥 User Migration from Old Database');
         $this->info('===================================');
         $this->newLine();
+
+        if ($this->option('file')) {
+            $this->sqlFilePath = $this->option('file');
+        }
 
         // Check if SQL file exists
         if (!file_exists($this->sqlFilePath)) {
@@ -501,20 +506,29 @@ class MigrateUsersFromOldDb extends Command
 
         // Validate country code
         $countryCode = !empty($oldData['country_id']) ? strtoupper($oldData['country_id']) : null;
-        if ($countryCode && strlen($countryCode) !== 2) {
+        if ($countryCode && (strlen($countryCode) !== 2 || !DB::table('countries')->where('code', $countryCode)->exists())) {
             $countryCode = null;
+        }
+
+        // An unknown country or gender must not drop the whole account on the foreign key.
+        $genderId = !empty($oldData['gender_id']) ? (int) $oldData['gender_id'] : null;
+        if ($genderId && !DB::table('gender')->where('id', $genderId)->exists()) {
+            $genderId = null;
         }
 
         // Create user
         $user = new User();
         $user->name = $name;
         $user->email = $oldData['email'] ?? null;
-        $user->password = $oldData['password'] ?? Hash::make('password'); // Keep old hash or set default
+        // Owner decision 2026-10-09 (option a): the old site stored unsalted MD5 hashes, which must not
+        // become passwords here. Every imported account gets a random password nobody knows; the user
+        // signs in with Google (linked by e-mail) or sets a new password once a reset flow exists.
+        $user->password = Str::random(64);
         $user->username = $oldData['username'] ?? null;
         $user->firstname = $oldData['firstname'] ?? null;
         $user->lastname = $oldData['lastname'] ?? null;
         $user->date_of_birth = !empty($oldData['date_of_birth']) ? $oldData['date_of_birth'] : null;
-        $user->gender_id = !empty($oldData['gender_id']) ? (int)$oldData['gender_id'] : null;
+        $user->gender_id = $genderId;
         $user->mobile = $oldData['mobile'] ?? null;
         $user->country_code = $countryCode;
         $user->status_id = !empty($oldData['status_id']) ? (int)$oldData['status_id'] : 1;

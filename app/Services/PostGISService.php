@@ -58,8 +58,8 @@ class PostGISService
                 m.disk as main_image_disk,
                 tags.tags_json,
                 ST_Distance(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857)
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
@@ -133,8 +133,8 @@ class PostGISService
               AND b.status_id = 1
               AND b.location IS NOT NULL
               AND ST_DWithin(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857),
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography,
                     ?
                   )
               {$filterSql}
@@ -179,8 +179,8 @@ class PostGISService
                 m.disk as main_image_disk,
                 tags.tags_json,
                 ST_Distance(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857)
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography
                 ) / 1000.0 as distance_km
             FROM beach b
             LEFT JOIN beach_translation bt ON b.id = bt.beach_id AND bt.locale = ?
@@ -235,8 +235,8 @@ class PostGISService
               AND b.status_id = 1
               AND b.location IS NOT NULL
             ORDER BY ST_Distance(
-                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                ST_Transform(b.location, 3857)
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                b.location::geography
             )
             LIMIT ?
         ", [$longitude, $latitude, $locale, $locale, $locale, $locale, $locale, $locale, $longitude, $latitude, $limit]);
@@ -257,8 +257,8 @@ class PostGISService
     {
         $result = DB::selectOne("
             SELECT ST_Distance(
-                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857)
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
             ) / 1000.0 as distance_km
         ", [$lon1, $lat1, $lon2, $lat2]);
 
@@ -517,8 +517,8 @@ class PostGISService
               AND b.status_id = 1
               AND b.location IS NOT NULL
               AND ST_DWithin(
-                    ST_Transform(ST_SetSRID(ST_MakePoint(?, ?), 4326), 3857),
-                    ST_Transform(b.location, 3857),
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+                    b.location::geography,
                     ?
                   )
               {$filterSql}
@@ -753,7 +753,8 @@ class PostGISService
                 m.is_primary,
                 m.order,
                 mc.code as collection_code,
-                b.folder_name
+                b.folder_name,
+                b.mobile_upload
             FROM media m
             INNER JOIN media_collections mc ON m.media_collection_id = mc.id
             INNER JOIN beach b ON m.mediable_id = b.id
@@ -767,7 +768,9 @@ class PostGISService
         // Group media by beach_id and collection
         $mediaByBeach = collect($allMedia)->groupBy('beach_id');
 
-        return collect($results)->map(function ($beach) use ($mediaByBeach) {
+        $featuresByBeach = $this->loadCardFeatures($beachIds);
+
+        return collect($results)->map(function ($beach) use ($mediaByBeach, $featuresByBeach) {
             // Return main_image path as-is (relative path without leading slash)
             $mainImage = $beach->main_image_path ?? null;
 
@@ -809,8 +812,10 @@ class PostGISService
             $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
             $vtourUrl = null;
             if ($spheres360Collection->isNotEmpty() && isset($spheres360Collection->first()->folder_name)) {
-                $folderName = $spheres360Collection->first()->folder_name;
-                $vtourUrl = "img/beaches/{$folderName}/vtour/tour.html";
+                $sphere = $spheres360Collection->first();
+                // Same rule as BeachDetailsResource: mobile uploads live under img/beaches_mobile/.
+                $baseFolder = $sphere->mobile_upload ? 'beaches_mobile' : 'beaches';
+                $vtourUrl = "img/{$baseFolder}/{$sphere->folder_name}/vtour/tour.html";
             }
 
             $spheres360 = [];
@@ -859,8 +864,74 @@ class PostGISService
                 'main_image' => $mainImage,
                 'media' => $media,
                 'tags' => isset($beach->tags_json) ? json_decode($beach->tags_json, true) : [],
+                'features' => $featuresByBeach[$beach->id] ?? ['beach_type' => null, 'family' => false, 'adventurer' => false, 'youth' => false, 'parking' => false],
                 'distance_km' => $beach->distance_km ?? null,
             ];
         });
+    }
+
+    /**
+     * Card icons (QA #45): beach type, family friendly and parking, for every beach in one query.
+     * Same rules as the beach page badges: family = user type `family`; parking = infrastructure
+     * `parking` or a parking capacity other than none/private.
+     *
+     * @param  array<int>  $beachIds
+     * @return array<int, array{beach_type: ?array{code: string, name: string}, family: bool, parking: bool}>
+     */
+    private function loadCardFeatures(array $beachIds): array
+    {
+        $ids = implode(',', array_map('intval', $beachIds));
+        $locale = app()->getLocale();
+
+        $rows = DB::select("
+            SELECT
+                b.id AS beach_id,
+                bt.code AS beach_type_code,
+                COALESCE(btl.name, bten.name, bt.code) AS beach_type_name,
+                EXISTS (
+                    SELECT 1 FROM user_type_beach utb
+                    JOIN user_type ut ON ut.id = utb.user_type_id
+                    WHERE utb.beach_id = b.id AND ut.code = 'family'
+                ) AS family,
+                EXISTS (
+                    SELECT 1 FROM user_type_beach utb
+                    JOIN user_type ut ON ut.id = utb.user_type_id
+                    WHERE utb.beach_id = b.id AND ut.code = 'adventurer'
+                ) AS adventurer,
+                EXISTS (
+                    SELECT 1 FROM user_type_beach utb
+                    JOIN user_type ut ON ut.id = utb.user_type_id
+                    WHERE utb.beach_id = b.id AND ut.code = 'youth'
+                ) AS youth,
+                (
+                    EXISTS (
+                        SELECT 1 FROM location_infrastructure_beach lib
+                        JOIN location_infrastructure li ON li.id = lib.location_infrastructure_id
+                        WHERE lib.beach_id = b.id AND li.code = 'parking'
+                    )
+                    OR (pc.code IS NOT NULL AND pc.code NOT IN ('0', 'private_parking_only'))
+                ) AS parking
+            FROM beach b
+            LEFT JOIN beach_type bt ON bt.id = b.beach_type_id
+            LEFT JOIN beach_type_translation btl ON btl.beach_type_id = bt.id AND btl.locale = ?
+            LEFT JOIN beach_type_translation bten ON bten.beach_type_id = bt.id AND bten.locale = 'en'
+            LEFT JOIN parking_capacity pc ON pc.id = b.parking_capacity_id
+            WHERE b.id IN ($ids)
+        ", [$locale]);
+
+        $features = [];
+        foreach ($rows as $row) {
+            $features[$row->beach_id] = [
+                'beach_type' => $row->beach_type_code
+                    ? ['code' => $row->beach_type_code, 'name' => $row->beach_type_name]
+                    : null,
+                'family' => (bool) $row->family,
+                'adventurer' => (bool) $row->adventurer,
+                'youth' => (bool) $row->youth,
+                'parking' => (bool) $row->parking,
+            ];
+        }
+
+        return $features;
     }
 }

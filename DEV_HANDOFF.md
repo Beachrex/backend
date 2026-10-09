@@ -1,5 +1,6 @@
 # Development Handoff / Change Log
 
+
 ## 📋 Documentation Rules
 
 **IMPORTANT:** This file MUST be updated whenever making changes to the API or codebase. Follow these rules:
@@ -48,6 +49,1024 @@ Brief description of the change
 ### Testing
 How to test the changes
 ```
+
+---
+
+## 2026-10-09 - OpenAPI: full search result fields for islands, regions and countries
+
+Mobile report (relayed by the owner): the `GET /api/v1/search` response documented only the URL slugs for `islands`, `regions` and `countries`, so generated clients missed `id`, `name`, `slug`, `main_image`, `country_name` and the other fields the API already returns.
+
+### Changes Made
+- `SearchController` OpenAPI annotations now list every returned field per group (no code change); `php artisan l5-swagger:generate` (108 paths).
+
+### Affected Endpoints
+- `GET /api/v1/search` (documentation only; the response is unchanged)
+
+### Testing
+- `php artisan test --filter=SearchOpenApiTest`
+
+---
+
+## 2026-10-09 - /beaches/filters: parking and swimming pool translated
+
+Mobile report (relayed by the owner): `parking` and `has_swimming_pool` had a fixed English title ("Parking", "Swimming Pool") and label "Yes".
+
+### Changes Made
+- `FilterController::getParkingFilterData()` / `getSwimmingPoolFilterData()`: title and label via `__()` in the request language; the option now also has `code: "1"` and `name`, like every other filter option (additive, `value` stays).
+- `lang/*.json` (19): "Parking", "Swimming pool", "Yes".
+
+### Affected Endpoints
+- `GET /api/v1/beaches/filters` (additive: `code`, `name` on the two boolean options). After deploy: `cache:clear-api --type=all` so cached filter lists pick it up.
+
+### Testing
+- `php artisan test --filter=BooleanFiltersLocaleTest`
+
+---
+
+## 2026-10-09 - content:ai: 1 m depth given as a sentence
+
+Second preview: even with the renamed fact the model still wrote "5 m deep a metre from the shore". `BeachContentAi::depthSentence()` now turns the code into a finished statement ("The water becomes 1 m deep about 5 m from the shore."), passed as `shallow_water`. Test: `ContentAiTest` (12).
+
+---
+
+## 2026-10-09 - content:ai: depth fact read the right way round, no trivia
+
+Owner preview of generated descriptions (2026-10-09): "the sea is 5 m deep a metre from the shore" came from the field `swimming_depth_of_one_m` (distance from the shore where the water is 1 m deep), which the model read as a depth.
+
+### Changes Made
+- `BeachContentAi::facts()`: the key is now `distance_from_shore_to_1m_depth`, and the prompt explains it (a large distance means shallow water).
+- Prompt: leave out trivial amenities (rubbish bins), first sentence at most 155 characters.
+
+### Testing
+- `php artisan test --filter=ContentAiTest`
+
+---
+
+## 2026-10-09 - content:ai: better generated descriptions, full preview, no double submit
+
+Owner review of the first preview (2026-10-09): generated descriptions all started the same way; the owner chose option B (database facts plus well-known facts about the town or island).
+
+### Changes Made
+- `BeachContentAi::generatePrompt()`: travel-guide style, 50–110 words, first sentence a search snippet under 155 characters, opens with what is distinctive, no stock phrases, area named naturally (not "Dalmatia - Dubrovnik"), well-known facts about the place only when certain and never as facts about the beach.
+- More facts: area, setting, beach and bay length, parking distance, road to parking, best reached by, water type; `name_by_language` gives the stored name per language (also used when translating descriptions).
+- `content:ai preview|apply --full --locale=sl`: whole descriptions for chosen languages.
+- `content:ai submit` refuses a part whose previous batch was not applied yet (`--force` overrides).
+
+### Testing
+- `php artisan test --filter=ContentAiTest` (11 tests)
+
+---
+
+## 2026-10-09 - Data quality with AI: beach names, region names, descriptions (`content:ai`)
+
+Owner request 2026-10-09: "uredi kakovost podatkov, z AI prevajaj". Runbook: `docs/runbooks/content-ai.md`.
+
+### Changes Made
+- `app/Services/AI/Content/BeachContentAi.php`: selection, Claude requests (structured JSON output) and guarded writes for four parts:
+  - `names`: drops the import's English "Beach" ("Beach Slanica" -> "Slanica"), Cyrillic/Greek spelling for ua/ru/bg/el;
+  - `regions`: region names in all 19 languages ("Dalmatia - Šibenik" -> "Dalmacija - Šibenik");
+  - `descriptions`: translates an existing description into the languages without one;
+  - `generate`: 2–4 sentences from database facts for beaches without any description.
+- Slugs never change; text a person wrote is never overwritten; a name that shares no word with the old one, or keeps the English "Beach", is refused.
+- `app/Console/Commands/ContentAi.php`: `php artisan content:ai plan|preview|submit|status|apply` (Message Batches API, half price; `apply` is a dry run until `--write`).
+- `config/ai.php`: `ai.content.model` (`AI_CONTENT_MODEL`, default `claude-opus-5-5`) and `ai.content.effort` (`AI_CONTENT_EFFORT`, default `low`).
+
+### Affected Endpoints
+- None (data only). After `--write`: `cache:clear-api --type=all` and `search:index`.
+
+### Testing
+- `php artisan test --filter=ContentAiTest`
+
+---
+
+## 2026-10-09 - Mobile app (B-M2, e-mail only): account deletion, throttled login
+
+The owner decided (2026-10-09) that the app signs in with e-mail + password for now, using the existing `POST /register`, `POST /login` (Sanctum token), `/forgot-password` and `/reset-password`. Google/Apple native sign-in comes later, when the app is in production.
+
+**What changed**
+- **New `DELETE /api/v1/me`** (auth:sanctum). It is required by the App Store for apps with sign-up and covers the GDPR right to erasure. The user confirms with `password`; accounts linked to Google may send `confirm: "DELETE"` instead. Admin accounts get 403.
+  - `AccountDeletionService` removes tokens, saved beaches, itinerary plans, credits, AI chat sessions (their messages cascade), the AI usage link and password-reset tokens.
+  - The user row is **anonymised, not deleted**: name "Deleted user #id", an unusable e-mail and password, profile fields null, status inactive. Purchases stay linked to it, because accounting law requires keeping them; a hard delete would cascade-delete them.
+  - The e-mail address is free to register again.
+- **`POST /login`** validates `email`/`password` and refuses inactive (deleted) accounts.
+- **Throttling per IP:** `/login` 10/min, `/register` 5/min (before, both were unthrottled: password guessing).
+- OpenAPI regenerated.
+
+**OpenAPI generation fixed (found while checking this PR):**
+- Since the composer update (swagger-php 5.3 → 5.8, #82), `l5-swagger:generate` failed with "Multiple @OA\\Schema() with the same schema". `config/l5-swagger.php` scanned `app/Swagger` and its subfolder `app/Swagger/Schemas`, so every schema was read twice.
+- The failure was quiet: the committed `api-docs.json` on dev lacked `/app-config`, `/me/favorites` and `/ai/itinerary-plans`.
+- The duplicate path is removed and the docs are regenerated: 108 paths, all new endpoints present.
+- New `tests/Feature/OpenApiDocsTest.php` fails when generation errors or the committed file misses a path.
+
+**Tests:** `tests/Feature/AccountDeletionTest.php` (5). Full suite: 531 passed; the only failures are the 4 known environment-dependent ones.
+
+---
+
+## 2026-10-09 - Mobile app (B-M3): saved beaches API
+
+**What changed:** new endpoints, all `auth:sanctum` and owner-only (TASK-005, also for the hidden web H6 "favourites" heart):
+- `GET /api/v1/me/favorites` returns the saved beaches newest first, as the **same beach cards as `GET /beaches`**, in the page language, plus `meta.total` and `meta.limit`. Beaches unpublished later drop out of the list.
+- `GET /api/v1/me/favorites/ids` returns the ids only, to show the heart on any list.
+- `POST /api/v1/me/favorites {beach_id}` answers 201 when saved and 200 when already saved. Unknown or unpublished beaches get 422, and a full list gets `422 favorites_limit` (`FAVORITES_LIMIT`, default 500).
+- `DELETE /api/v1/me/favorites/{beachId}` answers 204, also when the beach was not saved, so the app can retry safely.
+
+Table `beach_favorites` (unique user + beach, both cascade on delete). The card relations are now one list, `BeachResource::cardRelations()`, used by `GET /beaches` and by favourites. OpenAPI tag "Favorites".
+
+**Tests:** `tests/Feature/FavoritesApiTest.php` (6): 401 on every endpoint, idempotent add/remove, owner only, 422 for unknown/unpublished beaches, unpublished beaches drop out, the cap.
+
+---
+
+## 2026-10-09 - Mobile app (B-M1): GET /api/v1/app-config
+
+**What changed:** a new public `GET /api/v1/app-config` (TASK-005, mobile agent task M1.4). It returns:
+- `data.ios` and `data.android`, each with `min_supported_version`, `latest_version` and `store_url` (null until set);
+- `data.features`: `ai_chat`, `itinerary`, `favorites` and `native_sign_in`, all false by default;
+- `data.api_version: "v1"`.
+
+The values come from `config/mobile.php` (`MOBILE_*` in `.env.example`), so a store release only needs an env change and a redeploy; no code change. The response has `Cache-Control: public, max-age=300`. OpenAPI tag "Mobile".
+
+**Test:** `tests/Feature/AppConfigTest.php`.
+
+---
+
+## 2026-10-09 - Dependencies: composer security advisories fixed (74 → 0)
+
+**What changed:** `composer audit` reported 74 advisories in 25 packages (critical/high in phpoffice/phpspreadsheet, league/commonmark, guzzlehttp/guzzle, phpseclib, aws-sdk-php, symfony/http-foundation and symfony/mime, laravel/framework). A `composer update` within the existing `composer.json` constraints (no constraint changed) fixed all of them: **"No security vulnerability advisories found."** 123 locked versions changed, for example:
+- laravel/framework 12.36 → 12.69;
+- filament 3.3.43 → 3.3.56;
+- guzzle 7.10 → 7.15;
+- league/commonmark 2.7 → 2.10;
+- phpspreadsheet 1.30.1 → 1.30.7;
+- stripe-php 19.1 → 19.4.
+
+**Major bumps:** only transitive ones. firebase/php-jwt 6 → 7 and phpseclib 3 → 4 come with laravel/socialite; hamcrest 2 → 3 is dev-only. Our code uses none of them directly.
+
+Filament republished its assets in `public/css|js/filament` (`filament:upgrade` runs in post-update); they are committed with the lock file.
+
+**Tests:** full suite 519 passed; the only failures are the 4 known environment-dependent ones (PlanEnforcementTest ×2, CountrySlugSupportTest weather ×2).
+
+---
+
+## 2026-10-09 - Selling in the EU (AI-4, part 1): consent at checkout, terms of sale, Stripe Tax and invoice switches
+
+The owner asked the agent to draft and add the withdrawal waiver ("to pripravi in dodaj ti"). The company is VAT-registered in Slovenia.
+
+**What changed**
+- `POST /api/v1/payments/stripe/checkout` now requires `accept_terms: true` and `waive_withdrawal: true` (immediate delivery; the 14-day withdrawal right ends once a plan is created; Directive 2011/83/EU Art. 16(m)). Without them it answers `422 consent_required` and creates no session.
+- The consent (`terms_version`, `terms_accepted_at`, `withdrawal_waiver`, `locale`) is stored on the Stripe session and on the payment intent, and the webhook keeps the whole session on the purchase row as evidence. `customer_email` is prefilled and Checkout runs in the buyer's language (`locale: auto`).
+- The success and cancel URLs now carry the page language (`/si/payment/success`, …), taken from `Accept-Language`.
+- New switches in `config/ai.php` / `.env.example`, off by default until the company's new Stripe account is set up:
+  - `STRIPE_TAX_ENABLED` turns on `automatic_tax`, required billing address and VAT-number collection;
+  - `STRIPE_INVOICES_ENABLED` turns on `invoice_creation` (Stripe e-mails an invoice);
+  - `STRIPE_TERMS_VERSION`.
+  - `StripeService::checkoutSessionParams()` builds the params, so they can be tested without Stripe.
+- Terms of use §5 is rewritten in all 19 languages (`database/content/static-pages/*.json`): seller with address and VAT status, what is bought, price incl. VAT and payment, delivery with automatic return of failed plans, the withdrawal right (unused plan: 14 days, full refund; used plan: waived), complaints within 30 days. "Last updated" is now 9 October 2026.
+  - **The owner should have a lawyer review the text.**
+  - **Apply on dev:** `php artisan static-pages:sync --dry-run`, then without `--dry-run`.
+
+**Tests:** `tests/Feature/Payment/CheckoutConsentTest.php`:
+- 4 missing-consent cases → 422;
+- consent metadata on the session and payment;
+- the tax and invoice switches;
+- §5 in all 19 files.
+
+`CheckoutControllerTest` now sends the consent and checks the language in the return URLs.
+
+**Needs web-client** (checkboxes before "Buy"); otherwise buying returns 422.
+
+---
+
+## 2026-10-09 - Paid itinerary (AI-3c): background generation in a queue worker, saved plans
+
+**Why:** PHP-FPM stops web requests at 60 s, and a 7/14-day plan can take longer. ADR "Paid itineraries run in a queue worker".
+
+**What changed**
+- New `worker_<env>` containers in `deploy/docker-compose.vps.yml`. The deploy workflow recreates them after migrate/config:cache. They use the new `itineraries` queue connection (`retry_after` 300 s).
+- `POST /api/v1/ai/itinerary-plans` (auth:sanctum, plus the AI rate limit and circuit breaker) takes the same body as `/ai/itineraries`. It reserves the credit, stores an `itinerary_plans` row and queues `GenerateItineraryPlan`, then answers `202 {data: summary}`. Without a credit it answers 402 and queues nothing.
+- `GET /api/v1/me/itinerary-plans` lists the newest 50 summaries. `GET /api/v1/me/itinerary-plans/{id}` returns the summary plus `itinerary` when done; it is owner only (404 otherwise).
+- Summary fields: `status` (queued/running/done/failed), `error` (not_enough_beaches/error/timeout), `credit_used`, country, region, days, title, dates.
+- The credit goes back once on failure, too few beaches, the AI fallback, or a stuck plan. A plan is stuck after 10 min running or 30 min queued; checked every 5 min by the scheduler and on read.
+- `ItineraryService::generateFromInput()` runs a generation without an HTTP request; `generate()` wraps it.
+- OpenAPI: new `ItineraryPlanSummary` schema; docs regenerated.
+
+**Tests:** `tests/Feature/AI/ItineraryPlanTest.php` (11). One of them runs the real database queue with `queue:work itineraries --once`, and one checks that `retry_after` is greater than the worker `--timeout` in the compose file.
+
+**After deploy:** `docker compose ps` should show `worker_dev` running. Owner command (read-only): `docker compose -f docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev ps worker_dev`.
+
+---
+
+## 2026-10-09 - Paid itinerary (AI-3b): beach page links and photos in the plan, public price list
+
+**What changed**
+- `POST /api/v1/ai/itineraries`: every beach in `days[].items[].beach` now has `continent_slug`, `country_slug`, `region_slug`, `island_slug` and `city_slug` in the page language (English fallback), plus `main_image`. With these fields the website links each beach to its page and shows its photo (`buildBeachUrlFromSchema`). The fields are loaded in one query for the plan's beaches (`ItineraryService::withPageLinks`).
+- New public `GET /api/v1/payments/products`: the 3/7/14-day packages with `amount`, `currency` and `credits` from `config/ai.php`, shortest first. Stripe price ids are not exposed. The website shows the price the checkout will charge, so it is never hard-coded.
+
+**Tests:** `ItineraryQualityTest::every_beach_carries_its_page_link_slugs_in_the_page_language`, `tests/Feature/Payment/ProductsEndpointTest.php`.
+
+---
+
+## 2026-10-09 - Paid itinerary (AI-3a): payments and credits safe to sell
+
+**What changed**
+- `WebhookController`
+  - `checkout.session.completed` grants credits only when `payment_status` is `paid` (or `no_payment_required`). For delayed methods, credits are granted on the new `checkout.session.async_payment_succeeded`.
+  - The purchase row and the credits are written in one DB transaction. The session row is locked, and the unique `stripe_session_id` makes a second delivery of the same payment a no-op, also when two deliveries race.
+  - Credits come from our product config. The `credits` field in the session metadata is ignored.
+  - `charge.refunded` revokes credits only for a full refund (`refunded=true`), and only once: the purchase row is locked, and a purchase that is already refunded is skipped. Before this fix, every repeated refund event revoked again.
+- `ItineraryController`
+  - The credit is reserved with the atomic decrement before generation. Before this fix, two parallel requests with one credit both got a paid plan.
+  - The credit goes back when generation fails or there are too few beaches (422).
+  - A plan without the AI narrative (`metadata.narrative = "fallback"`) is still returned, but the credit goes back. New field `metadata.credit_used` (paid requests only); OpenAPI updated.
+
+**Stripe dashboard (owner):** the webhook endpoint must also send `checkout.session.async_payment_succeeded`.
+
+**Tests:** `tests/Feature/Payment/WebhookSafetyTest.php` (5), `tests/Feature/AI/ItineraryCreditSafetyTest.php` (4). `ItineraryControllerTest::authenticated_user_gets_itinerary` now gives the user a credit; it used to pass only because of the free-plan bug.
+
+---
+
+## 2026-10-09 - AI chat (AI-2): tool-calling agent like the MCP server, Claude/OpenAI, evaluation command
+
+### Overview
+Owner: "the MCP in Claude works much better" and "AI chat mora delat v nulo". The MCP answers well because the model calls tools that return ready beach links. The website chat can now work the same way. **Off by default** (`AI_CHAT_ENGINE=pipeline`) until the evaluation shows which model to use.
+
+### Changes Made
+- `App\Services\AI\Agent\BeachTools`: the MCP tools (find_places_and_beaches, search_beaches, find_beaches_nearby, get_beach_details, get_beach_filters, get_beach_weather) on top of our own API, called in-process by `InternalApi` (same data as website/MCP; `X-Beachrex-Client: ai-chat`, so no view is counted). Every beach line carries the ready website link in the page language; beaches linked in the answer become the cards.
+- `ChatAgent` + `AgentModel` with two implementations: `OpenAIAgentModel` (function calling) and `AnthropicAgentModel` (official `anthropic-ai/sdk` 0.56; manual tool loop, whole assistant turn kept, all tool results in one user message, `fallbacks: "default"` with beta `server-side-fallback-2026-07-01`, cached system prompt, `effort` low by default, 25 s per call, `toolChoice: none` after the last allowed round).
+- `ChatController`: with `AI_CHAT_ENGINE=agent` the answer is markdown (`format: "markdown"`, links `[name](url)`), cards for linked beaches, refusal → polite text, provider errors → 503 `ai_unavailable`. Usage rows record the real provider.
+- `php artisan ai:chat-eval --provider=openai|anthropic --model=… [--effort=] [--only=] [--limit=]`: 40 fixed questions in 13 languages (`resources/ai-eval/chat-questions.json`: places, attributes, named beaches, weather, near-me with/without location, follow-up, off-topic, prompt injection, non-existent place). Checks: links point to real active beaches, links present when beaches are expected, right country, no foreign URLs; time, tool calls and cost per question. Report in `storage/app/ai-eval/*.md`. **Calls the paid API.**
+- Config `ai.chat.*` (`AI_CHAT_ENGINE`, `AI_CHAT_PROVIDER`, `AI_CHAT_OPENAI_MODEL`, `AI_CHAT_ANTHROPIC_MODEL` default `claude-opus-5-5`, `AI_CHAT_EFFORT`, `AI_CHAT_MAX_TOOL_ROUNDS`), `.env.example`, OpenAPI (`format`).
+
+### Testing
+`tests/Feature/AI/ChatAgentTest.php` (8): tools against the real API in-process (links, filters, details without a view, unknown tool), cards only for linked beaches, controller in agent mode with OpenAI faked (tool call → markdown + cards + usage row), Claude loop through a scripted HTTP transport (tool_result with the tool_use id, fallbacks/beta header, effort, cache_control, input_schema), refusal and 503, pipeline stays default, evaluation command (pass/fail, broken link detected, report written). Not run: a real model call (needs the owner's run of `ai:chat-eval` on dev).
+
+---
+
+## 2026-10-09 - GET /beaches: real pagination, place aliases (city pages showed beaches of every country)
+
+### Overview
+Owner (screenshots of Risskov, DK and Murter, HR): "Brskaj po vseh plažah …" showed beaches from Croatia, Germany and Italy and took seconds to load. The website sends `city=<…>` / `region=` / `island=`, which `GET /beaches` ignored, and the default `limit` was 5000, so every listing page downloaded all ~3,800 beaches (with media) and paged in the browser. `page` was ignored too, so the beach sitemap (`limit=50&page=N`) listed the same 50 beaches 50 times.
+
+### Changes Made
+- `BeachController::index`: `page`, `per_page` (default 20, max 100; `limit` kept as an alias), `sort=popular|newest`; stable order (most viewed, then id; newest with `NULLS LAST`). `meta` adds `total`, `current_page`, `per_page`, `last_page`, `sort`; `total_beaches` is now the number matching the filters. Page/size/sort are part of the cache key.
+- `BeachFilterService::applyFilters`: `city`, `region`, `island` are aliases of `city_code`, `region_code`, `island_code` (codes or ids), as the SQL filter path of the map endpoints already treated them.
+- OpenAPI regenerated. `docs/features/hidden-for-launch.md` H15: city page category tiles (no click action).
+
+### Affected Endpoints
+`GET /api/v1/beaches` (breaking for callers that relied on "everything": the website list is updated in the web PR; the MCP server and the sitemap already send `limit`/`page`).
+
+### Testing
+`tests/Feature/BeachListPaginationTest.php` (5, all fail on the old code): city/region/island aliases (code and id), disjoint complete pages in view order, `limit`+`page` (sitemap), default 20 / max 100, newest sort. Full suite: only the 4 known environment-dependent failures.
+
+---
+
+## 2026-10-09 - AI chat (AI-1, backend): real beach links and photos, conversation memory, current prompt
+
+### Overview
+Owner: "AI chat ful slabo dela … niti linkov ne da do plaž". Audit causes and fixes (`ChatController`, `ContextBuilderService`):
+
+### Changes Made
+- **Links:** the answer model now returns only `{id, match_score}`; every beach field comes from the database. Before, the model's invented `slug` (the prompt asked for one but never showed it) overwrote the real slug → links missing or 404. `match_score` clamped to 0-1.
+- **Page language:** beach names and URL slugs (`continent_slug … slug`) are in the request's `Accept-Language` (the page), not in the message language, so the website's URL builder gets matching segments. The answer text still follows the message language.
+- **Photos and names:** chat cards get `main_image` (first active photo, like `BeachResource`), the localized beach `name`/`slug` from `beach_translations` and the city name (the popularity path had `slug: null`, `main_image: null`, `city` as an array).
+- **Memory:** a session continues while active (expiry slides 30 min after the last message) and only for the same signed-in user; an expired/foreign session starts a new one instead of 410. Assistant turns in the history carry `[Beaches shown: Name (id …)]` so "the second one" works.
+- **Prompt:** current catalogue size from the DB (e.g. "3,700+ beaches in N countries", cached 1 h) instead of "2,445+ beaches across Croatia, Slovenia, and Montenegro"; recommended beach names verbatim in `message` (the website links them), never URLs; short concrete answers; honest "nothing fits" + one question. The stale "AVAILABLE FILTERS" list and the "ask for the GPS location" text for ordinary questions were removed. Answer call in JSON mode, temperature 0.4.
+- **Free tier context:** 6 beaches and ~3000 tokens (was 5 and 1000, which truncated to 2-3 beaches).
+- **Accessibility questions** are answered for everyone (were 402 for everyone; owner).
+- **Errors:** provider rate limit / quota / timeout → `503 {"error":"ai_unavailable"}` + `Retry-After: 60` (was a generic 500).
+- Model config: `ai.providers.openai.default_model` (the read key `ai.llm.default_model` did not exist; the provider fallback hid it).
+- OpenAPI description of `POST /ai/chat` updated (session, language, 503).
+
+### Testing
+`tests/Feature/AI/ChatAnswerQualityTest.php` (8, all fail on the old code): real slugs/names/photo in the page language despite a made-up model slug; prompt current and "never write URLs"; session continues and history lists shown beaches; expired session → new one (no 410); sliding expiry; another user's session not continued; accessibility 200 for anonymous; provider rate limit → 503. `ContextBuilderTest` updated (6 beaches, no "AVAILABLE FILTERS"). Full suite: only the 4 known environment-dependent failures. Not run: a real OpenAI call (owner checks on dev after the web part).
+
+---
+
+## 2026-10-09 - Nginx: real visitor IP behind Cloudflare
+
+### Overview
+dev/uat sites and APIs are proxied by Cloudflare (owner's `curl -sI` 2026-10-09: `server: cloudflare`, `cf-ray`; older docs said "DNS only"). Nginx therefore saw a Cloudflare edge IP as the client: the API rate limit (20 r/s per IP) and Laravel throttles (forgot-password 5/min, view dedupe, Google auth) counted many visitors together, and the server's own page renders through Cloudflare were limited.
+
+### Changes Made
+- `deploy/nginx/beachrex.conf` (http level, all environments): `set_real_ip_from` for Cloudflare's published IPv4/IPv6 ranges (from cloudflare.com/ips-v4 and ips-v6, 2026-10-09) + `real_ip_header CF-Connecting-IP`. Only connections from those ranges may set the visitor IP; direct connections cannot forge it. `$remote_addr`, the rate-limit key, `X-Forwarded-For` to Laravel and the access log are now the visitor's IP.
+- `docs/HANDOFF.md`: Cloudflare proxy noted; owner decision to keep it on.
+
+### Testing
+Local nginx 1.24 with the repo config + echo upstream on :8083 (test copy also trusted 127.0.0.1 as "Cloudflare"): header `CF-Connecting-IP: 9.9.9.9` → upstream `X-Forwarded-For: 9.9.9.9`; 150 parallel requests per visitor → 108 × 200 + 42 × 429 for 9.9.9.9 **and** separately for 8.8.4.4 (own budgets); 150 with the VPS IP `2.28.76.142` → all 200. With the real config (127.0.0.1 not Cloudflare) a forged header is ignored (`X-Forwarded-For: 127.0.0.1`). `nginx -t` OK.
+
+---
+
+## 2026-10-09 - Forgot password: `POST /forgot-password`, `POST /reset-password`, localized e-mail
+
+### Overview
+Owner request 2026-10-09. Imported old-site users have a random password (option a); without Google they need "forgot password". Mail goes through SMTP `mail.datavallis.com:465` as `hello@beachrex.com` (password only in `/opt/beachrex/envs/.env.*`, never in git).
+
+### Changes Made
+- `PasswordResetController`:
+  - `POST /api/v1/forgot-password` `{email}` → always 200 with the same message (no account enumeration). The e-mail is sent **after** the response (`defer()`), so known and unknown addresses take the same time and an SMTP error is logged, not shown. Laravel broker: token valid 60 min, max one e-mail per address per minute. `throttle:5,1` per IP.
+  - `POST /api/v1/reset-password` `{token,email,password,password_confirmation}` → 200, or 422 with a localized error on `token` (invalid/expired/used). On success: new password, all API tokens revoked, `email_verified_at` set if empty. Then `POST /login`. `throttle:10,1`.
+- `App\Notifications\ResetPasswordNotification` + `resources/views/emails/password-reset(.blade|-text.blade).php`: branded HTML + text e-mail in the request's language (`Accept-Language`, 19 languages in `lang/*.json`), CGP logo PNG from the website, link `{FRONTEND_URL}/{locale}/auth/reset-password?token=…&email=…` (`sl` → `si`). `User::sendPasswordResetNotification()` uses it.
+- `.env.example`, prod runbook: `MAIL_*` values (`MAIL_SCHEME=smtps` for port 465). OpenAPI regenerated.
+
+### Affected Endpoints
+New: `POST /api/v1/forgot-password`, `POST /api/v1/reset-password`. Website pages: web-client `auth/forgot-password`, `auth/reset-password`.
+
+### Testing
+`tests/Feature/PasswordResetApiTest.php` (8): localized link to the website (si), e-mail renders in German, unknown address same answer + no mail, SMTP error still 200, validation + 429 after 5, reset → login works + tokens revoked + token single-use, wrong token localized (hr), weak password 422. Local: `MAIL_SCHEME=smtps MAIL_PORT=465` builds an implicit-TLS `EsmtpTransport` to `mail.datavallis.com:465`. Real sending: owner test on dev after the `MAIL_*` lines are added.
+
+---
+
+## 2026-10-09 - API: HTTP errors keep their status (429 instead of 500)
+
+### Overview
+`bootstrap/app.php` had a catch-all renderer for API requests that answered **every** exception with `500 Server error.`, including Laravel's HTTP exceptions. A rate-limited request (`throttle:` on Google auth, beach views, AI chat, the new password reset) got 500 instead of 429, `abort(403)` got 500, a wrong method got 500 instead of 405. Found while testing the password reset rate limit.
+
+### Changes Made
+- New renderer before the catch-all: `HttpExceptionInterface` → JSON `{message}` with the exception's status code and headers (`Retry-After` on 429). 404 keeps `Not found.`; other exceptions are still 500.
+
+### Testing
+`tests/Feature/HttpErrorStatusTest.php` (3): 429 + `Retry-After`, 403/405/404, real error still 500. Fails on the old code (2 of 3). Full suite: only the 4 known environment-dependent failures.
+
+---
+
+## 2026-10-09 - Nginx: HTTP/2 on all HTTPS sites
+
+### Overview
+Browsers fetched the site over HTTP/1.1 (one request per connection, at most ~6 in parallel). With HTTP/2 all page files (JS chunks, fonts, images) share one connection, which mainly helps phones on slow networks.
+
+### Changes Made
+- `deploy/nginx/beachrex.conf`: every `listen 443 ssl;` → `listen 443 ssl http2;` (dev, uat, admin panels). Shared by all environments; applied by the next backend deploy (`systemctl reload nginx`, no downtime).
+- `docs/runbooks/prod-launch.md` D3 template: prod 443 blocks with `http2` too.
+- `listen … http2` works on every nginx version (nginx ≥ 1.25.1 only logs a deprecation warning and prefers `http2 on;`).
+
+### Testing
+Local nginx 1.24 with the repo config (certificates replaced by a self-signed one): `nginx -t` OK; `curl --http2` → HTTP version `2`, `curl --http1.1` → `1.1` (old clients still work). On the VPS: checked through the deploy run (reload fails the job if the config is invalid).
+
+---
+
+## 2026-10-09 - Old user migration: random passwords (owner option a); admin filter for imported users
+
+**What changed**
+- `users:migrate-from-old-db` no longer stores the old site's unsalted MD5 hash as the password (the `hashed` cast bcrypted the MD5 string, so the hash itself worked as a password) and no longer falls back to the literal `password`. Every imported account gets `Str::random(64)` (hashed by the cast) — nobody knows it. Imported users sign in with Google (`GoogleAuthController` links an existing account by e-mail). There is no password-reset endpoint yet (open item in `docs/HANDOFF.md`).
+- Unknown `country_id` / `gender_id` values in the dump are stored as NULL instead of failing the whole account on the foreign key.
+- New `--file=` option (default `database/sql/user.sql`, which stays in the repo).
+- Admin (BrAdmin → User Management → Users, already existed): new filter **Imported from old site** (users created by the command, `user_migration_status.status = success`).
+
+**Run** only in production, after launch (GDPR): `php artisan users:migrate-from-old-db --test`, check, then without `--test`.
+
+**Tests:** `tests/Feature/UserMigrationAndAdminTest.php` (random unusable password, MD5 and "password" rejected, idempotent re-run, admin list + filter via Livewire, non-admin 403, guest redirect).
+
+---
+
+## 2026-10-09 - Weather: 3 s timeouts and failures remembered; `_nocache` only locally
+
+### Overview
+Scalability audit 2026-10-09: the weather calls run inside page requests with 10 s (OpenWeatherMap) and 5 s (Open-Meteo Marine) timeouts, and a failed OpenWeatherMap lookup was not cached (`Cache::remember()` does not store `null`), so during an outage every request waited again while holding a PHP worker. `/search?_nocache=1` let anyone skip the search cache on a public server.
+
+### Changes Made
+- `WeatherService`: timeouts 3 s; a failed current-weather lookup is remembered for 5 minutes (`NO_VALUE` marker), a successful one for 1 hour as before.
+- `SearchController`: `_nocache` is honoured only in `local` and `testing`.
+
+### Affected Endpoints
+`/beach-details/{id}/weather`, `/countries|regions|islands|cities/{slug}/weather` (behaviour during outages), `/search` (`_nocache` ignored on servers).
+
+### Testing
+`php artisan test --filter=WeatherFailureCacheTest` (2): a failing API is called once for two lookups (old code: twice → fails); a success is cached. `SeaTemperature`/`BeachWeather` tests still pass.
+
+---
+
+## 2026-10-09 - Redis: 1 GB memory cap with LRU eviction
+
+### Overview
+Scalability audit 2026-10-09: Redis ran without `maxmemory` (cache keys with 30-day TTLs per map viewport and filter string could grow until the VPS ran out of RAM) and forked a snapshot every minute (`--save 60 1`).
+
+### Changes Made
+- `deploy/docker-compose.vps.yml` `redis` command: `--maxmemory 1gb --maxmemory-policy allkeys-lru`, snapshots `--save 900 1 --save 300 100`.
+- Assumes Redis holds the cache only (`.env.example`: `SESSION_DRIVER=database`, `QUEUE_CONNECTION=database`). If an environment keeps sessions in Redis, LRU eviction could sign out admin users under memory pressure (owner: check `SESSION_DRIVER` in the env files).
+- Shared by all environments: the next backend deploy recreates the Redis container (a few seconds; data reloads from the snapshot).
+
+### Testing
+Local `redis-server` with the same flags: `CONFIG GET maxmemory` → 1073741824, `maxmemory-policy` → allkeys-lru, `save` → "900 1 300 100". Compose file parses (YAML). On the VPS: NOT RUN by the agent; checked through the deploy run and `/api/v1/health` (Redis ping).
+
+---
+
+## 2026-10-09 - Lookup indexes for slugs and country/continent filters
+
+### Overview
+Scalability audit 2026-10-09: the beach/city/region pages and the slug resolver look up `*_translation.slug`, and lists/filters filter beaches by `country_code` / `continent_code`, without indexes (PostgreSQL does not index foreign keys automatically; country and island translations already had slug indexes).
+
+### Changes Made
+- Migration `2026_10_09_090000_add_lookup_indexes`: `beach_translation(slug)`, `city_translation(slug)`, `region_translation(slug)`, `beach(country_code)`, `beach(continent_code)`; `CREATE INDEX IF NOT EXISTS`, additive. The deploy runs `migrate --force` (seconds on ~4k beaches / ~70k translations).
+
+### Testing
+`php artisan test --filter=LookupIndexesTest`: passes; without the migration it fails.
+
+---
+
+## 2026-10-09 - Nginx: API rate limit, real client IP, gzip, keepalive
+
+### Overview
+Scalability audit 2026-10-09: no public read endpoint was rate limited (one bot could tie up all PHP workers), JSON was sent uncompressed, every proxied request opened a new connection to the API container, and Laravel's client IP came from a forgeable `X-Forwarded-For` (`trustProxies('*')` + `$proxy_add_x_forwarded_for`).
+
+### Changes Made (`deploy/nginx/beachrex.conf`, host Nginx, all environments)
+- `limit_req_zone` per real client IP, 20 requests/s with a burst of 100, answered with 429; applied to every location that proxies to an API container (api, dev-api, uat-api and the dock admin hosts).
+- Not limited (`geo`): 127.0.0.0/8, private networks (10/8, 172.16/12, 192.168/16: Docker, where the Next.js servers call the APIs from for every render) and the VPS IP 2.28.76.142.
+- `X-Forwarded-For $remote_addr` on API locations: Laravel's `request->ip()` (newsletter/auth/AI limits, view de-duplication) can no longer be forged by a client header.
+- `gzip on` for JSON/JS/CSS/text ≥ 1 KB on API locations (per location, so it does not clash with `gzip on` in the distro's `nginx.conf`).
+- API upstreams: `keepalive 32` with `proxy_http_version 1.1` and an empty `Connection` header.
+
+### Notes
+- `deploy/` is synced by every deploy, so this applies to all environments at the next backend deploy (dev now); Nginx is reloaded by the deploy. A config error would make the reload fail and keep the old config.
+- HTTP/2 not enabled in this change.
+
+### Testing
+Local Nginx 1.24 with this file (self-signed certificates at the same paths): `nginx -t` OK (also the old file). Functional test against a stub upstream on :8083: response `Content-Encoding: gzip`; a spoofed `X-Forwarded-For: 6.6.6.6` reaches the upstream as the real IP; 300 parallel requests from a non-exempt IP (limit 10/s, burst 50 during the test) → 59 × 200, 241 × 429; 300 parallel requests from 127.0.0.1 → 300 × 200. Limits raised to 20/s, burst 100 afterwards (shared mobile/hotel IPs); `nginx -t` OK.
+
+---
+
+## 2026-10-09 - Beach views: one UPDATE per view, and a browser endpoint for the cached website
+
+### Overview
+Scalability audit 2026-10-09: `GET /beach-details/{identifier}` answered from the cache but then reloaded the beach with ~37 relations (23 queries in the test, ~70 with real data) only to increment `beach_views`. Also, the website now serves beach pages from its cache (ISR, web-client 2026-10-09), and Next.js already cached the API response before that, so the site's server-side reads could not count visitors.
+
+### Changes Made
+- `App\Support\BeachViewCounter::increment($id)`: one `UPDATE beach SET beach_views = beach_views + 1` by id (active beaches only), no model load, no model events (Scout), `updated_at` unchanged.
+- `BeachDetailsController::show`: counts with the id from the cached response (`basic_info.id`). Still skipped for `X-Beachrex-Client` (MCP; the website's server will send it too).
+- New `POST /api/v1/beaches/{id}/view` (`BeachViewController`): the browser reports a beach page view. Public like the newsletter sign-up (it only increments a counter), `throttle:60,1`, one counted view per visitor (hashed IP) and beach per 30 minutes (`Cache::add`), 404 for unknown or inactive beaches. OpenAPI documented; `api-docs.json` regenerated.
+
+### Affected Endpoints
+- `GET /api/v1/beach-details/{identifier}` (same response; cheaper counting)
+- `POST /api/v1/beaches/{id}/view` (new)
+
+### Testing
+`php artisan test --filter=BeachDetailsApiTest` (10 passed): a cached GET runs ≤ 2 queries (deliberate break with the old controller: 23); POST counts once per visitor and window, another IP counts, `updated_at` unchanged; unknown/inactive/non-numeric ids → 404. Full suite: 450 passed, only the 4 known env-dependent failures.
+
+---
+
+## 2026-10-09 - PHP-FPM: 16 workers instead of 5 (scalability)
+
+### Overview
+Scalability audit 2026-10-09: `Dockerfile.prod` used the `php:8.4-fpm` default pool (`pm.max_children = 5`), so each environment served at most 5 API requests at a time. That limit runs out first under load, before PostgreSQL or Redis.
+
+### Changes Made
+- `Dockerfile.prod`: `php-fpm.d/zz-beachrex-pool.conf` (loaded after the image's `www.conf`): `pm = dynamic`, `pm.max_children = 16`, `start 4`, `spare 2–8`, `pm.max_requests = 1000` (recycles workers, limits memory growth), `request_terminate_timeout = 60s`.
+- The values come from env vars (`PHP_FPM_PM`, `PHP_FPM_MAX_CHILDREN`, `PHP_FPM_START_SERVERS`, `PHP_FPM_MIN_SPARE_SERVERS`, `PHP_FPM_MAX_SPARE_SERVERS`, `PHP_FPM_MAX_REQUESTS`) with the defaults above baked into the image; an environment can override them in its `.env` file (container environment) without a rebuild. Named in `.env.example`.
+- Applies to an environment when its own branch deploys (the Dockerfile is per branch): dev now, uat/prod at promotion.
+
+### Testing
+`php-fpm8.3 -tt` with the generated pool file and the env vars (local php-fpm): `pm.max_children = 16`, `pm.start_servers = 4`, `pm.max_requests = 1000`, `request_terminate_timeout = 60s`; with `PHP_FPM_MAX_CHILDREN=24` it reads 24. Docker build: NOT RUN in the sandbox (no Docker); the dev deploy builds it.
+
+---
+
+## 2026-10-08 - Copyright (IPTC) in JPEG photos: on upload and `media:embed-copyright`
+
+### Overview
+Owner, 2026-10-08: photos are works of MOJA PLAŽA, d.o.o.; a downloaded file should name its owner. The backend does no image processing (originals go to Spaces unchanged, Imagor resizes on the fly), so the IPTC block is written with PHP's built-in `iptcembed()` — no new library, pixels are not re-encoded. JPEG only.
+
+### Changes Made
+- `App\Support\ImageCopyright`: IPTC By-line `MOJA PLAŽA, d.o.o.`, Credit/Source `Beachrex`, Copyright notice `© {year} MOJA PLAŽA, d.o.o.` (UTF-8).
+- Filament beach media upload: new toggle "Our photo" (default on) writes the block into the uploaded JPEG on Spaces; turn off for other authors' photos.
+- `MediaService::upload` (API): writes the block unless `add_copyright` is false.
+- `php artisan media:embed-copyright [--dry-run] [--limit=N]`: existing JPEGs under `img/beaches/` (skips `img/beaches_mobile/`, files that already have the notice, and missing files). Rewrites files on the bucket — owner decides when to run it on prod.
+- `docs/features/hidden-for-launch.md`: H14 beach banner ratings + save hidden.
+
+### Notes
+Whether Imagor keeps metadata in resized/WebP copies depends on its config (not in these repos); originals keep it.
+
+### Testing
+`php artisan test --filter=ImageCopyrightTest` (4).
+
+---
+
+## 2026-10-08 - Terms of use §6: photos are works of MOJA PLAŽA, d.o.o.
+
+### Overview
+Owner, 2026-10-08: section 6 (intellectual property) said content belongs "to us or our partners", which is vague. It now states that photos, 360° views and videos are original works of MOJA PLAŽA, d.o.o., which holds the copyright (unless another author is named, e.g. user contributions), that texts, data, logo and design also belong to the company, and that copying, editing, scraping and AI training use need prior written permission. All 19 locales. Owner decisions recorded: no watermark; trademark to be registered at EUIPO (owner's task).
+
+### Changes Made
+- `database/content/static-pages/{19 locales}.json`: `terms-of-use` section 6.
+
+### Affected Endpoints
+`GET /api/v1/static-pages/{slug}` after `php artisan static-pages:sync` (data only).
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest`. Translations not reviewed by a lawyer or native speakers.
+
+---
+
+## 2026-10-08 - Footer page: Media kit
+
+### Overview
+Owner, 2026-10-08: a media kit page in the footer with the brand guidelines and all logos for download. New CMS page `media-kit` (footer order 8): how to use the logo (versions, backgrounds, clear space, minimum sizes, misuse), colours, photo copyright and contact, in all 19 locales. The download section (logos, guidelines PDF, palette, ZIP) is rendered by the web-client under the page with this code; the files live in the web-client `public/brand/`.
+
+### Changes Made
+- `database/content/static-pages/{19 locales}.json`: new `media-kit` page.
+- `SyncStaticPages::SORT_ORDER`: `media-kit => 8`.
+
+### Affected Endpoints
+`GET /api/v1/static-pages`, `/static-pages/{slug}` after `php artisan static-pages:sync` (data only).
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest`.
+
+---
+
+## 2026-10-08 - Footer page: Beachrex in your AI assistant (MCP connector)
+
+### Overview
+Owner, 2026-10-08: add the MCP server and its installation steps somewhere in the footer. New CMS page `ai-assistant-connector` (footer order 7) with the connector URL `https://mcp.beachrex.com/mcp` and setup steps for Claude, ChatGPT and other MCP clients, in all 19 locales.
+
+### Changes Made
+- `database/content/static-pages/{19 locales}.json`: new `ai-assistant-connector` page (en slug `beachrex-in-ai-assistants`). Menu names of the Claude/ChatGPT apps stay in English in every locale.
+- `SyncStaticPages::SORT_ORDER`: `ai-assistant-connector => 7`.
+
+### Affected Endpoints
+`GET /api/v1/static-pages`, `/static-pages/{slug}` after `php artisan static-pages:sync` (data only, no API change).
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest` (8 tests). Old content (without the page) fails the committed-content test.
+
+---
+
+## 2026-10-08 - Card features: adventurer and party (youth) beaches
+
+### Overview
+Owner, 2026-10-08: cards showed only the family user type; adventurer and party beaches need their icons too.
+
+### Changes Made
+- `features` in list/map results gains `adventurer` and `youth` (party beach) booleans, with the same rule as `family` (the beach has that user type): `PostGISService::loadCardFeatures()` and `App\Support\BeachCardFeatures`.
+- OpenAPI `BeachSchema` / `SpatialBeachSchema`; `api-docs.json` regenerated.
+
+### Affected Endpoints
+`GET /api/v1/beaches`, `/beaches/most-visited`, `/spatial/beaches/within-radius`, `/spatial/beaches/nearest`, `/spatial/beaches/bounding-box` (additive).
+
+### Testing
+`php artisan test --filter=BeachCardFeaturesApiTest` (4 tests). Deliberate break (old services): 3 fail.
+
+---
+
+## 2026-10-08 - Backend never indexed: X-Robots-Tag + robots.txt (TASK-004)
+
+### Overview
+Owner, 2026-10-08: dev and uat must stay invisible to Google, AI crawlers and everyone else; only the production website may be visible. The backend domains (`dev-api`, `uat-api`, `api`, `dock-*`) are never pages for search engines on any environment.
+
+### Changes Made
+- `app/Http/Middleware/NoIndex.php` (new), appended globally in `bootstrap/app.php`: every response (API, admin, docs, errors) carries `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`.
+- `public/robots.txt`: `Disallow: /` (was Laravel's allow-all default).
+- `docs/DEVELOPMENT-RULES.md` §9: the visibility rule.
+
+### Affected Endpoints
+All (response header only).
+
+### Testing
+`php artisan test --filter=NoIndexTest` (3 tests). Deliberate break: without the middleware, 2 fail. Full suite: 443 passed, only the 4 known env-dependent failures.
+
+---
+
+## 2026-10-08 - Footer pages: content in 19 languages + `static-pages:sync` (TASK-004 step 3)
+
+### Overview
+The footer "Key information" column shows the CMS pages (`static_pages`). Only English placeholders existed ("Placeholder privacy policy content. Edit in admin."), so every locale showed English titles (likely QA #27, #29). The content of six pages now lives in the repo in all 19 locales and is loaded with one command.
+
+### Changes Made
+- `database/content/static-pages/{locale}.json` (new, 19 files): about-us, contact, privacy-policy, cookie-policy (new page), terms-of-use, contribution-rules. Each has title, localized ASCII slug, meta title/description and HTML content. Company data from the owner (MOJA PLAŽA, d.o.o., 2026-10-08). The cookie policy embeds the CookieYes cookie table (`<div class="cky-audit-table-element"></div>`). Internal links use each locale's slugs (Slovenian `/si/p/...`).
+- `app/Console/Commands/SyncStaticPages.php` (new): `php artisan static-pages:sync [--dry-run] [--locale=..]`.
+  - Validates first: known locale, all fields, ASCII slugs, unique per locale, not used by another page.
+  - Matches pages by `code` and translations by (page, locale). A missing page is created active and in the footer.
+  - Existing pages keep status, footer flag and order. Pages deleted in the admin are skipped.
+  - Never deletes. Runs in one transaction. Caches are cleared by the model events.
+- Legal texts are drafts for the owner's review (ideally a lawyer's). They also name OpenAI and Stripe, which the code uses.
+
+### Affected Endpoints
+`GET /api/v1/static-pages`, `GET /api/v1/static-pages/{slug}`: data only, after the command runs.
+
+### Testing
+`php artisan test --filter=SyncStaticPagesTest` (8 tests: create, update keeps page settings, idempotent, dry run, never deletes / skips deleted pages, invalid content, slug taken by another page, served by the API in its locale, committed content covers all 19 locales). Local DB: dry run 6 pages / 114 translations, real run the same, second run 114 unchanged; `/si/p/politika-piskotkov` renders with the CookieYes table element.
+
+### Deploy note
+After the deploy, run once per environment (owner): `php artisan static-pages:sync --dry-run`, then without `--dry-run`.
+
+---
+
+## 2026-10-08 - Old beachrex.com URLs: resolver for redirects (TASK-004 step 5b)
+
+### Overview
+The owner put many old beach URLs on Google Maps and other sites. Each old URL must redirect to the exact new page. Beach IDs were kept by the old-DB migration, and the old dump holds one English nice URL per beach (`beach_nice_url`). The new endpoint maps an old path to the new page; the frontend answers with a permanent redirect.
+
+### Changes Made
+- `app/Console/Commands/BuildLegacyUrlMap.php` (new): `php artisan legacy-urls:build` reads `database/sql/beachrex_old.sql` and writes `database/legacy/old-beach-urls.json` (4 238 nice URLs → beach id). The JSON is committed, so no server step is needed.
+- `app/Services/LegacyUrlResolver.php` (new): the most specific match wins:
+  - beach: the last segment, also with the old language's first word swapped (`plaza-tisno`, `strand-tisno` → `beach-tisno`); active beaches only;
+  - city: a `{city}-{beaches}` segment, matched against `city.code` (the old `city_nice_url`);
+  - island: `island.code` or an island slug;
+  - region: `region.code`, a region slug, or a unique code prefix;
+  - country: a country slug in any locale, or a near match (old typo `hrvaska`);
+  - `/{lang}/beach-filter` → the map.
+  It returns `{type, language, segments}`, with segments = localized slugs after the beaches word.
+- `app/Http/Controllers/Api/V1/LegacyRedirectController.php` (new) + route `GET /api/v1/legacy-redirect?path=…` (public, read-only; no throttle: the frontend server calls it for every visitor, like the other read endpoints). The resolved array is cached for 1 day per locale and path. Nothing matched → 404.
+- OpenAPI annotations; `api-docs.json` regenerated.
+
+### Affected Endpoints
+`GET /api/v1/legacy-redirect` (new).
+
+### Testing
+`php artisan test --filter=LegacyRedirectTest` (11 tests, real old URLs from search results). Deliberate break: without the language-word swap, 4 tests fail.
+
+---
+
+## 2026-10-08 - Beach Card Features: Beach Type, Family, Parking (QA #45)
+
+### Overview
+List and map cards in the frontend showed the same stones / family / parking icons on every beach, because the search, map and list APIs did not return those fields. Every beach item now carries `features`, built with the same rules as the beach page badges.
+
+### Changes Made
+- `app/Services/PostGISService.php`: `formatBeachResults()` adds `features` to the within-radius, nearest and bounding-box results, loaded for all beaches in one query (`loadCardFeatures()`).
+- `app/Support/BeachCardFeatures.php` (new) and `app/Http/Resources/BeachResource.php`: the same `features` for `/beaches` and `/beaches/most-visited`. `BeachController` eager-loads the needed relations, so there is no N+1.
+- Rules:
+  - `beach_type` = `{code, name}` (name translated, English fallback) or `null`;
+  - `family` = the beach has user type `family`;
+  - `parking` = infrastructure `parking`, or a `parking_capacity` other than `0` / `private_parking_only`.
+- OpenAPI: `features` on `BeachSchema` and `SpatialBeachSchema`; `api-docs.json` regenerated.
+
+### Affected Endpoints
+`GET /api/v1/beaches`, `/beaches/most-visited`, `/spatial/beaches/within-radius`, `/spatial/beaches/nearest`, `/spatial/beaches/bounding-box`. The change is additive; no field was removed.
+
+### Testing
+`php artisan test --filter=BeachCardFeaturesApiTest` (4 tests). On the old code, all 4 fail.
+
+---
+
+## 2026-10-08 - Pool Type Filter (indoor / outdoor) (QA #70)
+
+### Overview
+The home page has separate "outdoor pools" and "indoor pools & spas" tiles, but there was no way to filter by pool type. The admin already stores `indoor_pools_count` and `outdoor_pools_count` on `beach`. The new `pool_type` filter uses them. A beach with both kinds matches either value.
+
+### Changes Made
+- `app/Services/BeachFilterService.php`: `pool_type` (`indoor`, `outdoor`; comma-separated or array) is handled in both `applyFilters` (Eloquent) and `buildRawFilters` (map/search SQL), and is part of the cache key.
+  - A value matches `<type>_pools_count > 0`, and several values are ORed.
+  - Values are whitelisted (`BeachFilterService::POOL_TYPES`). Unknown values are ignored.
+- `app/Http/Controllers/Api/V1/FilterController.php`: `/beaches/filters` returns `pool_type` (checkbox, options `indoor` / `outdoor`), translated through `lang/*.json` (19 locales).
+- OpenAPI: `pool_type` query parameter on `/beaches`, `/spatial/beaches/within-radius` and `/spatial/beaches/bounding-box`, and the filters description. `storage/api-docs/api-docs.json` is regenerated.
+- `tests/Feature/PoolTypeFilterApiTest.php` (new).
+
+### Affected Endpoints
+- `GET /api/v1/beaches?pool_type=indoor|outdoor|indoor,outdoor`
+- `GET /api/v1/spatial/beaches/bounding-box?…&pool_type=…`
+- `GET /api/v1/spatial/beaches/within-radius?…&pool_type=…`
+- `GET /api/v1/beaches/filters` (new `pool_type` entry)
+
+### Testing
+`php artisan test --filter=PoolTypeFilterApiTest`. Data: pool counts are entered in the admin (BeachResource: "Indoor pools count" / "Outdoor pools count"). On dev today no beach has a pool (QA #69), so the filter returns 0 results until data exists.
+
+---
+
+## 2026-10-08 - TASK-002: Old Keys Deleted; MCP Images Only via Imagor
+
+### Overview
+Runbook step 6 ran on dev (owner, after an explicit confirmation): `--delete-old --dry-run` listed 10 685 keys, `--delete-old --confirm-delete` printed `Deleted 10685 old key(s).` The control inventory afterwards: 206 174 keys scanned, 0 non-ASCII keys, 0 collisions, 0 non-ASCII DB values, 0 vtour files that reference a migrated key. TASK-002 §5 cleanup for the MCP server follows.
+
+### Changes Made
+- `mcp-server/src/api-client.ts` `cdn()`: the Spaces bypass for non-ASCII paths is removed. Every image URL goes through Imagor (`s3.beachrex.com`). A non-ASCII path gets an empty URL; empty gallery entries are dropped.
+- `cfg().cdnAssets` and `BEACHREX_CDN_ASSETS` (`mcp-server/.env.example`) are removed.
+- `mcp-server/test/api-client.test.ts`: the bypass test is replaced by one that fails on the old code.
+- Docs: runbook step 6 and TASK-002 status, ADR "No Spaces Bypass for Non-ASCII Image Paths", HANDOFF.
+
+### Affected Endpoints
+None in the Laravel API. MCP tools: `image_url`, `image_thumb` and `media[].url` in search and beach details.
+
+### Testing
+`cd mcp-server && npm test` (35 pass); on the old `api-client.ts` the new test fails (1 of 35).
+
+---
+
+## 2026-10-08 - TASK-002: Migration Run on Dev; Copy Check Uses Listing ETags
+
+### Overview
+The owner ran TASK-002 steps 2–5 on dev (2026-10-08):
+- `--copy` copied 10 685 keys and rewrote 399 vtour files at their ASCII copies. The old keys were kept.
+- A `pg_dump` of `beachrex_dev` was taken before `--update-db`.
+- `--update-db` updated 2 413 DB values and skipped 0.
+- `cache:clear` and `search:index` ran.
+- The control inventory shows 0 non-ASCII DB values, all 10 685 old keys `copied`, and 0 collisions.
+- The acceptance URL `s3.beachrex.com/unsafe/fit-in/800x800/img/beaches/hr-114-o-brac/hr-114-o-brac-sl17.jpg` works.
+
+`--update-db` and the control inventory each spent 5–15 silent minutes checking every copy with one HEAD request per key.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`: the listing keeps each key's ETag (S3 `ListObjectsV2` returns it), and `sameFile()` uses it. Disks without ETags in the listing (local) still call `checksum()`.
+- `tests/Feature/AsciiStoragePathsS3ReadTest.php`: a new test checks that an identical copy is `copied` and a different file is `collision`, without any HeadObject call. The mocked S3 handler throws on calls it does not expect.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths` → 22 passed. The new test fails on the old code, which makes a HeadObject call the mock rejects.
+
+---
+
+## 2026-10-08 - TASK-002: Inventory Memory Fix (vtour contents not kept)
+
+### Overview
+The owner's dev run (after the parallel reads) listed 206 174 keys in ~10 s. It then read 32 000 of 51 350 vtour text files in 72 s and stopped with `Allowed memory size of 536870912 bytes exhausted`. The cause: every vtour file with any non-ASCII text (titles, script comments) was kept in memory twice, as the original and the rewritten content.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`:
+  - `vtourRewrites` keeps only key, target, up to 10 sample tokens, the token count and a `changed` flag. The flag means the file references a migrated key segment.
+  - `--copy` re-reads only the changed files when it rewrites them.
+  - S3 reads go in chunks of 100.
+  - The summary has a new row: "of which reference a migrated key (rewritten by --copy)".
+- `tests/Feature/AsciiStoragePathsInventoryTest.php`: `test_does_not_keep_vtour_file_contents_in_memory` uses 150 non-ASCII tour files of ~0.6 MB each. Peak growth must stay under 40 MB. On the old code it grew by 88 MB and the test fails.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths` → 21 passed. The copy/rewrite tests in `AsciiStoragePathsMigrationTest` still pass with the re-read.
+
+---
+
+## 2026-10-08 - TASK-002: Parallel vtour Reads in the Inventory
+
+### Overview
+With the progress output (below), the owner's dev run showed that listing the bucket takes 17 s for 206 174 keys. The slow part came next, with no output: the command read every vtour text file (`tour.xml`, `tour.html`, `tour.js`, `plugins/*.js`, `skin/*` of every tour), one GET at a time.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`: on S3 disks the vtour text files are fetched in parallel through `Aws\CommandPool`. A new `--concurrency=N` option sets the number of parallel GETs (default 32). Keys are read in chunks of 500 so memory stays flat. Progress lines show `Reading N vtour text files …` and `read X/N vtour text files (Ns)`. A failed GET aborts with the key in the message. Other disks (local, tests) still read sequentially. `--copy` uses the same reader.
+- `tests/Feature/AsciiStoragePathsS3ReadTest.php` (new): drives the S3 path through a mocked S3 handler. It checks 602 files read once each, no image downloads, the vtour reference found, and the progress lines.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths`: 20 passed. The new test fails on the previous command (`Output does not contain "Reading 602 vtour text files"`).
+
+---
+
+## 2026-10-08 - TASK-002: Progress Output for the inventory scan
+
+### Overview
+The owner's first `storage:ascii-paths --inventory` run on dev printed only "Listing keys under 'public/img/' …" and then hit a timeout. Listing the whole bucket (tour tiles included) takes long, and the command printed nothing until the listing was done.
+
+### Changes
+- `app/Console/Commands/AsciiStoragePaths.php`: new `--progress=N` option (default 10000, `0` = off). It prints `listed N keys (Ns, N MB) … last: <key>` while listing and `listing done: N keys in Ns` at the end. Nothing else changes; the command is still read-only for `--inventory`.
+- `docs/runbooks/ascii-storage-paths.md`: how to run the scan detached (`exec -d … > /tmp/inventory-dev.log`) and follow the log, so an SSH or terminal timeout does not kill it.
+
+### Affected endpoints
+None (artisan command only).
+
+### Testing
+`php artisan test --filter=AsciiStoragePaths`: 19 passed. The new `test_listing_prints_progress_lines` fails on the old command (`The "--progress" option does not exist`).
+
+---
+
+## 2026-10-07 - AI Chat Understands Any Language and Queries Real Beaches (TASK-003)
+
+### Overview
+`POST /api/v1/ai/chat` used English keywords for the intent and for 3 countries. Without GPS it usually had no beaches to recommend, and it never queried places, surface or facilities. It now extracts the query with structured output, resolves the place, and recommends beaches the code selected from the DB. ADR "Chat: Code Queries, LLM Understands and Narrates".
+
+### Changes Made
+- `App\Services\AI\Chat\QueryUnderstandingService`:
+  - one LLM call, temperature 0, strict `json_schema`;
+  - extracts intent, place, country, beach types, facilities, user types, activities, near_me, days, beach names and language;
+  - code enums come from the DB (cached 1 h);
+  - uses the last 4 messages;
+  - returns null on any failure.
+- `App\Services\AI\Chat\PlaceResolver`: island, city or region from translated names and slugs in all locales, ignoring diacritics and generic words ("otok"). Handles inflections such as "Braču" and "Pagu". On a name clash the island wins. Cached index.
+- `ItineraryContextBuilderService::fetchChatCandidates()`:
+  - optional country, place, beach IDs, attributes and GPS radius (`geography`);
+  - relaxes user types, activities, facilities, then beach types, only when nothing matches;
+  - accessibility is never relaxed;
+  - sorted by score, distance or popularity.
+- `ContextBuilderService`: a candidate path that keeps slugs and `main_image` and adds place, type, facilities, suitable-for and distance to the prompt. `MAX_BEACHES` is public.
+- `ChatController`:
+  - plan enforcement uses the understood intent and days;
+  - the answer is written in the user's language;
+  - `filters_applied` comes from the code;
+  - the understanding tokens and cost are added to the session and the `ai_usages` row;
+  - the keyword fallback uses word boundaries ("stop" no longer means "top");
+  - **bug fix**: the conversation history was out of order (same timestamp), so it is now ordered by `id` too.
+- OpenAPI: `filters_applied` uses real param names; new `metadata.understanding`, `language` and `assumptions`. `api-docs.json` is regenerated. The web client does not read `filters_applied`.
+
+### Affected endpoints
+`POST /api/v1/ai/chat`: same top-level fields; `filters_applied` keys changed; 3 new metadata fields.
+
+### Testing
+```bash
+php artisan test tests/Feature/AI/ChatQueryUnderstandingTest.php tests/Feature/AI/PlaceResolverTest.php
+```
+18 tests. Deliberate breaks (each caught):
+- place filter ignored;
+- model `filters_applied` kept;
+- no inflection matching;
+- accessibility relaxable.
+
+Live check after the dev deploy: see `docs/tasks/TASK-003.feedback.md`.
+
+---
+
+## 2026-10-07 - Real Sea Temperature (Open-Meteo Marine)
+
+### Overview
+`sea_temperature` in every weather endpoint was the OpenWeatherMap **air** temperature. The owner chose option B on 2026-10-07: a real sea surface temperature.
+
+### Changes Made
+- `WeatherService::getSeaTemperature()` calls the Open-Meteo Marine API (`current=sea_surface_temperature`):
+  - rounded to 0.1 °C and cached for 3 h;
+  - "no marine data" (lakes, inland points) is cached as null;
+  - API errors return null and are not cached;
+  - timeout 5 s.
+- `ProvidesWeather` (beach, country, region, island and city weather) returns that value. The frontend `SeaTempWidget` shows "--°" for null.
+- New optional env var `OPEN_METEO_API_KEY` (`config/services.php` `open_meteo.api_key`):
+  - empty → free endpoint `marine-api.open-meteo.com`, which Open-Meteo allows for **non-commercial use only**;
+  - set → commercial endpoint `customer-marine-api.open-meteo.com`.
+- OpenAPI `sea_temperature` description updated; `api-docs.json` regenerated.
+- NOT RUN: a live call to Open-Meteo, because the agent sandbox has no outbound access (proxy 403). The response shape follows the Open-Meteo docs and is covered by `Http::fake` tests.
+
+### Affected endpoints
+`GET /api/v1/beach-details/{identifier}/weather` and the country, region, island and city `/weather` endpoints: `sea_temperature` is now the sea, not the air.
+
+### Testing
+```bash
+php artisan test tests/Feature/SeaTemperatureTest.php tests/Feature/BeachWeatherSeaTemperatureTest.php
+```
+On the old `ProvidesWeather`, the endpoint test fails: `Failed asserting that 28 matches expected 21.4`.
+
+---
+
+## 2026-10-07 - API Fixes: View Counts, Filter Aliases, `/beaches` Docs, 360° Tour Path
+
+### Overview
+Four of the API issues found while fixing the MCP (HANDOFF open items). `sea_temperature` is not changed: today it is the air temperature, and setting it to `null` would show "--°" on every beach page. That is a product decision for the owner.
+
+### Changes Made
+- **View counts**: `GET /beach-details/{identifier}` no longer increments `beach_views` when the request has an `X-Beachrex-Client` header. The MCP server now sends `X-Beachrex-Client: mcp`, so AI lookups no longer inflate "most visited". The web client sends no such header and is counted as before.
+- **Filter aliases**: `GET /beaches/filters` accepts `country_code`, `region_code` and `island_code` as aliases of `country`, `region` and `island`, matching `/beaches` and the MCP.
+- **`/beaches` OpenAPI**: the region, island and city params are documented with their real names `region_code`, `island_code` and `city_code` (`applyFilters` never read `region`/`island`/`city`). The `country_code` alias is documented. `api-docs.json` is regenerated. The frontend already uses the `*_code` names; `yarn generate:api` in web-client picks up the corrected names next time.
+- **360° tour URL** in search/map results (`PostGISService`) respects `mobile_upload` (`img/beaches_mobile/…`), like `BeachDetailsResource`.
+
+### Affected endpoints
+- `GET /api/v1/beach-details/{identifier}`: new optional header `X-Beachrex-Client`.
+- `GET /api/v1/beaches/filters`: new aliases.
+- `GET /api/v1/beaches` and the nearby/radius endpoints: `spheres_360[].tour_url` is fixed for mobile uploads.
+
+### Testing
+```bash
+php artisan test tests/Feature/BeachDetailsApiTest.php tests/Feature/FilterAliasApiTest.php tests/Feature/PostGISSphereTourUrlTest.php
+cd mcp-server && npm test
+```
+Against the old backend code, 3 of the new tests fail: view count, alias, mobile tour URL.
+
+---
+
+## 2026-10-07 - MCP: "Zlatni rat" Is an Exact Match for "Beach Zlatni Rat"
+
+### Overview
+Owner feedback after a live test: `get_beach_details("Zlatni rat")` said "No beach is named exactly" and then showed "Beach Zlatni Rat". Many legacy names carry the English prefix "Beach" in every locale.
+
+### Changes Made
+- `mcp-server/src/api-client.ts` `nameKey()`: besides case and diacritics, it now ignores one leading or trailing generic beach word:
+  - beach, plaža/plaz, plazha, plage, playa, praia, spiaggia, strand, paralia;
+  - a name that is only that word keeps it, and inner words are kept ("Long Beach Bay").
+- Tests in `mcp-server/test/api-client.test.ts`: 34/34 pass. On the old `nameKey`, the 2 new tests fail.
+
+### Testing
+```bash
+cd mcp-server && npm run build && npm test
+```
+
+---
+
+## 2026-10-07 - Fix: Beach Distances Were ~37% Too Long (EPSG:3857 → geography)
+
+### Overview
+`PostGISService` and `BeachDetailsController` measured distances after `ST_Transform(…, 3857)`. Web Mercator stretches lengths by 1/cos(latitude), so at Croatian latitudes (~43°) every `distance_km` came out ~37% too long and radius searches missed beaches. Example: Split riva → Zlatni rat was 44.19 km instead of 32.08 km.
+
+### Changes Made
+- Every `ST_Distance`/`ST_DWithin` on `beach.location` now uses `::geography`, which measures in metres on the spheroid:
+  - `getBeachesWithinRadius`, `getNearestBeaches`, `calculateDistance`, `calculateCentroid` (radius filter);
+  - previous/next beach in `BeachDetailsController`.
+- Migration `2026_10_07_180000_add_geography_index_to_beach_location`: GIST expression index on `(location::geography)`, so `ST_DWithin` on geography can use an index. Additive and backward compatible.
+
+### Affected endpoints
+Every endpoint that returns `distance_km` or filters by radius (nearby beaches, map radius search, MCP `find_beaches_nearby`, previous/next beach). Values are now real distances, about 27% smaller than before at these latitudes. A radius now includes beaches that were wrongly excluded before.
+
+### Testing
+```bash
+php artisan test tests/Feature/PostGISDistanceTest.php
+```
+Against the old code, 2 of the 3 tests fail (44.19 km vs ≈32.08 km).
+
+---
+
+## 2026-10-07 - TASK-002 Step 3: `--copy`, `--update-db`, `--delete-old` (Built, Not Run)
+
+### Overview
+The migration steps of `storage:ascii-paths`, each with `--dry-run`. Nothing has been run against Spaces or an env DB. The owner runs them per `docs/runbooks/ascii-storage-paths.md` after reviewing the inventory.
+
+### Changes Made
+- `app/Console/Commands/AsciiStoragePaths.php`:
+  - **Key plan**: one listing with sizes; each non-ASCII key gets a status:
+    - to copy;
+    - `copied` (the target holds the same file: same size and same checksum/ETag);
+    - `collision` (two old keys map to one target, or a *different* file is already at the target).
+  - `--copy`: aborts on any collision. Otherwise it copies server-side with `public` visibility and keeps the old keys, then rewrites vtour text files:
+    - only references that match migrated folder or file names change, so titles stay;
+    - a tour at a non-ASCII key is rewritten at its ASCII copy;
+    - a tour at an ASCII key is rewritten in place, with a local backup.
+
+    Idempotent.
+  - `--update-db`: refuses while any key is not copied. In one transaction it rewrites non-ASCII values in path-like columns, including strings inside JSON columns. Values with `://` (full URLs) are skipped and listed. Idempotent.
+  - `--delete-old`: needs `--confirm-delete`. It refuses on collisions, on keys without a copy, or while the current env DB still has non-ASCII paths.
+  - Exactly one step per run.
+- The inventory CSV `issue` column can now also be `copied` or `skipped_url`.
+- Runbook steps 2–6 written.
+
+### Affected endpoints
+None until the owner runs the steps. After that, image paths in API responses become ASCII.
+
+### Testing
+```bash
+php artisan test tests/Feature/AsciiStoragePathsMigrationTest.php
+```
+12 tests. Deliberate breaks (each caught):
+- collision abort removed;
+- vtour rewrite disabled;
+- URL skip removed;
+- delete-old DB guard removed;
+- size-only comparison.
+
+---
+
+## 2026-10-07 - TASK-002 Step 2: No New Non-ASCII Storage Paths (Prevention)
+
+### Overview
+New and changed storage paths are stored ASCII-only. Legacy values are not touched until the migration (ADR "ASCII-only Storage Paths: Convert New Values Only").
+
+### Changes Made
+- `app/Models/Traits/HasAsciiPaths.php`: on `saving`, it applies `AsciiPath::fromPath` to dirty path attributes. Used by:
+  - `Beach` (`folder_name`);
+  - `Media` (`file_path`, `file_name`);
+  - `City`, `Region`, `Island`, `Continent` (`main_image`);
+  - `Country` (`image_path`).
+- Filament: every `FileUpload` (city, region, island, country and continent images; beach media) names files with `AsciiPath::uploadFileName()` (ULID + ASCII extension). The `folder_name` helper text explains the rule.
+- `AsciiStoragePathsInventoryTest` now writes legacy rows with `DB::table`, as the old data was written, because the model guard converts them.
+- Known gap until the migration: uploads to a beach whose legacy `folder_name` is non-ASCII still go into that folder, because the main image URL is built from `folder_name`. The inventory reports them.
+
+### Affected endpoints
+None. Admin saves of beaches, media and geographic images store ASCII paths for new values.
+
+### Testing
+```bash
+php artisan test tests/Feature/AsciiPathPreventionTest.php
+```
+Deliberate breaks (each caught):
+- trait disabled → 4 failures;
+- dirty check removed → the legacy-value test fails;
+- one `FileUpload` unwired → the source-scan test fails.
+
+---
+
+## 2026-10-07 - TASK-002 Step 1: `AsciiPath` + Read-Only Inventory of Non-ASCII Storage Paths
+
+### Overview
+First part of TASK-002 (ASCII-only storage paths). It adds the transliteration rule and a **read-only** inventory command. Nothing on Spaces or in the DB changes yet. The owner runs the inventory on the VPS and reviews the CSV before any copy step is built and run.
+
+### Changes Made
+- `app/Support/AsciiPath.php`: `fromPath()` normalises to NFC, then čšžć → cszc and đ → dj (plus the uppercase forms). Other scripts go through `Str::ascii`. Per segment, anything outside `[A-Za-z0-9._-]` becomes `-` and repeated `-` collapse. Case and `/` are kept, and the function is idempotent. Also `isAscii()` and `unicodeForm()` (NFC/NFD/mixed).
+- `php artisan storage:ascii-paths --inventory` (`app/Console/Commands/AsciiStoragePaths.php`):
+  - scans Spaces keys under `public/img/`;
+  - scans path-like text/JSON DB columns, discovered from the schema (`beach.folder_name`, `media.file_path`, `media.file_name`, `*.main_image`, `countries.image_path`, …);
+  - finds vtour text files that reference non-ASCII names;
+  - writes an `old → new` CSV and flags collisions (two old keys map to one new key, or the new key already exists).
+- Runbook: `docs/runbooks/ascii-storage-paths.md`.
+
+### Affected endpoints
+None.
+
+### Testing
+```bash
+php artisan test tests/Unit/AsciiPathTest.php tests/Feature/AsciiStoragePathsInventoryTest.php
+```
+
+---
+
+## 2026-10-07 - MCP: Deploy Actually Replaces the Legacy Process; Image URLs With Šumniki
+
+### Overview
+After Beachrex/backend#8 the dev MCP still served the **old** code. The deploy log showed `beachrex-mcp-dev` with 36 restarts and 0 s uptime, a crash loop. The legacy `beachrex-mcp` process is not in the deploy user's pm2 (`not found`), so it most likely runs under root's pm2 (started by hand before CI managed it) and still holds port 3100. The deploy reported success anyway. Separately, image URLs with šumniki (`…/hr-114-o-brač/…`) opened only sometimes, because Imagor does not serve UTF-8 keys reliably.
+
+### Changes Made
+- `.github/workflows/deploy.yml` (MCP block):
+  - dev deploys also run `sudo -n pm2 delete beachrex-mcp` + `pm2 save --force` for root's pm2;
+  - after `startOrReload`, the deploy **verifies** that `http://127.0.0.1:<port>/health` reports `"env":"<env>"`. The old process doesn't report it. If the check fails, the deploy prints the health response, the port owner (`ss -ltnp`) and the pm2 logs, then **fails**.
+  - The expanded remote script was checked with `bash -n`; the health check was tested against a locally running MCP and against the old response format.
+- `mcp-server/src/api-client.ts` `cdn()`: paths with non-ASCII characters bypass Imagor and link the original on Spaces (`BEACHREX_CDN_ASSETS`, default `https://beachrex.fra1.digitaloceanspaces.com/public/`), with NFD-encoded segments. This is the same rule as web-client `buildCdnUrl`. The root fix is TASK-002 (ASCII-only storage paths).
+- Tests: `mcp-server/test/api-client.test.ts`, image URL cases. 32/32 pass; on the old `api-client.ts` the non-ASCII case fails.
+
+### Testing
+```bash
+cd mcp-server && npm run build && npm test
+```
+After the dev deploy, the "Build and start on VPS" log ends with `MCP server rebuilt, restarted and verified on port 3100`. If it ends with `ERROR: MCP did not come up…`, the printed `ss` line shows which process holds the port.
 
 ---
 

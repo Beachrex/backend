@@ -2,6 +2,8 @@
 
 namespace App\Filament\BrAdmin\Resources;
 
+use App\Support\AsciiPath;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Filament\BrAdmin\Resources\RegionResource\Pages;
 use App\Filament\BrAdmin\Resources\RegionResource\RelationManagers;
 use App\Models\Region;
@@ -59,6 +61,7 @@ class RegionResource extends Resource
                         '1:1',
                     ])
                     ->disk('spaces')
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => AsciiPath::uploadFileName($file->getClientOriginalName()))
                     ->directory('public/img/regions')
                     ->visibility('public')
                     ->maxSize(10240)

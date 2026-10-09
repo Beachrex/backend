@@ -4,6 +4,8 @@ namespace App\Services\AI;
 
 use App\Http\Requests\AI\ItineraryRequest;
 use App\Models\AiMessage;
+use App\Models\Beach;
+use App\Models\User;
 use App\Models\AiSession;
 use App\Models\AiUsage;
 use App\Services\AI\DTOs\ChatCompletionRequest;
@@ -46,19 +48,27 @@ class ItineraryService
      */
     public function generate(ItineraryRequest $request, string $requestId): array
     {
-        $startTime = microtime(true);
-        $user = $request->user();
+        return $this->generateFromInput($request->validated(), $request->user(), $requestId);
+    }
 
-        $destination = $request->input('destination');
-        $days = (int) $request->input('duration_days');
-        $preferences = $request->input('preferences', []) ?? [];
-        $constraints = $request->input('constraints', []) ?? [];
-        $travelParty = $request->input('travel_party', []) ?? [];
-        $locale = $request->input('locale', app()->getLocale());
+    /**
+     * AI-3: the same generation without an HTTP request, so a queued job can run it. $input is the validated
+     * ItineraryRequest data; the page language comes from app()->getLocale() unless $input['locale'] is set.
+     */
+    public function generateFromInput(array $input, ?User $user, string $requestId): array
+    {
+        $startTime = microtime(true);
+
+        $destination = $input['destination'];
+        $days = (int) $input['duration_days'];
+        $preferences = $input['preferences'] ?? [];
+        $constraints = $input['constraints'] ?? [];
+        $travelParty = $input['travel_party'] ?? [];
+        $locale = $input['locale'] ?? app()->getLocale();
         $pace = $preferences['pace'] ?? 'balanced';
         $maxKm = (int) ($constraints['max_travel_km_per_day'] ?? 80);
 
-        $session = $this->getOrCreateSession($request->input('session_id'), $user);
+        $session = $this->getOrCreateSession($input['session_id'] ?? null, $user);
 
         // 1. Candidates
         $candidates = $this->contextBuilder->fetchCandidateBeaches($destination, $preferences, $constraints, $travelParty, $locale, $days);
@@ -68,10 +78,11 @@ class ItineraryService
         $skeleton = $this->planner->plan($candidates['beaches'], $days, $pace, $maxKm);
 
         // 3. Narrative
-        [$narrative, $llmResponse, $narrativeSource] = $this->narrate($skeleton, $beachesById->all(), $request, $locale);
+        [$narrative, $llmResponse, $narrativeSource] = $this->narrate($skeleton, $beachesById->all(), $input, $locale);
 
         // 4. Merge
         $itinerary = $this->merge($skeleton, $beachesById->all(), $narrative, $destination, $days, $candidates, $constraints);
+        $itinerary = $this->withPageLinks($itinerary, $locale);
         $itinerary['itinerary_id'] = (string) Str::uuid();
         $itinerary['session_id'] = $session->id;
         $itinerary['metadata'] = [
@@ -85,7 +96,7 @@ class ItineraryService
             'cached' => false,
         ];
 
-        $this->saveItineraryToDatabase($session, $request, $itinerary, $llmResponse);
+        $this->saveItineraryToDatabase($session, $input, $itinerary, $llmResponse);
 
         return $itinerary;
     }
@@ -93,11 +104,11 @@ class ItineraryService
     /**
      * @return array{0: array, 1: ?ChatCompletionResponse, 2: string} narrative, last LLM response, "llm"|"fallback"
      */
-    private function narrate(array $skeleton, array $beachesById, ItineraryRequest $request, string $locale): array
+    private function narrate(array $skeleton, array $beachesById, array $input, string $locale): array
     {
         $messages = [
             ChatMessage::system($this->systemPrompt($locale)),
-            ChatMessage::user($this->userPrompt($skeleton, $beachesById, $request)),
+            ChatMessage::user($this->userPrompt($skeleton, $beachesById, $input)),
         ];
         $days = count($skeleton);
         $lastResponse = null;
@@ -135,6 +146,63 @@ class ItineraryService
         return [[], $lastResponse, 'fallback'];
     }
 
+    /**
+     * AI-3: every beach in the plan gets what the website needs for its page link and photo (place slugs in the
+     * page language, main image), so a bought plan links straight to the beach pages.
+     */
+    private function withPageLinks(array $itinerary, string $locale): array
+    {
+        $ids = [];
+        foreach ($itinerary['days'] as $day) {
+            foreach ($day['items'] as $item) {
+                if (isset($item['beach']['id'])) {
+                    $ids[] = (int) $item['beach']['id'];
+                }
+            }
+        }
+        if (! $ids) {
+            return $itinerary;
+        }
+
+        $locales = array_values(array_unique([$locale, 'en']));
+        $tr = fn ($q) => $q->whereIn('locale', $locales);
+        $beaches = Beach::query()->whereIn('id', array_unique($ids))->with([
+            'translations' => $tr, 'continent.translations' => $tr, 'country.translations' => $tr,
+            'region.translations' => $tr, 'island.translations' => $tr, 'city.translations' => $tr,
+            'media' => fn ($q) => $q->where('status_id', 1)->orderBy('is_primary', 'desc')->orderBy('order')->orderBy('created_at'),
+        ])->get()->keyBy('id');
+
+        $slug = function ($model) use ($locale): ?string {
+            $translations = $model?->translations;
+            if (! $translations) {
+                return null;
+            }
+
+            return ($translations->firstWhere('locale', $locale) ?? $translations->firstWhere('locale', 'en'))?->slug;
+        };
+
+        foreach ($itinerary['days'] as &$day) {
+            foreach ($day['items'] as &$item) {
+                $beach = isset($item['beach']['id']) ? $beaches->get((int) $item['beach']['id']) : null;
+                if (! $beach) {
+                    continue;
+                }
+                $item['beach'] += [
+                    'continent_slug' => $slug($beach->continent),
+                    'country_slug' => $slug($beach->country),
+                    'region_slug' => $slug($beach->region),
+                    'island_slug' => $slug($beach->island),
+                    'city_slug' => $slug($beach->city),
+                    'main_image' => $beach->media->first()?->file_path,
+                ];
+            }
+            unset($item);
+        }
+        unset($day);
+
+        return $itinerary;
+    }
+
     private function systemPrompt(string $locale): string
     {
         $language = self::LANGUAGE_NAMES[$locale] ?? 'English';
@@ -168,13 +236,13 @@ Return one JSON object:
 PROMPT;
     }
 
-    private function userPrompt(array $skeleton, array $beachesById, ItineraryRequest $request): string
+    private function userPrompt(array $skeleton, array $beachesById, array $input): string
     {
-        $preferences = $request->input('preferences', []) ?? [];
-        $party = $request->input('travel_party', []) ?? [];
+        $preferences = $input['preferences'] ?? [];
+        $party = $input['travel_party'] ?? [];
         $lines = [];
-        $lines[] = 'Trip: ' . count($skeleton) . ' days, country ' . $request->input('destination.country_code')
-            . ($request->input('start_date') ? ', starting ' . $request->input('start_date') : '') . '.';
+        $lines[] = 'Trip: ' . count($skeleton) . ' days, country ' . $input['destination']['country_code']
+            . (! empty($input['start_date']) ? ', starting ' . $input['start_date'] : '') . '.';
         $lines[] = 'Travellers: ' . (int) ($party['adults'] ?? 2) . ' adults, ' . (int) ($party['children'] ?? 0) . ' children.';
         $lines[] = 'Pace: ' . ($preferences['pace'] ?? 'balanced') . '. Interests: ' . (implode(', ', $preferences['interests'] ?? []) ?: 'none given') . '.';
         $lines[] = '';
@@ -357,16 +425,16 @@ PROMPT;
         ]);
     }
 
-    private function saveItineraryToDatabase(AiSession $session, ItineraryRequest $request, array $itinerary, ?ChatCompletionResponse $llm): void
+    private function saveItineraryToDatabase(AiSession $session, array $input, array $itinerary, ?ChatCompletionResponse $llm): void
     {
         AiMessage::create([
             'session_id' => $session->id,
             'role' => 'user',
-            'content' => json_encode($request->validated()),
+            'content' => json_encode($input),
             'intent' => 'itinerary',
             'context' => [
-                'destination' => $request->input('destination'),
-                'duration_days' => $request->input('duration_days'),
+                'destination' => $input['destination'],
+                'duration_days' => $input['duration_days'],
             ],
             'tokens_input' => $llm?->inputTokens ?? 0,
             'tokens_output' => 0,

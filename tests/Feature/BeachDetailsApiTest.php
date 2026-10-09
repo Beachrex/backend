@@ -346,5 +346,87 @@ class BeachDetailsApiTest extends TestCase
                 ],
             ]);
     }
-}
 
+    public function test_views_are_counted_for_browsers_but_not_for_machine_clients()
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522', 'longitude' => '14.4606', 'country_code' => 'HR',
+            'region_id' => 1, 'island_id' => 1, 'city_id' => 1, 'status_id' => 1,
+            'folder_name' => 'views-beach', 'mobile_upload' => false,
+        ]);
+        BeachTranslation::insert([
+            ['beach_id' => $beach->id, 'locale' => 'en', 'name' => 'Views Beach', 'slug' => 'views-beach'],
+        ]);
+        $views = fn () => (int) $beach->fresh()->beach_views;
+        $before = $views();
+
+        $this->getJson('/api/v1/beach-details/views-beach', ['Accept-Language' => 'en'])->assertOk();
+        $this->assertSame($before + 1, $views());
+
+        // The MCP server (AI assistants) identifies itself and is not counted.
+        $this->getJson('/api/v1/beach-details/views-beach', ['Accept-Language' => 'en', 'X-Beachrex-Client' => 'mcp'])->assertOk();
+        $this->assertSame($before + 1, $views());
+    }
+
+    private function createViewsBeach(int $statusId = 1): Beach
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522', 'longitude' => '14.4606', 'country_code' => 'HR',
+            'region_id' => 1, 'island_id' => 1, 'city_id' => 1, 'status_id' => $statusId,
+            'folder_name' => 'count-beach', 'mobile_upload' => false,
+        ]);
+        BeachTranslation::insert([
+            ['beach_id' => $beach->id, 'locale' => 'en', 'name' => 'Count Beach', 'slug' => 'count-beach'],
+        ]);
+
+        return $beach;
+    }
+
+    public function test_cached_beach_details_count_a_view_with_one_update_not_a_full_reload()
+    {
+        $beach = $this->createViewsBeach();
+        $this->getJson('/api/v1/beach-details/count-beach', ['Accept-Language' => 'en'])->assertOk(); // warms the cache
+
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $this->getJson('/api/v1/beach-details/count-beach', ['Accept-Language' => 'en'])->assertOk();
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        // Before: the slug lookup plus the beach with ~37 relations (~70 queries) for every view.
+        $this->assertLessThanOrEqual(2, count($queries), json_encode(array_column($queries, 'query')));
+        $this->assertSame(2, (int) $beach->fresh()->beach_views);
+    }
+
+    public function test_browser_view_endpoint_counts_once_per_visitor_and_window()
+    {
+        $beach = $this->createViewsBeach();
+        $views = fn () => (int) $beach->fresh()->beach_views;
+        $updatedAt = $beach->fresh()->updated_at;
+
+        $this->postJson("/api/v1/beaches/{$beach->id}/view")->assertNoContent();
+        $this->assertSame(1, $views());
+
+        // Reload by the same visitor within 30 minutes: not counted again.
+        $this->postJson("/api/v1/beaches/{$beach->id}/view")->assertNoContent();
+        $this->assertSame(1, $views());
+
+        // Another visitor counts.
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])
+            ->postJson("/api/v1/beaches/{$beach->id}/view")->assertNoContent();
+        $this->assertSame(2, $views());
+
+        // The counter does not change the beach's last edit time.
+        $this->assertEquals($updatedAt, $beach->fresh()->updated_at);
+    }
+
+    public function test_browser_view_endpoint_rejects_unknown_and_inactive_beaches()
+    {
+        $inactive = $this->createViewsBeach(2);
+
+        $this->postJson("/api/v1/beaches/{$inactive->id}/view")->assertNotFound();
+        $this->postJson('/api/v1/beaches/999999/view')->assertNotFound();
+        $this->postJson('/api/v1/beaches/abc/view')->assertNotFound();
+        $this->assertSame(0, (int) $inactive->fresh()->beach_views);
+    }
+}

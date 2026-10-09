@@ -48,6 +48,26 @@ RUN { \
         echo "opcache.revalidate_freq=0"; \
     } > /usr/local/etc/php/conf.d/zz-beachrex-prod.ini
 
+# PHP-FPM pool: the image default is pm.max_children=5, i.e. 5 requests at a time per environment, which ran
+# out first under load (scalability audit 2026-10-09). Sizes come from env vars so each environment can be
+# tuned in its .env file without a rebuild (php-fpm expands ${VAR} from the container environment).
+ENV PHP_FPM_PM=dynamic \
+    PHP_FPM_MAX_CHILDREN=16 \
+    PHP_FPM_START_SERVERS=4 \
+    PHP_FPM_MIN_SPARE_SERVERS=2 \
+    PHP_FPM_MAX_SPARE_SERVERS=8 \
+    PHP_FPM_MAX_REQUESTS=1000
+RUN { \
+        echo "[www]"; \
+        echo "pm = \${PHP_FPM_PM}"; \
+        echo "pm.max_children = \${PHP_FPM_MAX_CHILDREN}"; \
+        echo "pm.start_servers = \${PHP_FPM_START_SERVERS}"; \
+        echo "pm.min_spare_servers = \${PHP_FPM_MIN_SPARE_SERVERS}"; \
+        echo "pm.max_spare_servers = \${PHP_FPM_MAX_SPARE_SERVERS}"; \
+        echo "pm.max_requests = \${PHP_FPM_MAX_REQUESTS}"; \
+        echo "request_terminate_timeout = 60s"; \
+    } > /usr/local/etc/php-fpm.d/zz-beachrex-pool.conf
+
 WORKDIR /var/www/html
 
 # Copy app and install deps AT BUILD TIME (production-correct)

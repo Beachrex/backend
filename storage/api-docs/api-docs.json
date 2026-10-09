@@ -18,7 +18,7 @@
                     "AI Agent"
                 ],
                 "summary": "Send message to AI agent",
-                "description": "Send a message to the AI agent and get a response with beach recommendations. Authentication is optional - anonymous users can use free tier features, authenticated users can access paid features.",
+                "description": "Send a message to the AI agent and get a response with beach recommendations. Authentication is optional - anonymous users can use free tier features, authenticated users can access paid features. Send the returned session_id with every following message to continue the conversation (expires 30 minutes after the last message; an expired or foreign session silently starts a new one). Send Accept-Language = the page language: beach names and URL slugs (continent_slug … slug) are in that language, main_image is the first photo path. Beach fields come from the database only; the model contributes the choice and match_score. Recommended beach names appear verbatim in `message` so the client can link them.",
                 "operationId": "aiChat",
                 "parameters": [
                     {
@@ -140,7 +140,7 @@
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable - AI service temporarily disabled",
+                        "description": "Service Unavailable - AI service temporarily disabled (error=service_unavailable), or the AI provider is busy / out of quota / timed out (error=ai_unavailable, Retry-After: 60)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -331,6 +331,171 @@
                         "sanctum": []
                     },
                     {}
+                ]
+            }
+        },
+        "/api/v1/ai/itinerary-plans": {
+            "post": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Start a paid itinerary in the background",
+                "description": "Reserves one credit for the trip length and queues the plan. Poll GET /api/v1/me/itinerary-plans/{id} until status is done or failed. Failed plans and plans without the AI narrative give the credit back.",
+                "operationId": "0c6daa719a01185279387ae7245d8f72",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language of the plan",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "sl"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AiItineraryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Queued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ItineraryPlanSummary"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "402": {
+                        "description": "No credit for this trip length"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/itinerary-plans": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "My itinerary plans (newest first, max 50)",
+                "operationId": "e10da97131375fbf16ec38396ecf9bf4",
+                "responses": {
+                    "200": {
+                        "description": "Plans",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ItineraryPlanSummary"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/itinerary-plans/{id}": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "One of my itinerary plans, with the full plan when done",
+                "operationId": "42fc737a971c05555a5aa9478cd76e77",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Plan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ItineraryPlanSummary"
+                                                },
+                                                {
+                                                    "properties": {
+                                                        "itinerary": {
+                                                            "oneOf": [
+                                                                {
+                                                                    "$ref": "#/components/schemas/AiItineraryResponse"
+                                                                }
+                                                            ],
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "404": {
+                        "description": "Not found or not yours"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
                 ]
             }
         },
@@ -650,6 +815,62 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Failed to retrieve accommodation type"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/app-config": {
+            "get": {
+                "tags": [
+                    "Mobile"
+                ],
+                "summary": "Mobile app configuration",
+                "description": "Per platform: the lowest app version still supported (below it the app asks the user to update), the latest version and the store link; plus feature flags. Public, cacheable for 5 minutes.",
+                "operationId": "getAppConfig",
+                "responses": {
+                    "200": {
+                        "description": "App configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "ios": {
+                                                    "$ref": "#/components/schemas/AppPlatformConfig"
+                                                },
+                                                "android": {
+                                                    "$ref": "#/components/schemas/AppPlatformConfig"
+                                                },
+                                                "features": {
+                                                    "properties": {
+                                                        "ai_chat": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "itinerary": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "favorites": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "native_sign_in": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "api_version": {
+                                                    "type": "string",
+                                                    "example": "v1"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -1120,6 +1341,54 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Delete my account",
+                "description": "Removes personal data (profile, sign-in, tokens, saved beaches, itineraries, AI chat history, credits). Purchases are kept anonymised because accounting law requires it. Confirm with `password`; accounts linked to Google may send `confirm: DELETE` instead. Admin accounts cannot be deleted here.",
+                "operationId": "deleteMyAccount",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "password": {
+                                        "description": "Current password (accounts created with e-mail and password)",
+                                        "type": "string"
+                                    },
+                                    "confirm": {
+                                        "description": "Accounts linked to Google only (they may have no password of their own)",
+                                        "type": "string",
+                                        "example": "DELETE"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "403": {
+                        "description": "Admin accounts cannot be deleted through the API"
+                    },
+                    "422": {
+                        "description": "Wrong password or missing confirmation"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/register": {
@@ -1485,14 +1754,63 @@
                         "$ref": "#/components/parameters/AcceptLanguage"
                     },
                     {
-                        "name": "limit",
+                        "name": "per_page",
                         "in": "query",
-                        "description": "Maximum number of beaches to return (default: 5000)",
+                        "description": "Beaches per page (default 20, max 100). Pages are ordered by `sort`; meta has total, current_page, last_page.",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": 5000,
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 16
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number (default 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "popular (most viewed first, default) or newest",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "popular",
+                            "enum": [
+                                "popular",
+                                "newest"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Deprecated alias of per_page (max 100). Before 2026-10-09 the default was 5000 and `page` was ignored.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
                             "example": 50
+                        }
+                    },
+                    {
+                        "name": "city",
+                        "in": "query",
+                        "description": "Alias of city_code (same for region / island → region_code / island_code). Codes or ids, not slugs.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "murter"
                         }
                     },
                     {
@@ -1508,7 +1826,7 @@
                     {
                         "name": "country",
                         "in": "query",
-                        "description": "Filter by country code(s) or ID(s). Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
+                        "description": "Filter by country code(s) or ID(s); `country_code` is accepted as an alias. Supports: single value (country=HR), comma-separated (country=HR,SI,IT), or array (country[]=HR&country[]=SI). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -1516,9 +1834,9 @@
                         }
                     },
                     {
-                        "name": "region",
+                        "name": "region_code",
                         "in": "query",
-                        "description": "Filter by region code(s) or ID(s). Supports: single value (region=algarve), comma-separated (region=algarve,lisbon), or array (region[]=algarve&region[]=lisbon). Can mix codes and IDs.",
+                        "description": "Filter by region code(s) or ID(s). Supports: single value (region_code=algarve), comma-separated (region_code=algarve,lisbon), or array (region_code[]=algarve&region_code[]=lisbon). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -1526,9 +1844,9 @@
                         }
                     },
                     {
-                        "name": "island",
+                        "name": "island_code",
                         "in": "query",
-                        "description": "Filter by island code(s) or ID(s). Supports: single value (island=madeira), comma-separated (island=madeira,azores), or array (island[]=madeira&island[]=azores). Can mix codes and IDs.",
+                        "description": "Filter by island code(s) or ID(s). Supports: single value (island_code=madeira), comma-separated (island_code=madeira,azores), or array (island_code[]=madeira&island_code[]=azores). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -1536,9 +1854,9 @@
                         }
                     },
                     {
-                        "name": "city",
+                        "name": "city_code",
                         "in": "query",
-                        "description": "Filter by city code(s) or ID(s). Supports: single value (city=sukosan), comma-separated (city=sukosan,zadar), or array (city[]=sukosan&city[]=zadar). Can mix codes and IDs.",
+                        "description": "Filter by city code(s) or ID(s). Supports: single value (city_code=sukosan), comma-separated (city_code=sukosan,zadar), or array (city_code[]=sukosan&city_code[]=zadar). Can mix codes and IDs.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -1583,6 +1901,16 @@
                         "schema": {
                             "type": "boolean",
                             "example": true
+                        }
+                    },
+                    {
+                        "name": "pool_type",
+                        "in": "query",
+                        "description": "Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "indoor"
                         }
                     },
                     {
@@ -1933,6 +2261,16 @@
                     },
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "name": "X-Beachrex-Client",
+                        "in": "header",
+                        "description": "Set by machine clients (e.g. `mcp`). Requests with this header are not counted in beach_views.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "mcp"
+                        }
                     }
                 ],
                 "responses": {
@@ -2374,6 +2712,39 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/beaches/{id}/view": {
+            "post": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "Count a beach page view",
+                "description": "Called by the browser when a visitor opens a beach page. One view per visitor (IP) and beach per 30 minutes is counted; repeated calls return 204 without counting. Rate limited (60/min per IP).",
+                "operationId": "countBeachView",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Beach ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 123
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Counted (or already counted for this visitor)"
+                    },
+                    "404": {
+                        "description": "No active beach with this ID"
+                    },
+                    "429": {
+                        "description": "Too many requests"
                     }
                 }
             }
@@ -3882,13 +4253,186 @@
                 }
             }
         },
+        "/api/v1/me/favorites": {
+            "get": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "My saved beaches (newest first), as beach cards",
+                "operationId": "getMyFavorites",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "sl"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saved beaches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachSchema"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "limit": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Save a beach (idempotent)",
+                "operationId": "addFavorite",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "beach_id"
+                                ],
+                                "properties": {
+                                    "beach_id": {
+                                        "type": "integer",
+                                        "example": 614
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Saved"
+                    },
+                    "200": {
+                        "description": "Already saved"
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "422": {
+                        "description": "Unknown or unpublished beach, or the list is full (error: favorites_limit)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/favorites/ids": {
+            "get": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Ids of my saved beaches (to show the heart state on any list)",
+                "operationId": "getMyFavoriteIds",
+                "responses": {
+                    "200": {
+                        "description": "Beach ids, newest first",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/favorites/{beachId}": {
+            "delete": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Remove a saved beach (idempotent)",
+                "operationId": "removeFavorite",
+                "parameters": [
+                    {
+                        "name": "beachId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Removed (or was not saved)"
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/beaches/filters": {
             "get": {
                 "tags": [
                     "Filters"
                 ],
                 "summary": "Get beach filter options with optional cascading filters",
-                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean).",
+                "description": "Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean), pool_type (indoor/outdoor).",
                 "operationId": "getBeachFilters",
                 "parameters": [
                     {
@@ -3906,7 +4450,7 @@
                     {
                         "name": "country",
                         "in": "query",
-                        "description": "Filter by country code or ID (e.g., HR, SI, or numeric ID)",
+                        "description": "Filter by country code or ID (e.g., HR, SI, or numeric ID). Alias: country_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -3922,7 +4466,7 @@
                     {
                         "name": "region",
                         "in": "query",
-                        "description": "Filter by region ID or code",
+                        "description": "Filter by region ID or code. Alias: region_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -3938,7 +4482,7 @@
                     {
                         "name": "island",
                         "in": "query",
-                        "description": "Filter by island ID or code",
+                        "description": "Filter by island ID or code. Alias: island_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -3960,7 +4504,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
-                                            "description": "Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool. All filters follow the same structure with title, icon, input_type/type, and options array.",
+                                            "description": "Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool, pool_type. All filters follow the same structure with title, icon, input_type/type, and options array.",
                                             "properties": {
                                                 "country": {
                                                     "properties": {
@@ -5028,6 +5572,91 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/legacy-redirect": {
+            "get": {
+                "tags": [
+                    "Slug Resolver"
+                ],
+                "summary": "Resolve an old beachrex.com URL to the new page",
+                "description": "Maps a path of the old site (e.g. /hr/hrvatska/dalmacija/tisno-plaze/plaza-tisno) to the new page. The most specific match wins: beach, city, island, region, country. `segments` are the localized slugs after the beaches word: the new URL is /{locale}/{beaches}/{segments...}. Type `map` means the beach map. `language` is the old language prefix of the path (sl, en, hr, de, fr, es, it, ua, ru), if any.",
+                "operationId": "resolveLegacyUrl",
+                "parameters": [
+                    {
+                        "name": "path",
+                        "in": "query",
+                        "description": "Old URL path, with or without the query string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "example": "/hr/hrvatska/dalmacija/tisno-plaze/plaza-tisno"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Old URL resolved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "beach",
+                                                        "city",
+                                                        "island",
+                                                        "region",
+                                                        "country",
+                                                        "map"
+                                                    ],
+                                                    "example": "beach"
+                                                },
+                                                "language": {
+                                                    "type": "string",
+                                                    "example": "hr",
+                                                    "nullable": true
+                                                },
+                                                "segments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "example": [
+                                                        "europa",
+                                                        "hrvatska",
+                                                        "dalmacija",
+                                                        "tisno",
+                                                        "plaza-tisno"
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No page matches the old URL"
+                    },
+                    "422": {
+                        "description": "Missing or too long path"
                     }
                 }
             }
@@ -6596,6 +7225,142 @@
                 }
             }
         },
+        "/api/v1/forgot-password": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send a password reset link by e-mail",
+                "description": "Always answers 200 with the same message, whether or not an account exists (no account enumeration). The e-mail is sent after the response, in the request's language, with a link to `{FRONTEND_URL}/{locale}/auth/reset-password?token=…&email=…` (valid 60 minutes, at most one e-mail per address per minute). Rate limit: 5 requests per minute per IP.",
+                "operationId": "forgotPassword",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Request accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "If an account exists for this e-mail, we have sent a link to reset the password."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                }
+            }
+        },
+        "/api/v1/reset-password": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Set a new password with the token from the reset e-mail",
+                "description": "On success all API tokens of the user are revoked (other devices are signed out) and the e-mail counts as verified. The user then signs in with POST /api/v1/login. Rate limit: 10 requests per minute per IP.",
+                "operationId": "resetPassword",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "9f1c…"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "new-secret-123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "new-secret-123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Your password has been changed. You can now sign in."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error, or the link is invalid/expired (error on `token`)"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                }
+            }
+        },
         "/api/v1/spatial/beaches/within-radius": {
             "get": {
                 "tags": [
@@ -6804,6 +7569,16 @@
                         "schema": {
                             "type": "string",
                             "example": "urban,rural"
+                        }
+                    },
+                    {
+                        "name": "pool_type",
+                        "in": "query",
+                        "description": "Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "indoor"
                         }
                     },
                     {
@@ -7250,6 +8025,16 @@
                         "schema": {
                             "type": "string",
                             "example": "urban,rural"
+                        }
+                    },
+                    {
+                        "name": "pool_type",
+                        "in": "query",
+                        "description": "Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "indoor"
                         }
                     },
                     {
@@ -8535,14 +9320,55 @@
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "brac"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Brač"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized island slug",
+                                                                "type": "string",
+                                                                "example": "brac"
+                                                            },
+                                                            "country_code": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "country_name": {
+                                                                "type": "string",
+                                                                "example": "Croatia"
+                                                            },
+                                                            "region_name": {
+                                                                "type": "string",
+                                                                "example": "Dalmatia - Split"
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "img/islands/brac.jpg",
+                                                                "nullable": true
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "island"
+                                                            },
                                                             "continent_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             },
                                                             "country_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             },
                                                             "region_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
@@ -8553,11 +9379,47 @@
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "dalmatia-split"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Dalmatia - Split"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized region slug",
+                                                                "type": "string",
+                                                                "example": "dalmatia-split"
+                                                            },
+                                                            "country_code": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "country_name": {
+                                                                "type": "string",
+                                                                "example": "Croatia"
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "img/regions/dalmacija.jpg",
+                                                                "nullable": true
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "region"
+                                                            },
                                                             "continent_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             },
                                                             "country_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
@@ -8568,8 +9430,48 @@
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 7
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "iso3": {
+                                                                "type": "string",
+                                                                "example": "HRV",
+                                                                "nullable": true
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Croatia"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized country slug",
+                                                                "type": "string",
+                                                                "example": "croatia"
+                                                            },
+                                                            "continent_code": {
+                                                                "type": "string",
+                                                                "example": "EU"
+                                                            },
+                                                            "continent_name": {
+                                                                "type": "string",
+                                                                "example": "Europe"
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "img/countries/croatia.jpg",
+                                                                "nullable": true
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "country"
+                                                            },
                                                             "continent_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
@@ -9748,6 +10650,59 @@
                 }
             }
         },
+        "/api/v1/payments/products": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Itinerary packages and prices",
+                "description": "AI-3: the itinerary packages with their prices, so the website shows the price the checkout will charge.",
+                "operationId": "50bdaa500e411fd41304f9c5c828905f",
+                "responses": {
+                    "200": {
+                        "description": "Packages, shortest first",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "product_type": {
+                                                        "type": "string",
+                                                        "example": "itinerary_7day"
+                                                    },
+                                                    "days": {
+                                                        "type": "integer",
+                                                        "example": 7
+                                                    },
+                                                    "amount": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 39
+                                                    },
+                                                    "currency": {
+                                                        "type": "string",
+                                                        "example": "EUR"
+                                                    },
+                                                    "credits": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/payments/stripe/checkout": {
             "post": {
                 "tags": [
@@ -9788,6 +10743,16 @@
                     },
                     "401": {
                         "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "consent_required: accept_terms and waive_withdrawal must be true",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9902,6 +10867,24 @@
     },
     "components": {
         "schemas": {
+            "AppPlatformConfig": {
+                "properties": {
+                    "min_supported_version": {
+                        "type": "string",
+                        "example": "1.0.0"
+                    },
+                    "latest_version": {
+                        "type": "string",
+                        "example": "1.2.0"
+                    },
+                    "store_url": {
+                        "type": "string",
+                        "example": "https://apps.apple.com/app/id000000000",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "AiBeachRecommendation": {
                 "title": "AI Beach Recommendation",
                 "description": "Beach recommendation from AI agent",
@@ -10127,6 +11110,14 @@
                         "format": "uuid",
                         "example": "abc123-def456-ghi789"
                     },
+                    "format": {
+                        "description": "markdown when the tool-calling agent answered (AI_CHAT_ENGINE=agent): beach links as [name](url) to the website; absent/text otherwise",
+                        "type": "string",
+                        "enum": [
+                            "text",
+                            "markdown"
+                        ]
+                    },
                     "message": {
                         "description": "AI response message",
                         "type": "string",
@@ -10155,52 +11146,67 @@
                         "nullable": true
                     },
                     "filters_applied": {
-                        "description": "Filters used in search",
+                        "description": "Filters the API actually queried (TASK-003), named like the /beaches query parameters. Relaxed filters are left out and explained in metadata.assumptions. On the keyword fallback (metadata.understanding = fallback) this is the model's own summary.",
                         "properties": {
-                            "country": {
+                            "country_code": {
                                 "type": "string",
                                 "example": "HR",
                                 "nullable": true
                             },
-                            "region": {
+                            "island_code": {
                                 "type": "string",
-                                "example": "Dalmatia",
+                                "example": "BRA",
                                 "nullable": true
                             },
-                            "city": {
+                            "city_code": {
                                 "type": "string",
-                                "example": "Split",
+                                "example": "makarska",
                                 "nullable": true
                             },
-                            "surface": {
+                            "region_code": {
+                                "type": "string",
+                                "example": "HR-ISTRIA",
+                                "nullable": true
+                            },
+                            "beach_type": {
                                 "type": "array",
                                 "items": {
                                     "type": "string"
                                 },
                                 "example": [
-                                    "sand",
-                                    "pebble"
+                                    "sand"
                                 ],
                                 "nullable": true
                             },
-                            "facilities": {
+                            "location_infrastructure": {
                                 "type": "array",
                                 "items": {
                                     "type": "string"
                                 },
                                 "example": [
-                                    "parking"
+                                    "shower",
+                                    "access_for_disabled"
                                 ],
                                 "nullable": true
                             },
-                            "family_friendly": {
-                                "type": "boolean",
-                                "example": true,
+                            "user_type": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "example": [
+                                    "family"
+                                ],
                                 "nullable": true
                             },
-                            "wheelchair_accessible": {
-                                "type": "boolean",
-                                "example": false,
+                            "sporting_activities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "example": [
+                                    "snorkeling"
+                                ],
                                 "nullable": true
                             }
                         },
@@ -10572,6 +11578,42 @@
                                 "format": "float",
                                 "example": null,
                                 "nullable": true
+                            },
+                            "continent_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "europe",
+                                "nullable": true
+                            },
+                            "country_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "croatia",
+                                "nullable": true
+                            },
+                            "region_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "dalmatia-split",
+                                "nullable": true
+                            },
+                            "island_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": null,
+                                "nullable": true
+                            },
+                            "city_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "split",
+                                "nullable": true
+                            },
+                            "main_image": {
+                                "description": "Main photo path (CDN relative)",
+                                "type": "string",
+                                "example": "img/beaches/hr/bacvice.jpg",
+                                "nullable": true
                             }
                         },
                         "type": "object",
@@ -10915,6 +11957,20 @@
                                 "description": "Was response cached?",
                                 "type": "boolean",
                                 "example": false
+                            },
+                            "narrative": {
+                                "description": "llm = AI-written texts; fallback = the AI failed and the plan has short factual texts",
+                                "type": "string",
+                                "enum": [
+                                    "llm",
+                                    "fallback"
+                                ],
+                                "example": "llm"
+                            },
+                            "credit_used": {
+                                "description": "Paid multi-day plans only: whether a credit was used (false for a fallback plan; the credit was given back)",
+                                "type": "boolean",
+                                "example": true
                             }
                         },
                         "type": "object"
@@ -10940,7 +11996,7 @@
                     "model": {
                         "description": "LLM model used",
                         "type": "string",
-                        "example": "gpt-3.5-turbo"
+                        "example": "gpt-4o-mini"
                     },
                     "response_time_ms": {
                         "description": "Response time in milliseconds",
@@ -10951,6 +12007,89 @@
                         "description": "Was response cached?",
                         "type": "boolean",
                         "example": false
+                    },
+                    "understanding": {
+                        "description": "Chat only (TASK-003): how the message was understood. llm = structured extraction; fallback = English keyword detection after the extraction failed.",
+                        "type": "string",
+                        "enum": [
+                            "llm",
+                            "fallback"
+                        ],
+                        "example": "llm"
+                    },
+                    "language": {
+                        "description": "Chat only: language of the answer (the user's language as detected, else the session locale).",
+                        "type": "string",
+                        "example": "sl"
+                    },
+                    "assumptions": {
+                        "description": "Chat only: what the API could not apply (unknown place, relaxed filters).",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "Not enough beaches matched all requested user_types; that filter was relaxed."
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "ItineraryPlanSummary": {
+                "description": "A background itinerary (AI-3)",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "queued",
+                            "running",
+                            "done",
+                            "failed"
+                        ]
+                    },
+                    "country_code": {
+                        "type": "string",
+                        "example": "HR"
+                    },
+                    "region_slug": {
+                        "type": "string",
+                        "example": "istra",
+                        "nullable": true
+                    },
+                    "duration_days": {
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "error": {
+                        "description": "Why a failed plan failed (its credit was given back)",
+                        "type": "string",
+                        "enum": [
+                            "not_enough_beaches",
+                            "error",
+                            "timeout"
+                        ],
+                        "nullable": true
+                    },
+                    "credit_used": {
+                        "description": "false when the credit was given back",
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "finished_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -12437,9 +13576,38 @@
                                 "type": "object"
                             },
                             "total_beaches": {
-                                "description": "Total number of beaches returned (respects limit parameter)",
+                                "description": "GET /beaches: number of beaches matching the filters (all pages); other endpoints: number returned",
                                 "type": "integer",
                                 "example": 150
+                            },
+                            "total": {
+                                "description": "GET /beaches: beaches matching the filters (all pages)",
+                                "type": "integer",
+                                "example": 150
+                            },
+                            "current_page": {
+                                "description": "GET /beaches: this page",
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "per_page": {
+                                "description": "GET /beaches: page size",
+                                "type": "integer",
+                                "example": 20
+                            },
+                            "last_page": {
+                                "description": "GET /beaches: last page number",
+                                "type": "integer",
+                                "example": 8
+                            },
+                            "sort": {
+                                "description": "GET /beaches: order used",
+                                "type": "string",
+                                "enum": [
+                                    "popular",
+                                    "newest"
+                                ],
+                                "example": "popular"
                             }
                         },
                         "type": "object"
@@ -12910,6 +14078,44 @@
                         },
                         "type": "object"
                     },
+                    "features": {
+                        "description": "Card icons (QA #45): beach type, user types and parking. family / adventurer / youth (party) = the beach has that user type; parking = infrastructure `parking` or a parking capacity other than none/private.",
+                        "properties": {
+                            "beach_type": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "sand"
+                                    },
+                                    "name": {
+                                        "description": "Translated via Accept-Language",
+                                        "type": "string",
+                                        "example": "Sand"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "family": {
+                                "type": "boolean",
+                                "example": true
+                            },
+                            "adventurer": {
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "youth": {
+                                "description": "Party / youth beach",
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "parking": {
+                                "type": "boolean",
+                                "example": false
+                            }
+                        },
+                        "type": "object"
+                    },
                     "tags": {
                         "description": "Up to 4 descriptive tags for the beach (sporting activities, culinary offers, natural conditions, occupancy rate) translated based on Accept-Language header. Empty array if none available.",
                         "type": "array",
@@ -13163,10 +14369,10 @@
                                 "nullable": true
                             },
                             "sea_temperature": {
-                                "description": "Sea surface temperature in Celsius (approximation from weather data)",
+                                "description": "Sea surface temperature in Celsius from the Open-Meteo Marine API (cached 3 h). Null where there is no marine data (e.g. lakes) or the API is unavailable.",
                                 "type": "number",
                                 "format": "float",
-                                "example": 9.9,
+                                "example": 21.4,
                                 "nullable": true
                             },
                             "cached_at": {
@@ -14445,7 +15651,9 @@
             },
             "CheckoutRequest": {
                 "required": [
-                    "product_type"
+                    "product_type",
+                    "accept_terms",
+                    "waive_withdrawal"
                 ],
                 "properties": {
                     "product_type": {
@@ -14457,6 +15665,16 @@
                             "itinerary_14day"
                         ],
                         "example": "itinerary_7day"
+                    },
+                    "accept_terms": {
+                        "description": "The buyer accepts the terms of sale (must be true)",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "waive_withdrawal": {
+                        "description": "The buyer asks for immediate delivery and acknowledges losing the 14-day withdrawal right once a plan is created (must be true)",
+                        "type": "boolean",
+                        "example": true
                     }
                 },
                 "type": "object"
@@ -15054,6 +16272,44 @@
                                     }
                                 },
                                 "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "features": {
+                        "description": "Card icons (QA #45): beach type, user types and parking. family / adventurer / youth (party) = the beach has that user type; parking = infrastructure `parking` or a parking capacity other than none/private.",
+                        "properties": {
+                            "beach_type": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "sand"
+                                    },
+                                    "name": {
+                                        "description": "Translated via Accept-Language",
+                                        "type": "string",
+                                        "example": "Sand"
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "family": {
+                                "type": "boolean",
+                                "example": true
+                            },
+                            "adventurer": {
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "youth": {
+                                "description": "Party / youth beach",
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "parking": {
+                                "type": "boolean",
+                                "example": false
                             }
                         },
                         "type": "object"
@@ -15691,12 +16947,20 @@
             "description": "AI Agent"
         },
         {
+            "name": "AI",
+            "description": "AI"
+        },
+        {
             "name": "Accessibility",
             "description": "Accessibility"
         },
         {
             "name": "Accommodation Around",
             "description": "Accommodation Around"
+        },
+        {
+            "name": "Mobile",
+            "description": "Mobile"
         },
         {
             "name": "Area Descriptions",
@@ -15719,8 +16983,16 @@
             "description": "Culinary Offers"
         },
         {
+            "name": "Favorites",
+            "description": "Favorites"
+        },
+        {
             "name": "System",
             "description": "System"
+        },
+        {
+            "name": "Slug Resolver",
+            "description": "Slug Resolver"
         },
         {
             "name": "Location Infrastructure",
@@ -15757,10 +17029,6 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
-        },
-        {
-            "name": "Slug Resolver",
-            "description": "Slug Resolver"
         },
         {
             "name": "Sporting Activities",

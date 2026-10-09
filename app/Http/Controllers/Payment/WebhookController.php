@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Services\Payment\StripeService;
 use App\Services\Payment\EntitlementService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 
@@ -76,6 +78,7 @@ class WebhookController extends Controller
             // Handle different event types
             switch ($event->type) {
                 case 'checkout.session.completed':
+                case 'checkout.session.async_payment_succeeded':
                     $this->handleCheckoutSessionCompleted($event);
                     break;
 
@@ -123,10 +126,17 @@ class WebhookController extends Controller
     {
         $session = $event->data->object;
 
-        // Extract metadata
+        // Bank transfers and similar methods complete the session before the money arrives; their credits
+        // come with checkout.session.async_payment_succeeded.
+        $paymentStatus = $session->payment_status ?? null;
+        if (! in_array($paymentStatus, ['paid', 'no_payment_required'], true)) {
+            Log::info('Checkout session not paid yet, waiting', ['session_id' => $session->id, 'payment_status' => $paymentStatus]);
+
+            return;
+        }
+
         $userId = $session->metadata->user_id ?? $session->client_reference_id;
         $productType = $session->metadata->product_type ?? null;
-        $credits = $session->metadata->credits ?? 1;
 
         if (!$userId || !$productType) {
             Log::error('Missing required metadata in checkout session', [
@@ -146,7 +156,6 @@ class WebhookController extends Controller
             return;
         }
 
-        // Get product configuration
         $product = $this->stripeService->getProductConfig($productType);
 
         if (!$product) {
@@ -156,25 +165,44 @@ class WebhookController extends Controller
             ]);
             return;
         }
+        // Credits come from our own product config, never from request metadata.
+        $credits = (int) ($product['credits'] ?? 1);
 
-        // Create purchase record
-        $purchase = Purchase::create([
-            'user_id' => $user->id,
-            'product_type' => $productType,
-            'amount' => $product['amount'],
-            'currency' => $product['currency'],
-            'status' => Purchase::STATUS_COMPLETED,
-            'stripe_session_id' => $session->id,
-            'stripe_payment_intent_id' => $session->payment_intent ?? null,
-            'stripe_event_id' => $event->id,
-            'metadata' => [
-                'session' => $session->toArray(),
-            ],
-            'purchased_at' => now(),
-        ]);
+        // Purchase and credits are written together or not at all. The unique stripe_session_id makes a second
+        // delivery of the same payment (a retry, or completed + async_payment_succeeded) a no-op, also when two
+        // deliveries race.
+        try {
+            $purchase = DB::transaction(function () use ($user, $productType, $product, $session, $event, $credits) {
+                if (Purchase::where('stripe_session_id', $session->id)->lockForUpdate()->exists()) {
+                    return null;
+                }
+                $purchase = Purchase::create([
+                    'user_id' => $user->id,
+                    'product_type' => $productType,
+                    'amount' => $product['amount'],
+                    'currency' => $product['currency'],
+                    'status' => Purchase::STATUS_COMPLETED,
+                    'stripe_session_id' => $session->id,
+                    'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                    'stripe_event_id' => $event->id,
+                    'metadata' => [
+                        'session' => $session->toArray(),
+                    ],
+                    'purchased_at' => now(),
+                ]);
+                $this->entitlementService->grantCredits($user, $productType, $credits);
 
-        // Grant credits to user
-        $this->entitlementService->grantCredits($user, $productType, $credits);
+                return $purchase;
+            });
+        } catch (UniqueConstraintViolationException) {
+            $purchase = null;
+        }
+
+        if (! $purchase) {
+            Log::info('Checkout session already processed, skipping', ['session_id' => $session->id, 'event_id' => $event->id]);
+
+            return;
+        }
 
         Log::info('Purchase completed and credits granted', [
             'purchase_id' => $purchase->id,
@@ -208,10 +236,30 @@ class WebhookController extends Controller
         $charge = $event->data->object;
         $paymentIntentId = $charge->payment_intent;
 
-        // Find purchase by payment intent ID
-        $purchase = Purchase::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        // Credits are revoked only when the whole charge is refunded; a partial refund (goodwill) keeps them.
+        if (($charge->refunded ?? false) !== true) {
+            Log::info('Partial refund, credits kept', ['payment_intent_id' => $paymentIntentId, 'charge_id' => $charge->id]);
 
-        if (!$purchase) {
+            return;
+        }
+
+        // Stripe retries and repeats events: the purchase row is locked and a purchase that is already refunded is
+        // skipped, so a refund revokes credits exactly once.
+        $result = DB::transaction(function () use ($paymentIntentId) {
+            $purchase = Purchase::where('stripe_payment_intent_id', $paymentIntentId)->lockForUpdate()->first();
+            if (! $purchase || $purchase->isRefunded()) {
+                return [$purchase, 0];
+            }
+            $purchase->markAsRefunded();
+            $product = $this->stripeService->getProductConfig($purchase->product_type);
+            $credits = (int) ($product['credits'] ?? 1);
+            $this->entitlementService->revokeCredits($purchase->user, $purchase->product_type, $credits);
+
+            return [$purchase, $credits];
+        });
+        [$purchase, $credits] = $result;
+
+        if (! $purchase) {
             Log::warning('Purchase not found for refunded charge', [
                 'payment_intent_id' => $paymentIntentId,
                 'charge_id' => $charge->id,
@@ -219,21 +267,10 @@ class WebhookController extends Controller
             return;
         }
 
-        // Mark purchase as refunded
-        $purchase->markAsRefunded();
-
-        // Revoke credits from user
-        $user = $purchase->user;
-        $productType = $purchase->product_type;
-        $product = $this->stripeService->getProductConfig($productType);
-        $credits = $product['credits'] ?? 1;
-
-        $this->entitlementService->revokeCredits($user, $productType, $credits);
-
-        Log::info('Purchase refunded and credits revoked', [
+        Log::info($credits ? 'Purchase refunded and credits revoked' : 'Refund already processed, skipping', [
             'purchase_id' => $purchase->id,
-            'user_id' => $user->id,
-            'product_type' => $productType,
+            'user_id' => $purchase->user_id,
+            'product_type' => $purchase->product_type,
             'credits' => $credits,
         ]);
     }

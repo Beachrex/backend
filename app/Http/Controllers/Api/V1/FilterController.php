@@ -44,7 +44,7 @@ class FilterController extends Controller
      *     path="/api/v1/beaches/filters",
      *     operationId="getBeachFilters",
      *     summary="Get beach filter options with optional cascading filters",
-     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean).",
+     *     description="Returns available filter options for beaches. When geographic filters (continent_code, country, region, island) are provided, returns only options that have active beaches in those locations. All data is translated based on Accept-Language header with English fallback. Additional filters may include: accommodation_around, culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, parking (boolean), has_swimming_pool (boolean), pool_type (indoor/outdoor).",
      *     tags={"Filters"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
@@ -57,21 +57,21 @@ class FilterController extends Controller
      *     @OA\Parameter(
      *         name="country",
      *         in="query",
-     *         description="Filter by country code or ID (e.g., HR, SI, or numeric ID)",
+     *         description="Filter by country code or ID (e.g., HR, SI, or numeric ID). Alias: country_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="string"), @OA\Schema(type="integer")})
      *     ),
      *     @OA\Parameter(
      *         name="region",
      *         in="query",
-     *         description="Filter by region ID or code",
+     *         description="Filter by region ID or code. Alias: region_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
      *     ),
      *     @OA\Parameter(
      *         name="island",
      *         in="query",
-     *         description="Filter by island ID or code",
+     *         description="Filter by island ID or code. Alias: island_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
      *     ),
@@ -234,7 +234,7 @@ class FilterController extends Controller
      *                         )
      *                     )
      *                 ),
-     *                 description="Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool. All filters follow the same structure with title, icon, input_type/type, and options array."
+     *                 description="Additional filters may be returned based on available data: culinary_offer, location_infrastructure, natural_location_condition, sporting_activities, underwater_characteristic, recommended_transport_type, accessibility, area_description, parking_capacity, beach_inclination, swimming_depth_of_one_m, occupancy_rate, has_swimming_pool, pool_type. All filters follow the same structure with title, icon, input_type/type, and options array."
      *             )
      *         )
      *     )
@@ -247,9 +247,10 @@ class FilterController extends Controller
 
         // Get optional geographic filters for cascading
         $continentCode = $request->get('continent_code');
-        $countryParam = $request->get('country');
-        $regionParam = $request->get('region');
-        $islandParam = $request->get('island');
+        // The *_code names are accepted as aliases, matching /beaches (BeachFilterService).
+        $countryParam = $request->get('country', $request->get('country_code'));
+        $regionParam = $request->get('region', $request->get('region_code'));
+        $islandParam = $request->get('island', $request->get('island_code'));
 
         // Resolve country parameter (can be code or ID)
         $countryCode = $this->resolveCountryParameter($countryParam);
@@ -398,6 +399,8 @@ class FilterController extends Controller
             if ($swimmingPoolData) {
                 $filters['has_swimming_pool'] = $swimmingPoolData;
             }
+
+            $filters['pool_type'] = $this->getPoolTypeFilterData($locale);
 
             return $filters;
         });
@@ -1570,20 +1573,34 @@ class FilterController extends Controller
     }
 
     /**
-     * Get parking filter data (boolean)
+     * Get parking filter data (boolean). Title and label in the request language (mobile report 2026-10-09).
      */
     private function getParkingFilterData(string $locale): ?array
     {
         return [
-            'title' => 'Parking',
+            'title' => __('Parking', [], $locale),
+            'icon' => null,
+            'input_type' => 'checkbox',
+            // Same option shape as the other filters (code/name), so clients can match the selected value.
+            'options' => [
+                ['code' => '1', 'value' => '1', 'label' => __('Yes', [], $locale), 'name' => __('Yes', [], $locale), 'icon' => null],
+            ],
+        ];
+    }
+
+    /**
+     * Pool type filter (QA #70): indoor / outdoor, from the pool counts set in the admin.
+     * A beach with both kinds matches either option.
+     */
+    private function getPoolTypeFilterData(string $locale): array
+    {
+        return [
+            'title' => __('Pool type', [], $locale),
             'icon' => null,
             'input_type' => 'checkbox',
             'options' => [
-                [
-                    'value' => '1',
-                    'label' => 'Yes',
-                    'icon' => null,
-                ],
+                ['code' => 'indoor', 'value' => 'indoor', 'label' => __('Indoor pool', [], $locale), 'name' => __('Indoor pool', [], $locale), 'icon' => null],
+                ['code' => 'outdoor', 'value' => 'outdoor', 'label' => __('Outdoor pool', [], $locale), 'name' => __('Outdoor pool', [], $locale), 'icon' => null],
             ],
         ];
     }
@@ -1594,15 +1611,12 @@ class FilterController extends Controller
     private function getSwimmingPoolFilterData(string $locale): ?array
     {
         return [
-            'title' => 'Swimming Pool',
+            'title' => __('Swimming pool', [], $locale),
             'icon' => null,
             'input_type' => 'checkbox',
+            // Same option shape as the other filters (code/name), so clients can match the selected value.
             'options' => [
-                [
-                    'value' => '1',
-                    'label' => 'Yes',
-                    'icon' => null,
-                ],
+                ['code' => '1', 'value' => '1', 'label' => __('Yes', [], $locale), 'name' => __('Yes', [], $locale), 'icon' => null],
             ],
         ];
     }

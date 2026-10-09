@@ -74,6 +74,12 @@ class MediaService
             $folder = $collectionCode ?? $mediaTypeCode;
             $path = "{$modelName}/{$model->id}/{$folder}/{$filename}";
 
+            // Photos are works of MOJA PLAŽA, d.o.o.: write the IPTC copyright into JPEGs
+            // (opt out with add_copyright=false, e.g. for a contributor's photo)
+            if ($options['add_copyright'] ?? true) {
+                $this->embedCopyright($file);
+            }
+
             // Store file
             $disk = $options['disk'] ?? config('filesystems.default');
             $storedPath = Storage::disk($disk)->putFileAs(
@@ -260,5 +266,18 @@ class MediaService
 
         $query->update(['is_primary' => false]);
     }
-}
 
+    /** Writes the copyright IPTC block into an uploaded JPEG in place; other files are left alone. */
+    private function embedCopyright(UploadedFile $file): void
+    {
+        $path = $file->getRealPath();
+        if (!$path || !is_writable($path)) {
+            return;
+        }
+        $bytes = (string) file_get_contents($path);
+        $withCopyright = \App\Support\ImageCopyright::embed($bytes);
+        if ($withCopyright !== null) {
+            file_put_contents($path, $withCopyright);
+        }
+    }
+}

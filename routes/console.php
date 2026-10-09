@@ -14,3 +14,9 @@ Schedule::command('db:backup')
     ->dailyAt(config('backup.time'))
     ->withoutOverlapping()
     ->when(fn () => (bool) config('backup.enabled'));
+
+// AI-3: background itineraries the worker never finished fail and give their credit back.
+Schedule::call(fn () => app(\App\Services\AI\Itinerary\ItineraryPlanService::class)->failStale())
+    ->name('itinerary-plans:fail-stale')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

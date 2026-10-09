@@ -119,6 +119,19 @@ namespace App\Swagger\Schemas\AI;
  *             type="boolean",
  *             description="Was response cached?",
  *             example=false
+ *         ),
+ *         @OA\Property(
+ *             property="narrative",
+ *             type="string",
+ *             enum={"llm", "fallback"},
+ *             description="llm = AI-written texts; fallback = the AI failed and the plan has short factual texts",
+ *             example="llm"
+ *         ),
+ *         @OA\Property(
+ *             property="credit_used",
+ *             type="boolean",
+ *             description="Paid multi-day plans only: whether a credit was used (false for a fallback plan; the credit was given back)",
+ *             example=true
  *         )
  *     )
  * )

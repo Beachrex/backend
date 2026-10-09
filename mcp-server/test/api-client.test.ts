@@ -4,7 +4,7 @@ import { mockFetch } from './helpers.js';
 import * as fx from './fixtures.js';
 import {
   searchBeaches, findBeachesNearby, findBeachByName, getBeachDetails, getBeachFilters,
-  getBeachWeather, mercatorRadiusKm, haversineKm, beachUrl, slugify, MAX_LIMIT,
+  getBeachWeather, mercatorRadiusKm, haversineKm, beachUrl, slugify, MAX_LIMIT, imageUrl, imageThumbUrl, nameKey,
 } from '../src/api-client.js';
 import {
   formatSearch, formatNearby, formatDetails, formatNameSearch, formatFilters, formatWeather,
@@ -113,6 +113,12 @@ describe('search_beaches', () => {
     assert.match(text, /\*\*Beach Bajlo\*\* \(Zadar, Croatia\)/);
   });
 
+  test('every API call identifies the MCP server (not counted as a beach page view)', async () => {
+    m.on('/beaches', { data: [] });
+    await searchBeaches({}, 'en');
+    assert.equal(m.calls[0].headers['X-Beachrex-Client'], 'mcp');
+  });
+
   test('default limit is 20', async () => {
     m.on('/beaches', { data: [] });
     const r = await searchBeaches({}, 'en');
@@ -146,6 +152,26 @@ describe('name lookup through /search', () => {
     const text = formatDetails(d);
     assert.match(text, /closest match/);
     assert.match(text, /Zlatna luka/);
+  });
+
+  test('"Zlatni rat" matches "Beach Zlatni Rat" exactly (owner feedback 2026-10-07)', async () => {
+    m.on('/beach-details/zlatni-rat', fx.notFound, 404)
+      .on('/search', fx.searchResponse([fx.searchBeach({ id: 126, name: 'Beach Zlatni Rat' })]))
+      .on('/beach-details/126', fx.beachDetails());
+    const d = await getBeachDetails('Zlatni rat', 'en');
+    assert.equal(d.match.kind, 'exact');
+    assert.doesNotMatch(formatDetails(d), /closest match|No beach is named exactly/);
+  });
+
+  test('nameKey ignores case, diacritics and a leading or trailing beach word', () => {
+    for (const name of ['Beach Zlatni Rat', 'Plaža Zlatni rat', 'zlatni rat', 'ZLATNI RAT beach', 'Spiaggia Zlatni Rat']) {
+      assert.equal(nameKey(name), 'zlatni rat', name);
+    }
+    assert.equal(nameKey('Čiovo'), 'ciovo');
+    // A name that is only the generic word keeps it; inner words are kept.
+    assert.equal(nameKey('Beach'), 'beach');
+    assert.equal(nameKey('Long Beach Bay'), 'long beach bay');
+    assert.notEqual(nameKey('Zlatni rat Mini'), nameKey('Zlatni rat'));
   });
 
   test('several beaches with the same name are listed', async () => {
@@ -317,5 +343,21 @@ describe('helpers', () => {
   test('haversine sanity: Split -> Zadar ≈ 118 km', () => {
     const d = haversineKm(43.5081, 16.4402, 44.1197, 15.2319);
     assert.ok(d > 115 && d < 122, String(d));
+  });
+});
+
+describe('image URLs (Imagor only, TASK-002)', () => {
+  test('ASCII paths go through Imagor', () => {
+    assert.equal(
+      imageUrl('img/beaches/hr-540-k-odalmacija/hr-540-k-odalmacija-sl9.jpg'),
+      `${CDN}img/beaches/hr-540-k-odalmacija/hr-540-k-odalmacija-sl9.jpg`,
+    );
+  });
+
+  test('non-ASCII paths get no URL and never a Spaces link', () => {
+    // The old non-ASCII keys were deleted (TASK-002 step 6); such a path cannot resolve.
+    assert.equal(imageUrl('img/beaches/hr-114-o-brač/hr-114-o-brač-sl17.jpg'), '');
+    assert.equal(imageThumbUrl('img/beaches/hr-114-o-brač/x.jpg'), '');
+    assert.equal(imageUrl('img/beaches/hr-114-o-brac\u030C/x.jpg'), '', 'NFD form too');
   });
 });

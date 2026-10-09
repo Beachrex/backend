@@ -185,6 +185,8 @@ async function apiCall<T = any>(path: string, params?: Params, locale?: string):
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Accept-Language': normalizeLocale(locale),
+    // Identifies the MCP server, so AI lookups are not counted as beach page views.
+    'X-Beachrex-Client': 'mcp',
   };
   if (c.apiKey) headers.Authorization = `Bearer ${c.apiKey}`;
   const response = await fetch(url, { headers, signal: AbortSignal.timeout(c.timeoutMs) });
@@ -216,7 +218,11 @@ function str(v: any): string {
 function cdn(base: string, relPath: string | null | undefined): string {
   if (!relPath) return '';
   if (/^https?:\/\//i.test(relPath)) return relPath;
-  return `${base.endsWith('/') ? base : `${base}/`}${relPath.replace(/^\/+/, '')}`;
+  const path = relPath.replace(/^\/+/, '');
+  // Since TASK-002 every storage key is ASCII and the old non-ASCII keys are deleted, so a non-ASCII
+  // path cannot resolve. Return no URL rather than a broken one. All images come from Imagor.
+  if (!/^[\x00-\x7F]*$/.test(path)) return '';
+  return `${base.endsWith('/') ? base : `${base}/`}${path}`;
 }
 export function imageUrl(relPath: string | null | undefined): string { return cdn(cfg().cdnBase, relPath); }
 export function imageThumbUrl(relPath: string | null | undefined): string { return cdn(cfg().cdnThumb, relPath); }
@@ -236,9 +242,21 @@ export function slugify(s: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Name comparison key: case- and diacritics-insensitive. */
-function nameKey(s: string): string {
-  return slugify(s).replace(/-/g, ' ');
+/**
+ * Generic "beach" words (slugified) that legacy names carry as a prefix or suffix,
+ * e.g. "Beach Zlatni Rat" in every locale, "Plaža Zlatni rat", "Spiaggia dei Conigli".
+ */
+const BEACH_WORDS = new Set(['beach', 'plaza', 'plaz', 'plazha', 'plage', 'playa', 'praia', 'spiaggia', 'strand', 'paralia']);
+
+/**
+ * Name comparison key: case- and diacritics-insensitive, ignoring a leading or trailing
+ * generic beach word, so "Zlatni rat" matches "Beach Zlatni Rat" and "Plaža Zlatni rat".
+ */
+export function nameKey(s: string): string {
+  const words = slugify(s).split('-').filter(Boolean);
+  if (words.length > 1 && BEACH_WORDS.has(words[0])) words.shift();
+  if (words.length > 1 && BEACH_WORDS.has(words[words.length - 1])) words.pop();
+  return words.join(' ');
 }
 
 /**
@@ -619,7 +637,8 @@ export function mapBeachDetail(b: any, locale?: string): BeachDetail {
     }, loc),
     media: gallery
       .filter((m) => m?.url)
-      .map((m) => ({ url: imageUrl(m.url), is_primary: Boolean(m.is_primary) })),
+      .map((m) => ({ url: imageUrl(m.url), is_primary: Boolean(m.is_primary) }))
+      .filter((m) => m.url),
   };
 }
 

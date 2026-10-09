@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Api\V1\FilterController;
 use App\Http\Controllers\Api\V1\FirstPageContentController;
 use App\Http\Controllers\Api\V1\BeachDetailsController;
 use App\Http\Controllers\Api\V1\SlugResolverController;
+use App\Http\Controllers\Api\V1\LegacyRedirectController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\StaticPageController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriberController;
@@ -67,8 +69,11 @@ Route::prefix('api/v1')
         Route::get('/health', HealthController::class);
 
         // Traditional email/password auth
-        Route::post('/register', [AuthController::class, 'register']);
-        Route::post('/login', [AuthController::class, 'login']);
+        // Throttled per IP: password guessing and mass sign-ups (B-M2, the app signs in with e-mail + password)
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+        Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:5,1');
+        Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
 
         // Google OAuth routes (public, rate limited)
         Route::prefix('auth/google')->middleware('throttle:10,1')->group(function () {
@@ -82,6 +87,7 @@ Route::prefix('api/v1')
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::post('/auth/logout', [GoogleAuthController::class, 'logout']);
             Route::get('/me', [GoogleAuthController::class, 'me']);
+            Route::delete('/me', [AuthController::class, 'destroy']);
             Route::get('/user', [UserController::class, 'show']);
 
             // Data-mutating routes (admin only - any visitor can get a token via register/Google)
@@ -108,6 +114,10 @@ Route::prefix('api/v1')
         Route::get('/beaches/footer', [BeachController::class, 'footerMostVisited']);
         Route::get('/beaches', [BeachController::class, 'index']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
+        // Beach page view from the browser (public, rate limited, one per visitor per 30 min)
+        Route::post('/beaches/{id}/view', [\App\Http\Controllers\Api\V1\BeachViewController::class, 'store'])
+            ->whereNumber('id')
+            ->middleware('throttle:60,1');
 
         // Beach Details routes - comprehensive beach information for detail pages
         Route::get('/beach-details/{identifier}', [BeachDetailsController::class, 'show']);
@@ -116,11 +126,17 @@ Route::prefix('api/v1')
         // Slug Resolver - determine entity type from slug
         Route::get('/resolve-slug/{slug}', [SlugResolverController::class, 'resolve']);
 
+        // Old beachrex.com URLs → new pages (TASK-004 step 5b)
+        Route::get('/legacy-redirect', [LegacyRedirectController::class, 'resolve']);
+
         // Continent routes
         Route::get('/continents', [ContinentController::class, 'index']);
         Route::get('/continents/{code}', [ContinentController::class, 'show']);
 
         // Country routes
+        // B-M1: mobile app versions, store links and feature flags
+        Route::get('/app-config', [\App\Http\Controllers\Api\V1\AppConfigController::class, 'show']);
+
         Route::get('/countries', [CountryController::class, 'index']);
         Route::get('/countries/{codeOrSlug}', [CountryController::class, 'show']);
         Route::get('/countries/{codeOrSlug}/weather', [CountryController::class, 'weather']);
@@ -263,11 +279,16 @@ Route::prefix('api/v1')
                 // Itinerary endpoint (PRIMARY REVENUE - multi-day trip planning)
                 Route::post('/itineraries', [\App\Http\Controllers\AI\ItineraryController::class, 'generate']);
 
+                // AI-3: paid itinerary generated in the background (worker_<env>), kept for "My plans"
+                Route::middleware('auth:sanctum')->post('/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'store']);
+
                 // Test endpoint (for testing middleware stack)
                 Route::post('/test', [TestController::class, 'chat']);
             });
 
         // Payment routes (Stripe integration)
+        Route::get('/payments/products', [\App\Http\Controllers\Payment\CheckoutController::class, 'products']);
+
         Route::prefix('payments/stripe')->group(function () {
             // Checkout endpoint (requires authentication)
             Route::middleware('auth:sanctum')->post('/checkout', [\App\Http\Controllers\Payment\CheckoutController::class, 'create']);
@@ -278,4 +299,13 @@ Route::prefix('api/v1')
 
         // User entitlements endpoint (requires authentication)
         Route::middleware('auth:sanctum')->get('/me/entitlements', [\App\Http\Controllers\Payment\EntitlementController::class, 'index']);
+        // B-M3: saved beaches (app + website)
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/me/favorites', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'index']);
+            Route::get('/me/favorites/ids', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'ids']);
+            Route::post('/me/favorites', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'store']);
+            Route::delete('/me/favorites/{beachId}', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'destroy'])->whereNumber('beachId');
+        });
+        Route::middleware('auth:sanctum')->get('/me/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'index']);
+        Route::middleware('auth:sanctum')->get('/me/itinerary-plans/{id}', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'show'])->whereUuid('id');
     });

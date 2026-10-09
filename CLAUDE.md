@@ -1,5 +1,7 @@
 # Beachrex backend — agent instructions
 
+**Role:** if the owner says you are the **mobile agent**, read `docs/AGENT-ROLES.md` and `docs/mobile/MOBILE-PLAN.md` first and work in `Beachrex/mobile-app`. Otherwise you are the **web agent** (this repo and web-client).
+
 Before any task, read:
 1. `docs/HANDOFF.md` — current state, working mode, bootstrap, next steps
 2. `docs/DEVELOPMENT-RULES.md` — how we work (git, tests, docs, security)

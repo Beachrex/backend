@@ -170,6 +170,13 @@ class PostGISController extends Controller
      *         @OA\Schema(type="string", example="urban,rural")
      *     ),
      *     @OA\Parameter(
+     *         name="pool_type",
+     *         in="query",
+     *         description="Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="indoor")
+     *     ),
+     *     @OA\Parameter(
      *         name="has_swimming_pool",
      *         in="query",
      *         description="Filter by swimming pool availability (boolean)",
@@ -573,6 +580,13 @@ class PostGISController extends Controller
      *         description="Filter by area description code(s) or ID(s). Supports: single value (area_description=urban), comma-separated (area_description=urban,rural), or array (area_description[]=urban&area_description[]=rural). Can mix codes and IDs.",
      *         required=false,
      *         @OA\Schema(type="string", example="urban,rural")
+     *     ),
+     *     @OA\Parameter(
+     *         name="pool_type",
+     *         in="query",
+     *         description="Filter by pool type: indoor and/or outdoor (comma-separated, e.g. pool_type=indoor,outdoor matches either). Based on indoor_pools_count / outdoor_pools_count > 0.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="indoor")
      *     ),
      *     @OA\Parameter(
      *         name="has_swimming_pool",

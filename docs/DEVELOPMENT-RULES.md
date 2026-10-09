@@ -16,6 +16,9 @@ Rules for anyone (human or AI agent) changing the Beachrex backend (`Beachrex/ba
 | Owner | David Tacer | Product decisions, accounts, secrets, VPS/DNS/server actions, anything on uat/prod, anything irreversible |
 | CTO + implementer | AI agent (Claude Code) | Plans, ADRs, implementation, tests, docs, PRs to `dev`, merging green PRs to `dev`, verifying the dev deploy |
 
+Two agent roles share these rules: the **web agent** (backend + web-client, default) and the **mobile agent**
+(`Beachrex/mobile-app`, when the owner says so). Scope and boundaries: [`docs/AGENT-ROLES.md`](AGENT-ROLES.md).
+
 **Mode B (autonomous)** is in use. Standing permissions are recorded in `docs/HANDOFF.md` with date and the
 owner's words. Promotion `dev → uat → main` happens **only when the owner asks for it** in the conversation.
 
@@ -44,6 +47,7 @@ uat/prod, anything irreversible. Everything else it decides, does and documents.
 | `DEV_HANDOFF.md` (both repos) | Dated change log: what changed, affected endpoints, how to test |
 | `docs/tasks/TASK-XXX-*.md` | Task specs + `TASK-XXX.feedback.md` with real outputs (for non-trivial tasks) |
 | `docs/runbooks/*.md` | Rare step-by-step procedures (prod launch, restore a backup) |
+| `docs/qa/dev-review-tracker.md` | Tester findings from the owner's spreadsheet: verdict, fix PR, retest status per row |
 | `docs/deployment/DEPLOYMENT_GUIDE.md` | Infrastructure as it is today (VPS, CI/CD, env isolation) |
 
 Rules:
@@ -63,6 +67,7 @@ Rules:
 3. **Prove** — run every check; real outputs go in the feedback file / PR.
 4. **Document** — `DEV_HANDOFF.md`, technical docs, OpenAPI, HANDOFF (§7).
 5. **Ship** — PR → CI green → merge to `dev` → verify the Deploy run for the merge SHA → note "Live on dev".
+6. **QA rows** — a fix for a row of the dev review tracker (`docs/qa/dev-review-tracker.md`) references `QA #<row>` in the PR and, after the dev deploy, sets the row to **Retest** with the PR and deploy run.
 
 A task that needs an owner step (secret, server, DNS) stays **PARTIAL** until the owner confirms it.
 
@@ -133,10 +138,17 @@ Every PR updates, in the same PR:
 - Branch → environment: `dev → dev`, `uat → uat`, `main → prod`, deployed by `.github/workflows/deploy.yml`.
 - `NEXT_PUBLIC_*` values are baked in at frontend build time; everything else is runtime env.
 - **Migrations are backward compatible** (expand → migrate → contract). Never edit an applied migration.
+- **API compatibility (owner, 2026-10-09, mobile app):** once the app is in a store, `/api/v1` changes are additive
+  only (new fields/endpoints; no removed or renamed fields, no changed types or meanings). Installed apps cannot be
+  forced to update. A breaking change needs `/api/v2` or a phased plan with an ADR.
 - **Caching:** never cache Eloquent models — cache `Resource::...->resolve()` arrays. Every cached model
   needs invalidation on save/delete.
 - **Locales:** never hardcode a locale list — use `SetLocaleFromHeader::SUPPORTED_LOCALES` (DB code `sl`,
   frontend URL code `si`).
+- **Visibility (owner, 2026-10-08):** only the production website (`beachrex.com`) may be visible to search engines,
+  AI crawlers or anyone else. dev and uat frontends: `robots.txt` `Disallow: /`, `X-Robots-Tag: noindex` and meta
+  `noindex`; no analytics, ads or `llms.txt`. The backend (API, admin, docs) is never indexed on any environment
+  (`NoIndex` middleware + `robots.txt`). Any new environment or domain starts hidden.
 - Backups: daily `db:backup` to a private bucket (see HANDOFF for status) + Hetzner server backups.
   A restore drill is done at least once (`docs/runbooks/restore-backup.md`).
 - Irreversible data steps (prod DB load, data migrations on prod): dry run → real run → verification,
