@@ -59,13 +59,22 @@ BASE_URL=http://localhost:9 npx playwright test e2e/*.unit.spec.ts --project=chr
 |---|---|---|---|---|
 | dev | `dev` | https://dev.beachrex.com | https://dev-api.beachrex.com | https://dock-dev.beachrex.com |
 | uat | `uat` | https://uat.beachrex.com | https://uat-api.beachrex.com | https://dock-uat.beachrex.com |
-| prod | `main` | beachrex.com — **not live** (old site, DNS points elsewhere) | api.beachrex.com — not live | dock.beachrex.com |
+| prod | `main` | beachrex.com — **not live** (old site, DNS points elsewhere) | https://api.beachrex.com — **live since 2026-10-09** (no web client yet) | dock.beachrex.com |
 
 MCP server: only on dev (`https://mcp-dev.beachrex.com/mcp`).
 **Cloudflare proxy is on** (orange cloud) for the dev/uat sites and APIs (checked 2026-10-09); owner keeps it on (global visitors, DDoS protection). Nginx takes the visitor IP from `CF-Connecting-IP` for Cloudflare's ranges only (`deploy/nginx/beachrex.conf`); if Cloudflare publishes new ranges, update that list. Sessions: `SESSION_DRIVER=database` in all three env files (owner, 2026-10-09).
-There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT DB (see the prod launch runbook).
+There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see below); it can be reloaded before real users write to it.
+**Host nginx (fixed 2026-10-09):** `/etc/nginx/sites-available/beachrex` is now a symlink to `/opt/beachrex/deploy/nginx/beachrex.conf`, so every deploy's `deploy/` sync plus `nginx reload` applies the repo file. Before that it was a stale copy from 2026-09-11: the nginx changes of session 8 (rate limit, gzip, keepalive, Cloudflare real IP, HTTP/2) were only live from 2026-10-09 22:31. Backup of the old copy: `/root/nginx-beachrex-live-20261009.conf`. Each deploy syncs `deploy/` from **its own branch**, so nginx follows whichever environment deployed last; keep `deploy/nginx` the same on dev, uat and main.
 
 ## Done
+
+- 2026-10-09 (session 9): **`api.beachrex.com` live** (owner: "usposobiti moramo api.beachrex.com"; runbook `prod-launch.md` "API first"):
+  - backend promoted dev → uat → main (Beachrex/backend#97, #99; nginx #98 → #100 → #101), all deploy runs green;
+  - owner option (a): the dev DB was copied to uat and prod (uat backup `/root/beachrex_uat-before-promote-20261009.dump`); counts 3 774 beaches / 43 335 media / 4 users on all three; API tokens deleted on prod;
+  - `.env.prod` fixed: `SCOUT_PREFIX=prod_`, `SANCTUM_STATEFUL_DOMAINS`, `SESSION_SECURE_COOKIE`, `SESSION_COOKIE`;
+  - Let's Encrypt certificate `api.beachrex.com` (expires 2027-01-07, auto-renew), Cloudflare proxy on;
+  - verified on the server: health `revision` = the main merge SHA, `backup.enabled: false`.
+  - Still open for prod: `BACKUP_*` in `.env.prod`, Stripe test/live decision (`STRIPE_ENABLED=true` now), Google OAuth redirect URI (A3), UptimeRobot monitor.
 
 - 2026-10-07: the owner set `OPENAI_MODEL=gpt-4o-mini` in `.env.dev` and `.env.uat`.
 - 2026-10-07 (session 2, work order items 1–5):
