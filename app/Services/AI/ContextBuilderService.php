@@ -27,7 +27,7 @@ class ContextBuilderService
      * Max beaches per tier (HARD LIMITS)
      */
     public const MAX_BEACHES = [
-        'free' => 5,
+        'free' => 6,
         'basic' => 10,
         'premium' => 20,
         'enterprise' => 50,
@@ -43,11 +43,24 @@ class ContextBuilderService
      * Rough estimation: 1 token ≈ 4 characters
      */
     private const MAX_CONTEXT_TOKENS = [
-        'free' => 1000,      // ~4000 characters
+        'free' => 3000,      // ~12000 characters (1000 cut the free tier to 2-3 beaches)
         'basic' => 2000,     // ~8000 characters
         'premium' => 4000,   // ~16000 characters
         'enterprise' => 8000, // ~32000 characters
     ];
+
+    /**
+     * Relations for a chat beach card: localized name/slug, place slugs for the page URL and the first photo
+     * (same photo order as BeachResource: active, primary first).
+     */
+    private static function cardRelations(): array
+    {
+        return [
+            'translations',
+            'continent.translations', 'country.translations', 'region.translations', 'island.translations', 'city.translations',
+            'media' => fn ($query) => $query->where('status_id', 1)->orderBy('is_primary', 'desc')->orderBy('order')->orderBy('created_at'),
+        ];
+    }
 
     public function __construct(
         private WeatherService $weatherService,
@@ -190,7 +203,7 @@ class ContextBuilderService
             ->where('status_id', 1)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->with(['continent.translations', 'country.translations', 'region.translations', 'island.translations', 'city.translations'])
+            ->with(self::cardRelations())
             ->orderBy('beach_views', 'desc')
             ->limit($limit);
 
@@ -219,7 +232,7 @@ class ContextBuilderService
         }
         $models = Beach::query()
             ->whereIn('id', $ids)
-            ->with(['continent.translations', 'country.translations', 'region.translations', 'island.translations', 'city.translations'])
+            ->with(self::cardRelations())
             ->get()
             ->keyBy('id');
 
@@ -300,18 +313,27 @@ class ContextBuilderService
             $citySlug = $cityTranslation?->slug ?? null;
         }
 
+        // Beach name/slug live in beach_translations (the beach table has no slug), the photo in media:
+        // without these the chat cards had no link and no image.
+        $translation = $beach->relationLoaded('translations')
+            ? ($beach->translations->firstWhere('locale', $locale) ?? $beach->translations->firstWhere('locale', 'en'))
+            : null;
+        $cityTranslation = $beach->city?->translations?->firstWhere('locale', $locale)
+            ?? $beach->city?->translations?->firstWhere('locale', 'en');
+        $mainImage = $beach->relationLoaded('media') ? $beach->media->first()?->file_path : null;
+
         return [
             'id' => $beachArray['id'] ?? null,
-            'name' => $beachArray['name'] ?? null,
-            'slug' => $beachArray['slug'] ?? null,
+            'name' => $translation?->name ?? (is_string($beachArray['name'] ?? null) ? $beachArray['name'] : null),
+            'slug' => $translation?->slug,
             'country_code' => $beachArray['country_code'] ?? null,
-            'city' => $beachArray['city'] ?? null,
+            'city' => $cityTranslation?->name,
             'description' => $description,
             'surface' => $beachArray['surface'] ?? null,
             'facilities' => $beachArray['facilities'] ?? [],
             'distance_km' => null, // ALWAYS null for popularity queries
             'beach_views' => $beachArray['beach_views'] ?? 0,
-            'main_image' => $beachArray['main_image'] ?? null,
+            'main_image' => $mainImage,
             // Location slugs for frontend URL building
             'continent_slug' => $continentSlug,
             'country_slug' => $countrySlug,
@@ -535,13 +557,11 @@ class ContextBuilderService
                 $text .= "You MUST ask the user to share their location.\n\n";
                 $text .= "IMPORTANT: Do NOT compute or mention distance without user location.\n\n";
             } else {
-                // General query without location
-                $text .= "NO LOCATION PROVIDED:\n";
-                $text .= "User has not provided their location. You should either:\n";
-                $text .= "1. Ask the user to share their location for personalized recommendations\n";
-                $text .= "2. Provide general guidance about beaches in the requested area\n";
-                $text .= "3. Suggest popular beaches if user asks for 'best' or 'popular' beaches\n\n";
-                $text .= "IMPORTANT: Do NOT compute or mention distance without user location.\n\n";
+                // Nothing matched or nothing to search for yet (e.g. "hi", a vague question).
+                $text .= "NO BEACHES SELECTED FOR THIS MESSAGE:\n";
+                $text .= "Do not recommend or name any beach. Ask one short question about what the user wants\n";
+                $text .= "(a place or region, sand or pebbles, who is travelling, what they like to do).\n";
+                $text .= "Do not ask for their GPS location unless they asked for beaches near them.\n\n";
             }
         }
 
@@ -556,12 +576,7 @@ class ContextBuilderService
             $text .= "- Humidity: {$weather['humidity']}%\n\n";
         }
 
-        // Available filters
-        $text .= "AVAILABLE FILTERS:\n";
-        $text .= "- Countries: " . implode(', ', array_column($context['filters_available']['countries'], 'name')) . "\n";
-        $text .= "- Surface types: " . implode(', ', $context['filters_available']['surface_types']) . "\n";
-        $text .= "- Facilities: " . implode(', ', $context['filters_available']['facilities']) . "\n";
-        $text .= "- Accessibility: " . implode(', ', $context['filters_available']['accessibility']) . "\n\n";
+        // The code applies the filters (TASK-003); the old hardcoded list (3 countries, 5 facilities) misled the model.
 
         return $text;
     }

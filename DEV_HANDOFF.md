@@ -52,6 +52,28 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - AI chat (AI-1, backend): real beach links and photos, conversation memory, current prompt
+
+### Overview
+Owner: "AI chat ful slabo dela … niti linkov ne da do plaž". Audit causes and fixes (`ChatController`, `ContextBuilderService`):
+
+### Changes Made
+- **Links:** the answer model now returns only `{id, match_score}`; every beach field comes from the database. Before, the model's invented `slug` (the prompt asked for one but never showed it) overwrote the real slug → links missing or 404. `match_score` clamped to 0-1.
+- **Page language:** beach names and URL slugs (`continent_slug … slug`) are in the request's `Accept-Language` (the page), not in the message language, so the website's URL builder gets matching segments. The answer text still follows the message language.
+- **Photos and names:** chat cards get `main_image` (first active photo, like `BeachResource`), the localized beach `name`/`slug` from `beach_translations` and the city name (the popularity path had `slug: null`, `main_image: null`, `city` as an array).
+- **Memory:** a session continues while active (expiry slides 30 min after the last message) and only for the same signed-in user; an expired/foreign session starts a new one instead of 410. Assistant turns in the history carry `[Beaches shown: Name (id …)]` so "the second one" works.
+- **Prompt:** current catalogue size from the DB (e.g. "3,700+ beaches in N countries", cached 1 h) instead of "2,445+ beaches across Croatia, Slovenia, and Montenegro"; recommended beach names verbatim in `message` (the website links them), never URLs; short concrete answers; honest "nothing fits" + one question. The stale "AVAILABLE FILTERS" list and the "ask for the GPS location" text for ordinary questions were removed. Answer call in JSON mode, temperature 0.4.
+- **Free tier context:** 6 beaches and ~3000 tokens (was 5 and 1000, which truncated to 2-3 beaches).
+- **Accessibility questions** are answered for everyone (were 402 for everyone; owner).
+- **Errors:** provider rate limit / quota / timeout → `503 {"error":"ai_unavailable"}` + `Retry-After: 60` (was a generic 500).
+- Model config: `ai.providers.openai.default_model` (the read key `ai.llm.default_model` did not exist; the provider fallback hid it).
+- OpenAPI description of `POST /ai/chat` updated (session, language, 503).
+
+### Testing
+`tests/Feature/AI/ChatAnswerQualityTest.php` (8, all fail on the old code): real slugs/names/photo in the page language despite a made-up model slug; prompt current and "never write URLs"; session continues and history lists shown beaches; expired session → new one (no 410); sliding expiry; another user's session not continued; accessibility 200 for anonymous; provider rate limit → 503. `ContextBuilderTest` updated (6 beaches, no "AVAILABLE FILTERS"). Full suite: only the 4 known environment-dependent failures. Not run: a real OpenAI call (owner checks on dev after the web part).
+
+---
+
 ## 2026-10-09 - Nginx: real visitor IP behind Cloudflare
 
 ### Overview

@@ -51,7 +51,7 @@ class QueryUnderstandingService
         try {
             $response = $this->llm->chatCompletion(new ChatCompletionRequest(
                 messages: $messages,
-                model: config('ai.llm.default_model'),
+                model: config('ai.providers.openai.default_model'),
                 temperature: 0.0,
                 maxTokens: 300,
                 responseFormat: [
