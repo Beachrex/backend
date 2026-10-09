@@ -12,7 +12,6 @@ and what is needed to bring it back. When a feature is built, move its row to "B
 | H3 | Accommodation (home) | Home: accommodations button, `HomeAccommodationSection` CTA, hero stat "+6250 accommodations" | `src/app/[locale]/page.tsx`, `Home/HomeAccommodationSection.tsx`, `Home/HeroSection.tsx`, `messages/*.json` | 404 / fake number | Same as H1, plus a real count from the API | TASK-004 (PR tbd) |
 | H4 | Accommodation (footer) | Footer browse column `/accommodations` | `messages/*.json` `Footer.browse.links` | 404 | Same as H1 | TASK-004 (PR tbd) |
 | H5 | Accommodation sections on pages | Beach, city, region, island, country pages ("Apartma Pehta", "569 accommodations") | `AccommodationCard/AccommodationsSection.tsx`, `Pages/BeachDetailPage.tsx`, listing pages | Fake data | Same as H1 | TASK-004 (PR tbd) |
-| H6 | Favorites | Top bar heart button | `src/components/Header/TopBar.tsx` | Button without action | Favorites API (per user) + UI | TASK-004 (PR tbd) |
 | H7 | My account | Top bar account button | `src/components/Header/TopBar.tsx` | Button without action | Account page (profile, AI credits, purchases, favorites, sign-out) | TASK-004 (PR tbd) |
 | H8 | Shop | Header search bar "Shop" icon | `src/components/Header/SearchBar.tsx` | Button without action | Shop concept and route | TASK-004 (PR tbd) |
 | H9 | Blog | Home "Blog" button → `/blog` | `src/app/[locale]/page.tsx`, `Home/ExploreSection.tsx` | No route (404) | Blog (CMS posts in 19 locales) and a route | TASK-004 (PR tbd) |
@@ -20,10 +19,11 @@ and what is needed to bring it back. When a feature is built, move its row to "B
 | H11 | Beach type pages | `/beach-type`, `/beach-type/[type]` (stub, debug heading) | `src/app/[locale]/beach-type/**`, `src/app/sitemap/static.xml` | Placeholder content | Real pages built on the map/search filters | TASK-004 (PR tbd): removed from the sitemap, `noindex` |
 | H12 | User type pages | `/user-type`, `/user-type/[type]` (stub) | `src/app/[locale]/user-type/**`, `src/app/sitemap/static.xml` | Placeholder content | Define user types (families, surfers, …) and their content | TASK-004 (PR tbd): removed from the sitemap, `noindex` |
 | H13 | Map quick filters: free beach, parking nearby, wide beach, naturist beach | Beach map sidebar tiles (design "basic filters") | web-client `src/config/mapQuickFilters.ts` | Free beach, parking nearby and wide beach have no backend filter; naturist (`location_infrastructure.naturist_friendly`) has no icon | Backend filters (free entry, parking distance, beach width) and icons in `public/images/categories/` | Map quick filters PR (2026-10-08) |
-| H14 | Beach banner: Google ratings and save | Beach page banner buttons "Google ocene 7.2" and "shrani" | web-client `src/components/Beach/BeachBanner/TopBarBeachRight.tsx` | Rating was a hardcoded 7.2; save needs favorites (H-favorites) | Real Google rating source (Places API) and favorites | web-client share menu PR (2026-10-08) |
+| H14 | Beach banner: Google ratings | Beach page banner button "Google ocene 7.2" (save is back, see H6) | web-client `src/components/Beach/BeachBanner/TopBarBeachRight.tsx` | Rating was a hardcoded 7.2 | Real Google rating source (Places API) | web-client share menu PR (2026-10-08) |
 | H15 | City page category tiles | City page tiles "Peščene plaže, Kamnite plaže, Bazen, Tobogani, Primerne za pse, …" (`FEATURES.cityCategoryTiles`) | web-client `src/components/CityPage/CityCategories.tsx`, `src/components/Pages/CityListingPage.tsx` | No click action at all (owner 2026-10-09) | Each tile sets the matching filter of the "Browse all beaches" list (server-side filters, see `GET /beaches`) | Beachrex/web-client#52 |
 
 ## Brought back
 
 | # | Feature | PR |
 |---|---|---|
+| H6 (+ H14 save) | Favorites: top bar heart → `/{locale}/favorites`, hearts on beach cards, "Save" in the beach banner (owner 2026-10-09). API: `/api/v1/me/favorites` (Beachrex/backend#85) | Beachrex/web-client#63 |
