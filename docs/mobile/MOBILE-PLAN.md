@@ -136,7 +136,7 @@ The API is public for everything v1 needs; no token.
 | Map | `spatial/beaches/bounding-box?min_lat&min_lon&max_lat&max_lon&…filters`, `beaches/map-bounds`, `spatial/beaches/density-grid` (zoomed out) |
 | Filters | `beaches/filters?continent_code&country&region&island` (labels and options, localized) |
 | Lists | `beaches?…filters&limit` (cards carry `features`: beach type, family, adventurer, youth, parking) |
-| Beach page | `beach-details/{identifier}`, `beach-details/{identifier}/weather` (weather + sea temperature), `spatial/beaches/within-radius` (similar beaches nearby) |
+| Beach page | `beach-details/{identifier}` (counts a view unless `X-Beachrex-Client` is sent; or `POST beaches/{id}/view`), `beach-details/{identifier}/weather` (weather + sea temperature), `spatial/beaches/within-radius` (similar beaches nearby) |
 | Places | `continents/{code}`, `countries/{codeOrSlug}`, `regions/{slug}`, `islands/{slug}`, `cities/{slug}` (+ `/weather`), `regions?country_code`, `islands?…`, `cities?…` |
 | CMS pages | `static-pages`, `static-pages/{slug}` |
 | Old links | `legacy-redirect?path=` (old beachrex.com URLs opened in the app) |

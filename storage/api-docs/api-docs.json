@@ -2398,6 +2398,39 @@
                 }
             }
         },
+        "/api/v1/beaches/{id}/view": {
+            "post": {
+                "tags": [
+                    "Beaches"
+                ],
+                "summary": "Count a beach page view",
+                "description": "Called by the browser when a visitor opens a beach page. One view per visitor (IP) and beach per 30 minutes is counted; repeated calls return 204 without counting. Rate limited (60/min per IP).",
+                "operationId": "countBeachView",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Beach ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 123
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Counted (or already counted for this visitor)"
+                    },
+                    "404": {
+                        "description": "No active beach with this ID"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                }
+            }
+        },
         "/api/v1/cities": {
             "get": {
                 "tags": [

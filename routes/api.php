@@ -109,6 +109,10 @@ Route::prefix('api/v1')
         Route::get('/beaches/footer', [BeachController::class, 'footerMostVisited']);
         Route::get('/beaches', [BeachController::class, 'index']);
         Route::get('/beaches/{id}', [BeachController::class, 'show']);
+        // Beach page view from the browser (public, rate limited, one per visitor per 30 min)
+        Route::post('/beaches/{id}/view', [\App\Http\Controllers\Api\V1\BeachViewController::class, 'store'])
+            ->whereNumber('id')
+            ->middleware('throttle:60,1');
 
         // Beach Details routes - comprehensive beach information for detail pages
         Route::get('/beach-details/{identifier}', [BeachDetailsController::class, 'show']);
