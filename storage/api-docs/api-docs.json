@@ -9320,14 +9320,55 @@
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "brac"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Brač"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized island slug",
+                                                                "type": "string",
+                                                                "example": "brac"
+                                                            },
+                                                            "country_code": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "country_name": {
+                                                                "type": "string",
+                                                                "example": "Croatia"
+                                                            },
+                                                            "region_name": {
+                                                                "type": "string",
+                                                                "example": "Dalmatia - Split"
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "img/islands/brac.jpg",
+                                                                "nullable": true
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "island"
+                                                            },
                                                             "continent_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             },
                                                             "country_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             },
                                                             "region_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
@@ -9338,11 +9379,47 @@
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "dalmatia-split"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Dalmatia - Split"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized region slug",
+                                                                "type": "string",
+                                                                "example": "dalmatia-split"
+                                                            },
+                                                            "country_code": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "country_name": {
+                                                                "type": "string",
+                                                                "example": "Croatia"
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "img/regions/dalmacija.jpg",
+                                                                "nullable": true
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "region"
+                                                            },
                                                             "continent_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             },
                                                             "country_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
@@ -9353,8 +9430,48 @@
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 7
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "iso3": {
+                                                                "type": "string",
+                                                                "example": "HRV",
+                                                                "nullable": true
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Croatia"
+                                                            },
+                                                            "slug": {
+                                                                "description": "Localized country slug",
+                                                                "type": "string",
+                                                                "example": "croatia"
+                                                            },
+                                                            "continent_code": {
+                                                                "type": "string",
+                                                                "example": "EU"
+                                                            },
+                                                            "continent_name": {
+                                                                "type": "string",
+                                                                "example": "Europe"
+                                                            },
+                                                            "main_image": {
+                                                                "type": "string",
+                                                                "example": "img/countries/croatia.jpg",
+                                                                "nullable": true
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "country"
+                                                            },
                                                             "continent_slug": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"

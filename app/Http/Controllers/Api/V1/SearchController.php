@@ -130,9 +130,18 @@ class SearchController extends Controller
      *                     type="array",
      *                     description="Island results with localized slugs for URL building",
      *                     @OA\Items(
-     *                         @OA\Property(property="continent_slug", type="string"),
-     *                         @OA\Property(property="country_slug", type="string"),
-     *                         @OA\Property(property="region_slug", type="string")
+     *                         @OA\Property(property="id", type="integer", example=2),
+     *                         @OA\Property(property="code", type="string", example="brac"),
+     *                         @OA\Property(property="name", type="string", example="Brač"),
+     *                         @OA\Property(property="slug", type="string", example="brac", description="Localized island slug"),
+     *                         @OA\Property(property="country_code", type="string", example="HR"),
+     *                         @OA\Property(property="country_name", type="string", example="Croatia"),
+     *                         @OA\Property(property="region_name", type="string", example="Dalmatia - Split"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="img/islands/brac.jpg"),
+     *                         @OA\Property(property="type", type="string", example="island"),
+     *                         @OA\Property(property="continent_slug", type="string", nullable=true),
+     *                         @OA\Property(property="country_slug", type="string", nullable=true),
+     *                         @OA\Property(property="region_slug", type="string", nullable=true)
      *                     )
      *                 ),
      *                 @OA\Property(
@@ -140,8 +149,16 @@ class SearchController extends Controller
      *                     type="array",
      *                     description="Region results with localized slugs for URL building",
      *                     @OA\Items(
-     *                         @OA\Property(property="continent_slug", type="string"),
-     *                         @OA\Property(property="country_slug", type="string")
+     *                         @OA\Property(property="id", type="integer", example=1),
+     *                         @OA\Property(property="code", type="string", example="dalmatia-split"),
+     *                         @OA\Property(property="name", type="string", example="Dalmatia - Split"),
+     *                         @OA\Property(property="slug", type="string", example="dalmatia-split", description="Localized region slug"),
+     *                         @OA\Property(property="country_code", type="string", example="HR"),
+     *                         @OA\Property(property="country_name", type="string", example="Croatia"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="img/regions/dalmacija.jpg"),
+     *                         @OA\Property(property="type", type="string", example="region"),
+     *                         @OA\Property(property="continent_slug", type="string", nullable=true),
+     *                         @OA\Property(property="country_slug", type="string", nullable=true)
      *                     )
      *                 ),
      *                 @OA\Property(
@@ -149,7 +166,16 @@ class SearchController extends Controller
      *                     type="array",
      *                     description="Country results with localized slugs for URL building",
      *                     @OA\Items(
-     *                         @OA\Property(property="continent_slug", type="string")
+     *                         @OA\Property(property="id", type="integer", example=7),
+     *                         @OA\Property(property="code", type="string", example="HR"),
+     *                         @OA\Property(property="iso3", type="string", nullable=true, example="HRV"),
+     *                         @OA\Property(property="name", type="string", example="Croatia"),
+     *                         @OA\Property(property="slug", type="string", example="croatia", description="Localized country slug"),
+     *                         @OA\Property(property="continent_code", type="string", example="EU"),
+     *                         @OA\Property(property="continent_name", type="string", example="Europe"),
+     *                         @OA\Property(property="main_image", type="string", nullable=true, example="img/countries/croatia.jpg"),
+     *                         @OA\Property(property="type", type="string", example="country"),
+     *                         @OA\Property(property="continent_slug", type="string", nullable=true)
      *                     )
      *                 )
      *             ),
