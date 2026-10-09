@@ -12,10 +12,20 @@ promotion and releases), talk to the owner in Slovenian, code/docs/commits in En
 
 ## Boundaries
 
-- The mobile agent does **not** change backend or web-client code. When the app needs an API change, it writes
-  the need into `docs/mobile/MOBILE-TASKS.md` §B (docs-only PR in the backend repo) and tells the owner; the web
-  agent implements it.
+- The mobile agent does **not** change backend or web-client code or docs. When the app needs an API change or a
+  doc update, it tells the owner; the web agent adds it to `docs/mobile/MOBILE-TASKS.md` §B and implements it.
 - The web agent does **not** change the mobile repo. Every `/api/v1` change keeps old fields working
   (additive only) because installed apps cannot be forced to update (`DEVELOPMENT-RULES.md` §9).
-- Both keep `docs/HANDOFF.md` current: the web agent in its sections, the mobile agent in "Mobile app".
+- `docs/HANDOFF.md` is written by the web agent; the "Mobile app" section carries the mobile agent's status as relayed by the owner.
 - The ADR log `docs/ai/implementation/DECISIONS.md` is shared; mobile decisions are titled "Mobile: …".
+
+## Who edits which doc (owner, 2026-10-09: no conflicts between the two agents)
+
+The mobile agent does **not** change the backend repo, not even docs. It sends what must change in the docs to the owner, who passes it to the web agent; the web agent makes the change in a small docs PR into `dev`. So only one agent ever writes in `Beachrex/backend`, and the two agents cannot conflict there.
+
+| Doc | Who writes it | Source of the content |
+|---|---|---|
+| `docs/mobile/MOBILE-PLAN.md`, `docs/mobile/MOBILE-TASKS.md` | Web agent | Mobile agent / owner requests (relayed by the owner); the web agent updates the B-M status itself |
+| `docs/HANDOFF.md` section "Mobile app" | Web agent | Mobile agent status sent through the owner |
+| Every other backend doc (`HANDOFF.md`, `DEV_HANDOFF.md`, `DEVELOPMENT-RULES.md`, runbooks, `DECISIONS.md`) | Web agent | — (mobile ADRs titled "Mobile: …", written on request) |
+| Everything in `Beachrex/mobile-app` (code, `CLAUDE.md`, README, changelog, its own ADR notes) | Mobile agent | — |

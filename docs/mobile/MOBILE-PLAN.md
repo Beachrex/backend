@@ -63,7 +63,7 @@ GetYourGuide, Google ratings, my account).
 | i18n | **use-intl** (the core of next-intl, framework-agnostic) + `expo-localization` | Same ICU message format as the web (`{var}`, single braces); 19 locales |
 | Local storage | **react-native-mmkv** (saved beaches, recent searches, settings, query cache persistence) | Needs a dev build (not Expo Go) |
 | Images | **expo-image** | Disk cache, placeholders, Imagor URLs (§7) |
-| Map | **react-native-maps** (Apple Maps on iOS, Google Maps on Android) + **supercluster** | Android needs a Google Maps API key (owner); MapLibre is the fallback if tile cost/terms become a problem (ADR) |
+| Map | **Leaflet + OpenStreetMap in `react-native-webview`** (same map stack as the website) + **supercluster** | No Google Maps API key needed (owner, 2026-10-09). Navigation still opens Apple / Google Maps via `Linking` |
 | Bottom sheets | **@gorhom/bottom-sheet** | Map list and filters |
 | Lists | **@shopify/flash-list** | Long beach lists |
 | Location | **expo-location** (when-in-use only) | Never background location |
@@ -82,9 +82,9 @@ No other runtime dependency without a reason in the PR (DEVELOPMENT-RULES §10).
 ## 3. Repository and layout
 
 - **Repo:** `Beachrex/mobile-app` (owner creates it on GitHub and adds it to the agent's environment).
-  Branches as in the other repos: `dev` (default), `uat`, `main`. Work branches from `origin/dev`, PR into `dev`.
-- **App identifiers:** iOS bundle ID and Android package `com.beachrex.app` (proposal — owner confirms before the
-  first EAS build; they cannot change after the store listing exists). App name in stores: "BeachRex".
+  Branches: `dev` (default) and `main` (owner, 2026-10-09; no `uat` branch). Work branches from `origin/dev`, PR into `dev`.
+- **App identifiers:** iOS bundle ID and Android package **`com.datavallis.beachrex`** (confirmed by the owner,
+  2026-10-09; they cannot change after the store listing exists). App name in stores: "BeachRex".
 - The repo gets its own `CLAUDE.md` that points here (like `web-client/CLAUDE.md`).
 
 ```
@@ -268,19 +268,19 @@ data stays visible. Haptics on save and filter apply (light). Respect "Reduce mo
 
 | EAS profile | API | Distribution | Channel (EAS Update) | Built from |
 |---|---|---|---|---|
-| `development` | dev | dev client (internal) | — | any branch, by the agent/owner |
-| `preview` | uat (or dev) | internal (TestFlight internal / Play internal testing) | `preview` | `dev` or `uat`, on owner request |
+| `development` | dev | dev client (internal) | — | any branch, built by the owner |
+| `preview` | dev (no uat for the app, owner 2026-10-09) | internal (TestFlight internal / Play internal testing) | `preview` | `dev`, on owner request |
 | `production` | prod | stores | `production` | `main`, **only when the owner asks** |
 
 - `app.config.ts` reads `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_IMAGOR_URL` and `EXPO_PUBLIC_ENV` from the profile.
   `EXPO_PUBLIC_*` values are baked into the bundle — never put secrets there.
-- Secrets (EAS / GitHub only, never in the repo or chat): `EXPO_TOKEN`, Google Maps Android API key, Sentry
-  auth token, Apple / Google service account keys. The agent names them; the owner sets them.
+- Builds run on the owner's computer (`eas build`), so no `EXPO_TOKEN` in CI. Secrets (EAS only, never in the
+  repo or chat): Sentry auth token, Apple / Google service account keys. The agent names them; the owner sets them.
 - **OTA updates** (EAS Update) only for JS/asset changes with the same `runtimeVersion` (policy `appVersion`).
   A native dependency change requires a new build. Never ship an OTA to `production` without the owner's request.
 - Version: `version` (semver, user-visible) in `app.config.ts`; build numbers auto-incremented by EAS
   (`autoIncrement`).
-- dev/uat builds are never public: internal distribution only (DEVELOPMENT-RULES §9 visibility rule).
+- dev builds are never public: internal distribution only (DEVELOPMENT-RULES §9 visibility rule).
 
 ---
 
@@ -338,12 +338,12 @@ labels (beach name + place); focus order checked with VoiceOver/TalkBack by the 
 
 ## 14. Owner actions (accounts and decisions)
 
-1. Create the GitHub repo `Beachrex/mobile-app` (branches `dev`, `uat`, `main`) and add it to the agent's environment.
-2. Expo account / organisation "beachrex"; create `EXPO_TOKEN` and store it as a GitHub Actions secret.
+1. Create the GitHub repo `Beachrex/mobile-app` (branches `dev`, `main`) and add it to the agent's environment.
+2. ~~`EXPO_TOKEN`~~ — not needed: the owner runs EAS builds from the owner's computer (2026-10-09).
 3. Apple Developer Program (organisation account for MOJA PLAŽA, d.o.o., needs a D-U-N-S number) and Google Play
    Console (organisation).
-4. Confirm the bundle ID / package name (`com.beachrex.app` proposed) and the store name.
-5. Google Maps API key restricted to the Android app (package + SHA-1) → EAS secret.
+4. Bundle ID / package name: `com.datavallis.beachrex` (confirmed 2026-10-09); store name "BeachRex".
+5. ~~Google Maps API key~~ — not needed: the map is Leaflet + OpenStreetMap in a WebView (2026-10-09).
 6. Sentry project (or say no to crash reporting) → DSN as `EXPO_PUBLIC_SENTRY_DSN` (public by design), auth token as EAS secret.
 7. Decide later: sign-in (phase 2), paid itineraries via IAP (phase 2), analytics in the app.
 
