@@ -1,5 +1,6 @@
 # Handoff — state as of 2026-10-08 (end of session 7)
 
+> **Two agent roles** ([`AGENT-ROLES.md`](AGENT-ROLES.md)): the **web agent** (default) starts here; the **mobile agent** starts at [`mobile/MOBILE-PLAN.md`](mobile/MOBILE-PLAN.md).
 > **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-08).
 > Session 6 (all **live on dev**, table below): footer pages (MCP connector, media kit) synced on dev, map quick filters, adventurer/party icons, footer redesign, site icons + share images, share menu on beach pages, copyright (terms §6, IPTC in uploads, ImageObject JSON-LD, © line), author page `/{locale}/gregor-balazic`.
 > Session 7 (all **live on dev**, table below): region/island/city pages server-rendered (SEO), audit fixes B9, D5–D7, D12, D13, A4, F1–F4, Organization logo from the brand package.
@@ -182,6 +183,9 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Owner's open actions
 
+- **Old beachrex.com URLs (live on dev since 2026-10-08, Beachrex/backend#46 + Beachrex/web-client#19):** test them on dev now. Take 5–10 real old links (Google Maps, other sites), replace `https://www.beachrex.com` with `https://dev.beachrex.com` and open them: each must end on the same beach/place (308), not the home page or a 404. Send the agent any that land wrong; they become test cases. On beachrex.com they start working at the DNS switch (prod launch runbook D2/D3, check D8). After launch: Google Search Console → submit `https://beachrex.com/sitemap.xml` and watch the "Not found (404)" report for a few weeks.
+- **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** create `Beachrex/mobile-app`, Expo organisation + `EXPO_TOKEN`, Apple Developer (D-U-N-S) and Google Play accounts, confirm bundle ID `com.beachrex.app`, Android Google Maps key, Sentry yes/no.
+
 - **Footer pages on uat/prod:** `static-pages:sync` (dry run first) at promotion (prod launch runbook B6). Dev is synced (2026-10-08).
 - **Copyright backfill:** `php artisan media:embed-copyright --dry-run`, then without `--dry-run`, when the owner decides (rewrites existing JPEG originals on Spaces; best on prod after launch).
 - **Author page photos:** the two photos are 750 px; larger originals (≥1920 px) would sharpen the banner.
@@ -269,6 +273,12 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
    - data quality (beach names with an English "Beach" prefix, missing region translations, about 21% of beaches have a description).
    The sandbox cannot reach `*.beachrex.com` or `beachrex.fra1.digitaloceanspaces.com` (proxy 403), so the page-by-page review needs the owner's screenshots, or the owner adds those hosts under the environment's Allowed domains.
 
+9. **Mobile app** (owner, 2026-10-09): TASK-005, built by the **mobile agent** in `Beachrex/mobile-app` (Expo, React Native, NativeWind, EAS). Plan `docs/mobile/MOBILE-PLAN.md`, tasks `docs/mobile/MOBILE-TASKS.md`. The web agent owns the backend/web tasks the app needs (MOBILE-TASKS §B: `app-config`, native sign-in, favorites API, app-link files) and keeps `/api/v1` additive-only.
+
+## Mobile app
+
+Status: Planned (docs only, 2026-10-09). The mobile agent updates this section (task status, builds, owner checks).
+
 ## Open items (found, not yet scheduled)
 
 - **Security — old user migration (`app/Console/Commands/MigrateUsersFromOldDb.php`), owner decision pending, do not run it:**
@@ -295,4 +305,4 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
 ## Latest numbers
 
-- Next TASK number: TASK-005 (planned: pre-launch review; TASK-001 = itinerary quality, TASK-002 = ASCII storage paths, TASK-003 = chat understanding) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-006 (TASK-001 itinerary quality, TASK-002 ASCII storage paths, TASK-003 chat understanding, TASK-004 pre-launch review, TASK-005 mobile app) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
