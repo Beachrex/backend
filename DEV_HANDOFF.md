@@ -52,6 +52,24 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Dependencies: composer security advisories fixed (74 → 0)
+
+**What changed:** `composer audit` reported 74 advisories in 25 packages (critical/high in phpoffice/phpspreadsheet, league/commonmark, guzzlehttp/guzzle, phpseclib, aws-sdk-php, symfony/http-foundation and symfony/mime, laravel/framework). A `composer update` within the existing `composer.json` constraints (no constraint changed) fixed all of them: **"No security vulnerability advisories found."** 123 locked versions changed, for example:
+- laravel/framework 12.36 → 12.69;
+- filament 3.3.43 → 3.3.56;
+- guzzle 7.10 → 7.15;
+- league/commonmark 2.7 → 2.10;
+- phpspreadsheet 1.30.1 → 1.30.7;
+- stripe-php 19.1 → 19.4.
+
+**Major bumps:** only transitive ones. firebase/php-jwt 6 → 7 and phpseclib 3 → 4 come with laravel/socialite; hamcrest 2 → 3 is dev-only. Our code uses none of them directly.
+
+Filament republished its assets in `public/css|js/filament` (`filament:upgrade` runs in post-update); they are committed with the lock file.
+
+**Tests:** full suite 519 passed; the only failures are the 4 known environment-dependent ones (PlanEnforcementTest ×2, CountrySlugSupportTest weather ×2).
+
+---
+
 ## 2026-10-09 - Selling in the EU (AI-4, part 1): consent at checkout, terms of sale, Stripe Tax and invoice switches
 
 The owner asked the agent to draft and add the withdrawal waiver ("to pripravi in dodaj ti"). The company is VAT-registered in Slovenia.
