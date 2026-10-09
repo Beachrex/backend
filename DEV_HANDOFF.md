@@ -52,6 +52,35 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Selling in the EU (AI-4, part 1): consent at checkout, terms of sale, Stripe Tax and invoice switches
+
+The owner asked the agent to draft and add the withdrawal waiver ("to pripravi in dodaj ti"). The company is VAT-registered in Slovenia.
+
+**What changed**
+- `POST /api/v1/payments/stripe/checkout` now requires `accept_terms: true` and `waive_withdrawal: true` (immediate delivery; the 14-day withdrawal right ends once a plan is created; Directive 2011/83/EU Art. 16(m)). Without them it answers `422 consent_required` and creates no session.
+- The consent (`terms_version`, `terms_accepted_at`, `withdrawal_waiver`, `locale`) is stored on the Stripe session and on the payment intent, and the webhook keeps the whole session on the purchase row as evidence. `customer_email` is prefilled and Checkout runs in the buyer's language (`locale: auto`).
+- The success and cancel URLs now carry the page language (`/si/payment/success`, …), taken from `Accept-Language`.
+- New switches in `config/ai.php` / `.env.example`, off by default until the company's new Stripe account is set up:
+  - `STRIPE_TAX_ENABLED` turns on `automatic_tax`, required billing address and VAT-number collection;
+  - `STRIPE_INVOICES_ENABLED` turns on `invoice_creation` (Stripe e-mails an invoice);
+  - `STRIPE_TERMS_VERSION`.
+  - `StripeService::checkoutSessionParams()` builds the params, so they can be tested without Stripe.
+- Terms of use §5 is rewritten in all 19 languages (`database/content/static-pages/*.json`): seller with address and VAT status, what is bought, price incl. VAT and payment, delivery with automatic return of failed plans, the withdrawal right (unused plan: 14 days, full refund; used plan: waived), complaints within 30 days. "Last updated" is now 9 October 2026.
+  - **The owner should have a lawyer review the text.**
+  - **Apply on dev:** `php artisan static-pages:sync --dry-run`, then without `--dry-run`.
+
+**Tests:** `tests/Feature/Payment/CheckoutConsentTest.php`:
+- 4 missing-consent cases → 422;
+- consent metadata on the session and payment;
+- the tax and invoice switches;
+- §5 in all 19 files.
+
+`CheckoutControllerTest` now sends the consent and checks the language in the return URLs.
+
+**Needs web-client** (checkboxes before "Buy"); otherwise buying returns 422.
+
+---
+
 ## 2026-10-09 - Paid itinerary (AI-3c): background generation in a queue worker, saved plans
 
 **Why:** PHP-FPM stops web requests at 60 s, and a 7/14-day plan can take longer. ADR "Paid itineraries run in a queue worker".
