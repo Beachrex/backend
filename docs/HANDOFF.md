@@ -114,7 +114,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/web-client#49 | Localized error page (19 languages); AI chat images fixed | 90 |
   | Beachrex/backend#66 | Old user import: random passwords (owner option a), admin filter "Imported from old site" | 211 |
 
-  Decisions: `cache:clear` stays in the deploy (stale cache shapes after code changes are riskier; ISR shields the website). HTTP/2 on nginx not enabled yet (needs a check of the shared server blocks). "Less JavaScript" recorded only (owner).
+  Decisions: `cache:clear` stays in the deploy (stale cache shapes after code changes are riskier; ISR shields the website). HTTP/2 enabled on all HTTPS sites (Beachrex/backend#68). "Less JavaScript" recorded only (owner).
   Owner check: `SESSION_DRIVER` in `.env.dev/.env.uat/.env.prod` — if it is `redis`, eviction under memory pressure can sign out admins (then switch to `database`).
 
 - 2026-10-08 (session 7): **TASK-004 SEO follow-up and small audit fixes. Live on dev** (web-client; each finding verified in code first, all deploy runs green):
