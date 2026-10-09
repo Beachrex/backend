@@ -52,6 +52,20 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Mobile app (B-M3): saved beaches API
+
+**What changed:** new endpoints, all `auth:sanctum` and owner-only (TASK-005, also for the hidden web H6 "favourites" heart):
+- `GET /api/v1/me/favorites` returns the saved beaches newest first, as the **same beach cards as `GET /beaches`**, in the page language, plus `meta.total` and `meta.limit`. Beaches unpublished later drop out of the list.
+- `GET /api/v1/me/favorites/ids` returns the ids only, to show the heart on any list.
+- `POST /api/v1/me/favorites {beach_id}` answers 201 when saved and 200 when already saved. Unknown or unpublished beaches get 422, and a full list gets `422 favorites_limit` (`FAVORITES_LIMIT`, default 500).
+- `DELETE /api/v1/me/favorites/{beachId}` answers 204, also when the beach was not saved, so the app can retry safely.
+
+Table `beach_favorites` (unique user + beach, both cascade on delete). The card relations are now one list, `BeachResource::cardRelations()`, used by `GET /beaches` and by favourites. OpenAPI tag "Favorites".
+
+**Tests:** `tests/Feature/FavoritesApiTest.php` (6): 401 on every endpoint, idempotent add/remove, owner only, 422 for unknown/unpublished beaches, unpublished beaches drop out, the cap.
+
+---
+
 ## 2026-10-09 - Mobile app (B-M1): GET /api/v1/app-config
 
 **What changed:** a new public `GET /api/v1/app-config` (TASK-005, mobile agent task M1.4). It returns:

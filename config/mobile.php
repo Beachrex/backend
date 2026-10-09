@@ -17,6 +17,9 @@ return [
         'latest_version' => env('MOBILE_ANDROID_LATEST_VERSION', '1.0.0'),
         'store_url' => env('MOBILE_ANDROID_STORE_URL'),
     ],
+    // Most beaches one account can save (GET/POST /api/v1/me/favorites).
+    'favorites_limit' => (int) env('FAVORITES_LIMIT', 500),
+
     // Feature flags the app reads before showing a feature (owner decisions, MOBILE-TASKS M4.x).
     'features' => [
         'ai_chat' => (bool) env('MOBILE_FEATURE_AI_CHAT', false),
