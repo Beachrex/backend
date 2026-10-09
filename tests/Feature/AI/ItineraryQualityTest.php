@@ -208,4 +208,28 @@ class ItineraryQualityTest extends TestCase
         $this->assertCount(3, $response->json('days'));
         $this->assertNotEmpty($response->json('days.0.items.0.notes'));
     }
+
+    #[Test]
+    public function every_beach_carries_its_page_link_slugs_in_the_page_language(): void
+    {
+        \Illuminate\Support\Facades\DB::table('continents')->insertOrIgnore(['code' => 'EU']);
+        \Illuminate\Support\Facades\DB::table('continent_translation')->insert([
+            ['continent_code' => 'EU', 'locale' => 'en', 'name' => 'Europe', 'slug' => 'europe'],
+            ['continent_code' => 'EU', 'locale' => 'sl', 'name' => 'Evropa', 'slug' => 'evropa'],
+        ]);
+        \Illuminate\Support\Facades\DB::table('country_translation')->insert([
+            ['country_code' => 'HR', 'locale' => 'en', 'name' => 'Croatia', 'slug' => 'croatia'],
+            ['country_code' => 'HR', 'locale' => 'sl', 'name' => 'Hrvaška', 'slug' => 'hrvaska'],
+        ]);
+        \Illuminate\Support\Facades\DB::table('beach')->update(['continent_code' => 'EU']);
+
+        $beach = $this->generate(['locale' => 'sl'])->assertOk()->json('days.0.items.0.beach');
+
+        $this->assertSame('evropa', $beach['continent_slug']);
+        $this->assertSame('hrvaska', $beach['country_slug']);
+        $this->assertNotEmpty($beach['region_slug']); // only an English slug is seeded: falls back to it
+        $this->assertNotEmpty($beach['city_slug']);
+        $this->assertStringStartsWith('plaza-', $beach['slug']);
+        $this->assertArrayHasKey('main_image', $beach);
+    }
 }

@@ -80,7 +80,13 @@ namespace App\Swagger\Schemas\AI;
  *             nullable=true,
  *             description="Distance from user location (usually null for itineraries)",
  *             example=null
- *         )
+ *         ),
+ *         @OA\Property(property="continent_slug", type="string", nullable=true, description="Place slug in the page language, for the beach page link", example="europe"),
+ *         @OA\Property(property="country_slug", type="string", nullable=true, description="Place slug in the page language, for the beach page link", example="croatia"),
+ *         @OA\Property(property="region_slug", type="string", nullable=true, description="Place slug in the page language, for the beach page link", example="dalmatia-split"),
+ *         @OA\Property(property="island_slug", type="string", nullable=true, description="Place slug in the page language, for the beach page link", example=null),
+ *         @OA\Property(property="city_slug", type="string", nullable=true, description="Place slug in the page language, for the beach page link", example="split"),
+ *         @OA\Property(property="main_image", type="string", nullable=true, description="Main photo path (CDN relative)", example="img/beaches/hr/bacvice.jpg")
  *     ),
  *     @OA\Property(
  *         property="notes",

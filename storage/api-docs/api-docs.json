@@ -10091,6 +10091,59 @@
                 }
             }
         },
+        "/api/v1/payments/products": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Itinerary packages and prices",
+                "description": "AI-3: the itinerary packages with their prices, so the website shows the price the checkout will charge.",
+                "operationId": "50bdaa500e411fd41304f9c5c828905f",
+                "responses": {
+                    "200": {
+                        "description": "Packages, shortest first",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "product_type": {
+                                                        "type": "string",
+                                                        "example": "itinerary_7day"
+                                                    },
+                                                    "days": {
+                                                        "type": "integer",
+                                                        "example": 7
+                                                    },
+                                                    "amount": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 39
+                                                    },
+                                                    "currency": {
+                                                        "type": "string",
+                                                        "example": "EUR"
+                                                    },
+                                                    "credits": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/payments/stripe/checkout": {
             "post": {
                 "tags": [
@@ -10937,6 +10990,42 @@
                                 "type": "number",
                                 "format": "float",
                                 "example": null,
+                                "nullable": true
+                            },
+                            "continent_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "europe",
+                                "nullable": true
+                            },
+                            "country_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "croatia",
+                                "nullable": true
+                            },
+                            "region_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "dalmatia-split",
+                                "nullable": true
+                            },
+                            "island_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": null,
+                                "nullable": true
+                            },
+                            "city_slug": {
+                                "description": "Place slug in the page language, for the beach page link",
+                                "type": "string",
+                                "example": "split",
+                                "nullable": true
+                            },
+                            "main_image": {
+                                "description": "Main photo path (CDN relative)",
+                                "type": "string",
+                                "example": "img/beaches/hr/bacvice.jpg",
                                 "nullable": true
                             }
                         },
