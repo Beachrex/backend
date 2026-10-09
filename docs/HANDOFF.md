@@ -325,7 +325,7 @@ ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementati
 ## Mobile app
 
 Status: **In progress** (owner, 2026-10-09: mobile development starts today). M0.1 (Expo app in `Beachrex/mobile-app`) in progress.
-Backend for the app (MOBILE-TASKS §B): B-M1 `GET /api/v1/app-config` done (Beachrex/backend#83); B-M3 favorites next; B-M2 native sign-in waits for the Google iOS/Android client IDs and the Apple Team ID from the owner.
+Backend for the app (MOBILE-TASKS §B): B-M1 `GET /api/v1/app-config` done (Beachrex/backend#83); B-M3 favorites API done (`/api/v1/me/favorites`, web H6 UI still hidden); B-M2 native sign-in waits for the Google iOS/Android client IDs and the Apple Team ID from the owner.
 
 Owner decisions 2026-10-09: bundle ID `com.datavallis.beachrex`; branches `dev` + `main`; map = Leaflet + OpenStreetMap in a WebView (no Google Maps key); builds run on the owner's computer (no `EXPO_TOKEN`); `development` and `preview` builds use the dev API (no uat).
 The web agent writes this section from the mobile agent's status relayed by the owner (doc ownership: `docs/AGENT-ROLES.md`).

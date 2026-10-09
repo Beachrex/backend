@@ -250,26 +250,7 @@ class BeachController extends Controller
 
             // Only load relationships that are actually used in BeachResource
             $query = Beach::where('status_id', 1)
-                ->with([
-                    'translations',
-                    'continent.translations',
-                    'country.translations',
-                    'region.translations',
-                    'city.translations',
-                    'island.translations',
-                    'media' => function ($query) {
-                        $query->where('status_id', 1)
-                              ->with('mediaCollection')
-                              ->orderBy('is_primary', 'desc')
-                              ->orderBy('order')
-                              ->orderBy('created_at');
-                    },
-                    ...\App\Support\BeachCardFeatures::RELATIONS,
-                    'sportingActivities.translations',
-                    'culinaryOffers.translations',
-                    'naturalLocationConditions.translations',
-                    'occupancyRate.translations',
-                ]);
+                ->with(BeachResource::cardRelations());
 
             // Apply filters
             $query = $this->filterService->applyFilters($query, $request);

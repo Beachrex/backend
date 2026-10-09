@@ -297,6 +297,13 @@ Route::prefix('api/v1')
 
         // User entitlements endpoint (requires authentication)
         Route::middleware('auth:sanctum')->get('/me/entitlements', [\App\Http\Controllers\Payment\EntitlementController::class, 'index']);
+        // B-M3: saved beaches (app + website)
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/me/favorites', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'index']);
+            Route::get('/me/favorites/ids', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'ids']);
+            Route::post('/me/favorites', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'store']);
+            Route::delete('/me/favorites/{beachId}', [\App\Http\Controllers\Api\V1\FavoriteController::class, 'destroy'])->whereNumber('beachId');
+        });
         Route::middleware('auth:sanctum')->get('/me/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'index']);
         Route::middleware('auth:sanctum')->get('/me/itinerary-plans/{id}', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'show'])->whereUuid('id');
     });
