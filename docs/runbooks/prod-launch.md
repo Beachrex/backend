@@ -139,7 +139,7 @@ $DC exec -T api_prod php artisan cache:clear
 Template for D3 (443 block; the 80 block becomes `return 301 https://$host$request_uri;`):
 ```nginx
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
     server_name www.beachrex.com;
     ssl_certificate /etc/letsencrypt/live/beachrex.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/beachrex.com/privkey.pem;
@@ -148,7 +148,7 @@ server {
     return 301 https://beachrex.com$request_uri;
 }
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
     server_name beachrex.com;
     ssl_certificate /etc/letsencrypt/live/beachrex.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/beachrex.com/privkey.pem;

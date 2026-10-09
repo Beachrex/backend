@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Nginx: HTTP/2 on all HTTPS sites
+
+### Overview
+Browsers fetched the site over HTTP/1.1 (one request per connection, at most ~6 in parallel). With HTTP/2 all page files (JS chunks, fonts, images) share one connection, which mainly helps phones on slow networks.
+
+### Changes Made
+- `deploy/nginx/beachrex.conf`: every `listen 443 ssl;` → `listen 443 ssl http2;` (dev, uat, admin panels). Shared by all environments; applied by the next backend deploy (`systemctl reload nginx`, no downtime).
+- `docs/runbooks/prod-launch.md` D3 template: prod 443 blocks with `http2` too.
+- `listen … http2` works on every nginx version (nginx ≥ 1.25.1 only logs a deprecation warning and prefers `http2 on;`).
+
+### Testing
+Local nginx 1.24 with the repo config (certificates replaced by a self-signed one): `nginx -t` OK; `curl --http2` → HTTP version `2`, `curl --http1.1` → `1.1` (old clients still work). On the VPS: checked through the deploy run (reload fails the job if the config is invalid).
+
+---
+
 ## 2026-10-09 - Old user migration: random passwords (owner option a); admin filter for imported users
 
 **What changed**
