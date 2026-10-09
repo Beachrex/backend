@@ -208,7 +208,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 ## Owner's open actions
 
 - **Old beachrex.com URLs (live on dev since 2026-10-08, Beachrex/backend#46 + Beachrex/web-client#19):** test them on dev now. Take 5–10 real old links (Google Maps, other sites), replace `https://www.beachrex.com` with `https://dev.beachrex.com` and open them: each must end on the same beach/place (308), not the home page or a 404. Send the agent any that land wrong; they become test cases. On beachrex.com they start working at the DNS switch (prod launch runbook D2/D3, check D8). After launch: Google Search Console → submit `https://beachrex.com/sitemap.xml` and watch the "Not found (404)" report for a few weeks.
-- **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** Apple Developer (D-U-N-S) and Google Play accounts, Expo account (builds run on the owner's computer), Sentry yes/no. Done/decided 2026-10-09: repo `Beachrex/mobile-app`, bundle ID `com.datavallis.beachrex`; no `EXPO_TOKEN` and no Google Maps key needed.
+- **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** Apple Developer (D-U-N-S) and Google Play accounts, Expo account (builds run on the owner's computer); for app links (B-M4) the Apple Team ID and the Android signing key SHA-256. Done/decided 2026-10-09: repo `Beachrex/mobile-app`, bundle ID `com.datavallis.beachrex`; no `EXPO_TOKEN`, no Google Maps key, no Sentry.
 
 - **Footer pages on uat/prod:** `static-pages:sync` (dry run first) at promotion (prod launch runbook B6). Dev is synced (2026-10-08).
 - **Copyright backfill:** `php artisan media:embed-copyright --dry-run`, then without `--dry-run`, when the owner decides (rewrites existing JPEG originals on Spaces; best on prod after launch).
@@ -324,7 +324,7 @@ ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementati
 
 ## Mobile app
 
-Status: **In progress** (owner, 2026-10-09: mobile development starts today). M0.1 (Expo app in `Beachrex/mobile-app`) in progress.
+Status: **In progress**. 2026-10-09 (mobile agent's report via the owner): phases 0 and 1 done (no Sentry); phase 2 done except place pages part 2 (Beachrex/mobile-app#26), M2.8 saved beaches (next) and the M2.9 leftovers; M3.0 App Store motion-permission fix merged. Statuses in `docs/mobile/MOBILE-TASKS.md`; the mobile agent's log is `DEV_HANDOFF.md` in `Beachrex/mobile-app`.
 Backend for the app (MOBILE-TASKS §B): B-M1 `GET /api/v1/app-config` done (Beachrex/backend#83); B-M3 favorites API done (`/api/v1/me/favorites`; the web shows it since Beachrex/web-client#63: hearts, `/favorites` page); B-M2: the app signs in with e-mail + password (owner 2026-10-09); `DELETE /api/v1/me` added, login/register throttled; Google/Apple sign-in later, when the app is in production.
 
 Owner decisions 2026-10-09: bundle ID `com.datavallis.beachrex`; branches `dev` + `main`; map = Leaflet + OpenStreetMap in a WebView (no Google Maps key); builds run on the owner's computer (no `EXPO_TOKEN`); `development` and `preview` builds use the dev API (no uat).
