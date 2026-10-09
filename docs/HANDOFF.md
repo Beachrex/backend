@@ -307,7 +307,7 @@ Status: Planned (docs only, 2026-10-09). The mobile agent updates this section (
 - **Less JavaScript on every page** (owner 2026-10-09: "zaenkrat ne, ampak si zabeleži"): header/footer as server components, flowbite Dropdown/Sidebar replaced by small own code, lazy burger menu and search results. Expected saving ~60–100 KB gzipped per page (today ~240 KB). Found in the 2026-10-09 performance audit.
 
 - **Old user migration (`users:migrate-from-old-db`): fixed per owner option (a) on 2026-10-09** — random unusable password, never the MD5 hash or "password"; imported users sign in with Google (linked by e-mail). Run only in production after launch (GDPR): `--test` first. Admin → Users has the filter "Imported from old site". Do **not** remove `database/sql/user.sql` (owner).
-  - **Open:** there is no password-reset ("forgot password") endpoint or page yet, so imported users without a Google account cannot sign in. Needs `MAIL_*` on prod + API endpoint + web page in 19 languages. Ask the owner before building it.
+  - **Forgot password** (owner 2026-10-09): `POST /api/v1/forgot-password` + `/reset-password`, e-mail via SMTP `mail.datavallis.com:465` as `hello@beachrex.com`; website e-mail sign-in + reset pages. Works only after the owner adds the `MAIL_*` lines to `/opt/beachrex/envs/.env.<env>` and redeploys (prod runbook A2 lists them).
 - **Mobile side padding:** the global `.container { padding: 0 5px }` overrides Tailwind padding on every container; owner: leave for now (2026-10-08).
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
   - **MCP must become production-only** once prod is live (prod launch runbook D5b). Links will then point to `beachrex.com`.

@@ -52,6 +52,26 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Forgot password: `POST /forgot-password`, `POST /reset-password`, localized e-mail
+
+### Overview
+Owner request 2026-10-09. Imported old-site users have a random password (option a); without Google they need "forgot password". Mail goes through SMTP `mail.datavallis.com:465` as `hello@beachrex.com` (password only in `/opt/beachrex/envs/.env.*`, never in git).
+
+### Changes Made
+- `PasswordResetController`:
+  - `POST /api/v1/forgot-password` `{email}` → always 200 with the same message (no account enumeration). The e-mail is sent **after** the response (`defer()`), so known and unknown addresses take the same time and an SMTP error is logged, not shown. Laravel broker: token valid 60 min, max one e-mail per address per minute. `throttle:5,1` per IP.
+  - `POST /api/v1/reset-password` `{token,email,password,password_confirmation}` → 200, or 422 with a localized error on `token` (invalid/expired/used). On success: new password, all API tokens revoked, `email_verified_at` set if empty. Then `POST /login`. `throttle:10,1`.
+- `App\Notifications\ResetPasswordNotification` + `resources/views/emails/password-reset(.blade|-text.blade).php`: branded HTML + text e-mail in the request's language (`Accept-Language`, 19 languages in `lang/*.json`), CGP logo PNG from the website, link `{FRONTEND_URL}/{locale}/auth/reset-password?token=…&email=…` (`sl` → `si`). `User::sendPasswordResetNotification()` uses it.
+- `.env.example`, prod runbook: `MAIL_*` values (`MAIL_SCHEME=smtps` for port 465). OpenAPI regenerated.
+
+### Affected Endpoints
+New: `POST /api/v1/forgot-password`, `POST /api/v1/reset-password`. Website pages: web-client `auth/forgot-password`, `auth/reset-password`.
+
+### Testing
+`tests/Feature/PasswordResetApiTest.php` (8): localized link to the website (si), e-mail renders in German, unknown address same answer + no mail, SMTP error still 200, validation + 429 after 5, reset → login works + tokens revoked + token single-use, wrong token localized (hr), weak password 422. Local: `MAIL_SCHEME=smtps MAIL_PORT=465` builds an implicit-TLS `EsmtpTransport` to `mail.datavallis.com:465`. Real sending: owner test on dev after the `MAIL_*` lines are added.
+
+---
+
 ## 2026-10-09 - API: HTTP errors keep their status (429 instead of 500)
 
 ### Overview

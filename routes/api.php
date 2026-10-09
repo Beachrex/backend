@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
@@ -70,6 +71,8 @@ Route::prefix('api/v1')
         // Traditional email/password auth
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:5,1');
+        Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
 
         // Google OAuth routes (public, rate limited)
         Route::prefix('auth/google')->middleware('throttle:10,1')->group(function () {
