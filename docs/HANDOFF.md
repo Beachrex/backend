@@ -1,11 +1,12 @@
-# Handoff — state as of 2026-10-08 (end of session 7)
+# Handoff — state as of 2026-10-09 (end of session 8)
 
 > **Two agent roles** ([`AGENT-ROLES.md`](AGENT-ROLES.md)): the **web agent** (default) starts here; the **mobile agent** starts at [`mobile/MOBILE-PLAN.md`](mobile/MOBILE-PLAN.md).
-> **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-08).
+> **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-09).
 > Session 6 (all **live on dev**, table below): footer pages (MCP connector, media kit) synced on dev, map quick filters, adventurer/party icons, footer redesign, site icons + share images, share menu on beach pages, copyright (terms §6, IPTC in uploads, ImageObject JSON-LD, © line), author page `/{locale}/gregor-balazic`.
 > Session 7 (all **live on dev**, table below): region/island/city pages server-rendered (SEO), audit fixes B9, D5–D7, D12, D13, A4, F1–F4, Organization logo from the brand package.
+> Session 8 (all **live on dev**, table below): mobile app plan, side-menu beach groups, mobile header, prod runbook fixes, speed (ISR page cache, images, fonts), backend hardening (PHP-FPM, view counter, nginx rate limit/gzip, indexes, Redis cap, weather timeouts), localized error page, old user import with random passwords.
 > Open (code): runbook PR (prod launch review, go/no-go list); alt texts (A6); old user migration fixed (option a), password-reset flow missing (see Open items).
-> Owner answers pending: user migration password approach (a/b); real old URLs for tests; CookieYes "Google Consent Mode"; when to run `media:embed-copyright`; larger author photos.
+> Owner answers pending: real old URLs for tests; CookieYes "Google Consent Mode"; when to run `media:embed-copyright`; larger author photos.
 
 Covers both repos: `Beachrex/backend` (this repo) and `Beachrex/web-client`.
 Rules: [`docs/DEVELOPMENT-RULES.md`](DEVELOPMENT-RULES.md). Change log: `DEV_HANDOFF.md` in each repo.
@@ -93,6 +94,28 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 
   **Verified by the owner on dev (2026-10-07):** "widget je ok, chat je ok" (sea temperature widget, AI chat with the 5 test questions).
   - **Code not yet on uat:** Beachrex/backend#13, #14, #17 and #19–#34, and Beachrex/web-client#6–#8. Promote when the owner asks. The uat **DB** already holds the migrated dev data (2026-10-08).
+
+- 2026-10-09 (session 8): **production readiness, speed and scalability. Live on dev** (each finding verified in code first, all deploy runs green):
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/web-client#43 | Side menu: pre-filtered beach groups that open the map | 84 |
+  | Beachrex/web-client#44 | Mobile header without accommodation/shop, cleaner side menu | 85 |
+  | Beachrex/backend#59 | Prod launch runbook: blockers fixed, go/no-go list | 197 |
+  | Beachrex/web-client#45 | Pages cached with ISR (home 5 min) instead of rendered per request | 86 |
+  | Beachrex/web-client#46 | Home images 11.2 MB → 0.8 MB, hero preloaded | 87 |
+  | Beachrex/web-client#47 | Self-hosted fonts (next/font), no double API requests | 88 |
+  | Beachrex/backend#60 | PHP-FPM pool 16 workers (env `PHP_FPM_*`) | 199 |
+  | Beachrex/backend#61 + Beachrex/web-client#48 | Beach views: one UPDATE; `POST /beaches/{id}/view` from the browser (ISR pages) | 201 / 89 |
+  | Beachrex/backend#62 | Nginx (all envs): API rate limit 20 r/s per real IP (burst 100, VPS/office IP exempt), gzip, upstream keepalive | 203 |
+  | Beachrex/backend#63 | Indexes on translation slugs and beach country/continent | 205 |
+  | Beachrex/backend#64 | Redis: 1 GB cap, LRU eviction, fewer snapshots | 207 |
+  | Beachrex/backend#65 | Weather timeouts 3 s, failures cached 5 min; `_nocache` only locally | 209 |
+  | Beachrex/web-client#49 | Localized error page (19 languages); AI chat images fixed | 90 |
+  | Beachrex/backend#66 | Old user import: random passwords (owner option a), admin filter "Imported from old site" | 211 |
+
+  Decisions: `cache:clear` stays in the deploy (stale cache shapes after code changes are riskier; ISR shields the website). HTTP/2 on nginx not enabled yet (needs a check of the shared server blocks). "Less JavaScript" recorded only (owner).
+  Owner check: `SESSION_DRIVER` in `.env.dev/.env.uat/.env.prod` — if it is `redis`, eviction under memory pressure can sign out admins (then switch to `database`).
 
 - 2026-10-08 (session 7): **TASK-004 SEO follow-up and small audit fixes. Live on dev** (web-client; each finding verified in code first, all deploy runs green):
 
