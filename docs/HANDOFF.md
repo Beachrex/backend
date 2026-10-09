@@ -324,7 +324,7 @@ ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementati
 
 ## Mobile app
 
-Status: **In progress**. 2026-10-09 (mobile agent's report via the owner): phases 0 and 1 done (no Sentry); phase 2 done except place pages part 2 (Beachrex/mobile-app#26), M2.8 saved beaches (next) and the M2.9 leftovers; M3.0 App Store motion-permission fix merged. Statuses in `docs/mobile/MOBILE-TASKS.md`; the mobile agent's log is `DEV_HANDOFF.md` in `Beachrex/mobile-app`.
+Status: **In progress**. 2026-10-09 (mobile agent's report via the owner): phases 0 and 1 done (no Sentry); phase 2 done except the M2.9 leftovers (M2.7 place pages and M2.8 saved beaches, mobile-app#27, done); M3.0 App Store motion-permission fix merged. Statuses in `docs/mobile/MOBILE-TASKS.md`; the mobile agent's log is `DEV_HANDOFF.md` in `Beachrex/mobile-app`.
 Backend for the app (MOBILE-TASKS §B): B-M1 `GET /api/v1/app-config` done (Beachrex/backend#83); B-M3 favorites API done (`/api/v1/me/favorites`; the web shows it since Beachrex/web-client#63: hearts, `/favorites` page); B-M2: the app signs in with e-mail + password (owner 2026-10-09); `DELETE /api/v1/me` added, login/register throttled; Google/Apple sign-in later, when the app is in production.
 
 Owner decisions 2026-10-09: bundle ID `com.datavallis.beachrex`; branches `dev` + `main`; map = Leaflet + OpenStreetMap in a WebView (no Google Maps key); builds run on the owner's computer (no `EXPO_TOKEN`); `development` and `preview` builds use the dev API (no uat).
