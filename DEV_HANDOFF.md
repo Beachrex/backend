@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - OpenAPI: full search result fields for islands, regions and countries
+
+Mobile report (relayed by the owner): the `GET /api/v1/search` response documented only the URL slugs for `islands`, `regions` and `countries`, so generated clients missed `id`, `name`, `slug`, `main_image`, `country_name` and the other fields the API already returns.
+
+### Changes Made
+- `SearchController` OpenAPI annotations now list every returned field per group (no code change); `php artisan l5-swagger:generate` (108 paths).
+
+### Affected Endpoints
+- `GET /api/v1/search` (documentation only; the response is unchanged)
+
+### Testing
+- `php artisan test --filter=SearchOpenApiTest`
+
+---
+
 ## 2026-10-09 - /beaches/filters: parking and swimming pool translated
 
 Mobile report (relayed by the owner): `parking` and `has_swimming_pool` had a fixed English title ("Parking", "Swimming Pool") and label "Yes".
