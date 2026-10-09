@@ -44,8 +44,9 @@ return [
                  * Absolute paths to directory containing the swagger annotations are stored.
                  */
                 'annotations' => [
+                    // app/Swagger includes app/Swagger/Schemas; listing both scanned every schema twice, which
+                    // swagger-php >= 5.8 rejects ("Multiple @OA\\Schema() with the same schema").
                     base_path('app/Swagger'),
-                    base_path('app/Swagger/Schemas'),
                     base_path('app/Http/Controllers'),
                 ],
             ],
