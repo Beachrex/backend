@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Redis: 1 GB memory cap with LRU eviction
+
+### Overview
+Scalability audit 2026-10-09: Redis ran without `maxmemory` (cache keys with 30-day TTLs per map viewport and filter string could grow until the VPS ran out of RAM) and forked a snapshot every minute (`--save 60 1`).
+
+### Changes Made
+- `deploy/docker-compose.vps.yml` `redis` command: `--maxmemory 1gb --maxmemory-policy allkeys-lru`, snapshots `--save 900 1 --save 300 100`.
+- Assumes Redis holds the cache only (`.env.example`: `SESSION_DRIVER=database`, `QUEUE_CONNECTION=database`). If an environment keeps sessions in Redis, LRU eviction could sign out admin users under memory pressure (owner: check `SESSION_DRIVER` in the env files).
+- Shared by all environments: the next backend deploy recreates the Redis container (a few seconds; data reloads from the snapshot).
+
+### Testing
+Local `redis-server` with the same flags: `CONFIG GET maxmemory` → 1073741824, `maxmemory-policy` → allkeys-lru, `save` → "900 1 300 100". Compose file parses (YAML). On the VPS: NOT RUN by the agent; checked through the deploy run and `/api/v1/health` (Redis ping).
+
+---
+
 ## 2026-10-09 - Lookup indexes for slugs and country/continent filters
 
 ### Overview

@@ -56,7 +56,9 @@ services:
   redis:
     image: redis:alpine
     restart: unless-stopped
-    command: redis-server --databases 16 --save 60 1 --loglevel warning
+    # Used as the cache (.env.example: sessions and queues in the database): 1 GB cap, evict least-recently-used keys,
+    # snapshot less often (a fork every minute was costly). Scalability audit 2026-10-09.
+    command: redis-server --databases 16 --save 900 1 --save 300 100 --maxmemory 1gb --maxmemory-policy allkeys-lru --loglevel warning
     volumes: [redis-data:/data]
     networks: [net_prod, net_uat, net_dev]
     healthcheck:
