@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - content:ai: depth fact read the right way round, no trivia
+
+Owner preview of generated descriptions (2026-10-09): "the sea is 5 m deep a metre from the shore" came from the field `swimming_depth_of_one_m` (distance from the shore where the water is 1 m deep), which the model read as a depth.
+
+### Changes Made
+- `BeachContentAi::facts()`: the key is now `distance_from_shore_to_1m_depth`, and the prompt explains it (a large distance means shallow water).
+- Prompt: leave out trivial amenities (rubbish bins), first sentence at most 155 characters.
+
+### Testing
+- `php artisan test --filter=ContentAiTest`
+
+---
+
 ## 2026-10-09 - content:ai: better generated descriptions, full preview, no double submit
 
 Owner review of the first preview (2026-10-09): generated descriptions all started the same way; the owner chose option B (database facts plus well-known facts about the town or island).

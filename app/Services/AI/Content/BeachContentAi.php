@@ -246,8 +246,10 @@ Sources:
 
 Writing:
 - 50-110 words per language in 2-5 sentences: longer when there are many facts, shorter when there are few.
-- The first sentence must work on its own as a search-result summary under 155 characters and name the beach and its town or island.
+- The first sentence must work on its own as a search-result summary of at most 155 characters (count them) and name the beach and its town or island.
 - Open with what is most distinctive about this beach (its surface, setting, who it suits, an activity), not with a generic "X is a beach in Y". Vary the sentence structure. Avoid stock phrases such as "hidden gem", "perfect for", "nestled", "paradise", "crystal-clear".
+- distance_from_shore_to_1m_depth is how far out the water becomes 1 m deep (a large distance means shallow water, good for children); it is not the depth itself.
+- Leave out trivial amenities such as rubbish bins; mention parking briefly.
 - Mention the area naturally ("in southern Dalmatia, near Dubrovnik"); do not copy region labels such as "Dalmatia - Dubrovnik".
 - Use the beach name given for each language in name_by_language, and place names in that language's usual form.
 - Write each language natively rather than word for word; every language carries the same facts. Plain text, no markdown.
@@ -284,7 +286,7 @@ TXT;
             'access' => $this->enName($beach->accessibility),
             'crowds' => $this->enName($beach->occupancyRate),
             'slope' => $this->enName($beach->beachInclination),
-            'depth_1m_from_shore' => $this->enName($beach->swimmingDepthOfOneM),
+            'distance_from_shore_to_1m_depth' => $this->enName($beach->swimmingDepthOfOneM),
             'parking' => $this->enName($beach->parkingCapacity),
             'facilities' => $list($beach->locationInfrastructures),
             'food_and_drink' => $list($beach->culinaryOffers),

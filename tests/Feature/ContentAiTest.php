@@ -197,9 +197,10 @@ class ContentAiTest extends TestCase
 
         $this->assertSame('Сланица', $facts['name_by_language']['ru']);
         $this->assertSame('Slanica', $facts['name_by_language']['de'], 'languages without a row use the source name without "Beach"');
-        $this->assertStringContainsString('under 155 characters', $request['params']['system']);
+        $this->assertStringContainsString('at most 155 characters', $request['params']['system']);
         $this->assertStringContainsString('only when you are certain', $request['params']['system']);
         $this->assertStringContainsString('not with a generic', $request['params']['system']);
+        $this->assertStringContainsString('how far out the water becomes 1 m deep', $request['params']['system'], 'the depth field was read as a depth (preview 2026-10-09)');
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
