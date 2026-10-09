@@ -217,11 +217,11 @@ TXT;
         $sourceLanguage = self::LANGUAGE_NAMES[$source->locale] ?? 'English';
         $system = <<<TXT
 You translate beach descriptions for Beachrex, a beach guide. Translate the text from {$sourceLanguage} into each requested language.
-Keep the meaning, the facts and the paragraph breaks; add nothing and leave nothing out. Keep beach and place names in their original form (write them in Cyrillic for Ukrainian, Russian and Bulgarian and in Greek script for Greek). Plain text, no markdown.
+Keep the meaning, the facts and the paragraph breaks; add nothing and leave nothing out. Use the beach name given for each language in name_by_language, and place names in that language's usual form. Plain text, no markdown.
 TXT;
 
         $user = json_encode([
-            'beach' => $this->displayName($this->sourceTranslation($beach)?->name ?? ''),
+            'name_by_language' => array_intersect_key($this->namesByLanguage($beach), array_flip($targets)),
             'text' => $source->description,
             'languages' => array_map(fn ($l) => self::LANGUAGE_NAMES[$l], $targets),
         ], JSON_UNESCAPED_UNICODE);
@@ -238,10 +238,19 @@ TXT;
         $facts = $this->facts($beach);
 
         $system = <<<'TXT'
-You write short beach descriptions for Beachrex, a beach guide, using only the database facts you are given.
-For each language write 2-4 sentences (40-80 words): where the beach is, what it is like, and what it offers.
-Use only the facts. Do not invent anything else: no distances, history, water colour, ratings, prices, opening times, seasons or superlatives. Skip facts that are missing.
-Keep beach and place names in their original form (write them in Cyrillic for Ukrainian, Russian and Bulgarian and in Greek script for Greek). Plain text, no markdown. Every language says the same thing.
+You write beach descriptions for Beachrex, a beach guide published in 19 languages. Each beach page already lists the facilities with icons, so the text should read like a short travel-guide entry that helps a visitor picture the beach and decide whether it suits them.
+
+Sources:
+- The facts given for this beach. Add nothing about the beach itself that is not in the facts: no distances, water colour, history, ratings, prices, opening times or seasons.
+- Well-known, stable facts about the town, island or area (for example what an island is known for), only when you are certain of them; when unsure, leave them out. Never present them as facts about the beach.
+
+Writing:
+- 50-110 words per language in 2-5 sentences: longer when there are many facts, shorter when there are few.
+- The first sentence must work on its own as a search-result summary under 155 characters and name the beach and its town or island.
+- Open with what is most distinctive about this beach (its surface, setting, who it suits, an activity), not with a generic "X is a beach in Y". Vary the sentence structure. Avoid stock phrases such as "hidden gem", "perfect for", "nestled", "paradise", "crystal-clear".
+- Mention the area naturally ("in southern Dalmatia, near Dubrovnik"); do not copy region labels such as "Dalmatia - Dubrovnik".
+- Use the beach name given for each language in name_by_language, and place names in that language's usual form.
+- Write each language natively rather than word for word; every language carries the same facts. Plain text, no markdown.
 TXT;
 
         return [$system, json_encode($facts, JSON_UNESCAPED_UNICODE), $this->localeSchema(self::locales(), 'The description in'), 16000];
@@ -256,13 +265,16 @@ TXT;
             'beachInclination.translations', 'swimmingDepthOfOneM.translations', 'parkingCapacity.translations',
             'culinaryOffers.translations', 'locationInfrastructures.translations', 'naturalLocationConditions.translations',
             'sportingActivities.translations', 'userTypes.translations', 'accommodationArounds.translations',
-            'underwaterCharacteristics.translations',
+            'underwaterCharacteristics.translations', 'areaDescription.translations', 'locationLength.translations',
+            'bayLength.translations', 'parkingBeachDistance.translations', 'roadToParkingType.translations',
+            'recommendedTransportTypes.translations', 'beachLocationTypes.translations', 'waterBodyType.translations',
         ]);
 
         $list = fn ($items) => $items->map(fn ($m) => $this->enName($m))->filter()->values()->all();
 
         return array_filter([
             'name' => $this->displayName($this->sourceTranslation($beach)?->name ?? ''),
+            'name_by_language' => $this->namesByLanguage($beach),
             'country' => $this->enName($beach->country),
             'region' => $this->enName($beach->region),
             'island' => $this->enName($beach->island),
@@ -281,6 +293,14 @@ TXT;
             'suits' => $list($beach->userTypes),
             'accommodation_nearby' => $list($beach->accommodationArounds),
             'underwater' => $list($beach->underwaterCharacteristics),
+            'area' => $this->enName($beach->areaDescription),
+            'setting' => $list($beach->beachLocationTypes),
+            'water_type' => $this->enName($beach->waterBodyType),
+            'beach_length' => $this->enName($beach->locationLength),
+            'bay_length' => $this->enName($beach->bayLength),
+            'parking_distance' => $this->enName($beach->parkingBeachDistance),
+            'road_to_parking' => $this->enName($beach->roadToParkingType),
+            'best_reached_by' => $list($beach->recommendedTransportTypes),
         ], fn ($v) => $v !== null && $v !== '' && $v !== []);
     }
 
@@ -291,7 +311,7 @@ TXT;
      *
      * @return array{status: 'written'|'skipped'|'invalid', changes: list<string>, reason?: string}
      */
-    public function apply(string $customId, string $json, bool $dryRun): array
+    public function apply(string $customId, string $json, bool $dryRun, int $previewChars = 80): array
     {
         if (! preg_match('/^('.implode('|', self::PARTS).')-(\d+)$/', $customId, $m)) {
             return ['status' => 'invalid', 'changes' => [], 'reason' => "unknown request id {$customId}"];
@@ -303,11 +323,11 @@ TXT;
 
         [$part, $id] = [$m[1], (int) $m[2]];
         $changes = [];
-        $result = DB::transaction(function () use ($part, $id, $data, $dryRun, &$changes) {
+        $result = DB::transaction(function () use ($part, $id, $data, $dryRun, $previewChars, &$changes) {
             return match ($part) {
                 'names' => $this->applyNames($id, $data, $dryRun, $changes),
                 'regions' => $this->applyRegions($id, $data, $dryRun, $changes),
-                'descriptions', 'generate' => $this->applyDescriptions($id, $data, $dryRun, $changes),
+                'descriptions', 'generate' => $this->applyDescriptions($id, $data, $dryRun, $changes, $previewChars),
             };
         });
 
@@ -404,7 +424,7 @@ TXT;
         return null;
     }
 
-    private function applyDescriptions(int $id, array $data, bool $dryRun, array &$changes): ?string
+    private function applyDescriptions(int $id, array $data, bool $dryRun, array &$changes, int $previewChars = 80): ?string
     {
         $beach = Beach::with('translations')->find($id);
         $source = $beach ? $this->sourceTranslation($beach) : null;
@@ -421,7 +441,7 @@ TXT;
                 return "{$locale} description is too long";
             }
             $row = $beach->translations->firstWhere('locale', $locale);
-            $changes[] = "{$locale}: ".Str::limit($text, 80);
+            $changes[] = "{$locale}: ".Str::limit($text, $previewChars);
             if ($dryRun) {
                 continue;
             }
@@ -462,6 +482,21 @@ TXT;
         return array_values(array_filter(self::locales(), function ($locale) use ($beach) {
             return trim((string) $beach->translations->firstWhere('locale', $locale)?->description) === '';
         }));
+    }
+
+    /** The beach name per language as stored (names part first), without the import's "Beach". */
+    public function namesByLanguage(Beach $beach): array
+    {
+        $source = $this->sourceTranslation($beach);
+        $names = [];
+        foreach (self::locales() as $locale) {
+            $name = $beach->translations->firstWhere('locale', $locale)?->name ?? $source?->name;
+            if ($name !== null) {
+                $names[$locale] = $this->displayName($name);
+            }
+        }
+
+        return $names;
     }
 
     /** "Beach Slanica" -> "Slanica" for prompts that only need to mention the beach. */

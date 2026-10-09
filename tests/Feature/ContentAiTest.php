@@ -187,4 +187,41 @@ class ContentAiTest extends TestCase
         $this->artisan('content:ai', ['action' => 'submit'])->assertExitCode(2);
         $this->artisan('content:ai', ['action' => 'apply'])->assertExitCode(2);
     }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function generated_descriptions_get_per_language_names_and_varied_seo_instructions(): void
+    {
+        $id = $this->beach(['en' => ['Beach Slanica', null], 'ru' => ['Сланица', null]]);
+        $request = $this->ai->request('generate', \App\Models\Beach::find($id), 'claude-opus-5-5', 'low');
+        $facts = json_decode($request['params']['messages'][0]['content'], true);
+
+        $this->assertSame('Сланица', $facts['name_by_language']['ru']);
+        $this->assertSame('Slanica', $facts['name_by_language']['de'], 'languages without a row use the source name without "Beach"');
+        $this->assertStringContainsString('under 155 characters', $request['params']['system']);
+        $this->assertStringContainsString('only when you are certain', $request['params']['system']);
+        $this->assertStringContainsString('not with a generic', $request['params']['system']);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function full_preview_shows_whole_descriptions(): void
+    {
+        $id = $this->beach(['en' => ['Beach Slanica', null]]);
+        $long = str_repeat('Sand and pines. ', 20);
+        $answer = json_encode(array_fill_keys(BeachContentAi::locales(), $long));
+
+        $short = $this->ai->apply("generate-{$id}", $answer, dryRun: true);
+        $full = $this->ai->apply("generate-{$id}", $answer, dryRun: true, previewChars: PHP_INT_MAX);
+        $this->assertLessThan(100, mb_strlen($short['changes'][0]));
+        $this->assertSame('en: '.trim($long), $full['changes'][0]);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function submit_refuses_a_part_whose_last_batch_was_not_applied(): void
+    {
+        \Illuminate\Support\Facades\Cache::forever(\App\Console\Commands\ContentAi::pendingKey('names'), ['msgbatch_1']);
+
+        $this->artisan('content:ai', ['action' => 'submit', '--part' => ['names']])
+            ->expectsOutputToContain('not applied yet: msgbatch_1')
+            ->assertFailed();
+    }
 }

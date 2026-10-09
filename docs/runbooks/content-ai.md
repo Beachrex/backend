@@ -9,7 +9,7 @@ Owner request 2026-10-09: "uredi kakovost podatkov, z AI prevajaj". ADR "Data qu
 | `names` | An import added the English word "Beach" to most beach names, in every language ("Beach Slanica") | The local name ("Slanica", "Vela plaža"), plus the Cyrillic (ua, ru, bg) and Greek (el) spelling | The name in every language that still has "Beach" or the plain source name; missing languages get a row |
 | `regions` | Region names are English in most languages ("Dalmatia - Šibenik") | The name in all 19 languages ("Dalmacija - Šibenik", "Dalmatien - Šibenik") | Languages that are missing or still show the English name |
 | `descriptions` | A description exists in one language but not in the others | A translation into each language without one | Only languages without a description |
-| `generate` | About 79% of beaches have no description at all | 2–4 sentences from the database facts only (type, facilities, activities, …), in all 19 languages | Only languages without a description |
+| `generate` | About 79% of beaches have no description at all | 50–110 words from the database facts plus well-known facts about the town or island (owner choice B, 2026-10-09), in all 19 languages; the first sentence works as a search snippet | Only languages without a description |
 
 Safety rules in the code (`App\Services\AI\Content\BeachContentAi`), covered by `tests/Feature/ContentAiTest.php`:
 - slugs never change, so no URL changes; new rows reuse the existing slug;
@@ -29,7 +29,7 @@ Run on the VPS, one command at a time. Order: names, then regions, then descript
    `docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan content:ai plan`
 2. **Preview** a few items (asks Claude now, writes nothing):
    `docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan content:ai preview --part=names --sample=5`
-   Same with `--part=regions`, `--part=descriptions`, `--part=generate`. `--id=172` previews one beach. Send the output to the agent before going on.
+   Same with `--part=regions`, `--part=descriptions`, `--part=generate`. `--id=172` previews one beach; `--full --locale=sl --locale=en` prints whole descriptions in those languages. Send the output to the agent before going on.
 3. **Submit** one part as a batch (half price, finishes within 24 h, usually within an hour):
    `docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan content:ai submit --part=names`
    It prints the batch id (`msgbatch_…`). Large parts are split into batches of 5 000.
@@ -38,7 +38,11 @@ Run on the VPS, one command at a time. Order: names, then regions, then descript
 6. **Write**: `… php artisan content:ai apply --batch=msgbatch_… --write`
 7. **Refresh caches and search**: `… php artisan cache:clear-api --type=all`, then `… php artisan search:index`.
 
-Re-running a part only picks up what is still left (e.g. names that still have "Beach").
+## Interruptions and re-runs
+
+- Each part selects only what is still left (names that still have "Beach", languages without a description, …), so after `apply --write` a new `submit` sends only the rest.
+- If the Anthropic credit runs out in the middle of a batch, those requests come back as `errored`; `apply --write` writes the ones that succeeded, and a later `submit` of the same part sends only the failed ones.
+- `submit` refuses a part whose previous batch was not applied with `--write` yet (it would pay twice for the same items); `--force` overrides.
 
 ## uat / prod
 

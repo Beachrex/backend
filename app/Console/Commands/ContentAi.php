@@ -6,6 +6,7 @@ use Anthropic\Client;
 use App\Services\AI\Content\BeachContentAi;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * AI data-quality pass over beach names, region names and descriptions (owner 2026-10-09).
@@ -27,6 +28,9 @@ class ContentAi extends Command
                             {--limit= : Only the first N items per part}
                             {--sample=3 : preview: items per part}
                             {--show=40 : apply: changes to print}
+                            {--full : preview/apply: print whole descriptions, not the first 80 characters}
+                            {--locale=* : preview/apply: print only these languages (e.g. --locale=sl --locale=en)}
+                            {--force : submit: send even if an earlier batch of the same part was not applied yet}
                             {--write : apply: write to the database (default is a dry run)}';
 
     protected $description = 'AI data quality: beach names without "Beach", region and description translations, generated descriptions';
@@ -146,6 +150,18 @@ class ContentAi extends Command
 
     private function submit(BeachContentAi $ai, array $parts): int
     {
+        // Items leave the selection only once their results are written, so a second submit before
+        // `apply --write` would pay for the same items twice.
+        foreach ($parts as $part) {
+            $pending = Cache::get(self::pendingKey($part), []);
+            if ($pending !== [] && ! $this->option('force')) {
+                $this->error("Part {$part} has batches that were not applied yet: ".implode(', ', $pending));
+                $this->line('Run apply --write for them first (or add --force to send again anyway).');
+
+                return self::FAILURE;
+            }
+        }
+
         [$model, $effort] = $this->modelAndEffort();
         $requests = [];
         foreach ($parts as $part) {
@@ -167,6 +183,9 @@ class ContentAi extends Command
         foreach (array_chunk($requests, 5000) as $chunk) {
             $batch = $client->messages->batches->create(requests: $chunk);
             $this->info('Batch '.$batch->id.': '.count($chunk).' requests');
+            foreach (array_unique(array_map(fn ($r) => explode('-', $r['customID'])[0], $chunk)) as $part) {
+                Cache::forever(self::pendingKey($part), [...Cache::get(self::pendingKey($part), []), $batch->id]);
+            }
         }
         $this->line('Check with: php artisan content:ai status --batch=<id>');
 
@@ -214,6 +233,15 @@ class ContentAi extends Command
 
         $this->newLine();
         $this->table(['Result', 'Items'], collect($counts)->map(fn ($n, $k) => [$k, $n])->values()->all());
+        if (! $dryRun) {
+            foreach (BeachContentAi::PARTS as $part) {
+                $left = array_values(array_diff(Cache::get(self::pendingKey($part), []), [$id]));
+                $left === [] ? Cache::forget(self::pendingKey($part)) : Cache::forever(self::pendingKey($part), $left);
+            }
+        }
+        if ($counts['failed'] > 0 || $counts['invalid'] > 0) {
+            $this->line('Items that failed or were refused stay in the selection: submit the same part again later to retry only those.');
+        }
         if ($dryRun) {
             $this->info('Dry run: nothing was written. Run again with --write to save.');
         } else {
@@ -238,7 +266,13 @@ class ContentAi extends Command
             }
         }
 
-        $result = $ai->apply($customId, $text, $dryRun);
+        $result = $ai->apply($customId, $text, $dryRun, $this->option('full') ? PHP_INT_MAX : 80);
+        if ($locales = $this->option('locale')) {
+            $result['changes'] = array_values(array_filter(
+                $result['changes'],
+                fn ($c) => in_array(strstr($c, ':', true), $locales, true),
+            ));
+        }
         if ($result['status'] === 'invalid') {
             $this->warn("{$customId}: not applied - {$result['reason']}");
         } elseif ($show > 0 && $result['changes'] !== []) {
@@ -249,6 +283,11 @@ class ContentAi extends Command
         }
 
         return $result['status'];
+    }
+
+    public static function pendingKey(string $part): string
+    {
+        return "content-ai:pending:{$part}";
     }
 
     private function items(BeachContentAi $ai, string $part): Builder
