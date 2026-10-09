@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Lookup indexes for slugs and country/continent filters
+
+### Overview
+Scalability audit 2026-10-09: the beach/city/region pages and the slug resolver look up `*_translation.slug`, and lists/filters filter beaches by `country_code` / `continent_code`, without indexes (PostgreSQL does not index foreign keys automatically; country and island translations already had slug indexes).
+
+### Changes Made
+- Migration `2026_10_09_090000_add_lookup_indexes`: `beach_translation(slug)`, `city_translation(slug)`, `region_translation(slug)`, `beach(country_code)`, `beach(continent_code)`; `CREATE INDEX IF NOT EXISTS`, additive. The deploy runs `migrate --force` (seconds on ~4k beaches / ~70k translations).
+
+### Testing
+`php artisan test --filter=LookupIndexesTest`: passes; without the migration it fails.
+
+---
+
 ## 2026-10-09 - Nginx: API rate limit, real client IP, gzip, keepalive
 
 ### Overview
