@@ -69,8 +69,9 @@ Route::prefix('api/v1')
         Route::get('/health', HealthController::class);
 
         // Traditional email/password auth
-        Route::post('/register', [AuthController::class, 'register']);
-        Route::post('/login', [AuthController::class, 'login']);
+        // Throttled per IP: password guessing and mass sign-ups (B-M2, the app signs in with e-mail + password)
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
         Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:5,1');
         Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
 
@@ -86,6 +87,7 @@ Route::prefix('api/v1')
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::post('/auth/logout', [GoogleAuthController::class, 'logout']);
             Route::get('/me', [GoogleAuthController::class, 'me']);
+            Route::delete('/me', [AuthController::class, 'destroy']);
             Route::get('/user', [UserController::class, 'show']);
 
             // Data-mutating routes (admin only - any visitor can get a token via register/Google)

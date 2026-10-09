@@ -85,7 +85,7 @@ normal PR with OpenAPI + `DEV_HANDOFF.md`. The mobile agent asks for them throug
 | ID | Task | Needed by | Status |
 |---|---|---|---|
 | B-M1 | `GET /api/v1/app-config`: `min_supported_version` / `latest_version` per platform, store URLs, feature flags; cached; values from config/env | M1.4, release | Done (2026-10-09): `config/mobile.php`, `MOBILE_*` env vars, `Cache-Control: max-age=300` |
-| B-M2 | `POST /api/v1/auth/google/native` (verify Google ID token, audience = iOS/Android/web client IDs), `POST /api/v1/auth/apple` (verify Apple identity token), both return a Sanctum token; `DELETE /api/v1/me` with data removal; 401/403/422 tests | M4.1 | Planned |
+| B-M2 | App sign-in. **Owner 2026-10-09: e-mail + password only for now** (`POST /register`, `POST /login` → Sanctum token, `/forgot-password`, `/reset-password`); Google/Apple native sign-in (`/auth/google/native`, `/auth/apple`) later, when the app is in production. `DELETE /api/v1/me` with data removal | M4.1 | E-mail part done (2026-10-09): login/register throttled, `DELETE /api/v1/me` (anonymise, purchases kept). Google/Apple: later |
 | B-M3 | Favorites: `GET/POST/DELETE /api/v1/me/favorites` (ownership checks, tests) — also used by web H6 | M4.2 | Done (2026-10-09): plus `GET /me/favorites/ids`; idempotent add/remove; cap `FAVORITES_LIMIT` (500) |
 | B-M4 | web-client: `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` only on `beachrex.com` (team ID and SHA-256 from the owner) | M3.2 | Planned |
 | B-M5 | IAP entitlements (RevenueCat webhook → user entitlements), shared with the web credits | M4.4 | Planned |

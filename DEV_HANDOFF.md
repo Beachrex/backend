@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Mobile app (B-M2, e-mail only): account deletion, throttled login
+
+The owner decided (2026-10-09) that the app signs in with e-mail + password for now, using the existing `POST /register`, `POST /login` (Sanctum token), `/forgot-password` and `/reset-password`. Google/Apple native sign-in comes later, when the app is in production.
+
+**What changed**
+- **New `DELETE /api/v1/me`** (auth:sanctum). It is required by the App Store for apps with sign-up and covers the GDPR right to erasure. The user confirms with `password`; accounts linked to Google may send `confirm: "DELETE"` instead. Admin accounts get 403.
+  - `AccountDeletionService` removes tokens, saved beaches, itinerary plans, credits, AI chat sessions (their messages cascade), the AI usage link and password-reset tokens.
+  - The user row is **anonymised, not deleted**: name "Deleted user #id", an unusable e-mail and password, profile fields null, status inactive. Purchases stay linked to it, because accounting law requires keeping them; a hard delete would cascade-delete them.
+  - The e-mail address is free to register again.
+- **`POST /login`** validates `email`/`password` and refuses inactive (deleted) accounts.
+- **Throttling per IP:** `/login` 10/min, `/register` 5/min (before, both were unthrottled: password guessing).
+- OpenAPI regenerated.
+
+**Tests:** `tests/Feature/AccountDeletionTest.php` (5). Full suite: 531 passed; the only failures are the 4 known environment-dependent ones.
+
+---
+
 ## 2026-10-09 - Mobile app (B-M3): saved beaches API
 
 **What changed:** new endpoints, all `auth:sanctum` and owner-only (TASK-005, also for the hidden web H6 "favourites" heart):
