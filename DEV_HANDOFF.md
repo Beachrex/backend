@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Weather: 3 s timeouts and failures remembered; `_nocache` only locally
+
+### Overview
+Scalability audit 2026-10-09: the weather calls run inside page requests with 10 s (OpenWeatherMap) and 5 s (Open-Meteo Marine) timeouts, and a failed OpenWeatherMap lookup was not cached (`Cache::remember()` does not store `null`), so during an outage every request waited again while holding a PHP worker. `/search?_nocache=1` let anyone skip the search cache on a public server.
+
+### Changes Made
+- `WeatherService`: timeouts 3 s; a failed current-weather lookup is remembered for 5 minutes (`NO_VALUE` marker), a successful one for 1 hour as before.
+- `SearchController`: `_nocache` is honoured only in `local` and `testing`.
+
+### Affected Endpoints
+`/beach-details/{id}/weather`, `/countries|regions|islands|cities/{slug}/weather` (behaviour during outages), `/search` (`_nocache` ignored on servers).
+
+### Testing
+`php artisan test --filter=WeatherFailureCacheTest` (2): a failing API is called once for two lookups (old code: twice → fails); a success is cached. `SeaTemperature`/`BeachWeather` tests still pass.
+
+---
+
 ## 2026-10-09 - Redis: 1 GB memory cap with LRU eviction
 
 ### Overview
