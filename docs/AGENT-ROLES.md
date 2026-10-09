@@ -19,3 +19,24 @@ promotion and releases), talk to the owner in Slovenian, code/docs/commits in En
   (additive only) because installed apps cannot be forced to update (`DEVELOPMENT-RULES.md` §9).
 - Both keep `docs/HANDOFF.md` current: the web agent in its sections, the mobile agent in "Mobile app".
 - The ADR log `docs/ai/implementation/DECISIONS.md` is shared; mobile decisions are titled "Mobile: …".
+
+## Who edits which doc (owner, 2026-10-09: no conflicts between the two agents)
+
+Both agents edit docs in `Beachrex/backend` through their own small docs PRs into `dev`. Each file or section has one owner, so two open PRs never change the same lines:
+
+| Doc / section | Owner (edits) | The other agent |
+|---|---|---|
+| `docs/mobile/MOBILE-PLAN.md`, `docs/mobile/MOBILE-TASKS.md` (all M rows, notes) | Mobile agent | Reads only |
+| `docs/mobile/MOBILE-TASKS.md` §B: new rows / what the app needs | Mobile agent | — |
+| `docs/mobile/MOBILE-TASKS.md` §B: the **Status** cell of a B-M row | Web agent (when it ships the API) | — |
+| `docs/HANDOFF.md` section "Mobile app" | Mobile agent | Web agent only adds one line per shipped B-M task |
+| `docs/HANDOFF.md`, every other section; `DEV_HANDOFF.md`; `docs/DEVELOPMENT-RULES.md`; runbooks | Web agent | Mobile agent asks the owner |
+| `docs/ai/implementation/DECISIONS.md` | Both: append only, mobile entries titled "Mobile: …" | Never edit the other's entries |
+| Mobile app changelog / release notes | Mobile agent, in `Beachrex/mobile-app` | — |
+
+To avoid conflicts:
+- branch from the latest `origin/dev` right before editing a doc;
+- keep docs PRs small and merge them soon;
+- never reformat or reorder another owner's sections.
+
+If a conflict still happens, merge `origin/dev` into the branch, keep both sides and re-run CI.

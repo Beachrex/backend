@@ -324,7 +324,10 @@ ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementati
 
 ## Mobile app
 
-Status: Planned (docs only, 2026-10-09). The mobile agent updates this section (task status, builds, owner checks).
+Status: **In progress** (owner, 2026-10-09: mobile development starts today). M0.1 (Expo app in `Beachrex/mobile-app`) in progress.
+Backend for the app (MOBILE-TASKS §B): B-M1 `GET /api/v1/app-config` done (Beachrex/backend#83); B-M3 favorites next; B-M2 native sign-in waits for the Google iOS/Android client IDs and the Apple Team ID from the owner.
+
+This section is owned by the **mobile agent** (task status, builds, owner checks); see the doc ownership table in `docs/AGENT-ROLES.md`.
 
 ## Open items (found, not yet scheduled)
 

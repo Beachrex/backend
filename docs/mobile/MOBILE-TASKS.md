@@ -21,7 +21,7 @@ Status labels: **Planned** · **In progress** · **Done** (PR) · **Blocked** (r
 
 | ID | Task | Depends | Acceptance criteria | Status |
 |---|---|---|---|---|
-| M0.1 | Create the Expo app (TypeScript strict, Expo Router, latest stable SDK), `CLAUDE.md` pointing to the backend docs, README, `.env.example` with `EXPO_PUBLIC_*` names | owner: repo | `npx expo-doctor` clean; `expo export` builds; ADR "Mobile app stack" with the SDK version | Planned |
+| M0.1 | Create the Expo app (TypeScript strict, Expo Router, latest stable SDK), `CLAUDE.md` pointing to the backend docs, README, `.env.example` with `EXPO_PUBLIC_*` names | owner: repo | `npx expo-doctor` clean; `expo export` builds; ADR "Mobile app stack" with the SDK version | In progress (2026-10-09) |
 | M0.2 | Tooling: ESLint (expo config), Prettier, Jest (`jest-expo`) + RNTL, `tsc` script; GitHub Actions CI (typecheck, lint, jest, expo-doctor, expo export) on PRs | M0.1 | A deliberately broken test fails CI (shown in the PR) | Planned |
 | M0.3 | `eas.json` profiles `development` / `preview` / `production`, `app.config.ts` reading `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_IMAGOR_URL`, `EXPO_PUBLIC_ENV`; bundle ID from the owner; `runtimeVersion` policy | M0.1, owner: Expo + IDs | `eas build --profile development` succeeds (owner runs it if the agent has no `EXPO_TOKEN`) | Planned |
 | M0.4 | NativeWind v4 + CGP tokens (colours, Figtree, spacing, radius) in `tailwind.config.js`; dark mode via system | M0.1 | A token test checks the CGP hex values; contrast helper test (Deep Sea on teal ≥ 4.5) | Planned |
