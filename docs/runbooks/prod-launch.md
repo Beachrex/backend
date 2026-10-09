@@ -53,7 +53,7 @@ Also in `.env.prod` (checked against `.env.example` on 2026-10-08, TASK-004):
 - `SESSION_DOMAIN=.beachrex.com`, `SESSION_SECURE_COOKIE=true` (the code reads this name; `SESSION_SECURE` does nothing), `SANCTUM_STATEFUL_DOMAINS=beachrex.com,www.beachrex.com,dock.beachrex.com`.
 - `OPENAI_MODEL=gpt-4o-mini`; feature flags `AI_ENABLED`, `AI_PAYMENTS_ENABLED` (Stripe live at launch, owner 2026-10-08), `AI_FREE_TIER_ENABLED`, `AI_FREE_TIER_DAILY_LIMIT`. (`GOOGLE_AUTH_ENABLED` is not read by the code; Google sign-in works when `GOOGLE_CLIENT_ID`/`SECRET` are set.)
 - `OPEN_METEO_API_KEY`: the commercial Open-Meteo plan (the free endpoint is non-commercial only).
-- `MAIL_*` (mailer, host, port, username, password, `MAIL_FROM_ADDRESS=info@beachrex.com`, `MAIL_FROM_NAME=Beachrex`) if the site sends e-mail.
+- `MAIL_*` for password reset e-mails (same as dev/uat): `MAIL_MAILER=smtp`, `MAIL_SCHEME=smtps`, `MAIL_HOST=mail.datavallis.com`, `MAIL_PORT=465`, `MAIL_USERNAME=hello@beachrex.com`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS=hello@beachrex.com`, `MAIL_FROM_NAME=Beachrex`; `FRONTEND_URL=https://beachrex.com` (the reset link points there).
 
 **After any later edit of `.env.prod`** (e.g. `BACKUP_ENABLED` in D5): the deploy caches the config, so the change only applies after a prod redeploy (or `php artisan config:cache` in `api_prod` and `scheduler_prod`).
 
