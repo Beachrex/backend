@@ -208,7 +208,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 ## Owner's open actions
 
 - **Old beachrex.com URLs (live on dev since 2026-10-08, Beachrex/backend#46 + Beachrex/web-client#19):** test them on dev now. Take 5–10 real old links (Google Maps, other sites), replace `https://www.beachrex.com` with `https://dev.beachrex.com` and open them: each must end on the same beach/place (308), not the home page or a 404. Send the agent any that land wrong; they become test cases. On beachrex.com they start working at the DNS switch (prod launch runbook D2/D3, check D8). After launch: Google Search Console → submit `https://beachrex.com/sitemap.xml` and watch the "Not found (404)" report for a few weeks.
-- **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** create `Beachrex/mobile-app`, Expo organisation + `EXPO_TOKEN`, Apple Developer (D-U-N-S) and Google Play accounts, confirm bundle ID `com.beachrex.app`, Android Google Maps key, Sentry yes/no.
+- **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** Apple Developer (D-U-N-S) and Google Play accounts, Expo account (builds run on the owner's computer), Sentry yes/no. Done/decided 2026-10-09: repo `Beachrex/mobile-app`, bundle ID `com.datavallis.beachrex`; no `EXPO_TOKEN` and no Google Maps key needed.
 
 - **Footer pages on uat/prod:** `static-pages:sync` (dry run first) at promotion (prod launch runbook B6). Dev is synced (2026-10-08).
 - **Copyright backfill:** `php artisan media:embed-copyright --dry-run`, then without `--dry-run`, when the owner decides (rewrites existing JPEG originals on Spaces; best on prod after launch).
@@ -327,7 +327,8 @@ ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementati
 Status: **In progress** (owner, 2026-10-09: mobile development starts today). M0.1 (Expo app in `Beachrex/mobile-app`) in progress.
 Backend for the app (MOBILE-TASKS §B): B-M1 `GET /api/v1/app-config` done (Beachrex/backend#83); B-M3 favorites next; B-M2 native sign-in waits for the Google iOS/Android client IDs and the Apple Team ID from the owner.
 
-This section is owned by the **mobile agent** (task status, builds, owner checks); see the doc ownership table in `docs/AGENT-ROLES.md`.
+Owner decisions 2026-10-09: bundle ID `com.datavallis.beachrex`; branches `dev` + `main`; map = Leaflet + OpenStreetMap in a WebView (no Google Maps key); builds run on the owner's computer (no `EXPO_TOKEN`); `development` and `preview` builds use the dev API (no uat).
+The web agent writes this section from the mobile agent's status relayed by the owner (doc ownership: `docs/AGENT-ROLES.md`).
 
 ## Open items (found, not yet scheduled)
 
