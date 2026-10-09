@@ -28,6 +28,8 @@ class ItineraryQualityTest extends TestCase
     {
         parent::setUp();
         Config::set('ai.features.enabled', true);
+        // Plan quality only: the paywall is mocked open and no credit is reserved (payments are covered by ItineraryCreditSafetyTest).
+        Config::set('ai.payments_enabled', false);
         $this->seedItineraryBeaches();
 
         $enforcement = \Mockery::mock(PlanEnforcementService::class);
