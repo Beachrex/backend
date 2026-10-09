@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Mobile app (B-M1): GET /api/v1/app-config
+
+**What changed:** a new public `GET /api/v1/app-config` (TASK-005, mobile agent task M1.4). It returns:
+- `data.ios` and `data.android`, each with `min_supported_version`, `latest_version` and `store_url` (null until set);
+- `data.features`: `ai_chat`, `itinerary`, `favorites` and `native_sign_in`, all false by default;
+- `data.api_version: "v1"`.
+
+The values come from `config/mobile.php` (`MOBILE_*` in `.env.example`), so a store release only needs an env change and a redeploy; no code change. The response has `Cache-Control: public, max-age=300`. OpenAPI tag "Mobile".
+
+**Test:** `tests/Feature/AppConfigTest.php`.
+
+---
+
 ## 2026-10-09 - Dependencies: composer security advisories fixed (74 → 0)
 
 **What changed:** `composer audit` reported 74 advisories in 25 packages (critical/high in phpoffice/phpspreadsheet, league/commonmark, guzzlehttp/guzzle, phpseclib, aws-sdk-php, symfony/http-foundation and symfony/mime, laravel/framework). A `composer update` within the existing `composer.json` constraints (no constraint changed) fixed all of them: **"No security vulnerability advisories found."** 123 locked versions changed, for example:

@@ -132,6 +132,9 @@ Route::prefix('api/v1')
         Route::get('/continents/{code}', [ContinentController::class, 'show']);
 
         // Country routes
+        // B-M1: mobile app versions, store links and feature flags
+        Route::get('/app-config', [\App\Http\Controllers\Api\V1\AppConfigController::class, 'show']);
+
         Route::get('/countries', [CountryController::class, 'index']);
         Route::get('/countries/{codeOrSlug}', [CountryController::class, 'show']);
         Route::get('/countries/{codeOrSlug}/weather', [CountryController::class, 'weather']);
