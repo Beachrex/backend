@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachDetailsResource;
 use App\Models\Beach;
+use App\Support\BeachViewCounter;
 use App\Models\BeachTranslation;
 use App\Services\CacheService;
 use App\Traits\CacheAware;
@@ -100,13 +101,13 @@ class BeachDetailsController extends Controller
             ], 404);
         }
 
-        // Increment view counter outside of cache. Machine clients (the MCP server, other tools)
-        // identify themselves with X-Beachrex-Client and are not counted as visits.
-        if (! $request->hasHeader('X-Beachrex-Client')) {
-            $beach = $this->findBeachByIdentifier($identifier);
-            if ($beach) {
-                $beach->increment('beach_views');
-            }
+        // Increment view counter outside of cache. Machine clients (the MCP server, the website's own
+        // server-side rendering, other tools) identify themselves with X-Beachrex-Client and are not counted.
+        // Only the counter is updated (one UPDATE by id from the cached data); loading the beach with all its
+        // relations here cost ~70 queries per view (scalability audit 2026-10-09).
+        $beachId = $data['basic_info']['id'] ?? null;
+        if (! $request->hasHeader('X-Beachrex-Client') && $beachId) {
+            BeachViewCounter::increment((int) $beachId);
         }
 
         return response()->json(['data' => $data]);

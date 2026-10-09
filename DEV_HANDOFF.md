@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - Beach views: one UPDATE per view, and a browser endpoint for the cached website
+
+### Overview
+Scalability audit 2026-10-09: `GET /beach-details/{identifier}` answered from the cache but then reloaded the beach with ~37 relations (23 queries in the test, ~70 with real data) only to increment `beach_views`. Also, the website now serves beach pages from its cache (ISR, web-client 2026-10-09), and Next.js already cached the API response before that, so the site's server-side reads could not count visitors.
+
+### Changes Made
+- `App\Support\BeachViewCounter::increment($id)`: one `UPDATE beach SET beach_views = beach_views + 1` by id (active beaches only), no model load, no model events (Scout), `updated_at` unchanged.
+- `BeachDetailsController::show`: counts with the id from the cached response (`basic_info.id`). Still skipped for `X-Beachrex-Client` (MCP; the website's server will send it too).
+- New `POST /api/v1/beaches/{id}/view` (`BeachViewController`): the browser reports a beach page view. Public like the newsletter sign-up (it only increments a counter), `throttle:60,1`, one counted view per visitor (hashed IP) and beach per 30 minutes (`Cache::add`), 404 for unknown or inactive beaches. OpenAPI documented; `api-docs.json` regenerated.
+
+### Affected Endpoints
+- `GET /api/v1/beach-details/{identifier}` (same response; cheaper counting)
+- `POST /api/v1/beaches/{id}/view` (new)
+
+### Testing
+`php artisan test --filter=BeachDetailsApiTest` (10 passed): a cached GET runs ≤ 2 queries (deliberate break with the old controller: 23); POST counts once per visitor and window, another IP counts, `updated_at` unchanged; unknown/inactive/non-numeric ids → 404. Full suite: 450 passed, only the 4 known env-dependent failures.
+
+---
+
 ## 2026-10-09 - PHP-FPM: 16 workers instead of 5 (scalability)
 
 ### Overview
