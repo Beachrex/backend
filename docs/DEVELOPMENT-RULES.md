@@ -16,6 +16,9 @@ Rules for anyone (human or AI agent) changing the Beachrex backend (`Beachrex/ba
 | Owner | David Tacer | Product decisions, accounts, secrets, VPS/DNS/server actions, anything on uat/prod, anything irreversible |
 | CTO + implementer | AI agent (Claude Code) | Plans, ADRs, implementation, tests, docs, PRs to `dev`, merging green PRs to `dev`, verifying the dev deploy |
 
+Two agent roles share these rules: the **web agent** (backend + web-client, default) and the **mobile agent**
+(`Beachrex/mobile-app`, when the owner says so). Scope and boundaries: [`docs/AGENT-ROLES.md`](AGENT-ROLES.md).
+
 **Mode B (autonomous)** is in use. Standing permissions are recorded in `docs/HANDOFF.md` with date and the
 owner's words. Promotion `dev → uat → main` happens **only when the owner asks for it** in the conversation.
 
@@ -135,6 +138,9 @@ Every PR updates, in the same PR:
 - Branch → environment: `dev → dev`, `uat → uat`, `main → prod`, deployed by `.github/workflows/deploy.yml`.
 - `NEXT_PUBLIC_*` values are baked in at frontend build time; everything else is runtime env.
 - **Migrations are backward compatible** (expand → migrate → contract). Never edit an applied migration.
+- **API compatibility (owner, 2026-10-09, mobile app):** once the app is in a store, `/api/v1` changes are additive
+  only (new fields/endpoints; no removed or renamed fields, no changed types or meanings). Installed apps cannot be
+  forced to update. A breaking change needs `/api/v2` or a phased plan with an ADR.
 - **Caching:** never cache Eloquent models — cache `Resource::...->resolve()` arrays. Every cached model
   needs invalidation on save/delete.
 - **Locales:** never hardcode a locale list — use `SetLocaleFromHeader::SUPPORTED_LOCALES` (DB code `sl`,

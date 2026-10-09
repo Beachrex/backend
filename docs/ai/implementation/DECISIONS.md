@@ -928,6 +928,24 @@ Structured output was chosen over a tool-calling loop: one predictable extra cal
 
 ---
 
+## [2026-10-09] Mobile: App Stack and Scope (TASK-005)
+
+**Status**: Accepted (owner, 2026-10-09: "React Native, NativeWind, EAS – Expo dev … bistvo je iskanje plaž … grafika po našem CGP-ju, dober UX"; details are the agent's reading, owner may change them)
+
+**Context**: Beachrex needs an iOS/Android app focused on finding beaches. The web (Next.js) and the API (`/api/v1`) exist; a second agent ("mobile agent") will build the app while the web agent continues the website.
+
+**Decision**:
+1. Separate repo `Beachrex/mobile-app`; Expo (latest stable SDK at start), Expo Router, TypeScript strict, NativeWind v4, TanStack Query, API client generated from the backend OpenAPI, `use-intl` with the web's ICU message format, MMKV, expo-image, react-native-maps + supercluster, EAS Build/Submit/Update. Plan: `docs/mobile/MOBILE-PLAN.md`; tasks: `docs/mobile/MOBILE-TASKS.md`; roles: `docs/AGENT-ROLES.md`.
+2. v1 = public data only (discover, search, map, filters, beach and place pages, saved on device, 19 languages). No accounts and no payments in v1: paid digital content in the app must use In-App Purchase, and Google sign-in requires Sign in with Apple; both are phase 2 with backend work.
+3. CGP v1.0 tokens; text in Deep Sea because white on teal/orange fails WCAG contrast (2.6:1).
+4. `/api/v1` becomes additive-only once the app is in a store (`DEVELOPMENT-RULES.md` §9).
+
+**Alternatives Considered**: Bare React Native (more native maintenance, no EAS Update convenience); a WebView wrapper of the website (poor UX, store rejection risk); Flutter (no code/knowledge reuse with the web's React/TypeScript).
+
+**Related**: `docs/mobile/MOBILE-PLAN.md`, `docs/mobile/MOBILE-TASKS.md`, `docs/AGENT-ROLES.md`
+
+---
+
 **End of DECISIONS.md**
 
 This file is updated by: All AI agents making architectural decisions
