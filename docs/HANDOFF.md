@@ -302,8 +302,8 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
 ## AI chat and itinerary plan (owner accepted 2026-10-09)
 
 ADR "AI chat and itinerary: plan to make them sellable" in `docs/ai/implementation/DECISIONS.md`. One PR per step, as always.
-- [ ] **AI-1** quick chat fixes: backend (real slugs/photos/page language, session memory, prompt, accessibility free, 503) and web chat page (session, locale, linked beach names, photos, error texts, location).
-- [ ] **AI-2** tool-calling chat like the MCP + evaluation set; OpenAI vs Claude comparison (owner adds `ANTHROPIC_API_KEY` to the env files when we get there).
+- [x] **AI-1** quick chat fixes (Beachrex/backend#72, Beachrex/web-client#51, live on dev): backend (real slugs/photos/page language, session memory, prompt, accessibility free, 503) and web chat page (session, locale, linked beach names, photos, error texts, location).
+- [ ] **AI-2** tool-calling chat like the MCP + evaluation set: code on dev, **off** (`AI_CHAT_ENGINE=pipeline`). Next: owner adds `ANTHROPIC_API_KEY` to `.env.dev`; run `php artisan ai:chat-eval` in `api_dev` for OpenAI and Claude; pick the model; set `AI_CHAT_ENGINE=agent` (+ provider/model) on dev.
 - [ ] **AI-3** sellable itinerary (form, payment safety, background generation, saved plans, links/map/PDF).
 - [ ] **AI-4** EU selling with the owner (EUR, VAT/invoices, withdrawal waiver, pricing page, terms).
 

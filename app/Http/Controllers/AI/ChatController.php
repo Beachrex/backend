@@ -11,6 +11,7 @@ use App\Models\AiSession;
 use App\Models\AiUsage;
 use App\Models\Beach;
 use App\Models\BeachTranslation;
+use App\Services\AI\Agent\ChatAgent;
 use App\Services\AI\Chat\PlaceResolver;
 use App\Services\AI\Chat\QueryUnderstandingService;
 use App\Services\AI\ContextBuilderService;
@@ -55,6 +56,7 @@ class ChatController extends Controller
         private readonly QueryUnderstandingService $understanding,
         private readonly PlaceResolver $places,
         private readonly ItineraryContextBuilderService $candidates,
+        private readonly ChatAgent $agent,
     ) {}
 
     /**
@@ -190,6 +192,11 @@ class ChatController extends Controller
         // Get conversation history (last 5 messages)
         $conversationHistory = $this->getConversationHistory($session);
 
+        // AI-2: the model works with the beach tools like the MCP server (config ai.chat.engine).
+        if (config('ai.chat.engine') === 'agent') {
+            return $this->agentReply($request, $session, $userMessage, array_values($conversationHistory), $requestId, $startTime);
+        }
+
         // TASK-003: understand the message in any language (structured LLM extraction);
         // keyword detection is the fallback when that call fails.
         $understood = $this->understanding->understand($userMessage, array_values($conversationHistory));
@@ -312,6 +319,68 @@ class ChatController extends Controller
                 'message' => 'An error occurred while processing your request. Please try again.',
             ], 500);
         }
+    }
+
+    /**
+     * AI-2 answer: tool-calling agent; markdown text with links to the beach pages, cards for the linked beaches.
+     */
+    private function agentReply(ChatRequest $request, AiSession $session, string $userMessage, array $history, string $requestId, float $startTime): JsonResponse
+    {
+        $location = $request->input('context.location');
+        try {
+            $answer = $this->agent->answer($userMessage, $history, app()->getLocale(), is_array($location) ? [
+                'latitude' => (float) $location['latitude'], 'longitude' => (float) $location['longitude'],
+            ] : null);
+        } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException|\OpenAI\Exceptions\ErrorException|\Anthropic\Core\Exceptions\APIException $e) {
+            Log::warning('AI chat agent provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'error' => 'ai_unavailable',
+                'message' => 'The AI assistant is busy right now. Please try again in a minute.',
+                'request_id' => $requestId,
+            ], 503, ['Retry-After' => '60']);
+        }
+
+        /** @var \App\Services\AI\Agent\AgentResult $result */
+        $result = $answer['result'];
+        $text = $result->refused || $answer['message'] === ''
+            ? 'Sorry, I cannot help with that. Ask me about beaches, places or what you would like to do at the sea.'
+            : $answer['message'];
+
+        $this->saveMessage($session, 'user', $userMessage, 'agent', ['tool_calls' => $result->toolCalls], $result->inputTokens, 0);
+        $this->saveMessage($session, 'assistant', $text, 'agent', ['beaches' => $answer['beaches']], 0, $result->outputTokens);
+        $session->increment('messages_count', 2);
+        $session->increment('tokens_used', $result->inputTokens + $result->outputTokens);
+        $session->update(['last_activity_at' => now()]);
+
+        $usageResponse = new ChatCompletionResponse(content: $text, model: $result->model, inputTokens: $result->inputTokens,
+            outputTokens: $result->outputTokens, totalTokens: $result->inputTokens + $result->outputTokens,
+            costUsd: $result->costUsd, provider: $result->provider, finishReason: $result->refused ? 'refusal' : 'stop');
+        $this->trackUsage(session: $session, user: $request->user(), llmResponse: $usageResponse,
+            context: ['metadata' => ['beaches_returned' => count($answer['beaches'])]], requestId: $requestId,
+            latencyMs: (int) ((microtime(true) - $startTime) * 1000), intent: 'agent', understandingResponse: null);
+
+        return response()->json([
+            'session_id' => $session->id,
+            'message' => $text,
+            'format' => 'markdown',
+            'intent' => 'agent',
+            'beaches' => $answer['beaches'],
+            'filters_applied' => null,
+            'suggestions' => [],
+            'metadata' => [
+                'tokens_used' => $result->inputTokens + $result->outputTokens,
+                'understanding' => 'agent',
+                'language' => app()->getLocale(),
+                'assumptions' => [],
+                'model' => $result->model,
+                'tool_calls' => count($result->toolCalls),
+                'response_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
+                'cached' => false,
+                'request_id' => $requestId,
+                'location_provided' => is_array($location),
+            ],
+        ]);
     }
 
     /**
@@ -894,7 +963,7 @@ class ChatController extends Controller
             'session_id' => $session->id,
             'tier' => $session->tier,
             'event_type' => 'chat',
-            'llm_provider' => 'openai',
+            'llm_provider' => $llmResponse->provider ?? 'openai',
             'llm_model' => $llmResponse->model,
             'tokens_input' => $llmResponse->inputTokens + ($extra?->inputTokens ?? 0),
             'tokens_output' => $llmResponse->outputTokens + ($extra?->outputTokens ?? 0),
