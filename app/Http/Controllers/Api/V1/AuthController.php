@@ -127,7 +127,7 @@ class AuthController extends Controller
      *     path="/api/v1/me",
      *     operationId="deleteMyAccount",
      *     summary="Delete my account",
-     *     description="Removes personal data (profile, sign-in, tokens, saved beaches, itineraries, AI chat history, credits). Purchases are kept anonymised because accounting law requires it. Confirm with `password`; accounts linked to Google may send `confirm: \"DELETE\"` instead. Admin accounts cannot be deleted here.",
+     *     description="Removes personal data (profile, sign-in, tokens, saved beaches, itineraries, AI chat history, credits). Purchases are kept anonymised because accounting law requires it. Confirm with `password`; accounts linked to Google may send `confirm: DELETE` instead. Admin accounts cannot be deleted here.",
      *     tags={"Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(required=true, @OA\JsonContent(

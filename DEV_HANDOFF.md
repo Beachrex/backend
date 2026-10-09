@@ -65,6 +65,12 @@ The owner decided (2026-10-09) that the app signs in with e-mail + password for 
 - **Throttling per IP:** `/login` 10/min, `/register` 5/min (before, both were unthrottled: password guessing).
 - OpenAPI regenerated.
 
+**OpenAPI generation fixed (found while checking this PR):**
+- Since the composer update (swagger-php 5.3 → 5.8, #82), `l5-swagger:generate` failed with "Multiple @OA\\Schema() with the same schema". `config/l5-swagger.php` scanned `app/Swagger` and its subfolder `app/Swagger/Schemas`, so every schema was read twice.
+- The failure was quiet: the committed `api-docs.json` on dev lacked `/app-config`, `/me/favorites` and `/ai/itinerary-plans`.
+- The duplicate path is removed and the docs are regenerated: 108 paths, all new endpoints present.
+- New `tests/Feature/OpenApiDocsTest.php` fails when generation errors or the committed file misses a path.
+
 **Tests:** `tests/Feature/AccountDeletionTest.php` (5). Full suite: 531 passed; the only failures are the 4 known environment-dependent ones.
 
 ---

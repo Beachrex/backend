@@ -825,6 +825,62 @@
                 }
             }
         },
+        "/api/v1/app-config": {
+            "get": {
+                "tags": [
+                    "Mobile"
+                ],
+                "summary": "Mobile app configuration",
+                "description": "Per platform: the lowest app version still supported (below it the app asks the user to update), the latest version and the store link; plus feature flags. Public, cacheable for 5 minutes.",
+                "operationId": "getAppConfig",
+                "responses": {
+                    "200": {
+                        "description": "App configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "ios": {
+                                                    "$ref": "#/components/schemas/AppPlatformConfig"
+                                                },
+                                                "android": {
+                                                    "$ref": "#/components/schemas/AppPlatformConfig"
+                                                },
+                                                "features": {
+                                                    "properties": {
+                                                        "ai_chat": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "itinerary": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "favorites": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "native_sign_in": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "api_version": {
+                                                    "type": "string",
+                                                    "example": "v1"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/area-descriptions": {
             "get": {
                 "tags": [
@@ -1278,6 +1334,54 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Delete my account",
+                "description": "Removes personal data (profile, sign-in, tokens, saved beaches, itineraries, AI chat history, credits). Purchases are kept anonymised because accounting law requires it. Confirm with `password`; accounts linked to Google may send `confirm: DELETE` instead. Admin accounts cannot be deleted here.",
+                "operationId": "deleteMyAccount",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "password": {
+                                        "description": "Current password (accounts created with e-mail and password)",
+                                        "type": "string"
+                                    },
+                                    "confirm": {
+                                        "description": "Accounts linked to Google only (they may have no password of their own)",
+                                        "type": "string",
+                                        "example": "DELETE"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "403": {
+                        "description": "Admin accounts cannot be deleted through the API"
+                    },
+                    "422": {
+                        "description": "Wrong password or missing confirmation"
                     }
                 },
                 "security": [
@@ -4147,6 +4251,179 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/me/favorites": {
+            "get": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "My saved beaches (newest first), as beach cards",
+                "operationId": "getMyFavorites",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "sl"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saved beaches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BeachSchema"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "limit": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Save a beach (idempotent)",
+                "operationId": "addFavorite",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "beach_id"
+                                ],
+                                "properties": {
+                                    "beach_id": {
+                                        "type": "integer",
+                                        "example": 614
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Saved"
+                    },
+                    "200": {
+                        "description": "Already saved"
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    },
+                    "422": {
+                        "description": "Unknown or unpublished beach, or the list is full (error: favorites_limit)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/favorites/ids": {
+            "get": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Ids of my saved beaches (to show the heart state on any list)",
+                "operationId": "getMyFavoriteIds",
+                "responses": {
+                    "200": {
+                        "description": "Beach ids, newest first",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/me/favorites/{beachId}": {
+            "delete": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Remove a saved beach (idempotent)",
+                "operationId": "removeFavorite",
+                "parameters": [
+                    {
+                        "name": "beachId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Removed (or was not saved)"
+                    },
+                    "401": {
+                        "description": "Not signed in"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/beaches/filters": {
@@ -10473,6 +10750,24 @@
     },
     "components": {
         "schemas": {
+            "AppPlatformConfig": {
+                "properties": {
+                    "min_supported_version": {
+                        "type": "string",
+                        "example": "1.0.0"
+                    },
+                    "latest_version": {
+                        "type": "string",
+                        "example": "1.2.0"
+                    },
+                    "store_url": {
+                        "type": "string",
+                        "example": "https://apps.apple.com/app/id000000000",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "AiBeachRecommendation": {
                 "title": "AI Beach Recommendation",
                 "description": "Beach recommendation from AI agent",
@@ -16547,6 +16842,10 @@
             "description": "Accommodation Around"
         },
         {
+            "name": "Mobile",
+            "description": "Mobile"
+        },
+        {
             "name": "Area Descriptions",
             "description": "Area Descriptions"
         },
@@ -16565,6 +16864,10 @@
         {
             "name": "Culinary Offers",
             "description": "Culinary Offers"
+        },
+        {
+            "name": "Favorites",
+            "description": "Favorites"
         },
         {
             "name": "System",
