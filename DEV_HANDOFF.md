@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-09 - content:ai: better generated descriptions, full preview, no double submit
+
+Owner review of the first preview (2026-10-09): generated descriptions all started the same way; the owner chose option B (database facts plus well-known facts about the town or island).
+
+### Changes Made
+- `BeachContentAi::generatePrompt()`: travel-guide style, 50–110 words, first sentence a search snippet under 155 characters, opens with what is distinctive, no stock phrases, area named naturally (not "Dalmatia - Dubrovnik"), well-known facts about the place only when certain and never as facts about the beach.
+- More facts: area, setting, beach and bay length, parking distance, road to parking, best reached by, water type; `name_by_language` gives the stored name per language (also used when translating descriptions).
+- `content:ai preview|apply --full --locale=sl`: whole descriptions for chosen languages.
+- `content:ai submit` refuses a part whose previous batch was not applied yet (`--force` overrides).
+
+### Testing
+- `php artisan test --filter=ContentAiTest` (11 tests)
+
+---
+
 ## 2026-10-09 - Data quality with AI: beach names, region names, descriptions (`content:ai`)
 
 Owner request 2026-10-09: "uredi kakovost podatkov, z AI prevajaj". Runbook: `docs/runbooks/content-ai.md`.
