@@ -19,6 +19,10 @@ use Illuminate\Http\Request;
  */
 class BeachController extends Controller
 {
+    private const DEFAULT_PER_PAGE = 20;
+
+    private const MAX_PER_PAGE = 100;
+
     use CacheAware;
 
     protected BeachFilterService $filterService;
@@ -106,11 +110,39 @@ class BeachController extends Controller
      *     tags={"Beaches"},
      *     @OA\Parameter(ref="#/components/parameters/AcceptLanguage"),
      *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Beaches per page (default 20, max 100). Pages are ordered by `sort`; meta has total, current_page, last_page.",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, maximum=100, default=20, example=16)
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number (default 1)",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, default=1, example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="popular (most viewed first, default) or newest",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"popular","newest"}, default="popular")
+     *     ),
+     *     @OA\Parameter(
      *         name="limit",
      *         in="query",
-     *         description="Maximum number of beaches to return (default: 5000)",
+     *         description="Deprecated alias of per_page (max 100). Before 2026-10-09 the default was 5000 and `page` was ignored.",
      *         required=false,
-     *         @OA\Schema(type="integer", example=50, default=5000)
+     *         @OA\Schema(type="integer", example=50, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="city",
+     *         in="query",
+     *         description="Alias of city_code (same for region / island → region_code / island_code). Codes or ids, not slugs.",
+     *         required=false,
+     *         @OA\Schema(type="string", example="murter")
      *     ),
      *     @OA\Parameter(
      *         name="continent_code",
@@ -208,8 +240,13 @@ class BeachController extends Controller
         // serialized blobs (20-28MB per key) that exhaust PHP memory
         // on unserialize. By resolving BeachResource before caching,
         // we store only the flat JSON-able array (~5-10x smaller).
-        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
-            $limit = $request->input('limit', 5000);
+        // Server-side pagination (owner 2026-10-09: listing pages downloaded every beach and paged in the
+        // browser). `limit` stays an alias of `per_page` for older callers; at most 100 per page.
+        $perPage = max(1, min(self::MAX_PER_PAGE, (int) $request->input('per_page', $request->input('limit', self::DEFAULT_PER_PAGE))));
+        $page = max(1, (int) $request->input('page', 1));
+        $sort = $request->input('sort') === 'newest' ? 'newest' : 'popular';
+
+        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request, $perPage, $page, $sort) {
 
             // Only load relationships that are actually used in BeachResource
             $query = Beach::where('status_id', 1)
@@ -251,7 +288,12 @@ class BeachController extends Controller
                 ->whereNotNull('location')
                 ->first();
 
-            $beaches = $query->limit($limit)->get();
+            $total = (clone $query)->count();
+            // Stable order, so pages never overlap or skip beaches.
+            $sort === 'newest'
+                ? $query->orderByRaw('created_at DESC NULLS LAST')->orderByDesc('id')
+                : $query->orderByDesc('beach_views')->orderBy('id');
+            $beaches = $query->forPage($page, $perPage)->get();
 
             return [
                 'beaches' => BeachResource::collection($beaches)->resolve(),
@@ -266,7 +308,12 @@ class BeachController extends Controller
                         'max_latitude' => $geoData?->max_lat ? (float) $geoData->max_lat : null,
                         'max_longitude' => $geoData?->max_lng ? (float) $geoData->max_lng : null,
                     ],
-                    'total_beaches' => $beaches->count(),
+                    'total_beaches' => $total,
+                    'total' => $total,
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'last_page' => max(1, (int) ceil($total / $perPage)),
+                    'sort' => $sort,
                 ]
             ];
         });

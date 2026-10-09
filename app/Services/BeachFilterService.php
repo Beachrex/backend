@@ -16,6 +16,14 @@ class BeachFilterService
      */
     public function applyFilters(Builder $query, Request $request): Builder
     {
+        // `city`, `region`, `island` are aliases of the *_code filters (codes or ids), as in the SQL filter path
+        // used by the map endpoints. Before, GET /beaches ignored them and returned beaches of every country.
+        foreach (['region', 'island', 'city'] as $place) {
+            if ($request->filled($place) && ! $request->has("{$place}_code")) {
+                $request->merge(["{$place}_code" => $request->input($place)]);
+            }
+        }
+
         // Continent filter - supports both code and ID
         if ($request->has('continent_code')) {
             $continents = $this->parseFilterValue($request->continent_code);
@@ -1729,7 +1737,10 @@ class BeachFilterService
             'has_swimming_pool',
             'pool_type',
             'boat_only',
-            'limit'
+            'limit',
+            'per_page',
+            'page',
+            'sort',
         ];
 
         // Collect all active filters
