@@ -74,7 +74,8 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
   - `.env.prod` fixed: `SCOUT_PREFIX=prod_`, `SANCTUM_STATEFUL_DOMAINS`, `SESSION_SECURE_COOKIE`, `SESSION_COOKIE`;
   - Let's Encrypt certificate `api.beachrex.com` (expires 2027-01-07, auto-renew), Cloudflare proxy on;
   - verified on the server: health `revision` = the main merge SHA, `backup.enabled: false`.
-  - Still open for prod: `BACKUP_*` in `.env.prod`, Stripe test/live decision (`STRIPE_ENABLED=true` now), Google OAuth redirect URI (A3), UptimeRobot monitor.
+  - Google OAuth redirect URI for `api.beachrex.com` added by the owner (runbook A3, 2026-10-10).
+  - Still open for prod: `BACKUP_*` in `.env.prod`, Stripe test/live decision (`STRIPE_ENABLED=true` now), UptimeRobot monitor.
 
 - 2026-10-07: the owner set `OPENAI_MODEL=gpt-4o-mini` in `.env.dev` and `.env.uat`.
 - 2026-10-07 (session 2, work order items 1–5):
