@@ -75,6 +75,7 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
   - Let's Encrypt certificate `api.beachrex.com` (expires 2027-01-07, auto-renew), Cloudflare proxy on;
   - verified on the server: health `revision` = the main merge SHA, `backup.enabled: false`.
   - Google OAuth redirect URI for `api.beachrex.com` added by the owner (runbook A3, 2026-10-10).
+  - `MAIL_*` in `.env.prod` and `.env.uat` (owner, 2026-10-10).
   - Still open for prod: `BACKUP_*` in `.env.prod`, Stripe test/live decision (`STRIPE_ENABLED=true` now), UptimeRobot monitor.
 
 - 2026-10-07: the owner set `OPENAI_MODEL=gpt-4o-mini` in `.env.dev` and `.env.uat`.
@@ -345,7 +346,7 @@ The web agent writes this section from the mobile agent's status relayed by the 
 - **Less JavaScript on every page** (owner 2026-10-09: "zaenkrat ne, ampak si zabeleži"): header/footer as server components, flowbite Dropdown/Sidebar replaced by small own code, lazy burger menu and search results. Expected saving ~60–100 KB gzipped per page (today ~240 KB). Found in the 2026-10-09 performance audit.
 
 - **Old user migration (`users:migrate-from-old-db`): fixed per owner option (a) on 2026-10-09** — random unusable password, never the MD5 hash or "password"; imported users sign in with Google (linked by e-mail). Run only in production after launch (GDPR): `--test` first. Admin → Users has the filter "Imported from old site". Do **not** remove `database/sql/user.sql` (owner).
-  - **Forgot password** (owner 2026-10-09): `POST /api/v1/forgot-password` + `/reset-password`, e-mail via SMTP `mail.datavallis.com:465` as `hello@beachrex.com`; website e-mail sign-in + reset pages. Works only after the owner adds the `MAIL_*` lines to `/opt/beachrex/envs/.env.<env>` and redeploys (prod runbook A2 lists them).
+  - **Forgot password** (owner 2026-10-09): `POST /api/v1/forgot-password` + `/reset-password`, e-mail via SMTP `mail.datavallis.com:465` as `hello@beachrex.com`; website e-mail sign-in + reset pages. Works only after the owner adds the `MAIL_*` lines to `/opt/beachrex/envs/.env.<env>` and redeploys (prod runbook A2 lists them). **`MAIL_*` set in `.env.uat` and `.env.prod`** (owner, 2026-10-10); the deploy caches the config, so a later edit applies only after that environment's next deploy.
 - **Mobile side padding:** the global `.container { padding: 0 5px }` overrides Tailwind padding on every container; owner: leave for now (2026-10-08).
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
   - **MCP must become production-only** once prod is live (prod launch runbook D5b). Links will then point to `beachrex.com`.
