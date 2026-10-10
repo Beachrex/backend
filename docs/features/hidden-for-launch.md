@@ -22,6 +22,7 @@ and what is needed to bring it back. When a feature is built, move its row to "B
 | H14 | Beach banner: Google ratings | Beach page banner button "Google ocene 7.2" (save is back, see H6) | web-client `src/components/Beach/BeachBanner/TopBarBeachRight.tsx` | Rating was a hardcoded 7.2 | Real Google rating source (Places API) | web-client share menu PR (2026-10-08) |
 | H15 | City page category tiles | City page tiles "Peščene plaže, Kamnite plaže, Bazen, Tobogani, Primerne za pse, …" (`FEATURES.cityCategoryTiles`) | web-client `src/components/CityPage/CityCategories.tsx`, `src/components/Pages/CityListingPage.tsx` | No click action at all (owner 2026-10-09) | Each tile sets the matching filter of the "Browse all beaches" list (server-side filters, see `GET /beaches`) | Beachrex/web-client#52 |
 | H16 | Beach card rating | Star badge "0.0" on every beach card (lists, carousels, favorites) | web-client `src/components/PropertyCard/PropertyCard.tsx` | No rating source: every card showed 0.0 (owner 2026-10-09) | A real rating (own reviews or Google Places); the badge shows by itself for a rating above 0 | Beachrex/web-client#64 |
+| H17 | App Store badge in the footer | Footer brand column, next to the Google Play badge (`FEATURES.iosAppBadge`) | web-client `src/components/Footer/FooterAppBadges.tsx`, `src/lib/constants/mobile-apps.ts` | The iOS app is not published yet (owner 2026-10-10) | Publish the iOS app, set `APP_STORE_URL`, turn `FEATURES.iosAppBadge` on | Beachrex/web-client#69 |
 
 ## Brought back
 
