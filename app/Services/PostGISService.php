@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\BeachGallery;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\Beach;
@@ -760,7 +761,7 @@ class PostGISService
             INNER JOIN beach b ON m.mediable_id = b.id
             WHERE m.mediable_id IN (" . implode(',', $beachIds) . ")
               AND m.mediable_type = 'App\\Models\\Beach'
-              AND mc.code IN ('beach_gallery', 'beach_videos', 'beach_360_sphere')
+              AND mc.code IN ('beach_gallery', 'beach_videos', 'beach_360_sphere', '" . implode("', '", BeachGallery::FALLBACK_COLLECTIONS) . "')
               AND m.status_id = 1
             ORDER BY m.is_primary DESC, m.order, m.created_at
         ");
@@ -781,7 +782,7 @@ class PostGISService
             $mediaByCollection = $beachMedia->groupBy('collection_code');
 
             // Format gallery - only essential fields, sorted by is_primary DESC, then order ASC
-            $gallery = $mediaByCollection->get('beach_gallery', collect())
+            $gallery = BeachGallery::pick($mediaByCollection)
                 ->sortBy([
                     fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
                     fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)

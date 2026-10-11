@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\BeachGallery;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachResource extends JsonResource
@@ -99,7 +100,7 @@ class BeachResource extends JsonResource
         $mediaByCollection = $this->media->groupBy('mediaCollection.code');
 
         // Format gallery images - only essential fields, sorted by is_primary DESC, then order ASC
-        $gallery = $mediaByCollection->get('beach_gallery', collect())
+        $gallery = BeachGallery::pick($mediaByCollection)
             ->sortBy([
                 fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
                 fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
