@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-11 - Beach gallery falls back to the beach's other photos
+
+**Owner report:** Njivice (id 844) showed no photos. It has no `beach_gallery` photo, only a 360° panorama and two `parking_images`.
+
+**Change:** `App\Support\BeachGallery::pick()` returns the `beach_gallery` photos, or, when there are none, the beach's photos from `beach_spot_images`, `infrastructure_images`, `parking_images`, `info_images` (in that order). Videos and 360° spheres are never used. Used by:
+- `GET /api/v1/beach-details/{identifier}` → `data.media.gallery` (`BeachDetailsResource`);
+- `BeachResource` → `media.gallery`;
+- card results from `PostGISService` (radius, bounding box) → `media.gallery`; the media query also loads the fallback collections.
+
+Response shape unchanged (no OpenAPI change). The other collections (`parking_images`, …) are still returned as before. Prev/next navigation thumbnails still use `beach_gallery` only.
+
+**Tests:** `tests/Feature/BeachGalleryFallbackTest.php` (card gallery, beach-details API, gallery wins, no videos/spheres).
+
 ## 2026-10-09 - OpenAPI: full search result fields for islands, regions and countries
 
 Mobile report (relayed by the owner): the `GET /api/v1/search` response documented only the URL slugs for `islands`, `regions` and `countries`, so generated clients missed `id`, `name`, `slug`, `main_image`, `country_name` and the other fields the API already returns.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\BeachGallery;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachDetailsResource extends JsonResource
@@ -339,7 +340,7 @@ class BeachDetailsResource extends JsonResource
         $mediaByCollection = $this->media->groupBy('mediaCollection.code');
 
         return [
-            'gallery' => $this->formatMediaCollection($mediaByCollection->get('beach_gallery', collect())),
+            'gallery' => $this->formatMediaCollection(BeachGallery::pick($mediaByCollection)),
             'videos' => $this->formatMediaCollection($mediaByCollection->get('beach_videos', collect())),
             'spheres_360' => $this->formatMediaCollection($mediaByCollection->get('beach_360_sphere', collect()), 'beach_360_sphere'),
             'parking_images' => $this->formatMediaCollection($mediaByCollection->get('parking_images', collect())),
