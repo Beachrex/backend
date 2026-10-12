@@ -52,6 +52,14 @@ How to test the changes
 
 ---
 
+## 2026-10-12 - `translations:ai`: beach and city names in Greek and Cyrillic
+
+**Owner:** "loti se ja" (after the reference-data batch, 3 563 names, was written on dev).
+
+**Change:** `translations:ai` now also covers `beach_translation` and `city_translation` (active places only), for el, ua, ru and bg only, in their own script, with the country code as context and a place-name prompt. New rows copy the English row's slug but never its description (descriptions are translated separately by `content:ai`).
+
+**Tests:** `tests/Feature/TranslationsAiTest.php`.
+
 ## 2026-10-12 - `translations:ai`: AI translations for reference data
 
 **Owner:** "DA" to translating the missing reference translations with AI (`translations:audit`: da, pt, nl, el, sq have no rows in most attribute tables; badges only en/hr; Albanian country names in English).
