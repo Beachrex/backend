@@ -52,6 +52,14 @@ How to test the changes
 
 ---
 
+## 2026-10-12 - `translations:ai`: AI translations for reference data
+
+**Owner:** "DA" to translating the missing reference translations with AI (`translations:audit`: da, pt, nl, el, sq have no rows in most attribute tables; badges only en/hr; Albanian country names in English).
+
+**Change:** `php artisan translations:ai plan|preview|submit|status|apply` (runbook `docs/runbooks/content-ai.md`). Covers every small `*_translation` table with `name` (attributes, badges, islands, lakes, rivers, countries, continents; not beaches, cities, regions, pages, articles). One Message Batch request per table chunk of 40 rows. Writes only languages that have no row or still the English name; new rows copy the English row (slug included). `TranslationTables` (shared with `translations:audit`) now also finds `country_translation` / `continent_translation` (keyed by code).
+
+**Tests:** `tests/Feature/TranslationsAiTest.php`, `tests/Feature/TranslationsAuditTest.php`.
+
 ## 2026-10-12 - `main_image` falls back to the first gallery photo
 
 **Owner report:** French region pages (Bretagne, Nouvelle-Aquitaine) showed no most visited beaches ("All beaches (0)") and city pages no beaches. The API returned them (`GET /api/v1/beaches/most-visited?region_code=bretagne` → Plage du Verger) but with `"main_image": null`: these mobile-app beaches have no usable primary photo (the first media has an empty `file_path`, or none is primary), and the web skips cards without a main image.
