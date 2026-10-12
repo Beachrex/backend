@@ -52,6 +52,13 @@ How to test the changes
 
 ---
 
+## 2026-10-12 - `main_image` falls back to the first gallery photo
+
+**Owner report:** French region pages (Bretagne, Nouvelle-Aquitaine) showed no most visited beaches ("All beaches (0)") and city pages no beaches. The API returned them (`GET /api/v1/beaches/most-visited?region_code=bretagne` → Plage du Verger) but with `"main_image": null`: these mobile-app beaches have no usable primary photo (the first media has an empty `file_path`, or none is primary), and the web skips cards without a main image.
+
+**Change:** `BeachResource` (most visited, lists) and `PostGISService` card results (radius / bounding box) set `main_image` to the first gallery photo (`BeachGallery::pick`) when they have none. Response shape unchanged.
+
+**Tests:** `tests/Feature/BeachMainImageFallbackTest.php` (both fail without the change).
 ## 2026-10-12 - Beach page: missing translation falls back to English, not the raw code
 
 **Owner report:** Greek beach page showed "small_stones", "adventurer". `translations:audit` on dev: da, pt, nl, el, sq have no rows at all in most attribute tables (beach type, user type, facilities, …).

@@ -795,6 +795,10 @@ class PostGISService
                     ];
                 })->values()->toArray();
 
+                // No primary image (e.g. beaches uploaded from the mobile app, France): use the first gallery photo,
+                // otherwise the web skips the card and region/city pages showed no beaches (owner 2026-10-12).
+                $mainImage ??= $gallery[0]['url'] ?? null;
+
             // Format videos - only essential fields, sorted by is_primary DESC, then order ASC
             $videos = $mediaByCollection->get('beach_videos', collect())
                 ->sortBy([
