@@ -49,7 +49,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'continent' => $this->when($this->continent, function () use ($locale) {
-                $trans = $this->continent->translations->firstWhere('locale', $locale);
+                $trans = $this->continent->translations->firstWhere('locale', $locale)
+                    ?? $this->continent->translations->firstWhere('locale', 'en');
                 $transEn = $this->continent->translations->firstWhere('locale', 'en');
                 return [
                     'code' => $this->continent->code,
@@ -58,7 +59,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'country' => $this->when($this->country, function () use ($locale) {
-                $trans = $this->country->translations->firstWhere('locale', $locale);
+                $trans = $this->country->translations->firstWhere('locale', $locale)
+                    ?? $this->country->translations->firstWhere('locale', 'en');
                 $transEn = $this->country->translations->firstWhere('locale', 'en');
                 return [
                     'code' => $this->country->code,
@@ -68,7 +70,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'region' => $this->when($this->region, function () use ($locale) {
-                $trans = $this->region->translations->firstWhere('locale', $locale);
+                $trans = $this->region->translations->firstWhere('locale', $locale)
+                    ?? $this->region->translations->firstWhere('locale', 'en');
                 $transEn = $this->region->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->region->id,
@@ -77,7 +80,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'city' => $this->when($this->city, function () use ($locale) {
-                $trans = $this->city->translations->firstWhere('locale', $locale);
+                $trans = $this->city->translations->firstWhere('locale', $locale)
+                    ?? $this->city->translations->firstWhere('locale', 'en');
                 $transEn = $this->city->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->city->id,
@@ -86,7 +90,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'island' => $this->when($this->island, function () use ($locale) {
-                $trans = $this->island->translations->firstWhere('locale', $locale);
+                $trans = $this->island->translations->firstWhere('locale', $locale)
+                    ?? $this->island->translations->firstWhere('locale', 'en');
                 $transEn = $this->island->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->island->id,
@@ -95,7 +100,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'river' => $this->when($this->river, function () use ($locale) {
-                $trans = $this->river->translations->firstWhere('locale', $locale);
+                $trans = $this->river->translations->firstWhere('locale', $locale)
+                    ?? $this->river->translations->firstWhere('locale', 'en');
                 $transEn = $this->river->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->river->id,
@@ -103,7 +109,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'lake' => $this->when($this->lake, function () use ($locale) {
-                $trans = $this->lake->translations->firstWhere('locale', $locale);
+                $trans = $this->lake->translations->firstWhere('locale', $locale)
+                    ?? $this->lake->translations->firstWhere('locale', 'en');
                 $transEn = $this->lake->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->lake->id,
@@ -117,7 +124,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'beach_type' => $this->when($this->beachType, function () use ($locale) {
-                $trans = $this->beachType->translations->firstWhere('locale', $locale);
+                $trans = $this->beachType->translations->firstWhere('locale', $locale)
+                    ?? $this->beachType->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->beachType->id,
                     'code' => $this->beachType->code,
@@ -125,7 +133,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'waterbody' => $this->when($this->waterbody, function () use ($locale) {
-                $trans = $this->waterbody->translations->firstWhere('locale', $locale);
+                $trans = $this->waterbody->translations->firstWhere('locale', $locale)
+                    ?? $this->waterbody->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->waterbody->id,
                     'code' => $this->waterbody->code,
@@ -133,7 +142,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'water_body_type' => $this->when($this->waterBodyType, function () use ($locale) {
-                $trans = $this->waterBodyType->translations->firstWhere('locale', $locale);
+                $trans = $this->waterBodyType->translations->firstWhere('locale', $locale)
+                    ?? $this->waterBodyType->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->waterBodyType->id,
                     'code' => $this->waterBodyType->code,
@@ -141,7 +151,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'area_description' => $this->when($this->areaDescription, function () use ($locale) {
-                $trans = $this->areaDescription->translations->firstWhere('locale', $locale);
+                $trans = $this->areaDescription->translations->firstWhere('locale', $locale)
+                    ?? $this->areaDescription->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->areaDescription->id,
                     'code' => $this->areaDescription->code,
@@ -149,7 +160,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'location_types' => $this->beachLocationTypes->map(function ($type) use ($locale) {
-                $trans = $type->translations->firstWhere('locale', $locale);
+                $trans = $type->translations->firstWhere('locale', $locale)
+                    ?? $type->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $type->id,
                     'code' => $type->code,
@@ -164,7 +176,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'accessibility' => $this->when($this->accessibility, function () use ($locale) {
-                $trans = $this->accessibility->translations->firstWhere('locale', $locale);
+                $trans = $this->accessibility->translations->firstWhere('locale', $locale)
+                    ?? $this->accessibility->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->accessibility->id,
                     'code' => $this->accessibility->code,
@@ -173,7 +186,8 @@ class BeachDetailsResource extends JsonResource
             }),
             'parking' => $this->parking,
             'road_to_parking_type' => $this->when($this->roadToParkingType, function () use ($locale) {
-                $trans = $this->roadToParkingType->translations->firstWhere('locale', $locale);
+                $trans = $this->roadToParkingType->translations->firstWhere('locale', $locale)
+                    ?? $this->roadToParkingType->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->roadToParkingType->id,
                     'code' => $this->roadToParkingType->code,
@@ -181,7 +195,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'parking_capacity' => $this->when($this->parkingCapacity, function () use ($locale) {
-                $trans = $this->parkingCapacity->translations->firstWhere('locale', $locale);
+                $trans = $this->parkingCapacity->translations->firstWhere('locale', $locale)
+                    ?? $this->parkingCapacity->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->parkingCapacity->id,
                     'code' => $this->parkingCapacity->code,
@@ -189,7 +204,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'parking_beach_distance' => $this->when($this->parkingBeachDistance, function () use ($locale) {
-                $trans = $this->parkingBeachDistance->translations->firstWhere('locale', $locale);
+                $trans = $this->parkingBeachDistance->translations->firstWhere('locale', $locale)
+                    ?? $this->parkingBeachDistance->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->parkingBeachDistance->id,
                     'code' => $this->parkingBeachDistance->code,
@@ -197,7 +213,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'parking_beach_height' => $this->when($this->parkingBeachHeight, function () use ($locale) {
-                $trans = $this->parkingBeachHeight->translations->firstWhere('locale', $locale);
+                $trans = $this->parkingBeachHeight->translations->firstWhere('locale', $locale)
+                    ?? $this->parkingBeachHeight->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->parkingBeachHeight->id,
                     'code' => $this->parkingBeachHeight->code,
@@ -205,7 +222,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'recommended_transport_types' => $this->recommendedTransportTypes->map(function ($type) use ($locale) {
-                $trans = $type->translations->firstWhere('locale', $locale);
+                $trans = $type->translations->firstWhere('locale', $locale)
+                    ?? $type->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $type->id,
                     'code' => $type->code,
@@ -219,7 +237,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'location_length' => $this->when($this->locationLength, function () use ($locale) {
-                $trans = $this->locationLength->translations->firstWhere('locale', $locale);
+                $trans = $this->locationLength->translations->firstWhere('locale', $locale)
+                    ?? $this->locationLength->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->locationLength->id,
                     'code' => $this->locationLength->code,
@@ -227,7 +246,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'bay_length' => $this->when($this->bayLength, function () use ($locale) {
-                $trans = $this->bayLength->translations->firstWhere('locale', $locale);
+                $trans = $this->bayLength->translations->firstWhere('locale', $locale)
+                    ?? $this->bayLength->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->bayLength->id,
                     'code' => $this->bayLength->code,
@@ -235,7 +255,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'beach_inclination' => $this->when($this->beachInclination, function () use ($locale) {
-                $trans = $this->beachInclination->translations->firstWhere('locale', $locale);
+                $trans = $this->beachInclination->translations->firstWhere('locale', $locale)
+                    ?? $this->beachInclination->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->beachInclination->id,
                     'code' => $this->beachInclination->code,
@@ -243,7 +264,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'swimming_depth_of_one_m' => $this->when($this->swimmingDepthOfOneM, function () use ($locale) {
-                $trans = $this->swimmingDepthOfOneM->translations->firstWhere('locale', $locale);
+                $trans = $this->swimmingDepthOfOneM->translations->firstWhere('locale', $locale)
+                    ?? $this->swimmingDepthOfOneM->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->swimmingDepthOfOneM->id,
                     'code' => $this->swimmingDepthOfOneM->code,
@@ -251,7 +273,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'occupancy_rate' => $this->when($this->occupancyRate, function () use ($locale) {
-                $trans = $this->occupancyRate->translations->firstWhere('locale', $locale);
+                $trans = $this->occupancyRate->translations->firstWhere('locale', $locale)
+                    ?? $this->occupancyRate->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $this->occupancyRate->id,
                     'code' => $this->occupancyRate->code,
@@ -265,7 +288,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'accommodation_around' => $this->accommodationArounds->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
@@ -273,7 +297,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'culinary_offers' => $this->culinaryOffers->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
@@ -281,7 +306,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'location_infrastructure' => $this->locationInfrastructures->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
@@ -295,7 +321,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'sporting_activities' => $this->sportingActivities->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
@@ -303,7 +330,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'user_types' => $this->userTypes->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
@@ -317,7 +345,8 @@ class BeachDetailsResource extends JsonResource
     {
         return [
             'natural_location_conditions' => $this->naturalLocationConditions->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
@@ -325,7 +354,8 @@ class BeachDetailsResource extends JsonResource
                 ];
             }),
             'underwater_characteristics' => $this->underwaterCharacteristics->map(function ($item) use ($locale) {
-                $trans = $item->translations->firstWhere('locale', $locale);
+                $trans = $item->translations->firstWhere('locale', $locale)
+                    ?? $item->translations->firstWhere('locale', 'en');
                 return [
                     'id' => $item->id,
                     'code' => $item->code,
