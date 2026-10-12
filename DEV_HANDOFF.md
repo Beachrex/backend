@@ -52,6 +52,14 @@ How to test the changes
 
 ---
 
+## 2026-10-12 - `translations:audit` (read-only translation gap report)
+
+**Owner report:** Greek beach pages show raw codes ("small_stones", "adventurer"), Albanian shows English country names and burger-menu entries, Russian/Ukrainian/Bulgarian/Greek have untranslated parts.
+
+**Change:** `php artisan translations:audit [--table=…] [--examples=N]` walks every `*_translation` table that has `name` and `locale` and, per supported locale (`SetLocaleFromHeader::SUPPORTED_LOCALES`, without `en`), prints rows that are missing and rows whose name is identical to English. Writes nothing. The output decides which tables get translated next.
+
+**Tests:** `tests/Feature/TranslationsAuditTest.php`.
+
 ## 2026-10-11 - Beach gallery falls back to the beach's other photos
 
 **Owner report:** Njivice (id 844) showed no photos. It has no `beach_gallery` photo, only a 360° panorama and two `parking_images`.
