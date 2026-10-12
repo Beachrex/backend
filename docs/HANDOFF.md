@@ -68,6 +68,8 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-12 (session 9): **translations on dev** — owner reports (Greek/Albanian/Cyrillic pages, France, breadcrumbs, map link, 360° hyphen) fixed: Beachrex/web-client#70–#73, Beachrex/backend#107–#111. `translations:ai` wrote 3 563 reference-data names and 8 900 Greek/Cyrillic beach and city names on dev (owner: "super, urejeno"). Open: owner's "Napaka 79" and the RU/UA/BG/GR search wording need a URL or screenshot.
+
 - 2026-10-09 (session 9): **`api.beachrex.com` live** (owner: "usposobiti moramo api.beachrex.com"; runbook `prod-launch.md` "API first"):
   - backend promoted dev → uat → main (Beachrex/backend#97, #99; nginx #98 → #100 → #101), all deploy runs green;
   - owner option (a): the dev DB was copied to uat and prod (uat backup `/root/beachrex_uat-before-promote-20261009.dump`); counts 3 774 beaches / 43 335 media / 4 users on all three; API tokens deleted on prod;
