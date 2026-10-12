@@ -50,7 +50,8 @@ The small `*_translation` tables (beach attributes, badges, islands, lakes, rive
 - One request per table (chunks of 40 rows); beaches, cities, regions and long texts are not part of it.
 - Writes only languages with no row or with the English name still in it; new rows copy the English row (same slug, so no URL changes); `full_name` and `filter_title` are translated with the name when the English row has them.
 - Beach and city names (`beach_translation`, `city_translation`, active places only): only Greek, Ukrainian, Russian and Bulgarian, in their own script, with the country as context; Latin-script languages keep the local name through the English fallback. A new row never copies the English description.
-- 2026-10-12, first batch on dev: 36 requests, 3 563 names written (reference tables).
+- 2026-10-12 on dev (owner ran and checked both): `msgbatch_01LoA71A7oxGfwMbUQsqtR8t` reference tables, 36 requests, 3 563 names; `msgbatch_013mxKXsoN265PRZpKsmhGit` beach and city names in el/ua/ru/bg, 57 requests, 8 900 names. Then `cache:clear-api --type=all`, `search:index`, `front_dev` recreated.
+- uat/prod get these with the next DB promotion (dev → uat → prod).
 
 ## uat / prod
 
