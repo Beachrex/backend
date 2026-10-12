@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Http\Middleware\SetLocaleFromHeader;
+use App\Support\TranslationTables;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Read-only report of translation gaps in the database (owner 2026-10-12: Greek, Albanian, Russian,
@@ -29,7 +29,7 @@ class TranslationsAudit extends Command
         $examples = (int) $this->option('examples');
         $rows = [];
 
-        foreach ($this->tables() as [$table, $parent, $fk]) {
+        foreach (TranslationTables::all($this->option('table')) as ['table' => $table, 'parent' => $parent, 'fk' => $fk]) {
             $total = DB::table($parent)->count();
             $en = DB::table($table)->where('locale', 'en')->pluck('name', $fk);
             foreach ($locales as $locale) {
@@ -49,28 +49,5 @@ class TranslationsAudit extends Command
         $this->table(['Table', 'Locale', 'Rows', 'Missing', 'Same as en'], $rows);
 
         return self::SUCCESS;
-    }
-
-    /** @return list<array{0: string, 1: string, 2: string}> [translation table, parent table, foreign key] */
-    private function tables(): array
-    {
-        $only = $this->option('table');
-        $result = [];
-        foreach (Schema::getTableListing() as $table) {
-            $table = str_contains($table, '.') ? substr($table, strrpos($table, '.') + 1) : $table;
-            if (! str_ends_with($table, '_translation') || ($only && ! in_array($table, $only, true))) {
-                continue;
-            }
-            $columns = Schema::getColumnListing($table);
-            $parent = substr($table, 0, -strlen('_translation'));
-            $fk = collect([$parent.'_id', rtrim($parent, 's').'_id'])->first(fn ($c) => in_array($c, $columns, true));
-            if (! in_array('name', $columns, true) || ! in_array('locale', $columns, true) || ! $fk || ! Schema::hasTable($parent)) {
-                continue;
-            }
-            $result[] = [$table, $parent, $fk];
-        }
-        sort($result);
-
-        return $result;
     }
 }

@@ -44,6 +44,12 @@ Run on the VPS, one command at a time. Order: names, then regions, then descript
 - If the Anthropic credit runs out in the middle of a batch, those requests come back as `errored`; `apply --write` writes the ones that succeeded, and a later `submit` of the same part sends only the failed ones.
 - `submit` refuses a part whose previous batch was not applied with `--write` yet (it would pay twice for the same items); `--force` overrides.
 
+## Reference data: `translations:ai` (owner 2026-10-12)
+
+The small `*_translation` tables (beach attributes, badges, islands, lakes, rivers, countries, continents) miss whole languages (`translations:audit`: da, pt, nl, el, sq empty in most of them). `translations:ai` fills them the same way: `plan` → `preview --table=beach_type_translation` → `submit` → `status --batch=…` → `apply --batch=…` (dry run) → `apply --batch=… --write` → `cache:clear-api --type=all`.
+- One request per table (chunks of 40 rows); beaches, cities, regions and long texts are not part of it.
+- Writes only languages with no row or with the English name still in it; new rows copy the English row (same slug, so no URL changes); `full_name` and `filter_title` are translated with the name when the English row has them.
+
 ## uat / prod
 
 uat gets the dev DB by promotion (ADR 2026-10-08), so the pass runs on dev only. Prod gets uat's DB at launch.
