@@ -52,6 +52,14 @@ How to test the changes
 
 ---
 
+## 2026-10-12 - Beach page: missing translation falls back to English, not the raw code
+
+**Owner report:** Greek beach page showed "small_stones", "adventurer". `translations:audit` on dev: da, pt, nl, el, sq have no rows at all in most attribute tables (beach type, user type, facilities, …).
+
+**Change:** `BeachDetailsResource` (`GET /api/v1/beach-details/{identifier}`) took the requested locale's translation or else the code. It now takes the requested locale, then English, then the code (30 attribute blocks: location, characteristics, facilities, activities, natural conditions, …). The list resources already did this (`HandlesTranslations::getTranslation`). Response shape unchanged. The missing translations themselves are filled separately.
+
+**Tests:** `tests/Feature/BeachDetailsEnglishFallbackTest.php` (fails without the change).
+
 ## 2026-10-12 - `translations:audit` (read-only translation gap report)
 
 **Owner report:** Greek beach pages show raw codes ("small_stones", "adventurer"), Albanian shows English country names and burger-menu entries, Russian/Ukrainian/Bulgarian/Greek have untranslated parts.
