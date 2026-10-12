@@ -49,6 +49,8 @@ Run on the VPS, one command at a time. Order: names, then regions, then descript
 The small `*_translation` tables (beach attributes, badges, islands, lakes, rivers, countries, continents) miss whole languages (`translations:audit`: da, pt, nl, el, sq empty in most of them). `translations:ai` fills them the same way: `plan` → `preview --table=beach_type_translation` → `submit` → `status --batch=…` → `apply --batch=…` (dry run) → `apply --batch=… --write` → `cache:clear-api --type=all`.
 - One request per table (chunks of 40 rows); beaches, cities, regions and long texts are not part of it.
 - Writes only languages with no row or with the English name still in it; new rows copy the English row (same slug, so no URL changes); `full_name` and `filter_title` are translated with the name when the English row has them.
+- Beach and city names (`beach_translation`, `city_translation`, active places only): only Greek, Ukrainian, Russian and Bulgarian, in their own script, with the country as context; Latin-script languages keep the local name through the English fallback. A new row never copies the English description.
+- 2026-10-12, first batch on dev: 36 requests, 3 563 names written (reference tables).
 
 ## uat / prod
 

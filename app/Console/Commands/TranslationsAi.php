@@ -42,9 +42,18 @@ class TranslationsAi extends Command
 
     /** Handled elsewhere (content:ai) or long texts, not names. */
     private const SKIP = [
-        'beach_translation', 'city_translation', 'region_translation', 'static_page_translation',
+        'region_translation', 'static_page_translation',
         'article_translation', 'first_page_content_translation', 'first_page_content_item_translation',
     ];
+
+    /**
+     * Beach and city names keep their local spelling in Latin-script languages (the English row is the
+     * fallback); only Greek, Ukrainian, Russian and Bulgarian need them in their own script (owner 2026-10-12).
+     */
+    private const PLACE_TABLES = ['beach_translation', 'city_translation'];
+
+    /** Long texts that a new row must not copy from English (a description is translated separately). */
+    private const NOT_COPIED = ['description'];
 
     /** Extra text columns translated together with `name` when the English row has them. */
     private const EXTRA_FIELDS = ['full_name', 'filter_title'];
@@ -97,11 +106,23 @@ class TranslationsAi extends Command
      */
     public function work(array $t): Collection
     {
-        $locales = array_values(array_diff(SetLocaleFromHeader::SUPPORTED_LOCALES, ['en']));
-        $fields = $this->fields($t['table']);
-        $rows = DB::table($t['table'])->get()->groupBy(fn ($r) => (string) $r->{$t['fk']});
+        $isPlace = in_array($t['table'], self::PLACE_TABLES, true);
+        $locales = $isPlace
+            ? BeachContentAi::NON_LATIN
+            : array_values(array_diff(SetLocaleFromHeader::SUPPORTED_LOCALES, ['en']));
+        $fields = $isPlace ? [] : $this->fields($t['table']);
+        $query = DB::table($t['table']);
+        $countries = collect();
+        if ($isPlace) {
+            // Active places only, with their country as context for the spelling.
+            $parentColumns = Schema::getColumnListing($t['parent']);
+            $active = DB::table($t['parent'])->when(in_array('status_id', $parentColumns, true), fn ($q) => $q->where('status_id', 1));
+            $countries = $active->pluck('country_code', $t['parentKey'])->mapWithKeys(fn ($c, $k) => [(string) $k => $c]);
+            $query->whereIn($t['fk'], $countries->keys()->all());
+        }
+        $rows = $query->get()->groupBy(fn ($r) => (string) $r->{$t['fk']});
 
-        return $rows->map(function (Collection $byKey, string $key) use ($locales, $fields) {
+        return $rows->map(function (Collection $byKey, string $key) use ($locales, $fields, $countries) {
             $en = $byKey->firstWhere('locale', 'en');
             if (! $en || trim((string) $en->name) === '') {
                 return null;
@@ -121,7 +142,12 @@ class TranslationsAi extends Command
                 }
             }
 
-            return ['key' => $key, 'en' => $source, 'locales' => $need];
+            $item = ['key' => $key, 'en' => $source, 'locales' => $need];
+            if ($countries->has($key)) {
+                $item['country'] = $countries[$key];
+            }
+
+            return $item;
         })->filter()->values();
     }
 
@@ -145,10 +171,10 @@ class TranslationsAi extends Command
                 'params' => [
                     'model' => $model,
                     'maxTokens' => 32000,
-                    'system' => $this->systemPrompt(),
+                    'system' => in_array($t['table'], self::PLACE_TABLES, true) ? $this->placePrompt() : $this->systemPrompt(),
                     'messages' => [['role' => 'user', 'content' => json_encode([
                         'list' => $this->describe($t['table']),
-                        'items' => $chunk->map(fn ($r) => ['key' => $r['key']] + $r['en'])->values()->all(),
+                        'items' => $chunk->map(fn ($r) => ['key' => $r['key']] + $r['en'] + (isset($r['country']) ? ['country' => $r['country']] : []))->values()->all(),
                         'languages' => array_map(fn ($l) => BeachContentAi::LANGUAGE_NAMES[$l]." ({$l})", $locales),
                     ], JSON_UNESCAPED_UNICODE)]],
                     'outputConfig' => [
@@ -174,6 +200,20 @@ For every item and every requested language, write the label the way a travel we
 - numbers, units and measurements stay as they are ("3m" -> "3m");
 - brand-like or international words that a language really uses unchanged (e.g. "WC", "Hotel", "Bistro") may stay.
 Return every item key with every requested language.
+TXT;
+    }
+
+    private function placePrompt(): string
+    {
+        return <<<'TXT'
+You write place names for Beachrex, a beach guide published in 19 languages. Each item is the name of a beach or a
+town as written locally (Latin script), with its country code. Write it in each requested language's script:
+Greek in Greek script, Ukrainian, Russian and Bulgarian in Cyrillic.
+- Use the established name in that language when there is one (Venice -> "Венеция" in Russian, "Βενετία" in Greek);
+  otherwise transliterate the local pronunciation, following that language's usual rules for the country's language.
+- Keep generic words in the name translated naturally when they are words, not names ("Plaža", "Plage", "Spiaggia",
+  "Strand" -> the language's word for beach; "Mali", "Veli" stay part of the name).
+- No added words, no explanations. Return every item key with every requested language.
 TXT;
     }
 
@@ -245,6 +285,11 @@ TXT;
                         // Copy the English row (slug included, so URLs do not change).
                         $insert = array_merge((array) $en, $values, ['locale' => $locale]);
                         unset($insert['id']);
+                        foreach (self::NOT_COPIED as $column) {
+                            if (array_key_exists($column, $insert)) {
+                                $insert[$column] = null;
+                            }
+                        }
                         foreach (['created_at', 'updated_at'] as $ts) {
                             if (in_array($ts, $columns, true)) {
                                 $insert[$ts] = $now;

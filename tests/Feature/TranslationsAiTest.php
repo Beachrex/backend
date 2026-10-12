@@ -122,4 +122,28 @@ class TranslationsAiTest extends TestCase
         $this->assertSame(0, \Illuminate\Support\Facades\Artisan::call('translations:ai', ['action' => 'plan', '--table' => ['beach_type_translation']]));
         $this->assertMatchesRegularExpression('/beach_type_translation\s*\|\s*1\s*\|\s*17/', \Illuminate\Support\Facades\Artisan::output());
     }
+
+    public function test_beach_names_only_for_greek_and_cyrillic_and_without_copying_the_description(): void
+    {
+        DB::table('continents')->insertOrIgnore(['code' => 'EU']);
+        DB::table('countries')->insertOrIgnore(['code' => 'HR', 'continent_code' => 'EU']);
+        $beach = \App\Models\Beach::factory()->create(['status_id' => 1, 'country_code' => 'HR']);
+        \App\Models\BeachTranslation::create(['beach_id' => $beach->id, 'locale' => 'en', 'name' => 'Zlatni rat', 'slug' => 'zlatni-rat', 'description' => 'A long English text.']);
+
+        $work = $this->ai->work($this->table('beach_translation'))->firstWhere('key', (string) $beach->id);
+        $this->assertSame(['ua', 'ru', 'bg', 'el'], $work['locales']);
+        $this->assertSame('HR', $work['country']);
+        $request = $this->ai->requests($this->table('beach_translation'), 'claude-opus-5-5', 'low')[0];
+        $this->assertStringContainsString('"country":"HR"', $request['params']['messages'][0]['content']);
+
+        $answer = ['key' => (string) $beach->id, 'ua' => ['name' => 'Златні рат'], 'ru' => ['name' => 'Златни-Рат'],
+            'bg' => ['name' => 'Златни рат'], 'el' => ['name' => 'Ζλάτνι Ρατ']];
+        $this->ai->apply('tr-beach_translation-0', json_encode(['items' => [$answer]]), false);
+
+        $el = DB::table('beach_translation')->where('beach_id', $beach->id)->where('locale', 'el')->first();
+        $this->assertSame('Ζλάτνι Ρατ', $el->name);
+        $this->assertSame('zlatni-rat', $el->slug);
+        $this->assertNull($el->description);
+        $this->assertSame(0, DB::table('beach_translation')->where('beach_id', $beach->id)->where('locale', 'de')->count());
+    }
 }
