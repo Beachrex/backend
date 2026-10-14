@@ -52,6 +52,16 @@ How to test the changes
 
 ---
 
+## 2026-10-14 - `webcams:export`: CSV of places with webcams and their website links
+
+**Owner:** "izpiše vse plaže in link do beachrex do te plaže ki imajo kamere … link mora biti dev.beachrex … csv".
+
+**Change:** `php artisan webcams:export [--base-url=https://dev.beachrex.com] [--all] [--country=HR] [--locale=en]` — read-only CSV in `storage/app/webcams/export-*.csv`: place id, country, beach, website URL (same builder as the AI chat/MCP, `BeachTools::beachUrl()`), Windy id/title/URL, status, primary, source, score, distance, webcam status, player status. Default: only webcams shown on the site. Admin guide: `spletne-kamere.md`; file download steps: `splosno.md`.
+
+**Affected endpoints:** none. **Tests:** `tests/Feature/Webcams/WebcamExportTest.php`.
+
+---
+
 ## 2026-10-14 - TASK-006 step 4: webcam review in admin + verified webcams in the API
 
 **Changes:**

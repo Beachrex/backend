@@ -49,6 +49,27 @@ Poročilo stare kamere: `storage/app/webcams/legacy-extract-<datum>.csv` (stolpc
 razlog, razdalja, ocena). Izidi: `kept` (prikazana), `pending` (čaka pregled), `below_threshold` (prenizka ocena),
 `dead` (ne deluje), `unparseable` (ni Windy kamera, npr. WhatsUpCams).
 
+## Seznam plaž s kamerami (CSV)
+
+Ukaz `webcams:export` (samo bere, nič ne spremeni) naredi CSV z vsemi plažami, ki imajo na strani prikazano kamero:
+ID, država, ime plaže, **povezava na plažo na spletni strani**, Windy ID, naslov kamere, povezava na windy.com,
+status, glavna, vir, ocena, razdalja.
+
+```
+php artisan webcams:export --base-url=https://dev.beachrex.com
+```
+
+| Možnost | Pomen |
+|---|---|
+| `--base-url=…` | naslov spletne strani v povezavah (dev: `https://dev.beachrex.com`) |
+| `--all` | vse dodelitve, tudi Pending, Rejected in kamere, ki se ne predvajajo |
+| `--country=HR` | samo izbrana država (lahko večkrat) |
+| `--locale=si` | povezave v drugem jeziku (privzeto `en`) |
+
+Ukaz izpiše pot do datoteke, npr. `/var/www/html/storage/app/private/webcams/export-<datum>.csv` (v kontejnerju).
+Na svoj računalnik jo preneseš v dveh korakih — na strežniku jo prekopiraš iz kontejnerja, nato jo z Mac-a preneseš
+s `scp` (točna ukaza sta v [splosno.md](splosno.md) pod »Prenos datoteke s strežnika«, oz. ju napiše agent).
+
 ## Stran »Webcam review«
 
 Admin → **Content → Webcam review**. Privzeto kaže samo **Pending** (čaka pregled), najvišje ocene na vrhu.
