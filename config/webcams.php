@@ -23,6 +23,15 @@ return [
         'embed_check_stale_days' => 30,
     ],
 
+    'refresh' => [
+        // webcams:refresh runs daily from the scheduler but only imports again after this many days
+        // (or to resume a run that hit the daily budget). Off until the owner enables it.
+        'enabled' => (bool) env('WEBCAMS_REFRESH_ENABLED', false),
+        'days' => 30,
+        'alert_ratio' => 0.10,
+        'alert_email' => env('WEBCAMS_ALERT_EMAIL'),
+    ],
+
     'player_base_url' => 'https://webcams.windy.com/webcams/public/embed/player',
     'public_url' => 'https://www.windy.com/webcams/{id}',
 
