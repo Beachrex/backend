@@ -1003,3 +1003,19 @@ This file is read by: All new AI agents to understand past decisions
 
 **Consequences:** One-off cost (rough estimate printed by `content:ai plan`). The owner reviews `preview` output before submitting. Descriptions written by AI are marked nowhere; if that becomes a legal or editorial need, add a column.
 
+
+## [2026-10-14] Windy webcams: local copy, local matching, direct iframe (TASK-006)
+
+**Context:** `beach.webcam` holds pasted embed HTML from the old site. Of 3 774 rows, 250 carry a Windy/Lookr webcam ID (237 unique); on 2026-10-14 only 73 of those IDs still render, 95 are dead and 69 have embedding disabled. The web never embedded them (it opens the `href`, mostly `lookr.com`). Several cams show a neighbouring place.
+
+**Decision (owner, 2026-10-14):**
+- Windy Webcams API v3 is used **only by batch commands** (import, monthly refresh, legacy ID lookup). Metadata goes into `windy_webcams` (never image URLs); assignments into `place_webcams` with score, breakdown, source and review status. The public site never calls the API.
+- Matching is local (PostGIS), **max radius 3 km**, weights and thresholds in one config file (auto ≥ 70 and +15 over the runner-up, pending 40–69). One webcam is assigned to at most one place. Approved, rejected and manual rows are never overwritten; rejected pairs are never re-proposed.
+- A webcam must pass the public player check (`embed_status = ok`) before it is auto-approved or rendered, because cameras with embedding disabled still exist in the API.
+- The web renders the **iframe directly** (`https://webcams.windy.com/webcams/public/embed/player?webcamId=…&playerType=day`), the same iframe Windy's `player.js` builds, lazy-loaded, with the Windy link kept. No third-party script.
+- Webcams from other providers (WhatsUpCams, Webcamgalore) are **not shown** any more.
+- `beach.webcam` stays (API field and DB column) until the owner approves its removal; old app builds keep working.
+
+**Consequences:** The first import needs `WINDY_API_KEY` on dev and runs as an artisan command there (the agent sandbox cannot reach `api.windy.com`). Free tier caps one filter at 1 050 results, so the importer slices by region/bbox. Professional tier only if that or player ads become a problem.
+
+**Related:** `docs/tasks/TASK-006-windy-webcams.md`, `docs/technical/windy-webcams-api.md`
