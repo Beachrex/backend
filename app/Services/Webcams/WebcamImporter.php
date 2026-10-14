@@ -129,8 +129,17 @@ class WebcamImporter
         return true;
     }
 
+    /** Upsert webcams fetched outside a country run (e.g. legacy id lookups). */
+    public function store(array $webcams): void
+    {
+        foreach ($webcams as $w) {
+            $this->upsert([$w], (string) ($w['location']['country_code'] ?? 'XX'));
+        }
+    }
+
     private function upsert(array $webcams, string $cc): void
     {
+        $this->stats[$cc] ??= ['new' => 0, 'updated' => 0, 'missing' => 0];
         $now = now();
         foreach ($webcams as $w) {
             $loc = $w['location'] ?? [];

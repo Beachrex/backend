@@ -20,3 +20,10 @@ Schedule::call(fn () => app(\App\Services\AI\Itinerary\ItineraryPlanService::cla
     ->name('itinerary-plans:fail-stale')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// TASK-006: Windy webcam refresh. Daily, but it only re-imports every 30 days or resumes a run that hit the
+// request budget. Off until WEBCAMS_REFRESH_ENABLED=true (after the owner's first manual import).
+Schedule::command('webcams:refresh')
+    ->dailyAt('04:20')
+    ->withoutOverlapping()
+    ->when(fn () => (bool) config('webcams.refresh.enabled') && (bool) config('webcams.api.key'));

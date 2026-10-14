@@ -96,6 +96,22 @@ class WebcamMatcher
         return ['summary' => $summary, 'decisions' => $decisions];
     }
 
+    /**
+     * Score one place/webcam pair with the matcher's rules but without the radius or usability filter
+     * (legacy webcams, admin manual add). Null when the place has no location or the webcam is unknown.
+     *
+     * @return array{place_id:int, windy_id:int, title:?string, distance_m:int, score:int, breakdown:array}|null
+     */
+    public function scorePair(int $placeId, int $windyId): ?array
+    {
+        $places = $this->places(['place_ids' => [$placeId]]);
+        if ($places->isEmpty()) {
+            return null;
+        }
+
+        return $this->score($places, [$placeId], [$windyId])[0] ?? null;
+    }
+
     private function places(array $filters): Collection
     {
         $q = DB::table('beach as b')->whereNotNull('b.location')
@@ -114,20 +130,35 @@ class WebcamMatcher
         return $q->orderBy('b.id')->get()->keyBy('id');
     }
 
-    /** @return list<array<string,mixed>> */
-    private function score(Collection $places, array $placeIds): array
+    /**
+     * Candidates within the radius (usable, not rejected), or — with $windyIds — exactly those pairs, unfiltered.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function score(Collection $places, array $placeIds, ?array $windyIds = null): array
     {
-        $usable = "w.status = 'active' AND w.missing_since IS NULL"
-            . (config('webcams.matching.require_embed_ok') ? " AND w.embed_status = 'ok'" : '');
-        $rows = DB::select(
-            "SELECT b.id AS place_id, w.windy_id, w.title, w.categories,
-                    ROUND(ST_Distance(w.location, b.location::geography))::int AS distance_m
-               FROM beach b
-               JOIN windy_webcams w ON ST_DWithin(w.location, b.location::geography, ?)
-              WHERE b.id = ANY(?::bigint[]) AND {$usable}
-                AND NOT EXISTS (SELECT 1 FROM place_webcams r WHERE r.place_id = b.id AND r.windy_id = w.windy_id AND r.review_status = 'rejected')",
-            [config('webcams.matching.max_radius_m'), '{' . implode(',', $placeIds) . '}']
-        );
+        $ids = '{' . implode(',', $placeIds) . '}';
+        if ($windyIds !== null) {
+            $rows = DB::select(
+                'SELECT b.id AS place_id, w.windy_id, w.title, w.categories,
+                        ROUND(ST_Distance(w.location, b.location::geography))::int AS distance_m
+                   FROM beach b CROSS JOIN windy_webcams w
+                  WHERE b.id = ANY(?::bigint[]) AND w.windy_id = ANY(?::bigint[])',
+                [$ids, '{' . implode(',', $windyIds) . '}']
+            );
+        } else {
+            $usable = "w.status = 'active' AND w.missing_since IS NULL"
+                . (config('webcams.matching.require_embed_ok') ? " AND w.embed_status = 'ok'" : '');
+            $rows = DB::select(
+                "SELECT b.id AS place_id, w.windy_id, w.title, w.categories,
+                        ROUND(ST_Distance(w.location, b.location::geography))::int AS distance_m
+                   FROM beach b
+                   JOIN windy_webcams w ON ST_DWithin(w.location, b.location::geography, ?)
+                  WHERE b.id = ANY(?::bigint[]) AND {$usable}
+                    AND NOT EXISTS (SELECT 1 FROM place_webcams r WHERE r.place_id = b.id AND r.windy_id = w.windy_id AND r.review_status = 'rejected')",
+                [config('webcams.matching.max_radius_m'), $ids]
+            );
+        }
 
         $names = DB::table('beach_translation')->whereIn('beach_id', $placeIds)->get(['beach_id', 'name'])->groupBy('beach_id');
         $cityIds = $places->pluck('city_id')->filter()->unique()->all();

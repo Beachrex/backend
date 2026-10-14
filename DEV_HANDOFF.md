@@ -52,6 +52,22 @@ How to test the changes
 
 ---
 
+## 2026-10-14 - TASK-006 step 3: legacy webcam salvage and scheduled refresh
+
+**Changes:**
+- `php artisan webcams:legacy-extract [--country=] [--dry-run]`: reads `beach.webcam` (never changes it), extracts Windy/Lookr ids, looks up unknown ids once via the API (`webcamIds`, 50 per call), checks the public player, scores with the matcher's rules and writes `place_webcams` rows with `source=legacy`. Beyond 3 km or already shown on another place → pending at best. CSV report in `storage/app/webcams/legacy-extract-*.csv` (kept / pending / below_threshold / dead / unparseable). Checked against all 3 774 legacy values: 250 ids (237 unique), same as Phase 0.
+- `php artisan webcams:refresh [--force]` + daily schedule 04:20 (only when `WEBCAMS_REFRESH_ENABLED=true` and a key is set): resumes a budget-paused import, otherwise re-imports every 30 days; then player check, primary moved off unusable webcams, match re-run for affected places, warning log (+ e-mail to `WEBCAMS_ALERT_EMAIL`) when > 10 % of places lose their main webcam.
+- `WindyApiClient::byIds()`, `WebcamImporter::store()`, `WebcamMatcher::scorePair()`.
+- `.env.example`: `WEBCAMS_REFRESH_ENABLED`, `WEBCAMS_ALERT_EMAIL`.
+
+**Affected endpoints:** none.
+
+**Order on dev (owner):** `webcams:import` → `webcams:embed-check` → `webcams:legacy-extract` → `webcams:match` (each with `--dry-run` first).
+
+**Tests:** `tests/Feature/Webcams/WebcamLegacyAndRefreshTest.php`.
+
+---
+
 ## 2026-10-14 - TASK-006 step 2: Windy import (budgeted, resumable) and player check
 
 **Changes:**

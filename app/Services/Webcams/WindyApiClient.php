@@ -39,6 +39,24 @@ class WindyApiClient
         return ['total' => (int) ($json['total'] ?? 0), 'webcams' => $json['webcams'] ?? []];
     }
 
+    /**
+     * Webcams by id, at most 50 per call (when webcamIds is set Windy ignores every other filter).
+     *
+     * @param  list<int>  $ids
+     * @return list<array<string,mixed>>
+     */
+    public function byIds(array $ids): array
+    {
+        $out = [];
+        foreach (array_chunk(array_values(array_unique($ids)), self::MAX_IDS) as $chunk) {
+            $out = array_merge($out, $this->list([
+                'webcamIds' => $chunk, 'limit' => self::LIMIT, 'include' => ['categories', 'location', 'player'], 'lang' => 'en',
+            ])['webcams']);
+        }
+
+        return $out;
+    }
+
     /** @return list<array{code:string,name:string}> */
     public function regions(): array
     {
