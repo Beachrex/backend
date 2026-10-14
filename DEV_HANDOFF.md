@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-14 - TASK-006 step 1: Windy webcam tables, scoring and local matcher
+
+**Owner:** plan approved 2026-10-14 (3 km radius, mode B, direct iframe, other providers hidden). Spec `docs/tasks/TASK-006-windy-webcams.md`.
+
+**Changes:**
+- Migration `2026_10_14_120000_create_windy_webcams_tables`: `windy_webcams` (Windy metadata, `location geography` kept in sync by trigger, `embed_status`; never image URLs) and `place_webcams` (place ↔ webcam, score, breakdown, source, review status, primary). Partial unique indexes: one primary per place; a shown webcam belongs to one place. `beach.webcam` untouched.
+- `config/webcams.php`: radius, distance/category/name points, thresholds, place-type profiles (beach, pool_spa).
+- `App\Services\Webcams\WebcamIdExtractor` (legacy Windy + Lookr embeds, Windy player/iframe/page URLs), `NameMatcher`, `WebcamScorer`, `WebcamMatcher`.
+- `php artisan webcams:match [--dry-run] [--country=HR] [--place=ID] [--only-missing]` — zero API calls.
+- `.env.example`: `WINDY_API_KEY`, `WINDY_DAILY_REQUEST_BUDGET`, `WEBCAMS_MAX_RADIUS_M`.
+
+**Affected endpoints:** none yet (API field comes in a later step).
+
+**Tests:** `tests/Unit/Webcams/*`, `tests/Feature/Webcams/WebcamMatcherTest.php` (PostGIS). Nothing to run on dev until the import (step 2) fills `windy_webcams`.
+
+---
+
 ## 2026-10-12 - `translations:ai`: beach and city names in Greek and Cyrillic
 
 **Owner:** "loti se ja" (after the reference-data batch, 3 563 names, was written on dev).
