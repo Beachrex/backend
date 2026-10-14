@@ -1019,3 +1019,14 @@ This file is read by: All new AI agents to understand past decisions
 **Consequences:** The first import needs `WINDY_API_KEY` on dev and runs as an artisan command there (the agent sandbox cannot reach `api.windy.com`). Free tier caps one filter at 1 050 results, so the importer slices by region/bbox. Professional tier only if that or player ads become a problem.
 
 **Related:** `docs/tasks/TASK-006-windy-webcams.md`, `docs/technical/windy-webcams-api.md`
+
+## [2026-10-14] Admin guides in Slovenian, updated with every feature
+
+**Context:** The admin had developer docs only (implementation notes, runbooks in English). The owner wants user instructions for every admin function, to be collected into one admin manual at the end.
+
+**Decision (owner, 2026-10-14: "ja uredi to za admina ja. prvo naredimo slovenščina ja, če bomo kdaj rabili bomo kasneje angleško"):**
+- `docs/guides/admin/` holds one Slovenian page per admin feature (admin page, action or owner command) and an index (`README.md`) that lists every feature and the status of its guide.
+- Every PR that adds or changes an admin page, admin action or owner command updates its guide in the same PR (DEVELOPMENT-RULES §7 and the before-merge checklist). This is the one exception to "docs in English".
+- Runbooks stay in English for one-off technical procedures; admin guides link to them instead of copying commands.
+
+**Consequences:** The manual can be generated from the index at any time. An English version is a later, separate task.

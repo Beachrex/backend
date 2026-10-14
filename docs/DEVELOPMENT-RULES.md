@@ -47,6 +47,7 @@ uat/prod, anything irreversible. Everything else it decides, does and documents.
 | `DEV_HANDOFF.md` (both repos) | Dated change log: what changed, affected endpoints, how to test |
 | `docs/tasks/TASK-XXX-*.md` | Task specs + `TASK-XXX.feedback.md` with real outputs (for non-trivial tasks) |
 | `docs/runbooks/*.md` | Rare step-by-step procedures (prod launch, restore a backup) |
+| `docs/guides/admin/*.md` | **Admin guides in Slovenian** for the owner and his team: how to use each admin page and each owner command (index: `docs/guides/admin/README.md`) |
 | `docs/qa/dev-review-tracker.md` | Tester findings from the owner's spreadsheet: verdict, fix PR, retest status per row |
 | `docs/deployment/DEPLOYMENT_GUIDE.md` | Infrastructure as it is today (VPS, CI/CD, env isolation) |
 
@@ -56,6 +57,7 @@ Rules:
   not yet exercised on the target) · **Planned** (spec/ADR only).
 - Docs describe **reality**. A statement that is no longer true is corrected or deleted in the same PR.
 - Language: code, commits, PRs and docs in **English**; conversation with the owner in **Slovenian**.
+  Exception (owner, 2026-10-14): the admin guides in `docs/guides/admin/` are written in **Slovenian** (English later, if needed).
 
 ---
 
@@ -114,6 +116,9 @@ Every PR updates, in the same PR:
 - OpenAPI annotations (`app/Swagger/`, `@OA` blocks) + regenerated `storage/api-docs/api-docs.json` for API changes;
 - frontend: `yarn generate:api` after backend API changes that the frontend uses;
 - `.env.example` for every new env var (name + comment, **never a value**);
+- **admin guide** (`docs/guides/admin/`, Slovenian) for every new or changed admin page, admin action or owner command
+  (what it is for, where it is, step by step, what each status/column means, common mistakes), and its row in the
+  guide index — in the **same PR** as the feature;
 - the ADR log when a decision was made (including the agent's own reading of an ambiguous request);
 - `docs/HANDOFF.md` at the end of each larger step.
 
@@ -175,6 +180,7 @@ Every PR updates, in the same PR:
 - [ ] Mutating routes have auth + authorization tests.
 - [ ] New env vars in `.env.example` and named in HANDOFF owner actions (no values).
 - [ ] OpenAPI + `DEV_HANDOFF.md` + HANDOFF updated.
+- [ ] Admin guide (`docs/guides/admin/`) written or updated for any admin page, action or owner command.
 
 **After merge**
 - [ ] Deploy run for the merge SHA green; `/api/v1/health` on dev shows the merge SHA.
