@@ -14,6 +14,7 @@ class BeachResource extends JsonResource
     public static function cardRelations(): array
     {
         return [
+            'shownWebcams',
             'translations',
             'continent.translations',
             'country.translations',
@@ -168,6 +169,7 @@ class BeachResource extends JsonResource
         $media['embeds'] = [
             'video_url' => $this->video_url,
             'webcam' => $this->webcam,
+            'windy_webcam_id' => $this->shownWebcams->first()?->windy_id,
         ];
 
         // Build tags: up to 4 names from sporting activities, culinary offers, natural conditions

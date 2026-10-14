@@ -40,6 +40,32 @@ class WindyWebcam extends Model
             && (! config('webcams.matching.require_embed_ok') || $this->embed_status === 'ok');
     }
 
+    /** Same rule as isUsable(), as a query. */
+    public function scopeUsable($query)
+    {
+        $query->where('status', 'active')->whereNull('missing_since');
+        if (config('webcams.matching.require_embed_ok')) {
+            $query->where('embed_status', 'ok');
+        }
+
+        return $query;
+    }
+
+    /** SQL condition on alias `ww` for raw queries (PostGIS lists). */
+    public static function usableSql(string $alias = 'ww'): string
+    {
+        return "{$alias}.status = 'active' AND {$alias}.missing_since IS NULL"
+            . (config('webcams.matching.require_embed_ok') ? " AND {$alias}.embed_status = 'ok'" : '');
+    }
+
+    /** The iframe src the website and the admin preview use (same as Windy's player.js builds). */
+    public function playerUrl(): string
+    {
+        return config('webcams.player_base_url') . '?' . http_build_query([
+            'webcamId' => $this->windy_id, 'playerType' => 'day', 'loop' => 0, 'autoPlay' => 0, 'interactive' => 1,
+        ]);
+    }
+
     public function publicUrl(): string
     {
         return str_replace('{id}', (string) $this->windy_id, config('webcams.public_url'));

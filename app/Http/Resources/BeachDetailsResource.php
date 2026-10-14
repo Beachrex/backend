@@ -26,6 +26,7 @@ class BeachDetailsResource extends JsonResource
             'natural_conditions' => $this->getNaturalConditions($locale),
             'media' => $this->getMediaCollections(),
             'embeds' => $this->getEmbeds(),
+            'webcams' => $this->getWebcams(),
             'swimming_pool_features' => $this->getSwimmingPoolFeatures(),
             'meta' => $this->getMeta(),
         ];
@@ -412,11 +413,24 @@ class BeachDetailsResource extends JsonResource
         })->values()->toArray();
     }
 
+    /** TASK-006: verified Windy webcams, primary first. The site embeds `player_url`; `page_url` is the Windy link. */
+    private function getWebcams(): array
+    {
+        return $this->shownWebcams->map(fn ($row) => [
+            'windy_id' => $row->windy_id,
+            'title' => $row->webcam->title,
+            'is_primary' => $row->is_primary,
+            'player_url' => $row->webcam->playerUrl(),
+            'page_url' => $row->webcam->publicUrl(),
+        ])->values()->all();
+    }
+
     private function getEmbeds(): array
     {
         return [
             'video_url' => $this->video_url,
             'webcam' => $this->webcam,
+            'windy_webcam_id' => $this->shownWebcams->first()?->windy_id,
             'map_url' => $this->path_to_beach_map_url,
             'weather' => $this->beach_weather,
             'water_temperature' => $this->water_temperature,

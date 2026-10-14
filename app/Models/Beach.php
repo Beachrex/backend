@@ -150,6 +150,16 @@ class Beach extends Model
         return $this->belongsTo(Region::class);
     }
 
+    /** TASK-006: Windy webcams shown on this place (approved or auto-approved, usable), primary first. */
+    public function shownWebcams(): HasMany
+    {
+        return $this->hasMany(PlaceWebcam::class, 'place_id')
+            ->whereIn('review_status', PlaceWebcam::VISIBLE)
+            ->whereHas('webcam', fn ($q) => $q->usable())
+            ->with('webcam')
+            ->orderByDesc('is_primary')->orderByDesc('match_score');
+    }
+
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
