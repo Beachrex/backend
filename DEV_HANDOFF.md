@@ -52,6 +52,28 @@ How to test the changes
 
 ---
 
+## 2026-10-14 - TASK-006 step 2: Windy import (budgeted, resumable) and player check
+
+**Changes:**
+- Migration `2026_10_14_150000_create_windy_import_tables`: `windy_import_slices` (checkpoint per country/region slice) and `windy_api_usage` (requests per day).
+- `WindyApiClient`: `x-windy-api-key` header, comma-separated arrays (spec `explode: false`), back-off on 429/5xx (Retry-After or 2ⁿ s), hard daily budget (`WINDY_DAILY_REQUEST_BUDGET`). The key is never logged.
+- `WebcamImporter` + `php artisan webcams:import [--country=HR] [--fresh] [--dry-run]`: categories beach/coast/lake/river/port, `include=categories,location,player`; countries with more than 1 050 webcams are split by region; images never stored; after a complete, untruncated country, webcams not returned get `missing_since`. Re-running the same command resumes the unfinished run.
+- `EmbedChecker` + `php artisan webcams:embed-check [--id=] [--limit=] [--dry-run]`: public player page (no key, 1 request/s) → `embed_status` ok / not_public / unavailable.
+
+**Affected endpoints:** none.
+
+**How to run on dev (owner, after `WINDY_API_KEY` is in `.env.dev`):**
+```
+php artisan webcams:import --country=HR --dry-run
+php artisan webcams:import --country=HR
+php artisan webcams:embed-check --dry-run && php artisan webcams:embed-check
+php artisan webcams:match --country=HR --dry-run
+```
+
+**Tests:** `tests/Feature/Webcams/WebcamImportTest.php` (Windy API mocked).
+
+---
+
 ## 2026-10-14 - TASK-006 step 1: Windy webcam tables, scoring and local matcher
 
 **Owner:** plan approved 2026-10-14 (3 km radius, mode B, direct iframe, other providers hidden). Spec `docs/tasks/TASK-006-windy-webcams.md`.

@@ -48,6 +48,9 @@ Re-check this page before changing the importer; Windy changes limits per tier w
 | `include` | array | `categories images location player urls` |
 | `lang` | string | 43 codes incl. `sl`, `hr`, `de`, `it`… default `en` |
 
+Array parameters are declared `explode: false` in the embedded OpenAPI spec (checked 2026-10-14), so they are sent
+**comma-separated**: `categories=beach,coast`, `webcamIds=1,2,3`, `include=categories,location,player`.
+
 Pagination consequence on the free tier: one filter combination can return at most offset 1 000 + limit 50
 = **1 050 webcams**. Any country/category slice with `total > 1050` must be split (by `regions`, or `bbox`
 tiles) or it is silently truncated. The importer must compare `total` with what it fetched.
@@ -57,7 +60,7 @@ title words and the `indoor` / `sportArea` categories.
 
 ## Response fields (webcam object)
 
-`webcamId` (int), `title`, `status` (example `active`; other values not documented), `viewCount`,
+`webcamId` (int), `title`, `status` (enum in the spec: `active`, `inactive`, `unapproved`, `disabled`, `rejected`, `duplicate`, `merged`), `viewCount`,
 `lastUpdatedOn` (ISO), `categories[] {id, name}`, `location {latitude, longitude, city, city_code, region,
 region_code, country, country_code, continent, continent_code}`, `player {live, day, month, year, lifetime}`
 (public URLs, no token), `urls {detail, edit, provider}`, `images {current, daylight, sizes}` (**tokenised —
