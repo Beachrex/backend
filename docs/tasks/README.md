@@ -9,4 +9,5 @@ Take the next free number from this table.
 | TASK-002 | ASCII-only storage paths (rename šumniki in Spaces + DB, prevent new ones) | Live (migration done 2026-10-08: keys copied, DB updated, old keys deleted; §5 cleanup in progress) | #17, #19, #20, #29–#34 |
 | TASK-003 | AI chat: multilingual query understanding + real candidates | Done (owner confirmed on dev 2026-10-07) | #26 |
 | TASK-005 | Mobile app (Expo, React Native, NativeWind, EAS): plan, tasks, agent roles — `docs/mobile/` | Planned (docs) | |
+| TASK-006 | Windy webcams: import, local matching, widget rendering — `TASK-006-windy-webcams.md` | In progress (plan approved 2026-10-14) | |
 | TASK-004 | Pre-launch review: audit, footer pages in 19 locales, `/beaches` real data, SEO, prod runbook | In progress (most steps live on dev) | backend #43–#48, web-client #16–#22 |
