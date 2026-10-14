@@ -13110,6 +13110,36 @@
                         },
                         "type": "object"
                     },
+                    "webcams": {
+                        "description": "Verified Windy webcams (TASK-006), primary first. Embed `player_url` in an iframe (16:9) and keep a link to `page_url`.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "windy_id": {
+                                    "type": "integer",
+                                    "example": 1616668973
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "example": "Neum",
+                                    "nullable": true
+                                },
+                                "is_primary": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "player_url": {
+                                    "type": "string",
+                                    "example": "https://webcams.windy.com/webcams/public/embed/player?webcamId=1616668973&playerType=day&loop=0&autoPlay=0&interactive=1"
+                                },
+                                "page_url": {
+                                    "type": "string",
+                                    "example": "https://www.windy.com/webcams/1616668973"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
                     "embeds": {
                         "description": "Embedded content (videos, webcams, maps, widgets). Note: Real-time weather data is now available via separate endpoint /beaches/{identifier}/weather",
                         "properties": {
@@ -13119,8 +13149,15 @@
                                 "nullable": true
                             },
                             "webcam": {
+                                "description": "Legacy pasted webcam embed (unverified; kept for old app builds). Use `webcams`.",
                                 "type": "string",
                                 "example": "<iframe>...</iframe>",
+                                "nullable": true
+                            },
+                            "windy_webcam_id": {
+                                "description": "Primary verified Windy webcam id (TASK-006), or null",
+                                "type": "integer",
+                                "example": 1616668973,
                                 "nullable": true
                             },
                             "map_url": {
@@ -14067,9 +14104,15 @@
                                         "nullable": true
                                     },
                                     "webcam": {
-                                        "description": "Webcam embed code",
+                                        "description": "Legacy pasted webcam embed (unverified)",
                                         "type": "string",
                                         "example": "<iframe src='...'></iframe>",
+                                        "nullable": true
+                                    },
+                                    "windy_webcam_id": {
+                                        "description": "Primary verified Windy webcam id (TASK-006), or null",
+                                        "type": "integer",
+                                        "example": 1616668973,
                                         "nullable": true
                                     }
                                 },
@@ -16265,9 +16308,15 @@
                                         "nullable": true
                                     },
                                     "webcam": {
-                                        "description": "Webcam embed code",
+                                        "description": "Legacy pasted webcam embed (unverified)",
                                         "type": "string",
                                         "example": null,
+                                        "nullable": true
+                                    },
+                                    "windy_webcam_id": {
+                                        "description": "Primary verified Windy webcam id (TASK-006), or null",
+                                        "type": "integer",
+                                        "example": 1616668973,
                                         "nullable": true
                                     }
                                 },

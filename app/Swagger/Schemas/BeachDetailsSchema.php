@@ -252,11 +252,24 @@ namespace App\Swagger\Schemas;
  *         )
  *     ),
  *     @OA\Property(
+ *         property="webcams",
+ *         type="array",
+ *         description="Verified Windy webcams (TASK-006), primary first. Embed `player_url` in an iframe (16:9) and keep a link to `page_url`.",
+ *         @OA\Items(type="object",
+ *             @OA\Property(property="windy_id", type="integer", example=1616668973),
+ *             @OA\Property(property="title", type="string", nullable=true, example="Neum"),
+ *             @OA\Property(property="is_primary", type="boolean", example=true),
+ *             @OA\Property(property="player_url", type="string", example="https://webcams.windy.com/webcams/public/embed/player?webcamId=1616668973&playerType=day&loop=0&autoPlay=0&interactive=1"),
+ *             @OA\Property(property="page_url", type="string", example="https://www.windy.com/webcams/1616668973")
+ *         )
+ *     ),
+ *     @OA\Property(
  *         property="embeds",
  *         type="object",
  *         description="Embedded content (videos, webcams, maps, widgets). Note: Real-time weather data is now available via separate endpoint /beaches/{identifier}/weather",
  *         @OA\Property(property="video_url", type="string", nullable=true, example="https://youtube.com/watch?v=..."),
- *         @OA\Property(property="webcam", type="string", nullable=true, example="<iframe>...</iframe>"),
+ *         @OA\Property(property="webcam", type="string", nullable=true, example="<iframe>...</iframe>", description="Legacy pasted webcam embed (unverified; kept for old app builds). Use `webcams`."),
+ *         @OA\Property(property="windy_webcam_id", type="integer", nullable=true, example=1616668973, description="Primary verified Windy webcam id (TASK-006), or null"),
  *         @OA\Property(property="map_url", type="string", nullable=true, example="https://maps.google.com/..."),
  *         @OA\Property(property="weather", type="string", nullable=true, example="<div>...</div>", description="Legacy weather widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)"),
  *         @OA\Property(property="water_temperature", type="string", nullable=true, example="<div>...</div>", description="Legacy water temperature widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)")

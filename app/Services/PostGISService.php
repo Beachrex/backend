@@ -45,6 +45,9 @@ class PostGISService
                 b.continent_code,
                 b.video_url,
                 b.webcam,
+                (SELECT pw.windy_id FROM place_webcams pw JOIN windy_webcams ww ON ww.windy_id = pw.windy_id
+                  WHERE pw.place_id = b.id AND pw.is_primary AND pw.review_status IN ('auto_approved', 'approved')
+                    AND " . \App\Models\WindyWebcam::usableSql() . " LIMIT 1) AS windy_webcam_id,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
@@ -172,6 +175,9 @@ class PostGISService
                 b.continent_code,
                 b.video_url,
                 b.webcam,
+                (SELECT pw.windy_id FROM place_webcams pw JOIN windy_webcams ww ON ww.windy_id = pw.windy_id
+                  WHERE pw.place_id = b.id AND pw.is_primary AND pw.review_status IN ('auto_approved', 'approved')
+                    AND " . \App\Models\WindyWebcam::usableSql() . " LIMIT 1) AS windy_webcam_id,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
@@ -295,6 +301,9 @@ class PostGISService
                 b.continent_code,
                 b.video_url,
                 b.webcam,
+                (SELECT pw.windy_id FROM place_webcams pw JOIN windy_webcams ww ON ww.windy_id = pw.windy_id
+                  WHERE pw.place_id = b.id AND pw.is_primary AND pw.review_status IN ('auto_approved', 'approved')
+                    AND " . \App\Models\WindyWebcam::usableSql() . " LIMIT 1) AS windy_webcam_id,
                 COALESCE(bt.name, bt_en.name) as name,
                 COALESCE(bt.description, bt_en.description) as description,
                 COALESCE(bt.slug, bt_en.slug) as slug,
@@ -848,6 +857,7 @@ class PostGISService
             $media['embeds'] = [
                 'video_url' => $beach->video_url ?? null,
                 'webcam' => $beach->webcam ?? null,
+                'windy_webcam_id' => isset($beach->windy_webcam_id) ? (int) $beach->windy_webcam_id : null,
             ];
 
             return [

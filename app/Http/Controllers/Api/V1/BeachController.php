@@ -376,6 +376,7 @@ class BeachController extends Controller
 
         // Only load relationships that are actually used in BeachResource
         return new BeachResource($beach->load([
+            'shownWebcams',
             'translations',
             'continent.translations',
             'country.translations',
@@ -433,6 +434,7 @@ class BeachController extends Controller
         // Build query with all necessary relationships
         $query = Beach::where('status_id', 1)
             ->with([
+                'shownWebcams',
                 'translations',
                 'continent.translations',
                 'country.translations',
@@ -550,6 +552,7 @@ class BeachController extends Controller
         $data = $this->cacheRemember($cacheKey, 86400, function () use ($request, $limit) {
             $query = Beach::where('status_id', 1)
                 ->with([
+                    'shownWebcams',
                     'translations',
                     'continent.translations',
                     'country.translations',
@@ -660,6 +663,7 @@ class BeachController extends Controller
         $data = $this->cacheRemember($cacheKey, 86400, function () {
             $beaches = Beach::where('status_id', 1)
                 ->with([
+                    'shownWebcams',
                     'translations',
                     'continent.translations',
                     'country.translations',

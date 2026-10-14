@@ -52,6 +52,22 @@ How to test the changes
 
 ---
 
+## 2026-10-14 - TASK-006 step 4: webcam review in admin + verified webcams in the API
+
+**Changes:**
+- Admin (Filament) → Content → **Webcam review** (`/place-webcams`, admins only): pending first, filters status/country/place type/source, columns place (OSM link), webcam (windy.com link), distance, score and a one-line "why", status, source, primary. Actions: Preview (the same iframe as the site), Approve, Reject, Set primary, bulk approve/reject, **Add webcam by hand** (id, Windy link or embed code; unknown ids verified with one API call).
+- `PlaceWebcamReview`: approve (first approved becomes primary; refused if the webcam is shown on another place), reject (primary handed to the next shown webcam), set primary, manual add; each clears the place's cached `beach_details:*` keys.
+- `Beach::shownWebcams()` (approved/auto-approved and usable), `WindyWebcam::scopeUsable()`, `playerUrl()`.
+
+**Affected endpoints (additive only; `webcam` unchanged for old app builds):**
+- `GET /api/v1/beach-details/{identifier}`: new `webcams[]` (`windy_id`, `title`, `is_primary`, `player_url`, `page_url`), primary first; new `embeds.windy_webcam_id`.
+- `GET /api/v1/beaches`, `/beaches/most-visited`, favorites, `/api/v1/spatial/beaches/*`: new `media.embeds.windy_webcam_id` (primary verified webcam or null).
+- OpenAPI regenerated.
+
+**Tests:** `tests/Feature/Webcams/WebcamReviewAndApiTest.php` (API filtering, list/map field, review rules, manual add, cache clear, admin 302/403, table action).
+
+---
+
 ## 2026-10-14 - TASK-006 step 3: legacy webcam salvage and scheduled refresh
 
 **Changes:**
