@@ -55,7 +55,7 @@ navodilih). Vsak ukaz, ki spreminja podatke, ima `--dry-run`; vedno ga poženi n
 
 | Ukaz | Čemu služi | Navodila | Stanje |
 |---|---|---|---|
-| `webcams:import`, `webcams:embed-check`, `webcams:legacy-extract`, `webcams:match`, `webcams:refresh` | spletne kamere | [spletne-kamere.md](spletne-kamere.md) | ✅ |
+| `webcams:import`, `webcams:embed-check`, `webcams:legacy-extract`, `webcams:match`, `webcams:refresh`, `webcams:export` | spletne kamere | [spletne-kamere.md](spletne-kamere.md) | ✅ |
 | `static-pages:sync` | naloži besedila strani v nogi v vseh jezikih | [staticne-strani.md](staticne-strani.md) | ✅ |
 | `content:ai` | AI popravek imen, regij in opisov plaž | [ai-vsebina.md](ai-vsebina.md) | ✅ |
 | `translations:audit`, `translations:ai` | manjkajoči prevodi in AI prevodi | [ai-vsebina.md](ai-vsebina.md) | ✅ |

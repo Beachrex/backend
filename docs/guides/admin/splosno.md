@@ -202,3 +202,20 @@ Ukaza: `app/Console/Commands/ClearApiCache.php` (`App\Services\CacheService`), `
 Okolja: `docs/HANDOFF.md` → »Environments«. Znane neskladnosti: »/14« v `CoverageGapsWidget`, `GenderResource` in
 filtru `missing_translations` v `BeachResource` (podprtih jezikov je 19, `SetLocaleFromHeader::SUPPORTED_LOCALES`);
 `cache:clear-api --type=translations` kliče `clearTranslationCache(null)`, ki zahteva `string`.
+
+
+## Prenos datoteke s strežnika na Mac
+
+Ukazi, ki naredijo datoteko (npr. `webcams:export`, `webcams:legacy-extract`), jo shranijo **v kontejner** `api_<okolje>`
+(pot se začne z `/var/www/html/…`). Na računalnik jo preneseš v dveh korakih:
+
+1. Na strežniku jo prekopiraj iz kontejnerja v `/root` (zamenjaj ime datoteke s tistim, ki ga je izpisal ukaz):
+   ```
+   cd /opt/beachrex/deploy
+   docker compose -f docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev cp api_dev:/var/www/html/storage/app/private/webcams/<ime>.csv /root/<ime>.csv
+   ```
+2. Na Mac-u (v Terminalu na svojem računalniku, ne na strežniku):
+   ```
+   scp root@<naslov-strežnika>:/root/<ime>.csv ~/Downloads/
+   ```
+   `<naslov-strežnika>` je isti naslov, s katerim se prijaviš na strežnik (`ssh root@…`).
