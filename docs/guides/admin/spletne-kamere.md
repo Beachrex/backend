@@ -68,7 +68,7 @@ php artisan webcams:export --base-url=https://dev.beachrex.com
 
 Ukaz izpiše pot do datoteke, npr. `/var/www/html/storage/app/private/webcams/export-<datum>.csv` (v kontejnerju).
 Na svoj računalnik jo preneseš v dveh korakih — na strežniku jo prekopiraš iz kontejnerja, nato jo z Mac-a preneseš
-s `scp` (točna ukaza sta v [splosno.md](splosno.md) pod »Prenos datoteke s strežnika«, oz. ju napiše agent).
+s `scp` (točna ukaza sta v [splosno.md](splosno.md) pod »Prenos datoteke s strežnika na Mac«).
 
 ## Stran »Webcam review«
 
