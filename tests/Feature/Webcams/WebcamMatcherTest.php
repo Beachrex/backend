@@ -136,6 +136,23 @@ class WebcamMatcherTest extends TestCase
         $this->assertSame([1000000003, 'approved', 0, true], [$manual->windy_id, $manual->review_status, $manual->match_score, $manual->is_primary]);
     }
 
+    /** Regression (dev, 2026-10-14): an approved matcher row was treated as replaceable, so a neighbour got the
+     *  same webcam and the run died on place_webcams_one_place_per_webcam. */
+    #[Test]
+    public function a_webcam_approved_on_one_place_is_never_offered_to_another(): void
+    {
+        $owner = $this->place('Beach Prvi Zal', 43.0, 16.0);
+        $neighbour = $this->place('Beach Prvi Zal Two', 43.002, 16.0);
+        $this->cam(1000000001, 'Lumbarda: Prvi Zal beach', 43.001, 16.0);   // 111 m from both, name hit for both → 95
+        PlaceWebcam::create(['place_id' => $owner, 'windy_id' => 1000000001, 'source' => 'matcher', 'review_status' => 'approved',
+            'is_primary' => true, 'match_score' => 95, 'reviewed_at' => now()]);
+
+        $this->match();
+
+        $this->assertSame(0, PlaceWebcam::where('place_id', $neighbour)->count());
+        $this->assertSame([$owner], PlaceWebcam::where('windy_id', 1000000001)->pluck('place_id')->all());
+    }
+
     #[Test]
     public function rerun_is_idempotent_and_dry_run_writes_nothing(): void
     {

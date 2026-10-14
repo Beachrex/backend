@@ -3,6 +3,7 @@
 namespace App\Services\Webcams;
 
 use App\Models\PlaceWebcam;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -41,12 +42,13 @@ class WebcamMatcher
         }
         $summary['skipped_reviewed'] = count($skip);
 
-        // Webcams already shown or proposed elsewhere (rows this run will not replace).
+        // Webcams already shown or proposed somewhere. Only this run's own replaceable proposals (matcher rows of
+        // places in scope that nobody reviewed) are left out; reviewed, legacy and manual rows always count.
         $taken = PlaceWebcam::query()
             ->whereIn('review_status', [PlaceWebcam::AUTO_APPROVED, PlaceWebcam::APPROVED, PlaceWebcam::PENDING])
-            ->where(fn ($q) => $q->whereNotIn('place_id', $placeIds)->orWhere('source', '!=', PlaceWebcam::SOURCE_MATCHER))
-            ->get(['place_id', 'windy_id'])
-            ->mapWithKeys(fn ($r) => [$r->windy_id => $r->place_id])->all();
+            ->get()
+            ->reject(fn (PlaceWebcam $r) => in_array($r->place_id, $placeIds, true) && $r->source === PlaceWebcam::SOURCE_MATCHER && $r->isMatcherOwned())
+            ->mapWithKeys(fn (PlaceWebcam $r) => [$r->windy_id => $r->place_id])->all();
 
         $scored = $this->score($places, $placeIds);
 
@@ -89,7 +91,14 @@ class WebcamMatcher
             $summary[$c ? $c['review_status'] : 'none']++;
             $decisions[] = ['place_id' => $pid, 'place' => $place->name, 'country' => $place->country_code] + ($c ?? ['review_status' => 'none']);
             if (! $dryRun) {
-                $this->persist($pid, $c, $existing->get($pid, collect()));
+                try {
+                    $this->persist($pid, $c, $existing->get($pid, collect()));
+                } catch (UniqueConstraintViolationException) {
+                    // Another place got this webcam meanwhile (e.g. an admin approval during the run): skip this
+                    // place instead of stopping the whole run; the next run proposes its next candidate.
+                    $summary[$c['review_status']]--;
+                    $summary['conflict'] = ($summary['conflict'] ?? 0) + 1;
+                }
             }
         }
 

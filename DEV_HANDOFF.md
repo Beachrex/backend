@@ -52,6 +52,16 @@ How to test the changes
 
 ---
 
+## 2026-10-14 - Fix: `webcams:match` offered an approved webcam to a neighbouring place
+
+**Found on dev (owner's all-country run):** `SQLSTATE[23505] … place_webcams_one_place_per_webcam, windy_id 1598991907` — the owner had approved Prvi Žal (Lumbarda) for place 1188; the matcher treated that approved *matcher* row as replaceable, offered the webcam to place 1187 and the run stopped.
+
+**Fix:** only unreviewed matcher proposals of places in scope are replaceable; approved, legacy and manual rows always reserve their webcam. A unique conflict during a run (e.g. an admin approval at the same moment) now skips that place (`conflict` in the summary) instead of stopping the run.
+
+**Tests:** regression `a_webcam_approved_on_one_place_is_never_offered_to_another` (fails on the old code).
+
+---
+
 ## 2026-10-14 - `webcams:export`: CSV of places with webcams and their website links
 
 **Owner:** "izpiše vse plaže in link do beachrex do te plaže ki imajo kamere … link mora biti dev.beachrex … csv".
