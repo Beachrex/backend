@@ -1,4 +1,4 @@
-# Handoff — state as of 2026-10-09 (end of session 8)
+# Handoff — state as of 2026-10-14 (session 10: TASK-006 Windy webcams)
 
 > **Two agent roles** ([`AGENT-ROLES.md`](AGENT-ROLES.md)): the **web agent** (default) starts here; the **mobile agent** starts at [`mobile/MOBILE-PLAN.md`](mobile/MOBILE-PLAN.md).
 > **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-09).
@@ -67,6 +67,19 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 **Host nginx (fixed 2026-10-09):** `/etc/nginx/sites-available/beachrex` is now a symlink to `/opt/beachrex/deploy/nginx/beachrex.conf`, so every deploy's `deploy/` sync plus `nginx reload` applies the repo file. Before that it was a stale copy from 2026-09-11: the nginx changes of session 8 (rate limit, gzip, keepalive, Cloudflare real IP, HTTP/2) were only live from 2026-10-09 22:31. Backup of the old copy: `/root/nginx-beachrex-live-20261009.conf`. Each deploy syncs `deploy/` from **its own branch**, so nginx follows whichever environment deployed last; keep `deploy/nginx` the same on dev, uat and main.
 
 ## Done
+
+- 2026-10-14 (session 10): **TASK-006 Windy webcams — code live on dev, data not imported yet** (owner: plan approved, 3 km radius, mode B, direct iframe, other providers hidden). Spec `docs/tasks/TASK-006-windy-webcams.md`, proof `docs/tasks/TASK-006.feedback.md`, API facts `docs/technical/windy-webcams-api.md`.
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/backend#114 | Spec, Phase 0 findings, ADR | 38582762471 |
+  | Beachrex/backend#115 | `windy_webcams` / `place_webcams`, scoring config, `webcams:match` | 38584442226 |
+  | Beachrex/backend#116 | `webcams:import` (budgeted, resumable), `webcams:embed-check` | 38586183544 |
+  | Beachrex/backend#117 | `webcams:legacy-extract`, `webcams:refresh` + schedule (off) | 38587631077 |
+  | Beachrex/backend#118 | Admin "Webcam review", API `webcams[]` / `windy_webcam_id` (additive) | 38589616635 |
+  | Beachrex/web-client#75 | Beach page iframe section, cards/map use the verified webcam, `FEATURES.windyWebcams` | 38590703623 |
+
+  Until the owner runs the import, **no beach shows a webcam** (old pasted links are hidden by `FEATURES.windyWebcams`).
 
 - 2026-10-12 (session 9): **translations on dev** — owner reports (Greek/Albanian/Cyrillic pages, France, breadcrumbs, map link, 360° hyphen) fixed: Beachrex/web-client#70–#73, Beachrex/backend#107–#111. `translations:ai` wrote 3 563 reference-data names and 8 900 Greek/Cyrillic beach and city names on dev (owner: "super, urejeno"). Open: owner's "Napaka 79" and the RU/UA/BG/GR search wording need a URL or screenshot.
 
@@ -220,6 +233,14 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Owner's open actions
 
+- **TASK-006 Windy webcams (run in this order on dev, each with `--dry-run` first; send the outputs to the agent):**
+  1. Read the full Windy terms (`account.windy.com/agreements/windy-webcams-api-terms-of-use`): commercial use, storing metadata. Pro tier (9 990 €/year) only if needed.
+  2. Set `WINDY_API_KEY` in `/opt/beachrex/envs/.env.dev` (optional `WINDY_DAILY_REQUEST_BUDGET`, default 500) and redeploy dev.
+  3. `php artisan webcams:import --country=HR` (one country first, as the task asks), then `webcams:embed-check`, `webcams:legacy-extract --country=HR`, `webcams:match --country=HR`.
+  4. Look at Admin → Content → **Webcam review** on dock-dev and a beach page with a webcam; send screenshots.
+  5. Then all countries (`webcams:import` without `--country`; it resumes daily if the budget runs out) and `WEBCAMS_REFRESH_ENABLED=true` (+ `WEBCAMS_ALERT_EMAIL`) for the monthly refresh.
+  6. Later: approve removing the legacy `beach.webcam` column (separate task; the mobile app must stop reading `webcam` first).
+
 - **Old beachrex.com URLs (live on dev since 2026-10-08, Beachrex/backend#46 + Beachrex/web-client#19):** test them on dev now. Take 5–10 real old links (Google Maps, other sites), replace `https://www.beachrex.com` with `https://dev.beachrex.com` and open them: each must end on the same beach/place (308), not the home page or a 404. Send the agent any that land wrong; they become test cases. On beachrex.com they start working at the DNS switch (prod launch runbook D2/D3, check D8). After launch: Google Search Console → submit `https://beachrex.com/sitemap.xml` and watch the "Not found (404)" report for a few weeks.
 - **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** Apple Developer (D-U-N-S) and Google Play accounts, Expo account (builds run on the owner's computer); for app links (B-M4) the Apple Team ID and the Android signing key SHA-256. Done/decided 2026-10-09: repo `Beachrex/mobile-app`, bundle ID `com.datavallis.beachrex`; no `EXPO_TOKEN`, no Google Maps key, no Sentry.
 
@@ -345,6 +366,8 @@ The web agent writes this section from the mobile agent's status relayed by the 
 
 ## Open items (found, not yet scheduled)
 
+- **web-client API client drift (found 2026-10-14, TASK-006):** `yarn generate:api` against the current backend spec also changes search-result slugs to nullable (backend 2026-10-09 OpenAPI change), which breaks `src/components/Header/GlobalSearch.tsx` types (6 errors). TASK-006 did not regenerate; a small PR should regenerate and handle the nulls. Note: the generator also rewrites `client.gen.ts` `baseUrl` — keep the `process.env.NEXT_PUBLIC_API_ENDPOINT` line.
+
 - **Less JavaScript on every page** (owner 2026-10-09: "zaenkrat ne, ampak si zabeleži"): header/footer as server components, flowbite Dropdown/Sidebar replaced by small own code, lazy burger menu and search results. Expected saving ~60–100 KB gzipped per page (today ~240 KB). Found in the 2026-10-09 performance audit.
 
 - **Old user migration (`users:migrate-from-old-db`): fixed per owner option (a) on 2026-10-09** — random unusable password, never the MD5 hash or "password"; imported users sign in with Google (linked by e-mail). Run only in production after launch (GDPR): `--test` first. Admin → Users has the filter "Imported from old site". Do **not** remove `database/sql/user.sql` (owner).
@@ -371,4 +394,4 @@ The web agent writes this section from the mobile agent's status relayed by the 
 
 ## Latest numbers
 
-- Next TASK number: TASK-006 (TASK-001 itinerary quality, TASK-002 ASCII storage paths, TASK-003 chat understanding, TASK-004 pre-launch review, TASK-005 mobile app) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-007 (TASK-001 itinerary quality, TASK-002 ASCII storage paths, TASK-003 chat understanding, TASK-004 pre-launch review, TASK-005 mobile app, TASK-006 Windy webcams) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
