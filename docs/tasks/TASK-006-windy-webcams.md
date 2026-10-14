@@ -1,6 +1,6 @@
 # TASK-006 — Windy webcams: one-time import, local matching, widget rendering
 
-Status: **Plan approved (owner, 2026-10-14), implementation in progress.**
+Status: **Built and live on dev (2026-10-14): backend #114–#118, web-client #75.** Real import, first-country results and screenshots: owner steps (HANDOFF). Proof: [`TASK-006.feedback.md`](TASK-006.feedback.md).
 Spec: owner's task file (chat, 2026-10-14). API facts: [`docs/technical/windy-webcams-api.md`](../technical/windy-webcams-api.md).
 Legacy report: [`TASK-006-legacy-webcams-2026-10-14.csv`](TASK-006-legacy-webcams-2026-10-14.csv).
 
