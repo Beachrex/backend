@@ -14,6 +14,15 @@ return [
         'timeout' => 20,
     ],
 
+    'import' => [
+        // Windy categories fetched by webcams:import (categoryOperation=or). Pools/spas will need
+        // indoor/sportArea once such places are in the DB.
+        'categories' => ['beach', 'coast', 'lake', 'river', 'port'],
+        // Rate for the public player check (webcams:embed-check), not the API.
+        'embed_check_delay_ms' => 1000,
+        'embed_check_stale_days' => 30,
+    ],
+
     'player_base_url' => 'https://webcams.windy.com/webcams/public/embed/player',
     'public_url' => 'https://www.windy.com/webcams/{id}',
 
