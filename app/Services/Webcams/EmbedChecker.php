@@ -2,6 +2,7 @@
 
 namespace App\Services\Webcams;
 
+use App\Models\PlaceWebcam;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -18,6 +19,9 @@ class EmbedChecker
     public const UNAVAILABLE = 'unavailable';
     public const UNKNOWN = 'unknown';
 
+    /** @var list<int> places showing a webcam whose result changed in the last run() (their pages must update) */
+    public array $changedPlaces = [];
+
     public function __construct(private readonly ?\Closure $sleep = null)
     {
     }
@@ -25,7 +29,12 @@ class EmbedChecker
     public function check(int $windyId): string
     {
         try {
-            $response = Http::timeout(15)->get(config('webcams.player_base_url'), ['webcamId' => $windyId, 'playerType' => 'day']);
+            // Same query and Referer as the iframe on our beach page, so the check sees what visitors see.
+            $response = Http::timeout(15)
+                ->withHeaders(['Referer' => rtrim((string) config('app.frontend_url'), '/') . '/'])
+                ->get(config('webcams.player_base_url'), [
+                    'webcamId' => $windyId, 'playerType' => 'day', 'loop' => 0, 'autoPlay' => 0, 'interactive' => 1,
+                ]);
         } catch (Throwable) {
             return self::UNKNOWN;
         }
@@ -49,28 +58,55 @@ class EmbedChecker
     /**
      * Checks the given ids (or, when null, active webcams within the matching radius of a place whose
      * check is missing or older than `embed_check_stale_days`) and stores the result.
+     * A failed request (`unknown`) never overwrites a known result, so a network blip does not hide a webcam;
+     * the webcam stays due and is checked again on the next run.
      *
      * @return array<string,int> count per result
      */
     public function run(?array $ids = null, ?int $limit = null, bool $dryRun = false): array
     {
         $ids ??= $this->due($limit);
+        $this->changedPlaces = [];
         $counts = ['checked' => 0, self::OK => 0, self::NOT_PUBLIC => 0, self::UNAVAILABLE => 0, self::UNKNOWN => 0];
         if ($dryRun) {
             return ['would_check' => count($ids)] + $counts;
         }
         $delay = (int) config('webcams.import.embed_check_delay_ms');
+        $changed = [];
         foreach (array_values($ids) as $i => $id) {
             if ($i > 0 && $delay > 0) {
                 ($this->sleep ?? fn (int $ms) => usleep($ms * 1000))($delay);
             }
             $result = $this->check((int) $id);
-            DB::table('windy_webcams')->where('windy_id', $id)->update(['embed_status' => $result, 'embed_checked_at' => now()]);
+            $before = DB::table('windy_webcams')->where('windy_id', $id)->value('embed_status');
+            if ($result !== self::UNKNOWN || $before === null || $before === self::UNKNOWN) {
+                DB::table('windy_webcams')->where('windy_id', $id)->update(['embed_status' => $result, 'embed_checked_at' => now()]);
+                if ($before !== null && $before !== $result) {
+                    $changed[] = (int) $id;
+                }
+            }
             $counts['checked']++;
             $counts[$result]++;
         }
+        if ($changed !== []) {
+            $this->changedPlaces = PlaceWebcam::query()->whereIn('windy_id', $changed)
+                ->whereIn('review_status', PlaceWebcam::VISIBLE)->distinct()->orderBy('place_id')
+                ->pluck('place_id')->map(fn ($v) => (int) $v)->all();
+        }
 
         return $counts;
+    }
+
+    /**
+     * Webcams currently shown on a place (approved or auto-approved), however recently they were checked.
+     * Windy owners can switch embedding off at any time, so these are re-checked daily.
+     *
+     * @return list<int>
+     */
+    public function shownIds(): array
+    {
+        return PlaceWebcam::query()->whereIn('review_status', PlaceWebcam::VISIBLE)
+            ->distinct()->orderBy('windy_id')->pluck('windy_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /** @return list<int> */
