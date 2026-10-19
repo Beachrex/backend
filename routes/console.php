@@ -27,3 +27,10 @@ Schedule::command('webcams:refresh')
     ->dailyAt('04:20')
     ->withoutOverlapping()
     ->when(fn () => (bool) config('webcams.refresh.enabled') && (bool) config('webcams.api.key'));
+
+// TASK-006: Windy owners can switch embedding off at any time ("not publicly available" in the player), so the
+// webcams shown on our pages are re-checked daily in the public player (no API key, ~1 request/s).
+Schedule::command('webcams:embed-check --shown')
+    ->dailyAt('05:10')
+    ->withoutOverlapping()
+    ->when(fn () => (bool) config('webcams.import.embed_recheck_enabled'));

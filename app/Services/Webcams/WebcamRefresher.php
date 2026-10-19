@@ -18,6 +18,7 @@ class WebcamRefresher
         private readonly WebcamImporter $importer,
         private readonly EmbedChecker $embed,
         private readonly WebcamMatcher $matcher,
+        private readonly PlaceWebcamReview $review,
     ) {
     }
 
@@ -45,6 +46,9 @@ class WebcamRefresher
                 ->whereRaw('ST_DWithin(w.location, b.location::geography, ?)', [config('webcams.matching.max_radius_m')]))
             ->pluck('b.id')->all();
         $affected = array_values(array_unique(array_merge($demoted['places'], $newNearby)));
+        foreach (array_unique(array_merge($this->embed->changedPlaces, $demoted['places'])) as $placeId) {
+            $this->review->forgetPlace($placeId);   // cached beach details must not keep a webcam that stopped working
+        }
         $match = $affected === [] ? null : $this->matcher->run(['place_ids' => $affected]);
 
         $lost = $demoted['lost'];

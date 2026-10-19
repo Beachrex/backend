@@ -21,6 +21,8 @@ return [
         // Rate for the public player check (webcams:embed-check), not the API.
         'embed_check_delay_ms' => 1000,
         'embed_check_stale_days' => 30,
+        // Daily re-check of the webcams shown on a place (webcams:embed-check --shown). No API key needed.
+        'embed_recheck_enabled' => (bool) env('WEBCAMS_EMBED_RECHECK_ENABLED', true),
     ],
 
     'refresh' => [

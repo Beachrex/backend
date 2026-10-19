@@ -148,6 +148,14 @@ Sistem vsak dan ob 04:20 preveri, ali je minilo 30 dni od zadnjega uvoza (ali pa
 Kamere, ki ne delujejo več, izgubijo oznako glavne; glavna postane naslednja delujoča. Plaže z novimi kamerami v
 bližini se ponovno točkujejo. Če več kot 10 % plaž izgubi glavno kamero, dobiš e-pošto.
 
+## Dnevno preverjanje prikazanih kamer
+
+Lastnik kamere lahko na Windy kadar koli izklopi vgradnjo; takrat predvajalnik namesto slike pokaže
+»Sorry. The embed player for this webcam is not publicly available.« Zato sistem vsak dan ob 05:10 ponovno
+preveri vse kamere, ki so prikazane na straneh (`webcams:embed-check --shown`, brez API ključa). Kamera, ki se ne
+predvaja več, izgine s strani plaže (glavna postane naslednja delujoča), predpomnilnik strani se izprazni.
+Vklopljeno je privzeto; izklop: `WEBCAMS_EMBED_RECHECK_ENABLED=false`.
+
 ## Pogoste težave
 
 | Težava | Vzrok in rešitev |
@@ -157,6 +165,7 @@ bližini se ponovno točkujejo. Če več kot 10 % plaž izgubi glavno kamero, do
 | Pri Approve: »already shown on place …« | kamera je že prikazana pri drugi plaži; tam jo najprej zavrni |
 | Pri ročnem dodajanju: »cannot be shown (… player not_public)« | lastnik kamere na Windy ne dovoli vgradnje; te kamere ne moremo prikazati |
 | Plaža nima kamere, čeprav je na Windy | kamera je dlje od 3 km, ima prenizko oceno ali je zavrnjena; dodaj jo ročno |
+| Na strani plaže piše »embed player … is not publicly available« | lastnik je izklopil vgradnjo po našem preverjanju. Takoj: `php artisan webcams:embed-check --shown`; sicer jo skrije dnevno preverjanje ob 05:10. Spletna stran se osveži v nekaj minutah (ISR). |
 | Na strani ni kamere takoj po uvozu | uvozu morata slediti `embed-check` in `match` (koraki 2–4) |
 
 ## Za razvijalce

@@ -52,6 +52,34 @@ How to test the changes
 
 ---
 
+## 2026-10-19 - Fix: beach page showed Windy's "embed player … is not publicly available"
+
+**Owner report (dev, 2026-10-19):** the "Live webcam" section of a Nice beach showed Windy's message
+"Sorry. The embed player for this webcam is not publicly available." instead of the player.
+
+**Cause:** a webcam is shown only when its public player check (`embed_status`) is `ok`, but the check ran once
+(2026-10-14) and is repeated only after 30 days (`embed_check_stale_days`) or by the monthly refresh (off). A
+webcam whose owner switches embedding off afterwards stayed `ok` in our DB, and the cached beach details
+(8 h) kept it even after a re-check.
+
+**Changes:**
+- `webcams:embed-check --shown` re-checks every webcam shown on a place (approved / auto-approved), however
+  recently checked; scheduled **daily at 05:10** (`WEBCAMS_EMBED_RECHECK_ENABLED`, default `true`; no API key).
+- A shown webcam whose result changes: primary moves to the next usable webcam (`WebcamRefresher::demote`) and
+  the place's cached beach details are cleared (also after `webcams:refresh`).
+- A failed request (`unknown`) no longer overwrites a known result, so a network blip cannot hide a working webcam.
+- The check now asks the player with the same query and `Referer` (the website, `FRONTEND_URL`) as the iframe
+  on our beach page, so it sees what a visitor sees.
+
+**Affected endpoints:** none changed; `GET /api/v1/beaches/{id}` (details `webcams[]`) and list/map
+`windy_webcam_id` stop returning such webcams after the re-check.
+
+**Tests:** `tests/Feature/Webcams/WebcamEmbedRecheckTest.php` (4 tests, all fail on the old code).
+
+**Owner, on dev now:** `php artisan webcams:embed-check --shown` (≈1 s per shown webcam).
+
+---
+
 ## 2026-10-14 - Fix: `webcams:match` offered an approved webcam to a neighbouring place
 
 **Found on dev (owner's all-country run):** `SQLSTATE[23505] … place_webcams_one_place_per_webcam, windy_id 1598991907` — the owner had approved Prvi Žal (Lumbarda) for place 1188; the matcher treated that approved *matcher* row as replaceable, offered the webcam to place 1187 and the run stopped.
