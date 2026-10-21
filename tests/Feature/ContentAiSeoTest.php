@@ -206,7 +206,8 @@ class ContentAiSeoTest extends TestCase
     {
         $id = $this->beach(['en' => ['Slanica', 'Text.'], 'sl' => ['Slanica', 'Besedilo.']]);
         DB::table('beach_translation')->where('beach_id', $id)->where('locale', 'en')->update([
-            'meta_description' => 'English snippet.', 'faq' => json_encode([['q' => 'Q?', 'a' => 'A.'], ['q' => '', 'a' => 'broken']]),
+            // The admin repeater saves items under uuid keys; jsonb reorders the item keys.
+            'meta_description' => 'English snippet.', 'faq' => json_encode(['3f1c' => ['q' => 'Q?', 'a' => 'A.'], '9ab2' => ['q' => '', 'a' => 'broken']]),
         ]);
 
         $this->getJson("/api/v1/beach-details/{$id}", ['Accept-Language' => 'en'])

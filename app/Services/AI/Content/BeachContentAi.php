@@ -744,10 +744,11 @@ TXT;
             if ($row) {
                 $row->update($update);
             } else {
-                BeachTranslation::create([
+                // array_merge, not +: the generated fields must win over the defaults.
+                BeachTranslation::create(array_merge([
                     'beach_id' => $beach->id, 'locale' => $locale, 'name' => $source->name, 'slug' => $source->slug,
                     'description' => null,
-                ] + $update);
+                ], $update));
             }
         }
 
