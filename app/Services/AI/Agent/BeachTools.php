@@ -290,7 +290,7 @@ class BeachTools
         ], $locale);
 
         $text = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($basic['description'] ?? $d['description'] ?? ''))));
-        unset($d['media'], $d['basic_info']['description'], $d['description'], $d['seo'], $d['previous_beach'], $d['next_beach']);
+        unset($d['media'], $d['basic_info']['description'], $d['basic_info']['meta_description'], $d['basic_info']['faq'], $d['description'], $d['seo'], $d['previous_beach'], $d['next_beach']);
         $facts = json_encode($d, JSON_UNESCAPED_UNICODE);
 
         return "{$card['name']} (id {$card['id']})\nlink: {$card['url']}\n"

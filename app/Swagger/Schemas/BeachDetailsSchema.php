@@ -16,6 +16,18 @@ namespace App\Swagger\Schemas;
  *         @OA\Property(property="name", type="string", example="Paradise Beach"),
  *         @OA\Property(property="slug", type="string", example="paradise-beach"),
  *         @OA\Property(property="description", type="string", nullable=true, example="Beautiful sandy beach"),
+ *         @OA\Property(property="meta_description", type="string", nullable=true, description="Search snippet in the requested language only (TASK-007)", example="Shallow sandy beach at the Neretva mouth near Ploče, good for small children and kiters."),
+ *         @OA\Property(
+ *             property="faq",
+ *             type="array",
+ *             description="Questions and answers in the requested language only; empty when none (TASK-007)",
+ *             @OA\Items(
+ *                 type="object",
+ *                 required={"q", "a"},
+ *                 @OA\Property(property="q", type="string", example="Is Ušće Neretve good for small children?"),
+ *                 @OA\Property(property="a", type="string", example="Yes, at Ušće Neretve the water becomes 1 m deep only about 100 m from the shore.")
+ *             )
+ *         ),
  *         @OA\Property(property="latitude", type="string", example="42.5996000"),
  *         @OA\Property(property="longitude", type="string", example="18.2302000"),
  *         @OA\Property(property="folder_name", type="string", nullable=true, example="paradise-beach-123"),

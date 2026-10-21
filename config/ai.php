@@ -45,6 +45,8 @@ return [
         'model' => env('AI_CONTENT_MODEL', 'claude-opus-5-5'),
         // Translation needs little thinking; raise only if the preview shows weak results.
         'effort' => env('AI_CONTENT_EFFORT', 'low'),
+        // TASK-007: the most viewed beaches get a longer intro, more area context and five FAQs.
+        'featured' => (int) env('AI_CONTENT_FEATURED', 200),
     ],
 
     /*

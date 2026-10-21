@@ -15,6 +15,13 @@ class BeachTranslation extends Model
         'name',
         'description',
         'slug',
+        'meta_description',
+        'faq',
+    ];
+
+    /** TASK-007: `faq` is a list of ['q' => question, 'a' => answer]. */
+    protected $casts = [
+        'faq' => 'array',
     ];
 
     public function beach(): BelongsTo

@@ -9,21 +9,27 @@ Owner request 2026-10-09: "uredi kakovost podatkov, z AI prevajaj". ADR "Data qu
 | `names` | An import added the English word "Beach" to most beach names, in every language ("Beach Slanica") | The local name ("Slanica", "Vela plaža"), plus the Cyrillic (ua, ru, bg) and Greek (el) spelling | The name in every language that still has "Beach" or the plain source name; missing languages get a row |
 | `regions` | Region names are English in most languages ("Dalmatia - Šibenik") | The name in all 19 languages ("Dalmacija - Šibenik", "Dalmatien - Šibenik") | Languages that are missing or still show the English name |
 | `descriptions` | A description exists in one language but not in the others | A translation into each language without one | Only languages without a description |
-| `generate` | About 79% of beaches have no description at all | 50–110 words from the database facts plus well-known facts about the town or island (owner choice B, 2026-10-09), in all 19 languages; the first sentence works as a search snippet | Only languages without a description |
+| `generate` | About 79% of beaches have no description at all | Per language (TASK-007, owner 2026-10-21): a search snippet (≤ 155 characters), an intro without logistics (50–80 words; 90–150 for the `AI_CONTENT_FEATURED` most viewed beaches) and 3–4 FAQs (5 for featured), from the database facts, computed context (town centre distance, beaches in the town, nearest 3 beaches within 10 km) and well-known facts about the town or island; the opening angle rotates by beach id | Description, snippet and FAQ, each only where the language has none |
+| `seo` | Beaches that already have a description have no snippet or FAQ | The snippet and FAQs from the facts and the existing description (TASK-007) | Snippet and FAQ only where empty; descriptions are never touched |
 
 Safety rules in the code (`App\Services\AI\Content\BeachContentAi`), covered by `tests/Feature/ContentAiTest.php`:
 - slugs never change, so no URL changes; new rows reuse the existing slug;
 - text a person wrote is never overwritten (a name without "Beach" that differs from the source, a translated region name, any existing description);
 - a returned name must share a word with the old one and may not keep the English "Beach" (except in English-speaking countries), otherwise it is refused;
-- `apply` is a dry run until `--write` is given.
+- `apply` is a dry run until `--write` is given;
+- (TASK-007) a snippet over 200 characters or an FAQ with fewer than two valid questions is left out for that language and printed as `[meta left out …]` / `[faq left out …]`; the `seo` part picks those beaches up again;
+- (TASK-007) the snippet and FAQ can be edited in the admin (beach → Translations); a filled field is never overwritten.
+
+Preview output (TASK-007): `sl: <intro>`, `sl: [meta] <snippet>`, `sl: [faq] <question> — <answer>`; `--locale=sl` keeps all three.
 
 ## Settings
 
-`/opt/beachrex/envs/.env.<env>` (owner): `ANTHROPIC_API_KEY` (already set on dev for the chat). Optional: `AI_CONTENT_MODEL` (default `claude-opus-5-5`; `claude-sonnet-5-5` costs half), `AI_CONTENT_EFFORT` (default `low`).
+`/opt/beachrex/envs/.env.<env>` (owner): `ANTHROPIC_API_KEY` (already set on dev for the chat). Optional: `AI_CONTENT_MODEL` (default `claude-opus-5-5`; `claude-sonnet-5-5` costs half), `AI_CONTENT_EFFORT` (default `low`), `AI_CONTENT_FEATURED` (default `200`: how many of the most viewed beaches get the longer text; `0` = none).
 
 ## Steps (dev)
 
-Run on the VPS, one command at a time. Order: names, then regions, then descriptions, then generate.
+Run on the VPS, one command at a time. Order: names, then regions, then descriptions, then generate, then seo.
+The FAQ makes `generate` about 2.5× the old cost (19 languages × snippet + intro + FAQ); `plan` prints the estimate.
 
 1. **Plan** (counts and rough cost, no AI calls):
    `docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.dev exec -T api_dev php artisan content:ai plan`

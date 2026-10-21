@@ -39,11 +39,34 @@ class BeachDetailsResource extends JsonResource
             'name' => $translation?->name ?? $translationEn?->name ?? $this->name,
             'slug' => $translation?->slug ?? $translationEn?->slug ?? null,
             'description' => $translation?->description ?? $translationEn?->description ?? null,
+            // TASK-007: only the requested language; an English snippet or FAQ on a Slovenian page is worse than none.
+            'meta_description' => trim((string) $translation?->meta_description) !== '' ? $translation->meta_description : null,
+            'faq' => $this->faq($translation?->faq),
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'folder_name' => $this->folder_name,
             'mobile_upload' => $this->mobile_upload,
         ];
+    }
+
+    /**
+     * TASK-007: FAQ as a list of {q, a} (jsonb reorders keys; the admin repeater stores items under uuid keys),
+     * without empty items.
+     *
+     * @return list<array{q: string, a: string}>
+     */
+    private function faq(mixed $items): array
+    {
+        $list = [];
+        foreach (is_array($items) ? $items : [] as $item) {
+            $q = is_array($item) ? trim((string) ($item['q'] ?? '')) : '';
+            $a = is_array($item) ? trim((string) ($item['a'] ?? '')) : '';
+            if ($q !== '' && $a !== '') {
+                $list[] = ['q' => $q, 'a' => $a];
+            }
+        }
+
+        return $list;
     }
 
     private function getLocationInfo(string $locale): array

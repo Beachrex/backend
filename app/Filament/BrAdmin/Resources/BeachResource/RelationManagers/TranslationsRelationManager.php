@@ -55,6 +55,25 @@ class TranslationsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('slug')
                     ->label('Slug (URL-friendly)')
                     ->maxLength(255),
+                // TASK-007: search snippet and FAQ (filled by content:ai where empty; edits here are kept).
+                Forms\Components\Textarea::make('meta_description')
+                    ->label('Search snippet (meta description)')
+                    ->helperText('Shown in Google results. Up to about 155 characters.')
+                    ->rows(2)
+                    ->maxLength(320)
+                    ->columnSpanFull(),
+                Forms\Components\Repeater::make('faq')
+                    ->label('Frequently asked questions')
+                    ->helperText('Shown on the beach page and to search engines. Leave empty to hide the section.')
+                    ->schema([
+                        Forms\Components\TextInput::make('q')->label('Question')->required()->maxLength(200),
+                        Forms\Components\Textarea::make('a')->label('Answer')->required()->rows(2)->maxLength(700),
+                    ])
+                    ->reorderable()
+                    ->collapsible()
+                    ->maxItems(6)
+                    ->defaultItems(0)
+                    ->columnSpanFull(),
             ]);
     }
 

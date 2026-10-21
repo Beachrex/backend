@@ -12690,6 +12690,33 @@
                                 "example": "Beautiful sandy beach",
                                 "nullable": true
                             },
+                            "meta_description": {
+                                "description": "Search snippet in the requested language only (TASK-007)",
+                                "type": "string",
+                                "example": "Shallow sandy beach at the Neretva mouth near Ploče, good for small children and kiters.",
+                                "nullable": true
+                            },
+                            "faq": {
+                                "description": "Questions and answers in the requested language only; empty when none (TASK-007)",
+                                "type": "array",
+                                "items": {
+                                    "required": [
+                                        "q",
+                                        "a"
+                                    ],
+                                    "properties": {
+                                        "q": {
+                                            "type": "string",
+                                            "example": "Is Ušće Neretve good for small children?"
+                                        },
+                                        "a": {
+                                            "type": "string",
+                                            "example": "Yes, at Ušće Neretve the water becomes 1 m deep only about 100 m from the shore."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
                             "latitude": {
                                 "type": "string",
                                 "example": "42.5996000"
