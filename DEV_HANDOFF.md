@@ -52,6 +52,26 @@ How to test the changes
 
 ---
 
+## 2026-10-21 - Fix: map filter section titles were English in every language
+
+**Owner report (dev, 2026-10-21):** on the beach map, filter section titles (Region, City, Accommodation,
+Culinary Offer, Infrastructure, Natural Conditions, Activities, Underwater, Transport, Accessibility, Area Type,
+Parking Capacity, Beach Inclination, Swimming Depth, Occupancy) were English in all 19 languages.
+
+**Cause:** `FilterController` takes the title from `filter_title` of the first row's translation. The column was
+added for these tables (`2025_12_19_000002`) but never filled, so every request fell back to a hardcoded English string.
+
+**Changes:**
+- Beachrex/backend#124: the fallback is now `__('<Title>', [], $locale)` (Laravel JSON translations), like
+  Parking / Pool type already were. A non-empty `filter_title` in the DB still overrides it; an empty string no
+  longer blocks the fallback. The 20 titles are in all 19 `lang/*.json` files.
+- This PR: regression test `tests/Feature/FilterGroupTitleLocaleTest.php` (against the pre-#124 controller: 2 failed).
+
+**Affected endpoints:** `GET /api/v1/beaches/filters` — `data.*.title` values only; no field added, removed or renamed.
+
+**Testing:** `php artisan test --filter=FilterGroupTitleLocaleTest`; on dev, `Accept-Language: ua` returns
+`Регіон`, `Місто`, `Харчування`, `Природні умови` … (checked 2026-10-21 after deploy of #124).
+
 ## 2026-10-19 - Fix: beach page showed Windy's "embed player … is not publicly available"
 
 **Owner report (dev, 2026-10-19):** the "Live webcam" section of a Nice beach showed Windy's message
