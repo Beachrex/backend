@@ -432,7 +432,7 @@ class FilterController extends Controller
         $translationEn = $firstWaterbody->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Water Body',
+            'title' => ($translation?->filter_title) ?: __('Water Body', [], $locale),
             'icon' => $firstWaterbody->icon,
             'input_type' => $firstWaterbody->input_type,
             'options' => $this->getWaterbodyFilters($locale),
@@ -486,7 +486,7 @@ class FilterController extends Controller
         $translationEn = $firstUserType->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'User Type',
+            'title' => ($translation?->filter_title) ?: __('User Type', [], $locale),
             'icon' => $firstUserType->icon,
             'input_type' => $firstUserType->input_type,
             'options' => $this->getUserTypeFilters($locale),
@@ -539,7 +539,7 @@ class FilterController extends Controller
         $translationEn = $firstBeachType->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Beach Type',
+            'title' => ($translation?->filter_title) ?: __('Beach Type', [], $locale),
             'icon' => $firstBeachType->icon,
             'input_type' => $firstBeachType->input_type,
             'options' => $this->getBeachTypeFilters($locale),
@@ -602,7 +602,7 @@ class FilterController extends Controller
         $translationEn = $firstCountry->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Country',
+            'title' => ($translation?->filter_title) ?: __('Country', [], $locale),
             'icon' => null,
             'input_type' => 'select',
             'options' => $this->getCountryFilters($locale, $countries),
@@ -659,7 +659,7 @@ class FilterController extends Controller
         $translationEn = $firstRegion->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Region',
+            'title' => ($translation?->filter_title) ?: __('Region', [], $locale),
             'icon' => null,
             'input_type' => 'select',
             'options' => $this->getRegionFilters($locale, $regions),
@@ -720,7 +720,7 @@ class FilterController extends Controller
         $translationEn = $firstIsland->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Island',
+            'title' => ($translation?->filter_title) ?: __('Island', [], $locale),
             'icon' => null,
             'input_type' => 'select',
             'options' => $this->getIslandFilters($locale, $islands),
@@ -784,7 +784,7 @@ class FilterController extends Controller
         $translationEn = $firstCity->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'City',
+            'title' => ($translation?->filter_title) ?: __('City', [], $locale),
             'icon' => null,
             'input_type' => 'select',
             'options' => $this->getCityFilters($locale, $cities),
@@ -928,7 +928,7 @@ class FilterController extends Controller
         $translationEn = $firstAccommodation->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Accommodation',
+            'title' => ($translation?->filter_title) ?: __('Accommodation', [], $locale),
             'icon' => $firstAccommodation->icon,
             'input_type' => $firstAccommodation->input_type,
             'options' => $this->getAccommodationAroundFilters($locale),
@@ -979,7 +979,7 @@ class FilterController extends Controller
         $translationEn = $firstOffer->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Culinary Offer',
+            'title' => ($translation?->filter_title) ?: __('Culinary Offer', [], $locale),
             'icon' => $firstOffer->icon,
             'input_type' => $firstOffer->input_type,
             'options' => $this->getCulinaryOfferFilters($locale),
@@ -1030,7 +1030,7 @@ class FilterController extends Controller
         $translationEn = $firstInfrastructure->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Infrastructure',
+            'title' => ($translation?->filter_title) ?: __('Infrastructure', [], $locale),
             'icon' => $firstInfrastructure->icon,
             'input_type' => $firstInfrastructure->input_type,
             'options' => $this->getLocationInfrastructureFilters($locale),
@@ -1081,7 +1081,7 @@ class FilterController extends Controller
         $translationEn = $firstCondition->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Natural Conditions',
+            'title' => ($translation?->filter_title) ?: __('Natural Conditions', [], $locale),
             'icon' => $firstCondition->icon,
             'input_type' => $firstCondition->input_type,
             'options' => $this->getNaturalLocationConditionFilters($locale),
@@ -1132,7 +1132,7 @@ class FilterController extends Controller
         $translationEn = $firstActivity->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Activities',
+            'title' => ($translation?->filter_title) ?: __('Activities', [], $locale),
             'icon' => $firstActivity->icon,
             'input_type' => $firstActivity->input_type,
             'options' => $this->getSportingActivitiesFilters($locale),
@@ -1183,7 +1183,7 @@ class FilterController extends Controller
         $translationEn = $firstCharacteristic->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Underwater',
+            'title' => ($translation?->filter_title) ?: __('Underwater', [], $locale),
             'icon' => $firstCharacteristic->icon,
             'input_type' => $firstCharacteristic->input_type,
             'options' => $this->getUnderwaterCharacteristicFilters($locale),
@@ -1234,7 +1234,7 @@ class FilterController extends Controller
         $translationEn = $firstTransport->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Transport',
+            'title' => ($translation?->filter_title) ?: __('Transport', [], $locale),
             'icon' => $firstTransport->icon,
             'input_type' => $firstTransport->input_type,
             'options' => $this->getRecommendedTransportTypeFilters($locale),
@@ -1285,7 +1285,7 @@ class FilterController extends Controller
         $translationEn = $firstAccessibility->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Accessibility',
+            'title' => ($translation?->filter_title) ?: __('Accessibility', [], $locale),
             'icon' => $firstAccessibility->icon,
             'input_type' => $firstAccessibility->input_type,
             'options' => $this->getAccessibilityFilters($locale),
@@ -1336,7 +1336,7 @@ class FilterController extends Controller
         $translationEn = $firstArea->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Area Type',
+            'title' => ($translation?->filter_title) ?: __('Area Type', [], $locale),
             'icon' => $firstArea->icon,
             'input_type' => $firstArea->input_type,
             'options' => $this->getAreaDescriptionFilters($locale),
@@ -1387,7 +1387,7 @@ class FilterController extends Controller
         $translationEn = $firstCapacity->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Parking Capacity',
+            'title' => ($translation?->filter_title) ?: __('Parking Capacity', [], $locale),
             'icon' => $firstCapacity->icon,
             'input_type' => $firstCapacity->input_type,
             'options' => $this->getParkingCapacityFilters($locale),
@@ -1438,7 +1438,7 @@ class FilterController extends Controller
         $translationEn = $firstInclination->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Beach Inclination',
+            'title' => ($translation?->filter_title) ?: __('Beach Inclination', [], $locale),
             'icon' => $firstInclination->icon,
             'input_type' => $firstInclination->input_type,
             'options' => $this->getBeachInclinationFilters($locale),
@@ -1489,7 +1489,7 @@ class FilterController extends Controller
         $translationEn = $firstDepth->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Swimming Depth',
+            'title' => ($translation?->filter_title) ?: __('Swimming Depth', [], $locale),
             'icon' => $firstDepth->icon,
             'input_type' => $firstDepth->input_type,
             'options' => $this->getSwimmingDepthFilters($locale),
@@ -1540,7 +1540,7 @@ class FilterController extends Controller
         $translationEn = $firstRate->translations->firstWhere('locale', 'en');
 
         return [
-            'title' => $translation->filter_title ?? $translationEn->filter_title ?? 'Occupancy',
+            'title' => ($translation?->filter_title) ?: __('Occupancy', [], $locale),
             'icon' => $firstRate->icon,
             'input_type' => $firstRate->input_type,
             'options' => $this->getOccupancyRateFilters($locale),
