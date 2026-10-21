@@ -227,9 +227,9 @@ class SportingActivitiesSeeder extends Seeder
             ],
             'skilift_wakeboard' => [
                 'en' => ['name' => 'Ski Lift / Wakeboard', 'slug' => 'ski-lift-wakeboard'],
-                'sl' => ['name' => 'Smučarski Vlečnica / Wakeboard', 'slug' => 'smucarski-vlecnica-wakeboard'],
+                'sl' => ['name' => 'Vlečnica za wakeboard', 'slug' => 'smucarski-vlecnica-wakeboard'],
                 'de' => ['name' => 'Skilift / Wakeboard', 'slug' => 'skilift-wakeboard'],
-                'hr' => ['name' => 'Ski Lift / Wakeboard', 'slug' => 'ski-lift-wakeboard'],
+                'hr' => ['name' => 'Vučnica za wakeboard', 'slug' => 'ski-lift-wakeboard'],
                 'fr' => ['name' => 'Téléski / Wakeboard', 'slug' => 'teleski-wakeboard'],
                 'es' => ['name' => 'Telesquí / Wakeboard', 'slug' => 'telesqui-wakeboard'],
                 'it' => ['name' => 'Skilift / Wakeboard', 'slug' => 'skilift-wakeboard'],

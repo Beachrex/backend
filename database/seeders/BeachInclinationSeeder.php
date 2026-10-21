@@ -74,7 +74,7 @@ class BeachInclinationSeeder extends Seeder
             ],
             'increase' => [
                 'en' => ['name' => 'Increase', 'slug' => 'increase'],
-                'sl' => ['name' => 'Povečanje', 'slug' => 'povecanje'],
+                'sl' => ['name' => 'Naraščajoč naklon', 'slug' => 'povecanje'],
                 'de' => ['name' => 'Zunahme', 'slug' => 'zunahme'],
                 'hr' => ['name' => 'Povećanje', 'slug' => 'povecanje'],
                 'fr' => ['name' => 'Augmentation', 'slug' => 'augmentation'],
