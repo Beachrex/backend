@@ -52,6 +52,10 @@ How to test the changes
 
 ---
 
+## 2026-10-21 - Fix: `content:ai generate/seo` refused with "compiled grammar is too large"
+
+Owner preview on dev (`preview --part=generate --id=1 --id=2`): the API returned 400 because the output schema had one nested object (meta, description, FAQ list) per language, 19 copies. The answer is now `{"texts": [{locale, meta, description?, faq}]}` with one item definition and `locale` as an enum of the requested languages; the prompt lists the languages and asks for exactly one entry each. `apply` maps the list back per language (first entry per language wins, unknown codes are ignored, a missing language is picked up again by `seo`). Regression test: `the_output_schema_stays_small_for_19_languages` (fails on the old schema).
+
 ## 2026-10-21 - TASK-007: search snippet, intro and FAQ for beaches (`content:ai generate` / `seo`)
 
 Owner 2026-10-21 (preview of `generate` read like a field list; "za opise se strinjam, čimveč"). Spec `docs/tasks/TASK-007-seo-geo-descriptions.md`, ADR 2026-10-21, runbook `docs/runbooks/content-ai.md`.

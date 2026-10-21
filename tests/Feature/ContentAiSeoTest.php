@@ -79,10 +79,15 @@ class ContentAiSeoTest extends TestCase
         $request = $this->ai->request('generate', Beach::find($id), 'claude-opus-5-5', 'low');
         $schema = $request['params']['outputConfig']['format']['schema'];
 
-        $this->assertSame(BeachContentAi::locales(), $schema['required']);
-        $this->assertSame(['meta', 'description', 'faq'], $schema['properties']['sl']['required']);
-        $this->assertSame(['q', 'a'], $schema['properties']['sl']['properties']['faq']['items']['required']);
+        $item = $schema['properties']['texts']['items'];
+        $this->assertSame(['texts'], $schema['required']);
+        $this->assertSame(BeachContentAi::locales(), $item['properties']['locale']['enum']);
+        $this->assertSame(['locale', 'meta', 'description', 'faq'], $item['required']);
+        $this->assertSame(['q', 'a'], $item['properties']['faq']['items']['required']);
+        $facts = json_decode($request['params']['messages'][0]['content'], true);
+        $this->assertSame('Slovenian', $facts['languages']['sl']);
         $system = $request['params']['system'];
+        $this->assertStringContainsString('exactly one entry per language', $system);
         $this->assertStringContainsString('Leave out logistics', $system, 'parking, road and transport go to the FAQ, not the intro');
         $this->assertStringContainsString('starts with the direct answer', $system);
         $this->assertStringContainsString('Ask only questions the facts answer', $system);
@@ -189,7 +194,7 @@ class ContentAiSeoTest extends TestCase
         $request = $this->ai->request('seo', Beach::find($id), 'claude-opus-5-5', 'low');
         $facts = json_decode($request['params']['messages'][0]['content'], true);
         $this->assertSame('A sandy bay with pines, written by hand.', $facts['description']);
-        $this->assertSame(['meta', 'faq'], $request['params']['outputConfig']['format']['schema']['properties']['en']['required']);
+        $this->assertSame(['locale', 'meta', 'faq'], $request['params']['outputConfig']['format']['schema']['properties']['texts']['items']['required']);
 
         $answer = $this->answer(withDescription: false, overrides: ['en' => ['meta' => 'Snippet.', 'description' => 'NEW', 'faq' => [['q' => 'A?', 'a' => 'B.'], ['q' => 'C?', 'a' => 'D.']]]]);
         $this->ai->apply("seo-{$id}", $answer, dryRun: false);
@@ -219,6 +224,43 @@ class ContentAiSeoTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.basic_info.meta_description', null)
             ->assertJsonPath('data.basic_info.faq', []);
+    }
+
+    #[Test]
+    public function the_output_schema_stays_small_for_19_languages(): void
+    {
+        // Owner preview 2026-10-21: one nested object per language was refused ("The compiled grammar is too large").
+        $id = $this->beach(['en' => ['Beach Slanica', null]]);
+        foreach (['generate', 'seo'] as $part) {
+            if ($part === 'seo') {
+                DB::table('beach_translation')->where('beach_id', $id)->update(['description' => 'Text.']);
+            }
+            $schema = $this->ai->request($part, Beach::find($id), 'm', 'low')['params']['outputConfig']['format']['schema'];
+            $json = json_encode($schema);
+            $this->assertLessThan(2000, strlen($json), "{$part} schema size");
+            $this->assertSame(1, substr_count($json, '"meta":'), "{$part}: one item definition, not one per language");
+        }
+    }
+
+    #[Test]
+    public function answers_in_the_texts_list_are_applied_per_language(): void
+    {
+        $id = $this->beach(['en' => ['Beach Slanica', null]]);
+        $faq = [['q' => 'Is Slanica shallow?', 'a' => 'Yes, Slanica is shallow.'], ['q' => 'Shade at Slanica?', 'a' => 'Yes, pines.']];
+        $answer = json_encode(['texts' => [
+            ['locale' => 'sl', 'meta' => 'Peščena plaža.', 'description' => 'Uvod.', 'faq' => $faq],
+            ['locale' => 'sl', 'meta' => 'Duplicate.', 'description' => 'Ignored.', 'faq' => $faq],
+            ['locale' => 'xx', 'meta' => 'Unknown language.', 'description' => 'x', 'faq' => $faq],
+            ['locale' => 'en', 'meta' => 'Sandy beach.', 'description' => 'Intro.', 'faq' => $faq],
+        ]]);
+
+        $this->ai->apply("generate-{$id}", $answer, dryRun: false);
+
+        $this->assertSame('Uvod.', $this->row($id, 'sl')->description, 'the first entry per language wins');
+        $this->assertSame('Peščena plaža.', $this->row($id, 'sl')->meta_description);
+        $this->assertSame('Intro.', $this->row($id, 'en')->description);
+        $this->assertNull($this->row($id, 'de'), 'a language missing from the answer gets nothing');
+        $this->assertSame([$id], $this->ai->beachesForSeo()->pluck('id')->all(), 'and is picked up again by seo');
     }
 
     #[Test]
