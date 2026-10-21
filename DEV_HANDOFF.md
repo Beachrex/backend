@@ -52,6 +52,30 @@ How to test the changes
 
 ---
 
+## 2026-10-21 - Data fix: untranslated and broken names in filters and beach cards
+
+**Owner report (dev, 2026-10-21):** English words in the Greek filters (Hostel, Beach bar), Cyrillic city names
+with Latin letters, names like `L\'Escala`, and the beach card title "Ražanac → Ражанац" in Ukrainian.
+
+**Audit:** `GET /api/v1/beaches/filters` in all 19 languages on dev, compared option by option with English.
+Names identical to English that are real words in that language (Hotel, Pizzeria, Marina, WC …) were left.
+
+**Changes:** migration `2026_10_21_120000_fix_untranslated_and_broken_translation_names` (idempotent; each update
+matches the exact current value, so rows already corrected in admin are untouched; slugs unchanged):
+- el: Hostel → Ξενώνας, Beach bar → Μπαρ παραλίας, WiFi hotspot → Σημείο πρόσβασης WiFi, Kitesurfing → Κάιτσερφ
+- sl: "Smučarski Vlečnica / Wakeboard" → "Vlečnica za wakeboard", "Povečanje" (beach inclination) → "Naraščajoč naklon"; hr: "Ski Lift / Wakeboard" → "Vučnica za wakeboard" (also in the seeders)
+- ua/bg: 7 city names with Latin letters (ids 1514, 515, 78, 496, 408, 1000, 1306)
+- ua beach "Ražanac → Ражанац" → "Ражанац"
+- `\'` → `'` in `city_translation.name` and `beach_translation.name` (11 cities × all languages on dev)
+- Deploy runs `cache:clear` and `search:index` after `migrate`, so the API shows the new names right away.
+
+**Not changed (owner decision):** duplicate cities 386/1533 — see `docs/HANDOFF.md` open items.
+
+**Affected endpoints:** `GET /api/v1/beaches/filters`, beach lists/details/search — name values only.
+
+**Testing:** `php artisan test --filter=TranslationNameCleanupMigrationTest` (4 passed; with the un-escape step
+broken: 1 failed). On prod the same migration runs when `dev` is promoted (owner).
+
 ## 2026-10-21 - Fix: map filter section titles were English in every language
 
 **Owner report (dev, 2026-10-21):** on the beach map, filter section titles (Region, City, Accommodation,
