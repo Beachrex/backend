@@ -170,7 +170,7 @@ class ContentAiTest extends TestCase
         $this->assertStringContainsString('Beach Slanica', $names['params']['messages'][0]['content']);
 
         $generate = $this->ai->request('generate', $beach, 'claude-opus-5-5', 'low');
-        $this->assertSame(BeachContentAi::locales(), $generate['params']['outputConfig']['format']['schema']['required']);
+        $this->assertSame(BeachContentAi::locales(), $generate['params']['outputConfig']['format']['schema']['properties']['texts']['items']['properties']['locale']['enum']);
         $this->assertStringContainsString('"name":"Slanica"', $generate['params']['messages'][0]['content'], 'facts use the name without "Beach"');
 
         $this->assertNull($this->ai->request('descriptions', $beach, 'claude-opus-5-5', 'low'), 'no text to translate');

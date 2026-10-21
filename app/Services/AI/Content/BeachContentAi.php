@@ -308,9 +308,9 @@ faq:
 - Every question names the beach. Every answer starts with the direct answer ("Yes, ...", "About 10 m from the shore, ...") in one or two sentences that make sense on their own, and names the beach again.
 TXT.self::SEO_RULES;
 
-        $schema = $this->localeObjectSchema($targets, withDescription: true);
+        $facts['languages'] = $this->languageList($targets);
 
-        return [$system, json_encode($facts, JSON_UNESCAPED_UNICODE), $schema, 32000];
+        return [$system.self::TEXTS_RULE, json_encode($facts, JSON_UNESCAPED_UNICODE), $this->textsSchema($targets, withDescription: true), 32000];
     }
 
     /** TASK-007: search snippet and FAQ for a beach whose description a person (or an earlier pass) wrote. */
@@ -323,7 +323,7 @@ TXT.self::SEO_RULES;
             return null;
         }
         $faqCount = $this->isFeatured($beach) ? '5' : '3-4';
-        $facts = $this->facts($beach) + ['description' => $source->description];
+        $facts = $this->facts($beach) + ['description' => $source->description, 'languages' => $this->languageList($targets)];
 
         $system = self::SEO_INTRO.<<<TXT
 
@@ -337,8 +337,13 @@ faq:
 - Every question names the beach. Every answer starts with the direct answer ("Yes, ...", "About 10 m from the shore, ...") in one or two sentences that make sense on their own, and names the beach again.
 TXT.self::SEO_RULES;
 
-        return [$system, json_encode($facts, JSON_UNESCAPED_UNICODE), $this->localeObjectSchema($targets, withDescription: false), 24000];
+        return [$system.self::TEXTS_RULE, json_encode($facts, JSON_UNESCAPED_UNICODE), $this->textsSchema($targets, withDescription: false), 24000];
     }
+
+    private const TEXTS_RULE = <<<'TXT'
+
+Answer with "texts": exactly one entry per language listed in "languages" (code => language), each with that code in "locale".
+TXT;
 
     private const SEO_INTRO = <<<'TXT'
 You write beach texts for Beachrex, a beach guide published in 19 languages. The texts are read by people and by search engines and AI assistants that quote them, so every statement must be specific, correct and able to stand on its own. Each beach page already shows the facilities as icons.
@@ -697,6 +702,7 @@ TXT;
             return 'beach or its name not found';
         }
 
+        $data = $this->byLocale($data);
         foreach (self::locales() as $locale) {
             $answer = $data[$locale] ?? null;
             if (! is_array($answer)) {
@@ -903,28 +909,52 @@ TXT;
         return $this->objectSchema($props);
     }
 
-    /** TASK-007: per language an object {meta, description?, faq: [{q, a}]}. */
-    private function localeObjectSchema(array $locales, bool $withDescription): array
+    /**
+     * TASK-007: {"texts": [{locale, meta, description?, faq: [{q, a}]}]}. One item definition for all languages:
+     * a nested object per language (19 copies) made a grammar the API refused as too large (owner preview 2026-10-21).
+     */
+    private function textsSchema(array $locales, bool $withDescription): array
     {
-        $faq = [
+        $fields = [
+            'locale' => ['type' => 'string', 'enum' => array_values($locales), 'description' => 'Language code from "languages"'],
+            'meta' => ['type' => 'string', 'description' => 'Search snippet, at most 155 characters'],
+        ];
+        if ($withDescription) {
+            $fields['description'] = ['type' => 'string', 'description' => 'Intro text'];
+        }
+        $fields['faq'] = [
             'type' => 'array',
+            'description' => 'Questions and answers',
             'items' => $this->objectSchema([
                 'q' => ['type' => 'string', 'description' => 'The question'],
                 'a' => ['type' => 'string', 'description' => 'The answer, starting with the direct answer'],
             ]),
         ];
-        $props = [];
-        foreach ($locales as $l) {
-            $name = self::LANGUAGE_NAMES[$l];
-            $fields = ['meta' => ['type' => 'string', 'description' => "Search snippet in {$name}, at most 155 characters"]];
-            if ($withDescription) {
-                $fields['description'] = ['type' => 'string', 'description' => "Intro text in {$name}"];
+
+        return $this->objectSchema(['texts' => ['type' => 'array', 'items' => $this->objectSchema($fields)]]);
+    }
+
+    /** @param list<string> $locales @return array<string, string> code => language name */
+    private function languageList(array $locales): array
+    {
+        return array_combine($locales, array_map(fn ($l) => self::LANGUAGE_NAMES[$l], $locales));
+    }
+
+    /** {"texts": [{locale, ...}]} -> [locale => {...}]; the first entry per language wins. A map is passed through. */
+    private function byLocale(array $data): array
+    {
+        if (! isset($data['texts']) || ! is_array($data['texts'])) {
+            return $data;
+        }
+        $map = [];
+        foreach ($data['texts'] as $entry) {
+            $locale = is_array($entry) && is_string($entry['locale'] ?? null) ? $entry['locale'] : null;
+            if ($locale !== null && in_array($locale, self::locales(), true) && ! isset($map[$locale])) {
+                $map[$locale] = $entry;
             }
-            $fields['faq'] = $faq + ['description' => "Questions and answers in {$name}"];
-            $props[$l] = $this->objectSchema($fields);
         }
 
-        return $this->objectSchema($props);
+        return $map;
     }
 
     private function objectSchema(array $props): array
