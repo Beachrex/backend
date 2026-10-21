@@ -19,15 +19,16 @@ use Illuminate\Support\Str;
  * - names: drop the English "Beach" an import added to beach names ("Beach Slanica" → "Slanica");
  * - regions: translate region names ("Dalmatia - Šibenik" → "Dalmacija - Šibenik");
  * - descriptions: translate an existing description into the languages that have none;
- * - generate: write a short description from database facts for beaches that have none.
+ * - generate: write a search snippet, an intro and FAQs from database facts for beaches without a description;
+ * - seo: write the search snippet and FAQs for beaches that already have a description (TASK-007).
  *
  * Writes never change slugs (URLs stay the same) and never overwrite text a person wrote:
  * a name is replaced only while it still has the English "Beach" or equals the source name,
- * a description only where the language has none.
+ * a description, search snippet or FAQ only where the language has none.
  */
 class BeachContentAi
 {
-    public const PARTS = ['names', 'regions', 'descriptions', 'generate'];
+    public const PARTS = ['names', 'regions', 'descriptions', 'generate', 'seo'];
 
     /** Locales written in Cyrillic or Greek script: proper names are transliterated there. */
     public const NON_LATIN = ['ua', 'ru', 'bg', 'el'];
@@ -45,6 +46,32 @@ class BeachContentAi
     private const NAME_MAX = 120;
 
     private const DESCRIPTION_MAX = 5000;
+
+    /** We ask for 155 characters; a slightly longer snippet is kept, a much longer one is dropped. */
+    private const META_MAX = 200;
+
+    private const FAQ_QUESTION_MAX = 200;
+
+    private const FAQ_ANSWER_MAX = 700;
+
+    /** Nearby beaches for the prompt: radius and count. */
+    private const NEARBY_KM = 10;
+
+    private const NEARBY_COUNT = 3;
+
+    /**
+     * Opening angles, picked by beach id so neighbouring beaches do not read alike (owner 2026-10-21:
+     * every text followed the same field order).
+     */
+    public const ANGLES = [
+        'who the beach suits best and why (families, snorkellers, kiters, people looking for quiet)',
+        'the setting and landscape around the beach (bay, pines, cliffs, wetlands, town promenade)',
+        'the standout activity or experience the facts point to',
+        'the water and the seabed: how it feels to get in and swim there',
+    ];
+
+    /** @var array<int, true>|null ids of the most viewed active beaches */
+    private ?array $featuredIds = null;
 
     /** @return list<string> */
     public static function locales(): array
@@ -101,6 +128,18 @@ class BeachContentAi
             ->orderBy('id');
     }
 
+    /** Active beaches with a description in some language and a language without a search snippet (TASK-007). */
+    public function beachesForSeo(): Builder
+    {
+        $withText = fn ($q) => $q->whereNotNull('description')->whereRaw("TRIM(description) <> ''");
+        $withMeta = fn ($q) => $q->whereNotNull('meta_description')->whereRaw("TRIM(meta_description) <> ''");
+
+        return Beach::query()->where('status_id', 1)
+            ->whereHas('translations', $withText)
+            ->whereHas('translations', $withMeta, '<', count(self::locales()))
+            ->orderBy('id');
+    }
+
     public function query(string $part): Builder
     {
         return match ($part) {
@@ -108,6 +147,7 @@ class BeachContentAi
             'regions' => $this->regionsForTranslation(),
             'descriptions' => $this->beachesForDescriptionTranslation(),
             'generate' => $this->beachesForGeneration(),
+            'seo' => $this->beachesForSeo(),
         };
     }
 
@@ -126,6 +166,7 @@ class BeachContentAi
             'regions' => $this->regionsPrompt($item),
             'descriptions' => $this->descriptionsPrompt($item),
             'generate' => $this->generatePrompt($item),
+            'seo' => $this->seoPrompt($item),
         } ?? [null, null, null, null];
 
         if ($system === null) {
@@ -235,28 +276,87 @@ TXT;
     /** @return array{0: string, 1: string, 2: array<string, mixed>, 3: int}|null */
     private function generatePrompt(Beach $beach): ?array
     {
-        $facts = $this->facts($beach);
+        $beach->loadMissing('translations');
+        $targets = $this->localesWithoutDescription($beach);
+        if ($targets === []) {
+            return null;
+        }
+        $featured = $this->isFeatured($beach);
+        $facts = $this->facts($beach) + ['opening_angle' => $this->angle($beach)];
 
-        $system = <<<'TXT'
-You write beach descriptions for Beachrex, a beach guide published in 19 languages. Each beach page already lists the facilities with icons, so the text should read like a short travel-guide entry that helps a visitor picture the beach and decide whether it suits them.
+        $intro = $featured
+            ? '90-150 words in 3-6 sentences. This is one of the most visited beaches: give the town, island or area more room (what it is known for, what else is close), within the source rules.'
+            : '50-80 words in 2-4 sentences: longer when there are many facts, shorter when there are few.';
+        $faqCount = $featured ? '5' : '3-4';
+
+        $system = self::SEO_INTRO.<<<TXT
+
+You write three things for each language: a search snippet ("meta"), the intro text ("description") and frequently asked questions ("faq").
+
+meta:
+- One sentence of at most 155 characters (count them) for the search result. Name the beach, its town or island, and the word for "beach" in that language; say what kind of beach it is and who it suits. No quotes, no exclamation marks, no clickbait.
+
+description:
+- {$intro}
+- Open with the angle given in opening_angle, written from the facts; never open with a generic "X is a beach in Y".
+- Write about the character of the place: surface, setting, water, who it suits, what to do there. Use nearby facts (town centre distance, other beaches in the town or close by) when they help a visitor decide.
+- Leave out logistics: parking, the road to the parking, means of transport and lists of facilities are shown on the page and go into the FAQ instead.
+- Mention the area once, naturally ("in southern Dalmatia, near Dubrovnik"); do not copy region labels such as "Dalmatia - Dubrovnik".
+
+faq:
+- {$faqCount} questions a visitor would type into a search engine or ask an AI assistant about this beach, each answered from the facts. Good topics: small children and shallow water, how deep the water gets, shade, parking and access, dogs, food and drinks, snorkelling or water sports, how busy it is, beaches nearby. Ask only questions the facts answer; never answer "unknown" or guess.
+- Every question names the beach. Every answer starts with the direct answer ("Yes, ...", "About 10 m from the shore, ...") in one or two sentences that make sense on their own, and names the beach again.
+TXT.self::SEO_RULES;
+
+        $schema = $this->localeObjectSchema($targets, withDescription: true);
+
+        return [$system, json_encode($facts, JSON_UNESCAPED_UNICODE), $schema, 32000];
+    }
+
+    /** TASK-007: search snippet and FAQ for a beach whose description a person (or an earlier pass) wrote. */
+    private function seoPrompt(Beach $beach): ?array
+    {
+        $beach->loadMissing('translations');
+        $source = $this->descriptionSource($beach);
+        $targets = $this->localesWithoutMeta($beach);
+        if (! $source || $targets === []) {
+            return null;
+        }
+        $faqCount = $this->isFeatured($beach) ? '5' : '3-4';
+        $facts = $this->facts($beach) + ['description' => $source->description];
+
+        $system = self::SEO_INTRO.<<<TXT
+
+The beach already has a description (in "description"). You write two things for each language: a search snippet ("meta") and frequently asked questions ("faq"). The description and the facts are your only sources about the beach itself; when they disagree, use the facts.
+
+meta:
+- One sentence of at most 155 characters (count them) for the search result. Name the beach, its town or island, and the word for "beach" in that language; say what kind of beach it is and who it suits. No quotes, no exclamation marks, no clickbait.
+
+faq:
+- {$faqCount} questions a visitor would type into a search engine or ask an AI assistant about this beach, each answered from the facts or the description. Good topics: small children and shallow water, how deep the water gets, shade, parking and access, dogs, food and drinks, snorkelling or water sports, how busy it is, beaches nearby. Ask only questions the sources answer; never answer "unknown" or guess.
+- Every question names the beach. Every answer starts with the direct answer ("Yes, ...", "About 10 m from the shore, ...") in one or two sentences that make sense on their own, and names the beach again.
+TXT.self::SEO_RULES;
+
+        return [$system, json_encode($facts, JSON_UNESCAPED_UNICODE), $this->localeObjectSchema($targets, withDescription: false), 24000];
+    }
+
+    private const SEO_INTRO = <<<'TXT'
+You write beach texts for Beachrex, a beach guide published in 19 languages. The texts are read by people and by search engines and AI assistants that quote them, so every statement must be specific, correct and able to stand on its own. Each beach page already shows the facilities as icons.
 
 Sources:
-- The facts given for this beach. Add nothing about the beach itself that is not in the facts: no distances, water colour, history, ratings, prices, opening times or seasons.
+- The facts given for this beach, including the computed ones (town_centre, beaches_in_town, nearest_beaches). Add nothing about the beach itself that is not in them: no water colour, history, ratings, prices, opening times or seasons, and no distances other than the given ones.
 - Well-known, stable facts about the town, island or area (for example what an island is known for), only when you are certain of them; when unsure, leave them out. Never present them as facts about the beach.
-
-Writing:
-- 50-110 words per language in 2-5 sentences: longer when there are many facts, shorter when there are few.
-- The first sentence must work on its own as a search-result summary of at most 155 characters (count them) and name the beach and its town or island.
-- Open with what is most distinctive about this beach (its surface, setting, who it suits, an activity), not with a generic "X is a beach in Y". Vary the sentence structure. Avoid stock phrases such as "hidden gem", "perfect for", "nestled", "paradise", "crystal-clear".
-- shallow_water is already a finished statement about where the water becomes 1 m deep; keep its meaning exactly and never turn the distance into a depth.
-- Leave out trivial amenities such as rubbish bins; mention parking briefly.
-- Mention the area naturally ("in southern Dalmatia, near Dubrovnik"); do not copy region labels such as "Dalmatia - Dubrovnik".
-- Use the beach name given for each language in name_by_language, and place names in that language's usual form.
-- Write each language natively rather than word for word; every language carries the same facts. Plain text, no markdown.
 TXT;
 
-        return [$system, json_encode($facts, JSON_UNESCAPED_UNICODE), $this->localeSchema(self::locales(), 'The description in'), 16000];
-    }
+    private const SEO_RULES = <<<'TXT'
+
+All texts:
+- shallow_water is already a finished statement about where the water becomes 1 m deep; keep its meaning exactly and never turn the distance into a depth.
+- Avoid stock phrases such as "hidden gem", "perfect for", "nestled", "paradise", "crystal-clear", "something for everyone".
+- Leave out trivial amenities such as rubbish bins.
+- Use the beach name given for each language in name_by_language, and place names in that language's usual form; other beaches keep the names given in nearest_beaches (in that language's script when given).
+- Write each language natively rather than word for word; every language carries the same facts. Plain text, no markdown.
+TXT;
 
     /** Facts for `generate`, in English, empty ones left out. */
     public function facts(Beach $beach): array
@@ -303,7 +403,130 @@ TXT;
             'parking_distance' => $this->enName($beach->parkingBeachDistance),
             'road_to_parking' => $this->enName($beach->roadToParkingType),
             'best_reached_by' => $list($beach->recommendedTransportTypes),
+            'town_centre' => $this->townCentre($beach),
+            'beaches_in_town' => $this->beachesInTown($beach),
+            'nearest_beaches' => $this->nearestBeaches($beach),
         ], fn ($v) => $v !== null && $v !== '' && $v !== []);
+    }
+
+    // ------------------------------------------------------------------ computed context (TASK-007)
+
+    /** "about 1.2 km from the centre of Povljana", from the beach and city coordinates (null when far or unknown). */
+    public function townCentre(Beach $beach): ?string
+    {
+        $city = $beach->city;
+        if (! $city || $city->latitude === null || $city->longitude === null || $beach->latitude === null || $beach->longitude === null) {
+            return null;
+        }
+        $km = $this->km((float) $beach->latitude, (float) $beach->longitude, (float) $city->latitude, (float) $city->longitude);
+        if ($km > 25) {
+            return null; // the city point is probably wrong or the town is only the municipality
+        }
+        $town = $this->enName($city);
+
+        return $km < 0.2
+            ? "in the centre of {$town}"
+            : 'about '.$this->distance($km)." from the centre of {$town}";
+    }
+
+    /** "one of 7 beaches in Povljana listed on Beachrex" (null for fewer than two). */
+    public function beachesInTown(Beach $beach): ?string
+    {
+        if (! $beach->city_id) {
+            return null;
+        }
+        $count = Beach::query()->where('status_id', 1)->where('city_id', $beach->city_id)->count();
+
+        return $count >= 2 ? "one of {$count} beaches in ".$this->enName($beach->city).' listed on Beachrex' : null;
+    }
+
+    /**
+     * The nearest active beaches within NEARBY_KM: name (also in Cyrillic/Greek when stored), distance and surface.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function nearestBeaches(Beach $beach): array
+    {
+        if ($beach->latitude === null || $beach->longitude === null) {
+            return [];
+        }
+        [$lat, $lng] = [(float) $beach->latitude, (float) $beach->longitude];
+        $dLat = self::NEARBY_KM / 111.0;
+        $dLng = self::NEARBY_KM / max(1.0, 111.0 * cos(deg2rad($lat)));
+
+        $candidates = Beach::query()
+            ->with(['translations', 'beachType.translations'])
+            ->where('status_id', 1)->whereKeyNot($beach->getKey())
+            ->whereBetween('latitude', [$lat - $dLat, $lat + $dLat])
+            ->whereBetween('longitude', [$lng - $dLng, $lng + $dLng])
+            ->get();
+
+        return $candidates
+            ->map(fn (Beach $b) => [$b, $this->km($lat, $lng, (float) $b->latitude, (float) $b->longitude)])
+            ->filter(fn ($pair) => $pair[1] <= self::NEARBY_KM)
+            ->sortBy(fn ($pair) => $pair[1])
+            ->take(self::NEARBY_COUNT)
+            ->map(function ($pair) {
+                [$b, $km] = $pair;
+                $source = $this->sourceTranslation($b);
+                $scripts = [];
+                foreach (self::NON_LATIN as $l) {
+                    $name = $b->translations->firstWhere('locale', $l)?->name;
+                    if ($name !== null && $name !== $source?->name) {
+                        $scripts[$l] = $this->displayName($name);
+                    }
+                }
+
+                return array_filter([
+                    'name' => $source ? $this->displayName($source->name) : null,
+                    'name_in_script' => $scripts,
+                    'distance' => 'about '.$this->distance($km),
+                    'surface' => $this->enName($b->beachType),
+                ], fn ($v) => $v !== null && $v !== []);
+            })
+            ->filter(fn ($b) => isset($b['name']))
+            ->values()->all();
+    }
+
+    /** One of the most viewed active beaches (config ai.content.featured). */
+    public function isFeatured(Beach $beach): bool
+    {
+        if ($this->featuredIds === null) {
+            $count = max(0, (int) config('ai.content.featured', 200));
+            $this->featuredIds = $count === 0 ? [] : array_fill_keys(
+                Beach::query()->where('status_id', 1)->where('beach_views', '>', 0)
+                    ->orderByDesc('beach_views')->orderBy('id')->limit($count)->pluck('id')->all(),
+                true,
+            );
+        }
+
+        return isset($this->featuredIds[$beach->getKey()]);
+    }
+
+    /** The opening angle for a beach: stable per beach, varied across neighbours. */
+    public function angle(Beach $beach): string
+    {
+        return self::ANGLES[$beach->getKey() % count(self::ANGLES)];
+    }
+
+    private function km(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $r = 6371.0;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 2 * $r * asin(min(1.0, sqrt($a)));
+    }
+
+    /** 0.43 -> "400 m", 1.26 -> "1.3 km", 12.4 -> "12 km". */
+    private function distance(float $km): string
+    {
+        if ($km < 1) {
+            return (string) max(100, (int) round($km * 10) * 100).' m';
+        }
+
+        return $km < 10 ? number_format($km, 1, '.', '').' km' : (string) (int) round($km).' km';
     }
 
     // ------------------------------------------------------------------ apply
@@ -329,7 +552,9 @@ TXT;
             return match ($part) {
                 'names' => $this->applyNames($id, $data, $dryRun, $changes),
                 'regions' => $this->applyRegions($id, $data, $dryRun, $changes),
-                'descriptions', 'generate' => $this->applyDescriptions($id, $data, $dryRun, $changes, $previewChars),
+                'descriptions' => $this->applyDescriptions($id, $data, $dryRun, $changes, $previewChars),
+                'generate' => $this->applySeo($id, $data, $dryRun, $changes, $previewChars, withDescription: true),
+                'seo' => $this->applySeo($id, $data, $dryRun, $changes, $previewChars, withDescription: false),
             };
         });
 
@@ -460,6 +685,94 @@ TXT;
         return null;
     }
 
+    /**
+     * TASK-007: per language {meta, description?, faq}. Each field is written only where that language has none;
+     * a snippet that is far too long or an FAQ with fewer than two valid items is left out (the `seo` part retries it).
+     */
+    private function applySeo(int $id, array $data, bool $dryRun, array &$changes, int $previewChars, bool $withDescription): ?string
+    {
+        $beach = Beach::with('translations')->find($id);
+        $source = $beach ? $this->sourceTranslation($beach) : null;
+        if (! $source) {
+            return 'beach or its name not found';
+        }
+
+        foreach (self::locales() as $locale) {
+            $answer = $data[$locale] ?? null;
+            if (! is_array($answer)) {
+                continue;
+            }
+            $row = $beach->translations->firstWhere('locale', $locale);
+            $update = [];
+
+            if ($withDescription && trim((string) $row?->description) === '') {
+                $text = is_string($answer['description'] ?? null) ? trim($answer['description']) : '';
+                if (mb_strlen($text) > self::DESCRIPTION_MAX) {
+                    return "{$locale} description is too long";
+                }
+                if ($text !== '') {
+                    $update['description'] = $text;
+                    $changes[] = "{$locale}: ".Str::limit($text, $previewChars);
+                }
+            }
+
+            if (trim((string) $row?->meta_description) === '') {
+                $meta = is_string($answer['meta'] ?? null) ? trim(preg_replace('/\s+/u', ' ', $answer['meta']) ?? '') : '';
+                if (mb_strlen($meta) > self::META_MAX) {
+                    $changes[] = "{$locale}: [meta left out: ".mb_strlen($meta).' characters]';
+                } elseif ($meta !== '') {
+                    $update['meta_description'] = $meta;
+                    $changes[] = "{$locale}: [meta] ".Str::limit($meta, $previewChars);
+                }
+            }
+
+            if (empty($row?->faq)) {
+                $faq = $this->cleanFaq($answer['faq'] ?? null);
+                if (count($faq) >= 2) {
+                    $update['faq'] = $faq;
+                    foreach ($faq as $item) {
+                        $changes[] = "{$locale}: [faq] {$item['q']} — ".Str::limit($item['a'], $previewChars);
+                    }
+                } elseif (isset($answer['faq'])) {
+                    $changes[] = "{$locale}: [faq left out: fewer than two valid questions]";
+                }
+            }
+
+            if ($update === [] || $dryRun) {
+                continue;
+            }
+            if ($row) {
+                $row->update($update);
+            } else {
+                BeachTranslation::create([
+                    'beach_id' => $beach->id, 'locale' => $locale, 'name' => $source->name, 'slug' => $source->slug,
+                    'description' => null,
+                ] + $update);
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<array{q: string, a: string}> */
+    public function cleanFaq(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            $q = is_array($item) && is_string($item['q'] ?? null) ? trim($item['q']) : '';
+            $a = is_array($item) && is_string($item['a'] ?? null) ? trim($item['a']) : '';
+            if ($q === '' || $a === '' || mb_strlen($q) > self::FAQ_QUESTION_MAX || mb_strlen($a) > self::FAQ_ANSWER_MAX) {
+                continue;
+            }
+            $clean[] = ['q' => $q, 'a' => $a];
+        }
+
+        return array_slice($clean, 0, 6);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     /** The English row, else Croatian, else any: the name and slug new rows copy. */
@@ -483,6 +796,16 @@ TXT;
     {
         return array_values(array_filter(self::locales(), function ($locale) use ($beach) {
             return trim((string) $beach->translations->firstWhere('locale', $locale)?->description) === '';
+        }));
+    }
+
+    /** @return list<string> */
+    public function localesWithoutMeta(Beach $beach): array
+    {
+        return array_values(array_filter(self::locales(), function ($locale) use ($beach) {
+            $row = $beach->translations->firstWhere('locale', $locale);
+
+            return trim((string) $row?->meta_description) === '' || empty($row?->faq);
         }));
     }
 
@@ -574,6 +897,30 @@ TXT;
         $props = [];
         foreach ($locales as $l) {
             $props[$l] = ['type' => 'string', 'description' => "{$what} ".self::LANGUAGE_NAMES[$l]];
+        }
+
+        return $this->objectSchema($props);
+    }
+
+    /** TASK-007: per language an object {meta, description?, faq: [{q, a}]}. */
+    private function localeObjectSchema(array $locales, bool $withDescription): array
+    {
+        $faq = [
+            'type' => 'array',
+            'items' => $this->objectSchema([
+                'q' => ['type' => 'string', 'description' => 'The question'],
+                'a' => ['type' => 'string', 'description' => 'The answer, starting with the direct answer'],
+            ]),
+        ];
+        $props = [];
+        foreach ($locales as $l) {
+            $name = self::LANGUAGE_NAMES[$l];
+            $fields = ['meta' => ['type' => 'string', 'description' => "Search snippet in {$name}, at most 155 characters"]];
+            if ($withDescription) {
+                $fields['description'] = ['type' => 'string', 'description' => "Intro text in {$name}"];
+            }
+            $fields['faq'] = $faq + ['description' => "Questions and answers in {$name}"];
+            $props[$l] = $this->objectSchema($fields);
         }
 
         return $this->objectSchema($props);

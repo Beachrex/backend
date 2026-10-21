@@ -1030,3 +1030,19 @@ This file is read by: All new AI agents to understand past decisions
 - Runbooks stay in English for one-off technical procedures; admin guides link to them instead of copying commands.
 
 **Consequences:** The manual can be generated from the index at any time. An English version is a later, separate task.
+
+
+## [2026-10-21] Beach texts for search engines and AI assistants: snippet, intro, FAQ (TASK-007)
+
+**Context:** The owner previewed `content:ai --part=generate` (Livade i Obatnice, Ušće Neretve): every text listed the database fields in the same order, repeated the page icons (parking, road, transport), and gave search engines and AI assistants nothing to quote as a direct answer. On ~2 800 beaches that is one template.
+
+**Decision (owner, 2026-10-21, "za opise se strinjam, čimveč"):**
+- `generate` returns per language a search snippet (≤ 155 characters), an intro without logistics and 3–5 FAQs (question names the beach, answer starts with the direct answer, only questions the facts answer). New part `seo` writes snippet + FAQ for beaches that already have a description (the description is a source, never changed).
+- Facts gain computed context from our own data: distance to the town centre, number of beaches in the town, the nearest 3 active beaches within 10 km. Nothing else about distances may be invented.
+- The opening angle rotates by beach id (4 angles), so neighbouring pages do not read alike.
+- Two tiers: the `AI_CONTENT_FEATURED` (default 200) most viewed beaches get 90–150 words and 5 FAQs; the rest 50–80 words and 3–4 FAQs.
+- Storage: `beach_translation.meta_description`, `beach_translation.faq` (jsonb `[{q, a}]`), written only where empty, editable in the admin. The API returns them for the requested language only (no English fallback).
+- Web: FAQ section + `FAQPage` JSON-LD; the snippet is the meta description.
+
+**Consequences:** About 2.5× the token cost of the old `generate` (FAQ in 19 languages); the owner checks `plan` and can switch to Sonnet. A wrong-language fallback is avoided at the price of empty FAQ for languages the pass has not reached.
+

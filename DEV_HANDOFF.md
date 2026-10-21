@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-21 - TASK-007: search snippet, intro and FAQ for beaches (`content:ai generate` / `seo`)
+
+Owner 2026-10-21 (preview of `generate` read like a field list; "za opise se strinjam, čimveč"). Spec `docs/tasks/TASK-007-seo-geo-descriptions.md`, ADR 2026-10-21, runbook `docs/runbooks/content-ai.md`.
+
+- **DB (additive):** `beach_translation.meta_description` (varchar 320, null), `beach_translation.faq` (jsonb, null, `[{q, a}]`).
+- **API (additive):** `GET /api/v1/beach-details/{id}` → `basic_info.meta_description` (string|null) and `basic_info.faq` (`[{q, a}]`, empty when none), requested language only. OpenAPI updated. The AI chat context leaves both out.
+- **`content:ai generate`:** per language `{meta, description, faq}`; prompt: intro without logistics, rotating opening angle, FAQ with direct answers, featured tier (`AI_CONTENT_FEATURED`, default 200 by `beach_views`). Facts gain `town_centre`, `beaches_in_town`, `nearest_beaches` (computed, active beaches, 10 km).
+- **`content:ai seo`** (new part): snippet + FAQ for beaches with a description; never writes descriptions.
+- Every field is written only where empty; a snippet > 200 characters or an FAQ with < 2 valid items is left out (and retried by `seo`).
+- **Admin:** beach → Translations: "Search snippet" and "Frequently asked questions" fields.
+- Tests: `tests/Feature/ContentAiSeoTest.php`; `ContentAiTest` updated for the new answer shape.
+- Owner action: `php artisan migrate` runs with the deploy; then `content:ai plan --part=generate --part=seo` and `preview` (see runbook).
+
 ## 2026-10-21 - Data fix: untranslated and broken names in filters and beach cards
 
 **Owner report (dev, 2026-10-21):** English words in the Greek filters (Hostel, Beach bar), Cyrillic city names

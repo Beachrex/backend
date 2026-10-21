@@ -199,7 +199,7 @@ class ContentAiTest extends TestCase
         $this->assertSame('Slanica', $facts['name_by_language']['de'], 'languages without a row use the source name without "Beach"');
         $this->assertStringContainsString('at most 155 characters', $request['params']['system']);
         $this->assertStringContainsString('only when you are certain', $request['params']['system']);
-        $this->assertStringContainsString('not with a generic', $request['params']['system']);
+        $this->assertStringContainsString('never open with a generic', $request['params']['system']);
         $this->assertStringContainsString('never turn the distance into a depth', $request['params']['system']);
     }
 
@@ -208,7 +208,7 @@ class ContentAiTest extends TestCase
     {
         $id = $this->beach(['en' => ['Beach Slanica', null]]);
         $long = str_repeat('Sand and pines. ', 20);
-        $answer = json_encode(array_fill_keys(BeachContentAi::locales(), $long));
+        $answer = json_encode(array_fill_keys(BeachContentAi::locales(), ['meta' => 'Short.', 'description' => $long, 'faq' => []]));
 
         $short = $this->ai->apply("generate-{$id}", $answer, dryRun: true);
         $full = $this->ai->apply("generate-{$id}", $answer, dryRun: true, previewChars: PHP_INT_MAX);

@@ -39,6 +39,12 @@ class BeachDetailsResource extends JsonResource
             'name' => $translation?->name ?? $translationEn?->name ?? $this->name,
             'slug' => $translation?->slug ?? $translationEn?->slug ?? null,
             'description' => $translation?->description ?? $translationEn?->description ?? null,
+            // TASK-007: only the requested language; an English snippet or FAQ on a Slovenian page is worse than none.
+            'meta_description' => trim((string) $translation?->meta_description) !== '' ? $translation->meta_description : null,
+            'faq' => array_values(array_filter(
+                is_array($translation?->faq) ? $translation->faq : [],
+                fn ($i) => is_array($i) && trim((string) ($i['q'] ?? '')) !== '' && trim((string) ($i['a'] ?? '')) !== '',
+            )),
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'folder_name' => $this->folder_name,
