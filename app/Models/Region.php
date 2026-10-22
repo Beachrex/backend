@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\HasAsciiPaths;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Traits\IndexesPlaceNames;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -12,7 +13,7 @@ use Laravel\Scout\Searchable;
 
 class Region extends Model
 {
-    use HasFactory, Searchable, HasAsciiPaths;
+    use HasFactory, Searchable, HasAsciiPaths, IndexesPlaceNames;
 
     /** Storage paths kept ASCII-only (TASK-002). */
     protected array $asciiPathAttributes = ['main_image'];
@@ -155,6 +156,8 @@ class Region extends Model
             'type' => 'region',
             // Add all translated names for multi-language search
             'translated_names' => implode(' ', array_unique($translatedNames)),
+            // Parent places in every language (search by "Grčija", "Dalmacija" …)
+            'place_names' => $this->placeNames(),
         ];
     }
 
@@ -177,6 +180,18 @@ class Region extends Model
     {
         // Only index regions with active beaches
         return $this->status_id === 1 && $this->beaches()->where('status_id', 1)->exists();
+    }
+
+    /** @return list<string> parent places indexed as `place_names` (search). */
+    protected function placeNameRelations(): array
+    {
+        return ['country'];
+    }
+
+    /** Eager-load the place translations for `scout:import` (one query per relation, not per record). */
+    protected function makeAllSearchableUsing(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->with($this->placeNameEagerLoads());
     }
 }
 

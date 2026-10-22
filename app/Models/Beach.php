@@ -6,6 +6,7 @@ use App\Models\Traits\HasAsciiPaths;
 use App\Models\Traits\HasMedia;
 use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Traits\IndexesPlaceNames;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Laravel\Scout\Searchable;
 
 class Beach extends Model
 {
-    use HasFactory, Cacheable, HasMedia, Searchable, HasAsciiPaths;
+    use HasFactory, Cacheable, HasMedia, Searchable, HasAsciiPaths, IndexesPlaceNames;
 
     /** Storage paths kept ASCII-only (TASK-002). */
     protected array $asciiPathAttributes = ['folder_name'];
@@ -400,6 +401,8 @@ class Beach extends Model
             'type' => 'beach',
             // Add all translated names and descriptions for multi-language search
             'translated_names' => implode(' ', array_unique($translatedNames)),
+            // Parent places in every language (search by "Grčija", "Dalmacija" …)
+            'place_names' => $this->placeNames(),
             'translated_descriptions' => implode(' ', array_unique($translatedDescriptions)),
         ];
     }
@@ -423,5 +426,17 @@ class Beach extends Model
     {
         // Only index active beaches
         return $this->status_id === 1;
+    }
+
+    /** @return list<string> parent places indexed as `place_names` (search). */
+    protected function placeNameRelations(): array
+    {
+        return ['country', 'region', 'island', 'city'];
+    }
+
+    /** Eager-load the place translations for `scout:import` (one query per relation, not per record). */
+    protected function makeAllSearchableUsing(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->with($this->placeNameEagerLoads());
     }
 }
