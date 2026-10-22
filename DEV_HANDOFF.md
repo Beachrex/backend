@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-22 - Fix: option names in Title Case ("Drobno Kamenje", "Plažni Bar")
+
+### Overview
+Owner report 2026-10-22: filter and characteristic names (beach type, food & drink, infrastructure, natural conditions, activities, …) were stored in Title Case, which is wrong in Slovenian and most other languages. They are now in sentence case in all 19 languages: only the first word, and each part after "/", keeps a capital; acronyms and mixed-case words (WiFi, ΑμεΑ) stay. German keeps its capitalised nouns; only "Ins Wasser springen" and "Unterschiedlich/gemischt" change there. Croatian "Ski lift / Wakeboard" gets the translation the 2026-10-21 fix intended ("Vučnica za wakeboard"). Slugs are unchanged.
+
+### Changes
+- `database/migrations/2026_10_22_180000_option_names_sentence_case.php` — 532 exact `[table, locale, old, new]` updates taken from `GET /beaches/filters` in all 19 languages on dev. Idempotent (matches the exact current value, so names already edited in admin stay), reversible (`down()`).
+- Option seeders (BeachType, AccommodationAround, CulinaryOffer, LocationInfrastructure, NaturalLocationCondition, SportingActivities, UnderwaterCharacteristic, RecommendedTransportType, AreaDescription, BeachInclination, UserType): names in sentence case, so a fresh database matches.
+
+### Affected endpoints
+No API contract change. Option `name` values change in `/api/v1/beaches/filters`, beach details and beach lists. The deploy runs `cache:clear` and `search:index` after `migrate`, so nothing to run by hand.
+
+### Testing
+`php artisan test --filter=OptionNamesSentenceCaseTest` (listed names change, German nouns and admin-edited names stay, slugs stay, idempotent, `down()` restores; every fix only changes letter case; option seeders have no Title Case names outside German).
+
+---
+
 ## 2026-10-22 - Fix: lake beaches from the old database were "Sea" (`beaches:fix-lake-waterbody`)
 
 ### Overview
