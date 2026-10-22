@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-22 - CI: a crashed test run no longer passes
+
+### Overview
+The CI test step passed a run that died on a PHP fatal error: the known environment-dependent failures (`PlanEnforcementTest`, `CountrySlugSupportTest`) always make the exit code non-zero, so the step only grepped for unknown `FAILED` lines, and a fatal error prints none. Found 2026-10-22 when a new test class crashed (`Cannot override final method … name()`) and CI was green.
+
+### Changes
+- `.github/scripts/check-test-output.sh <exit code> <output file>`: fails on a PHP fatal error, on a missing `Tests:` summary line (run did not finish), on any `FAILED` line outside the known tests, and when the failed count in the summary differs from the number of known failures. Passes on exit 0 or when only the known tests failed.
+- `.github/workflows/deploy.yml` (job `test`): calls the script instead of the inline grep. Deploy job unchanged.
+
+### Affected endpoints
+None.
+
+### Testing
+Run locally against real `php artisan test` output: known failures only → pass (4 failed, 663 passed); the fatal-error run → fail; an unexpected failure (old option seeder) → fail; clean filtered run → pass.
+
+---
+
 ## 2026-10-22 - Fix: option names in Title Case ("Drobno Kamenje", "Plažni Bar")
 
 ### Overview

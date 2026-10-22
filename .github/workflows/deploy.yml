@@ -72,16 +72,8 @@ jobs:
           php artisan test --without-tty 2>&1 | tee /tmp/test-output.txt
           EXIT_CODE=${PIPESTATUS[0]}
           set -e
-          if [ $EXIT_CODE -eq 0 ]; then exit 0; fi
-          KNOWN="PlanEnforcementTest|CountrySlugSupportTest"
-          UNEXPECTED=$(grep "FAILED" /tmp/test-output.txt | grep -vE "$KNOWN" || true)
-          if [ -z "$UNEXPECTED" ]; then
-            echo "All failures are environment-dependent (missing API keys). Proceeding."
-            exit 0
-          else
-            echo "Unexpected failures: $UNEXPECTED"
-            exit 1
-          fi
+          # A PHP fatal error or crash prints no "FAILED" line, so the summary is checked too.
+          bash .github/scripts/check-test-output.sh "$EXIT_CODE" /tmp/test-output.txt
 
   mcp-test:
     name: MCP server (build + tests)
