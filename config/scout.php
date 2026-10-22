@@ -143,25 +143,25 @@ return [
             'beaches' => [
                 'filterableAttributes' => ['country_code', 'region_name', 'city_name', 'island_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'description', 'country_name', 'region_name', 'city_name', 'island_name', 'translated_names', 'translated_descriptions'],
+                'searchableAttributes' => ['name', 'description', 'country_name', 'region_name', 'city_name', 'island_name', 'translated_names', 'place_names', 'translated_descriptions'],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'cities' => [
                 'filterableAttributes' => ['country_code', 'region_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names'],
+                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names', 'place_names'],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'islands' => [
                 'filterableAttributes' => ['country_code', 'region_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names'],
+                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names', 'place_names'],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'regions' => [
                 'filterableAttributes' => ['country_code', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'translated_names'],
+                'searchableAttributes' => ['name', 'country_name', 'translated_names', 'place_names'],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'countries' => [

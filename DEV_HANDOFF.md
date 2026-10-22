@@ -71,6 +71,14 @@ Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `
 
 ---
 
+## 2026-10-22 - Fix: searching a country name ("grčija", "nemčija") found only the country
+
+Owner 2026-10-22. The Meilisearch documents held parent places in English only (`country->name` etc. return the English translation), so a beach in Greece matched "Greece" but not "Grčija", "Griechenland" or "Ελλάδα"; "albanija" only worked through typo tolerance against "Albania".
+- New searchable field `place_names` (trait `App\Models\Traits\IndexesPlaceNames`): the names of the parent places in every language — beaches: country, region, island, city; cities: country, region, island; islands: country, region; regions: country. Ranked after the item's own names, before descriptions (`config/scout.php`).
+- `makeAllSearchableUsing` eager-loads the place translations for `scout:import`.
+- Deploy runs `search:update-settings` before `search:index`, so new searchable fields take effect without a manual step.
+- Test: `tests/Feature/SearchPlaceNamesTest.php` (fails without the fix).
+
 ## 2026-10-21 - Fix: `content:ai generate/seo` refused with "compiled grammar is too large"
 
 Owner preview on dev (`preview --part=generate --id=1 --id=2`): the API returned 400 because the output schema had one nested object (meta, description, FAQ list) per language, 19 copies. The answer is now `{"texts": [{locale, meta, description?, faq}]}` with one item definition and `locale` as an enum of the requested languages; the prompt lists the languages and asks for exactly one entry each. `apply` maps the list back per language (first entry per language wins, unknown codes are ignored, a missing language is picked up again by `seo`). Regression test: `the_output_schema_stays_small_for_19_languages` (fails on the old schema).

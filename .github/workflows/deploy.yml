@@ -183,6 +183,8 @@ jobs:
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
             # Itinerary worker (AI-3): restarted after migrate and config:cache so it runs the new code and schema.
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate --no-deps worker_${ENV_NAME}
+            # Index settings from config/scout.php first (new searchable fields such as place_names), then the data.
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:update-settings || true
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan search:index || true
 
             # Rebuild MCP server if it exists.
