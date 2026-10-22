@@ -85,6 +85,30 @@ class OptionNamesSentenceCaseTest extends TestCase
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
+    public function the_follow_up_fixes_words_after_a_hyphen_or_apostrophe(): void
+    {
+        $followUp = require database_path('migrations/2026_10_22_190000_option_names_sentence_case_hyphen_apostrophe.php');
+        DB::table('location_infrastructure_translation')->insert([
+            ['location_infrastructure_id' => $this->infraId, 'locale' => 'it', 'name' => "Scivolo d'Acqua", 'slug' => 'scivolo'],
+            ['location_infrastructure_id' => $this->infraId, 'locale' => 'de', 'name' => 'FKK-Freundlich', 'slug' => 'fkk-freundlich'],
+        ]);
+
+        $followUp->up();
+        $followUp->up();
+
+        $this->assertSame("Scivolo d'acqua", $this->nameOf('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'it'));
+        $this->assertSame('FKK-freundlich', $this->nameOf('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'de'));
+        $this->assertSame('fkk-freundlich', DB::table('location_infrastructure_translation')->where('locale', 'de')->value('slug'));
+
+        foreach ($followUp::FIXES as [$table, $locale, $old, $new]) {
+            $this->assertSame(mb_strtolower($old), mb_strtolower($new), "{$table} {$locale}");
+        }
+
+        $followUp->down();
+        $this->assertSame("Scivolo d'Acqua", $this->nameOf('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'it'));
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
     public function option_seeders_have_no_title_case_names_outside_german(): void
     {
         $seeders = ['BeachType', 'AccommodationAround', 'CulinaryOffer', 'LocationInfrastructure', 'NaturalLocationCondition',
