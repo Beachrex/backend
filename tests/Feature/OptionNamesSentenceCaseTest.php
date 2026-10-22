@@ -47,7 +47,7 @@ class OptionNamesSentenceCaseTest extends TestCase
         ]);
     }
 
-    private function name(string $table, string $fk, int $id, string $locale): ?string
+    private function nameOf(string $table, string $fk, int $id, string $locale): ?string
     {
         return DB::table($table)->where($fk, $id)->where('locale', $locale)->value('name');
     }
@@ -58,16 +58,16 @@ class OptionNamesSentenceCaseTest extends TestCase
         $this->migration->up();
         $this->migration->up(); // idempotent
 
-        $this->assertSame('Plažni bar', $this->name('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'sl'));
-        $this->assertSame('Café Bar', $this->name('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'de'));
-        $this->assertSame('Beach bar (edited)', $this->name('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'en'));
-        $this->assertSame('WiFi dostopna točka', $this->name('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'sl'));
-        $this->assertSame("Point d'accès WiFi", $this->name('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'fr'));
-        $this->assertSame('Plaža Bar', $this->name('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'hr'));
+        $this->assertSame('Plažni bar', $this->nameOf('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'sl'));
+        $this->assertSame('Café Bar', $this->nameOf('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'de'));
+        $this->assertSame('Beach bar (edited)', $this->nameOf('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'en'));
+        $this->assertSame('WiFi dostopna točka', $this->nameOf('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'sl'));
+        $this->assertSame("Point d'accès WiFi", $this->nameOf('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'fr'));
+        $this->assertSame('Plaža Bar', $this->nameOf('location_infrastructure_translation', 'location_infrastructure_id', $this->infraId, 'hr'));
         $this->assertSame('plazni-bar', DB::table('culinary_offer_translation')->where('locale', 'sl')->value('slug'));
 
         $this->migration->down();
-        $this->assertSame('Plažni Bar', $this->name('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'sl'));
+        $this->assertSame('Plažni Bar', $this->nameOf('culinary_offer_translation', 'culinary_offer_id', $this->offerId, 'sl'));
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
