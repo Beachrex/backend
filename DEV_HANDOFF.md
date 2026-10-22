@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-22 - Fix: lake beaches from the old database were "Sea" (`beaches:fix-lake-waterbody`)
+
+### Overview
+The old database stores `waterbody_id = 3` (sea) on every beach; lake beaches are marked only by `location_id = 3` + `lake_name`. The old-DB import copied the sea waterbody, so 42 lake beaches (NL, BE, FR, GR) show "Sea" and are missing from the lake filter. New one-off owner command fixes the existing rows (no re-import). ADR 2026-10-22.
+
+### Changes
+- `app/Console/Commands/FixLakeBeachWaterbody.php` — `beaches:fix-lake-waterbody [--apply] [--file=]`. Dry run by default. Sets the `lake` waterbody, links a missing `lake_id` (finds the lake by English name or old slug, creates it if missing), reports an existing link to a differently named lake without changing it, skips beaches that do not exist. Idempotent. Clears the API cache after `--apply`.
+- `database/legacy/lake-beaches.json` — the 42 beach IDs + lake names extracted from `database/sql/beachrex_old.sql`.
+- Admin guide `docs/guides/admin/jezerske-plaze.md` + index row.
+
+### Affected endpoints
+No API contract change. After the owner runs the command: `waterbody` of those 42 beaches becomes Lake in `/api/v1/beach-details/{id}`, beach lists and the waterbody filter.
+
+### Testing
+`php artisan test --filter=FixLakeBeachWaterbodyTest` (dry run writes nothing, apply, second run is a no-op, mismatched lake reported, missing file fails, bundled list = 42 unique IDs).
+Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `--apply` → `php artisan search:index Beach`.
+
+---
+
 ## 2026-10-21 - Fix: `content:ai generate/seo` refused with "compiled grammar is too large"
 
 Owner preview on dev (`preview --part=generate --id=1 --id=2`): the API returned 400 because the output schema had one nested object (meta, description, FAQ list) per language, 19 copies. The answer is now `{"texts": [{locale, meta, description?, faq}]}` with one item definition and `locale` as an enum of the requested languages; the prompt lists the languages and asks for exactly one entry each. `apply` maps the list back per language (first entry per language wins, unknown codes are ignored, a missing language is picked up again by `seo`). Regression test: `the_output_schema_stays_small_for_19_languages` (fails on the old schema).
