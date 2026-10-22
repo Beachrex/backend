@@ -54,7 +54,7 @@ class AreaDescriptionSeeder extends Seeder
                 'code' => 'part_urban',
                 'status_id' => 1,
                 'translations' => [
-                    'en' => ['name' => 'Partly Urban', 'slug' => 'partly-urban'],
+                    'en' => ['name' => 'Partly urban', 'slug' => 'partly-urban'],
                     'sl' => ['name' => 'Delno urbano', 'slug' => 'delno-urbano'],
                     'de' => ['name' => 'Teilweise städtisch', 'slug' => 'teilweise-stadtisch'],
                     'hr' => ['name' => 'Djelomično urbano', 'slug' => 'djelomicno-urbano'],
