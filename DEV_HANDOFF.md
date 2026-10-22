@@ -65,6 +65,8 @@ Owner report 2026-10-22: filter and characteristic names (beach type, food & dri
 No API contract change. Option `name` values change in `/api/v1/beaches/filters`, beach details and beach lists. The deploy runs `cache:clear` and `search:index` after `migrate`, so nothing to run by hand.
 
 ### Testing
+Follow-up `2026_10_22_190000_option_names_sentence_case_hyphen_apostrophe.php`: 7 names whose capital followed a hyphen or apostrophe (fr "Maître-Nageur", "Camping-Car", "Complexe d'Appartements", "… dans l'Eau"; it "Scivolo d'Acqua"; de adjective "FKK-Freundlich"), found on dev after the first fix.
+
 `php artisan test --filter=OptionNamesSentenceCaseTest` (listed names change, German nouns and admin-edited names stay, slugs stay, idempotent, `down()` restores; every fix only changes letter case; option seeders have no Title Case names outside German).
 
 ---

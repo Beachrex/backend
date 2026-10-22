@@ -601,7 +601,7 @@ class LocationInfrastructureSeeder extends Seeder
             'naturist_friendly' => [
                 'en' => ['name' => 'Naturist friendly', 'slug' => 'naturist-friendly'],
                 'sl' => ['name' => 'Nudistično prijazno', 'slug' => 'nudisticno-prijazno'],
-                'de' => ['name' => 'FKK-Freundlich', 'slug' => 'fkk-freundlich'],
+                'de' => ['name' => 'FKK-freundlich', 'slug' => 'fkk-freundlich'],
                 'hr' => ['name' => 'Nudističko prijateljsko', 'slug' => 'nudisticko-prijateljsko'],
                 'fr' => ['name' => 'Naturiste friendly', 'slug' => 'naturiste-friendly'],
                 'es' => ['name' => 'Naturista friendly', 'slug' => 'naturista-friendly'],
