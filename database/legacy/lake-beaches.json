@@ -1,0 +1,258 @@
+{
+  "source": "database/sql/beachrex_old.sql (beach.location_id = 3 'l_lake' with lake_name; all rows have waterbody_id = 3 'sea')",
+  "generated": "2026-10-22",
+  "beaches": [
+    {
+      "beach_id": 3233,
+      "name": "Plage du Lac de Navarrosse",
+      "lake_name": "Le Lac de Cazaux",
+      "lake_slug": "le-lac-de-cazaux"
+    },
+    {
+      "beach_id": 3581,
+      "name": "Paralia Límni Vouliagménis",
+      "lake_name": "Límni Vouliagménis",
+      "lake_slug": "limni-vouliagmenis"
+    },
+    {
+      "beach_id": 4021,
+      "name": "Strand Zuid",
+      "lake_name": "Oldambtmeer",
+      "lake_slug": "oldambtmeer"
+    },
+    {
+      "beach_id": 4023,
+      "name": "Strand Schildmeer",
+      "lake_name": "Schildmeer",
+      "lake_slug": "schildmeer"
+    },
+    {
+      "beach_id": 4024,
+      "name": "Strand Meerwijck",
+      "lake_name": "Zuidlaardermeer",
+      "lake_slug": "zuidlaardermeer"
+    },
+    {
+      "beach_id": 4025,
+      "name": "Strand Hoornseplas",
+      "lake_name": "Hoornseplas",
+      "lake_slug": "hoornseplas"
+    },
+    {
+      "beach_id": 4026,
+      "name": "Strand Lytse Wielen",
+      "lake_name": "Lytse Wielen",
+      "lake_slug": "lytse-wielen"
+    },
+    {
+      "beach_id": 4029,
+      "name": "Strand De Holle Poarte",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4030,
+      "name": "Strand It Soal",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4031,
+      "name": "Strand Stavoren",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4032,
+      "name": "Strand Mirnser Klif",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4033,
+      "name": "Lemsterstrand",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4034,
+      "name": "Dijkstrand",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4035,
+      "name": "Strand Staversekade",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4036,
+      "name": "Strand Houtribhoek",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4037,
+      "name": "Harderstrand Noord",
+      "lake_name": "Veluwemeer",
+      "lake_slug": "veluwemeer"
+    },
+    {
+      "beach_id": 4038,
+      "name": "Woldstrand",
+      "lake_name": "Wolderwijd",
+      "lake_slug": "wolderwijd"
+    },
+    {
+      "beach_id": 4039,
+      "name": "Strand RCN",
+      "lake_name": "Wolderwijd",
+      "lake_slug": "wolderwijd"
+    },
+    {
+      "beach_id": 4040,
+      "name": "Fantasiestrand",
+      "lake_name": "Weerwater",
+      "lake_slug": "weerwater"
+    },
+    {
+      "beach_id": 4041,
+      "name": "Strand Almere Haven",
+      "lake_name": "Gooimeer",
+      "lake_slug": "gooimeer"
+    },
+    {
+      "beach_id": 4042,
+      "name": "Almeerderstrand",
+      "lake_name": "IJmeer",
+      "lake_slug": "ijmeer"
+    },
+    {
+      "beach_id": 4043,
+      "name": "Zilverstrand",
+      "lake_name": "Gooimeer",
+      "lake_slug": "gooimeer"
+    },
+    {
+      "beach_id": 4044,
+      "name": "Strand Muiderberg",
+      "lake_name": "IJmeer",
+      "lake_slug": "ijmeer"
+    },
+    {
+      "beach_id": 4045,
+      "name": "Mirrorstrand Hemmeland",
+      "lake_name": "Gouwzee",
+      "lake_slug": "gouwzee"
+    },
+    {
+      "beach_id": 4046,
+      "name": "Strand Pieterma",
+      "lake_name": "Gouwzee",
+      "lake_slug": "gouwzee"
+    },
+    {
+      "beach_id": 4047,
+      "name": "Strand Schellinkhout",
+      "lake_name": "Markermeer",
+      "lake_slug": "markermeer"
+    },
+    {
+      "beach_id": 4048,
+      "name": "Strand Enkhuizerzand",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4049,
+      "name": "Strand De Vooroever",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4050,
+      "name": "Strand Het Nesbos",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4051,
+      "name": "Strand Vlietsingel Poel",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4052,
+      "name": "Strand Vlietsingel",
+      "lake_name": "IJsselmeer",
+      "lake_slug": "ijsselmeer"
+    },
+    {
+      "beach_id": 4088,
+      "name": "Strand Hellecat",
+      "lake_name": "Haringvliet",
+      "lake_slug": "haringvliet"
+    },
+    {
+      "beach_id": 4090,
+      "name": "Strand Vuurtoren",
+      "lake_name": "Haringvliet",
+      "lake_slug": "haringvliet"
+    },
+    {
+      "beach_id": 4097,
+      "name": "Strand Kabbelaarsbank",
+      "lake_name": "Grevelingenmeer",
+      "lake_slug": "grevelingenmeer"
+    },
+    {
+      "beach_id": 4098,
+      "name": "Strand Grevelingenstrand",
+      "lake_name": "Gravelingenmeer",
+      "lake_slug": "gravelingenmeer"
+    },
+    {
+      "beach_id": 4165,
+      "name": "Strand Lochristi",
+      "lake_name": "Beervelde",
+      "lake_slug": "beervelde"
+    },
+    {
+      "beach_id": 4166,
+      "name": "Strand Nieuwdonk",
+      "lake_name": "Nieuwdonk",
+      "lake_slug": "nieuwdonk"
+    },
+    {
+      "beach_id": 4167,
+      "name": "Strand De Nekker",
+      "lake_name": "De Nekker",
+      "lake_slug": "de-nekker"
+    },
+    {
+      "beach_id": 4168,
+      "name": "Heidestrand",
+      "lake_name": "Zwemvijver",
+      "lake_slug": "zwemvijver"
+    },
+    {
+      "beach_id": 4169,
+      "name": "Strand Kessenich",
+      "lake_name": "Vissenakkerplas",
+      "lake_slug": "vissenakkerplas"
+    },
+    {
+      "beach_id": 4170,
+      "name": "Strand Geistingen",
+      "lake_name": "Vissenakkerplas",
+      "lake_slug": "vissenakkerplas"
+    },
+    {
+      "beach_id": 4171,
+      "name": "Strand Herenlaak",
+      "lake_name": "Herenlaak",
+      "lake_slug": "herenlaak"
+    }
+  ]
+}

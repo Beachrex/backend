@@ -61,6 +61,7 @@ navodilih). Vsak ukaz, ki spreminja podatke, ima `--dry-run`; vedno ga poženi n
 | `translations:audit`, `translations:ai` | manjkajoči prevodi in AI prevodi | [ai-vsebina.md](ai-vsebina.md) | ✅ |
 | `media:embed-copyright` | avtorske pravice v starih fotografijah | [mediji.md](mediji.md) | ✅ |
 | `users:migrate-from-old-db` | uvoz uporabnikov s stare strani | [uporabniki.md](uporabniki.md) | ✅ |
+| `beaches:fix-lake-waterbody` | 42 jezerskim plažam s stare baze nastavi vodno površino »jezero« (predogled je privzet, piše samo z `--apply`) | [jezerske-plaze.md](jezerske-plaze.md) | ✅ |
 | `cache:clear-api`, `search:index` | osvežitev predpomnilnika in iskalnika | [splosno.md](splosno.md) | ✅ |
 
 Enkratni tehnični postopki (zagon produkcije, obnova varnostne kopije, ASCII poti) ostanejo v angleških runbookih v

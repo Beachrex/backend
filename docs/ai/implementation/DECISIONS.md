@@ -1046,3 +1046,16 @@ This file is read by: All new AI agents to understand past decisions
 
 **Consequences:** About 2.5× the token cost of the old `generate` (FAQ in 19 languages); the owner checks `plan` and can switch to Sonnet. A wrong-language fallback is avoided at the price of empty FAQ for languages the pass has not reached.
 
+
+
+## [2026-10-22] Lake beaches from the old database: fix in place, no re-import
+
+**Context:** In the old database (`database/sql/beachrex_old.sql`) every beach has `waterbody_id = 3` (sea). Lake beaches are marked only by `location_id = 3` (`l_lake`) and `lake_name`. `beaches:migrate-from-old-db` copied `waterbody_id` 1:1 and ignored `location_id`, so 42 lake beaches (33 NL, 7 BE, 1 FR, 1 GR) are "Sea" on dev/uat/prod and missing from the lake filter. Checked on dev via MCP: 4023 Strand Schildmeer and 4166 Strand Nieuwdonk report "Waterbody: Sea".
+
+**Decision (owner, 2026-10-22: "ker ne bomo ponovno uvažali cele stare baze, moramo posodobiti obstoječo našo bazo"):**
+- A one-off owner command `beaches:fix-lake-waterbody` updates the existing rows; the importer is not changed and the old DB is not re-imported.
+- The list of beaches is a reviewed file in the repo (`database/legacy/lake-beaches.json`: the 42 rows with `location_id = 3` **and** a `lake_name`). The two `location_id = 3` rows without a lake name (2546 Playa Bahía Azul, 2649 Praia de Ribeira d'Ilhas) are sea beaches and stay out.
+- Agent's reading: a command, not a migration, because a data migration would run on prod automatically at promotion, while DEVELOPMENT-RULES §9 requires dry run → real run → verification with the owner. Dry run is the default; it writes only with `--apply`. Idempotent.
+- It sets the `lake` waterbody (looked up by code), links a missing `lake_id` to the lake with the same English name (or the old slug as code), creating the lake if needed. An existing `lake_id` with another name is reported, never changed. Saves go through Eloquent (model cache + Scout), then `CacheService::clearAll()`.
+
+**Consequences:** The owner runs it once per environment. The 4 old river beaches (`location_id = 4`: two Drava test beaches, two on the Scheldt estuary) are out of scope. The old DB spells one lake two ways (Grevelingenmeer / Gravelingenmeer), so two lakes can exist for it; merging needs a lake field in the beach admin form (not there today).
