@@ -313,7 +313,7 @@ TXT;
         $out = [];
         foreach ($fields as $field) {
             $text = is_string($value[$field] ?? null) ? trim(preg_replace('/\s+/u', ' ', $value[$field]) ?? '') : '';
-            if ($text === '' || mb_strlen($text) > 150) {
+            if ($text === '' || mb_strlen($text) > 150 || ($field === 'name' && ! preg_match('/\p{L}/u', $text))) {
                 return null;
             }
             $out[$field] = $text;

@@ -52,6 +52,13 @@ How to test the changes
 
 ---
 
+## 2026-10-23 - Fix: a beach name without letters (Russian "335" for Tratica)
+
+- Owner: `/ru/.../pasman/kraj/beach-tratica-kraj` was titled "335". A scan of all 2876 beaches in all 19 languages on dev found only this one name without a letter.
+- Migration `2026_10_23_120000_fix_beach_names_without_letters`: every beach name with no letter takes the same beach's name in the nearest language (ru/ua/bg try each other, then English). Idempotent; real names are never touched. Deploy clears the cache and re-indexes search afterwards.
+- Guard: `content:ai` names (`BeachContentAi::cleanName`) and `translations:ai` names must contain a letter; a bare number falls back to the local name or is refused.
+- Test: `tests/Feature/BeachNameWithoutLettersTest.php`.
+
 ## 2026-10-23 - Fix: home page translations for da, el, nl, pt, sq
 
 - Owner: the Greek home page showed most blocks in English. `/first-page-content` had no section or item rows for da, el, nl, pt and sq (only the hero title), so it fell back to English. All other locales were complete (checked on dev for all 19; `/beaches/filters` and `/countries` are translated everywhere).
