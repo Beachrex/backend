@@ -52,6 +52,12 @@ How to test the changes
 
 ---
 
+## 2026-10-23 - Fix: home page translations for da, el, nl, pt, sq
+
+- Owner: the Greek home page showed most blocks in English. `/first-page-content` had no section or item rows for da, el, nl, pt and sq (only the hero title), so it fell back to English. All other locales were complete (checked on dev for all 19; `/beaches/filters` and `/countries` are translated everywhere).
+- Migration `2026_10_23_100000_add_first_page_content_missing_locales`: titles/descriptions for browse_map, find_beach, beach_views, accommodation, coastal_destinations, footer_text and the 8 items. Idempotent: inserts missing rows, replaces rows that still hold the English text, keeps human translations; clears the first-page cache. Runs on every environment (no DB promotion after launch).
+- Test: `tests/Feature/FirstPageContentMissingLocalesTest.php`.
+
 ## 2026-10-22 - CI: a crashed test run no longer passes
 
 ### Overview
