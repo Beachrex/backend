@@ -13475,7 +13475,7 @@
                     "slug": {
                         "description": "Localized beach slug (with English fallback)",
                         "type": "string",
-                        "example": "beach-bucanj"
+                        "example": "bucanj"
                     },
                     "continent_slug": {
                         "description": "Localized continent slug",
@@ -13987,7 +13987,7 @@
                     "slug": {
                         "description": "URL-friendly slug (with English fallback if translation missing)",
                         "type": "string",
-                        "example": "beach-bucanj"
+                        "example": "bucanj"
                     },
                     "latitude": {
                         "description": "Beach latitude",
