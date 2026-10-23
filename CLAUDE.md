@@ -10,6 +10,7 @@ Before any task, read:
 Short version:
 - Branch from `origin/dev`, PR into `dev`, merge only on green CI, then verify the dev deploy. Never push to `dev`/`uat`/`main` directly; promote to uat/prod only when the owner asks.
 - Never touch the VPS by hand (no ssh/scp/rsync). Never read or print secrets.
+- After the prod launch there is no DB promotion (ADR 2026-10-23): data every environment needs ships as an idempotent migration; content commands (`content:ai`, `translations:ai`) and admin edits write only the environment they run on — content work happens on prod, by the owner.
 - Every API change: OpenAPI annotations + `php artisan l5-swagger:generate` + a dated entry in `DEV_HANDOFF.md`.
 - Mutating routes: `auth:sanctum` + `admin` (or an ownership check), with 401/403 tests.
 - Never cache Eloquent models (cache `Resource::...->resolve()`); never hardcode locales (`SetLocaleFromHeader::SUPPORTED_LOCALES`).
