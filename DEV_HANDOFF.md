@@ -52,6 +52,13 @@ How to test the changes
 
 ---
 
+## 2026-10-23 - Data fix: beach descriptions from the old database
+
+- Owner: "v stari bazi imamo opise … na novi bazi pa ni". The old `beach_description` table held 2282 texts for 793 beaches in 8 languages (en, de, it, fr, es, sl, hr, ru). On dev, 338 active beaches had no English description and no other language had any (the page showed English or nothing). The old dump has no descriptions for places (regions, islands, towns are only names on the beach row).
+- `database/legacy/old-beach-descriptions.json`: the texts extracted once from the dump (beach id => locale => text), old HTML turned into plain text with line breaks (the page renders `whitespace-pre-line`), entities decoded. The migration never reads the dump (it holds the user table).
+- Migration `2026_10_23_160000_import_old_beach_descriptions`: writes a text only where that language's description is empty or still a copy of the English one; written or generated descriptions stay. A missing language row is created from the English row (name, slug). Idempotent; runs on every environment. Deploy clears the cache and re-indexes search.
+- Test: `tests/Feature/ImportOldBeachDescriptionsTest.php`.
+
 ## 2026-10-23 - Beach slugs from the local name (no more "beach-" prefix)
 
 - Owner: beach URLs ended in an English "beach-" slug in every language (`/pl/plaze/.../beach-svetilnik`) while the page says "Svetilnik". The old import built slugs from English names and replaced the local word for beach ("Plage de la Garoupe" → `beach-de-la-garoupe`); the slug was copied to all 19 languages.
