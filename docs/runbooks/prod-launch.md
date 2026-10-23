@@ -176,6 +176,13 @@ other host must not use `api.beachrex.com`; the owner checks this before the DNS
 | P6 | Owner | `sudo certbot certonly --nginx -d api.beachrex.com` (certbot must not edit nginx) | `/etc/letsencrypt/live/api.beachrex.com/fullchain.pem` exists |
 | P7 | Agent | Merge the nginx PR (done 2026-10-09; the host file had to become a symlink first, see HANDOFF) with the `api.beachrex.com` 443 block. **Only after P6**, otherwise `nginx reload` fails for every environment | `https://api.beachrex.com/api/v1/health` → `ok`; then the owner may turn the Cloudflare proxy on (SSL mode Full) |
 
+## After the launch: how code and data move (ADR 2026-10-23)
+
+- The DB copy (Phase B) happens **once**. After real users write to `beachrex_prod`, no database is copied over prod again.
+- Code: PRs `dev → uat → main`; every deploy runs the migrations.
+- Data every environment needs: a migration (idempotent; never overwrites text a person edited).
+- Content work (`content:ai`, `translations:ai`, `webcams:import`, admin edits): on prod, by the owner, dry run first. dev/uat may lag behind; refresh them *from* prod when needed, never the other way.
+
 ## Rollback
 
 - **Before D1:** nothing is public. Fix and repeat.

@@ -107,6 +107,10 @@ Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `
 
 ---
 
+## 2026-10-23 - Docs: after the launch, code by merges, data by migrations (no DB promotion)
+
+Owner 2026-10-23 (an admin "promote" button was considered and dropped): the DB is copied to the environments once at the launch; after that code moves by PRs `dev → uat → main` and migrations run on deploy; content commands and admin edits write only their own environment, so content work runs on prod. ADR 2026-10-23; `docs/runbooks/content-ai.md` ("Which environment") and `docs/runbooks/prod-launch.md` ("After the launch") updated; one line in `CLAUDE.md`.
+
 ## 2026-10-23 - Data fix: home page hero title had a "DEV" marker
 
 Pre-launch audit: the hero title was "All worries are smaller on the beach! DEV" in English (typed in the admin on dev, carried to uat by the DB promotion; prod gets uat's DB). da, pt, nl, el and sq had no row and showed that English title. Migration `2026_10_23_060000_fix_hero_banner_title` removes the marker (only while the title still has it) and adds the five missing titles (with the English description/metadata); existing rows stay. Test: `tests/Feature/HeroBannerTitleFixTest.php`.
