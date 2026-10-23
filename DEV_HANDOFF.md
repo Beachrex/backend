@@ -107,6 +107,10 @@ Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `
 
 ---
 
+## 2026-10-23 - `/beaches/filters`: several countries / regions / islands at once
+
+Owner 2026-10-23: the map now allows several places per filter ("HR,IT"). `/beaches` already filtered by any of them, but `/beaches/filters` resolved `country=HR,IT` as one code and returned no regions (on dev: `country=HR` 7 regions, `country=HR,IT` 0), so a selected region was dropped by the web's validation. `country`, `region`, `island` (and their `_code` aliases) now take comma-separated codes or ids; region/island/city options are scoped with `whereIn`; unknown codes are ignored as before (no scoping); cache key uses the sorted list. OpenAPI descriptions updated. Tests in `tests/Feature/FilterAliasApiTest.php`.
+
 ## 2026-10-23 - Data fix: home page hero title had a "DEV" marker
 
 Pre-launch audit: the hero title was "All worries are smaller on the beach! DEV" in English (typed in the admin on dev, carried to uat by the DB promotion; prod gets uat's DB). da, pt, nl, el and sq had no row and showed that English title. Migration `2026_10_23_060000_fix_hero_banner_title` removes the marker (only while the title still has it) and adds the five missing titles (with the English description/metadata); existing rows stay. Test: `tests/Feature/HeroBannerTitleFixTest.php`.
