@@ -4450,7 +4450,7 @@
                     {
                         "name": "country",
                         "in": "query",
-                        "description": "Filter by country code or ID (e.g., HR, SI, or numeric ID). Alias: country_code",
+                        "description": "Scope the options to one or several countries: codes or IDs, comma-separated (HR, HR,IT). Alias: country_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -4466,7 +4466,7 @@
                     {
                         "name": "region",
                         "in": "query",
-                        "description": "Filter by region ID or code. Alias: region_code",
+                        "description": "Scope the options to one or several regions: codes or IDs, comma-separated (istra,kvarner); unknown codes are ignored. Alias: region_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -4482,7 +4482,7 @@
                     {
                         "name": "island",
                         "in": "query",
-                        "description": "Filter by island ID or code. Alias: island_code",
+                        "description": "Scope the options to one or several islands: codes or IDs, comma-separated; unknown codes are ignored. Alias: island_code",
                         "required": false,
                         "schema": {
                             "oneOf": [

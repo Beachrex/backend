@@ -57,21 +57,21 @@ class FilterController extends Controller
      *     @OA\Parameter(
      *         name="country",
      *         in="query",
-     *         description="Filter by country code or ID (e.g., HR, SI, or numeric ID). Alias: country_code",
+     *         description="Scope the options to one or several countries: codes or IDs, comma-separated (HR, HR,IT). Alias: country_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="string"), @OA\Schema(type="integer")})
      *     ),
      *     @OA\Parameter(
      *         name="region",
      *         in="query",
-     *         description="Filter by region ID or code. Alias: region_code",
+     *         description="Scope the options to one or several regions: codes or IDs, comma-separated (istra,kvarner); unknown codes are ignored. Alias: region_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
      *     ),
      *     @OA\Parameter(
      *         name="island",
      *         in="query",
-     *         description="Filter by island ID or code. Alias: island_code",
+     *         description="Scope the options to one or several islands: codes or IDs, comma-separated; unknown codes are ignored. Alias: island_code",
      *         required=false,
      *         @OA\Schema(oneOf={@OA\Schema(type="integer"), @OA\Schema(type="string")})
      *     ),
@@ -252,13 +252,10 @@ class FilterController extends Controller
         $regionParam = $request->get('region', $request->get('region_code'));
         $islandParam = $request->get('island', $request->get('island_code'));
 
-        // Resolve country parameter (can be code or ID)
+        // Each can be a code or id, or a comma-separated list ("HR,IT"; owner 2026-10-23: several places at
+        // once on the map). The options are scoped to any of the given places, as the beach list is.
         $countryCode = $this->resolveCountryParameter($countryParam);
-
-        // Resolve region parameter (can be code or ID)
         $regionId = $this->resolveRegionParameter($regionParam);
-
-        // Resolve island parameter (can be code or ID)
         $islandId = $this->resolveIslandParameter($islandParam);
 
         // Generate cache key based on filters
@@ -630,7 +627,7 @@ class FilterController extends Controller
     /**
      * Get region filter data with metadata
      */
-    private function getRegionFilterData(string $locale, ?string $countryCode = null): ?array
+    private function getRegionFilterData(string $locale, ?array $countryCode = null): ?array
     {
         // Get regions that have more than 1 beach
         $query = Region::with('translations')
@@ -640,7 +637,7 @@ class FilterController extends Controller
             ->where('region.status_id', 1);
 
         if ($countryCode) {
-            $query->where('region.country_code', strtoupper($countryCode));
+            $query->whereIn('region.country_code', $countryCode);
         }
 
         $regions = $query
@@ -687,7 +684,7 @@ class FilterController extends Controller
     /**
      * Get island filter data with metadata
      */
-    private function getIslandFilterData(string $locale, ?string $countryCode = null, ?int $regionId = null): ?array
+    private function getIslandFilterData(string $locale, ?array $countryCode = null, ?array $regionId = null): ?array
     {
         // Get islands that have more than 1 beach
         $query = Island::with('translations')
@@ -697,11 +694,11 @@ class FilterController extends Controller
             ->where('island.status_id', 1);
 
         if ($countryCode) {
-            $query->where('island.country_code', strtoupper($countryCode));
+            $query->whereIn('island.country_code', $countryCode);
         }
 
         if ($regionId) {
-            $query->where('island.region_id', $regionId);
+            $query->whereIn('island.region_id', $regionId);
         }
 
         $islands = $query
@@ -748,7 +745,7 @@ class FilterController extends Controller
     /**
      * Get city filter data with metadata
      */
-    private function getCityFilterData(string $locale, ?string $countryCode = null, ?int $regionId = null, ?int $islandId = null): ?array
+    private function getCityFilterData(string $locale, ?array $countryCode = null, ?array $regionId = null, ?array $islandId = null): ?array
     {
         // Get cities that have beaches
         $query = City::with('translations')
@@ -758,15 +755,15 @@ class FilterController extends Controller
             ->where('city.status_id', 1);
 
         if ($countryCode) {
-            $query->where('city.country_code', strtoupper($countryCode));
+            $query->whereIn('city.country_code', $countryCode);
         }
 
         if ($regionId) {
-            $query->where('city.region_id', $regionId);
+            $query->whereIn('city.region_id', $regionId);
         }
 
         if ($islandId) {
-            $query->where('city.island_id', $islandId);
+            $query->whereIn('city.island_id', $islandId);
         }
 
         $cities = $query
@@ -813,84 +810,108 @@ class FilterController extends Controller
      * Resolve country parameter - can be code or ID
      * Returns country code if found, null otherwise
      */
-    private function resolveCountryParameter($param): ?string
+    /** "HR", "HR,IT", "12" or "12,13" → list of values; null when empty. */
+    private function splitParameter($param): ?array
     {
-        if (!$param) {
-            return null;
+        if ($param === null || $param === '' || is_array($param)) {
+            return is_array($param) && $param !== [] ? array_values(array_filter(array_map('strval', $param))) : null;
         }
+        $values = array_values(array_unique(array_filter(array_map('trim', explode(',', (string) $param)), fn ($v) => $v !== '')));
 
-        // If it's numeric, treat as ID
-        if (is_numeric($param)) {
-            $country = Country::find($param);
-            return $country ? $country->code : null;
-        }
-
-        // Otherwise treat as code
-        return strtoupper($param);
+        return $values === [] ? null : $values;
     }
 
     /**
-     * Resolve region parameter - can be code or ID
-     * Returns region ID if found, null otherwise
+     * Resolve the country parameter (codes or ids, one or several) to upper-case country codes.
+     *
+     * @return list<string>|null
      */
-    private function resolveRegionParameter($param): ?int
+    private function resolveCountryParameter($param): ?array
     {
-        if (!$param) {
+        $values = $this->splitParameter($param);
+        if ($values === null) {
             return null;
         }
-
-        // If it's numeric, treat as ID
-        if (is_numeric($param)) {
-            return (int) $param;
+        $codes = [];
+        foreach ($values as $value) {
+            if (is_numeric($value)) {
+                $code = Country::find($value)?->code;
+                if ($code) {
+                    $codes[] = $code;
+                }
+            } else {
+                $codes[] = strtoupper($value);
+            }
         }
 
-        // Otherwise treat as code
-        $region = Region::where('code', $param)->first();
-        return $region ? $region->id : null;
+        return $codes === [] ? null : array_values(array_unique($codes));
     }
 
     /**
-     * Resolve island parameter - can be code or ID
-     * Returns island ID if found, null otherwise
+     * Resolve the region parameter (codes or ids, one or several) to region ids.
+     *
+     * @return list<int>|null
      */
-    private function resolveIslandParameter($param): ?int
+    private function resolveRegionParameter($param): ?array
     {
-        if (!$param) {
+        return $this->resolveIds($param, Region::class);
+    }
+
+    /**
+     * Resolve the island parameter (codes or ids, one or several) to island ids.
+     *
+     * @return list<int>|null
+     */
+    private function resolveIslandParameter($param): ?array
+    {
+        return $this->resolveIds($param, Island::class);
+    }
+
+    /** @return list<int>|null */
+    private function resolveIds($param, string $model): ?array
+    {
+        $values = $this->splitParameter($param);
+        if ($values === null) {
             return null;
         }
-
-        // If it's numeric, treat as ID
-        if (is_numeric($param)) {
-            return (int) $param;
+        $ids = array_map('intval', array_filter($values, 'is_numeric'));
+        $codes = array_values(array_filter($values, fn ($v) => ! is_numeric($v)));
+        if ($codes !== []) {
+            $ids = [...$ids, ...$model::whereIn('code', $codes)->pluck('id')->all()];
         }
+        $ids = array_values(array_unique($ids));
 
-        // Otherwise treat as code
-        $island = Island::where('code', $param)->first();
-        return $island ? $island->id : null;
+        // Unknown codes are ignored, as before (a link may carry a localized slug): no ids = no scoping
+        return $ids === [] ? null : $ids;
     }
 
     /**
      * Generate cache key suffix from filter parameters
      * Ensures consistent cache keys for the same filter combinations
      */
-    private function generateCacheKeySuffix(?string $continentCode = null, ?string $countryCode = null, ?int $regionId = null, ?int $islandId = null): string
+    private function generateCacheKeySuffix(?string $continentCode = null, ?array $countryCode = null, ?array $regionId = null, ?array $islandId = null): string
     {
         $parts = [];
+        $list = function (array $values): string {
+            sort($values);
+
+            return implode(',', $values);
+        };
 
         if ($continentCode) {
             $parts['continent_code'] = strtoupper($continentCode);
         }
 
         if ($countryCode) {
-            $parts['country'] = strtoupper($countryCode);
+            $parts['country'] = $list($countryCode);
         }
 
         if ($regionId) {
-            $parts['region'] = $regionId;
+            $parts['region'] = $list($regionId);
         }
 
         if ($islandId) {
-            $parts['island'] = $islandId;
+            $parts['island'] = $list($islandId);
         }
 
         if (empty($parts)) {

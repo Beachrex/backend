@@ -113,6 +113,10 @@ Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `
 
 ---
 
+## 2026-10-23 - `/beaches/filters`: several countries / regions / islands at once
+
+Owner 2026-10-23: the map now allows several places per filter ("HR,IT"). `/beaches` already filtered by any of them, but `/beaches/filters` resolved `country=HR,IT` as one code and returned no regions (on dev: `country=HR` 7 regions, `country=HR,IT` 0), so a selected region was dropped by the web's validation. `country`, `region`, `island` (and their `_code` aliases) now take comma-separated codes or ids; region/island/city options are scoped with `whereIn`; unknown codes are ignored as before (no scoping); cache key uses the sorted list. OpenAPI descriptions updated. Tests in `tests/Feature/FilterAliasApiTest.php`.
+
 ## 2026-10-23 - Docs: after the launch, code by merges, data by migrations (no DB promotion)
 
 Owner 2026-10-23 (an admin "promote" button was considered and dropped): the DB is copied to the environments once at the launch; after that code moves by PRs `dev → uat → main` and migrations run on deploy; content commands and admin edits write only their own environment, so content work runs on prod. ADR 2026-10-23; `docs/runbooks/content-ai.md` ("Which environment") and `docs/runbooks/prod-launch.md` ("After the launch") updated; one line in `CLAUDE.md`.
