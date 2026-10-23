@@ -107,6 +107,10 @@ Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `
 
 ---
 
+## 2026-10-23 - Data fix: home page hero title had a "DEV" marker
+
+Pre-launch audit: the hero title was "All worries are smaller on the beach! DEV" in English (typed in the admin on dev, carried to uat by the DB promotion; prod gets uat's DB). da, pt, nl, el and sq had no row and showed that English title. Migration `2026_10_23_060000_fix_hero_banner_title` removes the marker (only while the title still has it) and adds the five missing titles (with the English description/metadata); existing rows stay. Test: `tests/Feature/HeroBannerTitleFixTest.php`.
+
 ## 2026-10-22 - Fix: searching a country name ("grčija", "nemčija") found only the country
 
 Owner 2026-10-22. The Meilisearch documents held parent places in English only (`country->name` etc. return the English translation), so a beach in Greece matched "Greece" but not "Grčija", "Griechenland" or "Ελλάδα"; "albanija" only worked through typo tolerance against "Albania".
