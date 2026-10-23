@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SetLocaleFromHeader;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -113,7 +114,7 @@ return new class extends Migration
             }
         }
 
-        foreach (\App\Http\Middleware\SetLocaleFromHeader::SUPPORTED_LOCALES as $locale) {
+        foreach (SetLocaleFromHeader::SUPPORTED_LOCALES as $locale) {
             Cache::forget("first_page_content:index:{$locale}");
         }
     }
