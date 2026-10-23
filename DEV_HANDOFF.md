@@ -52,6 +52,15 @@ How to test the changes
 
 ---
 
+## 2026-10-23 - Beach slugs from the local name (no more "beach-" prefix)
+
+- Owner: beach URLs ended in an English "beach-" slug in every language (`/pl/plaze/.../beach-svetilnik`) while the page says "Svetilnik". The old import built slugs from English names and replaced the local word for beach ("Plage de la Garoupe" → `beach-de-la-garoupe`); the slug was copied to all 19 languages.
+- Migration `2026_10_23_140000_beach_slugs_from_local_names`: every beach whose slug starts with `beach-` gets one slug of its local name (English row's name): `svetilnik`, `plage-de-la-garoupe`. Same slug in every language, as before. A repeated name, or a slug equal to another beach or a place slug, gets the town appended (`zal-krk`), then the island, region, id. On dev data: 2139 beaches change, 1756 plain, 383 with the town; no collisions left.
+- Old slugs go to `beach_slug_redirects` (one row per language); earlier redirects pointing at an old slug are re-pointed (no chains). Idempotent.
+- Lookup: `App\Support\BeachSlugRedirects::beachId()` used by `/beach-details/{slug}`, `/beaches/{slug}` and `/resolve-slug/{slug}`; the web client answers an old slug with a 301 (web-client PR "301 from an old beach slug"). Legacy old-site URLs resolve to the beach id, so they point at the new slug directly.
+- Deploy clears the cache and runs `search:index` after migrating, so search results carry the new slugs.
+- Test: `tests/Feature/BeachSlugsFromLocalNamesTest.php`.
+
 ## 2026-10-23 - Fix: a beach name without letters (Russian "335" for Tratica)
 
 - Owner: `/ru/.../pasman/kraj/beach-tratica-kraj` was titled "335". A scan of all 2876 beaches in all 19 languages on dev found only this one name without a letter.

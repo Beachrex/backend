@@ -455,9 +455,11 @@ class BeachController extends Controller
             $beach = $query->findOrFail($identifier);
         } else {
             // Find by slug using translations table
-            $beach = $query->whereHas('translations', function ($q) use ($identifier) {
+            $beach = (clone $query)->whereHas('translations', function ($q) use ($identifier) {
                 $q->where('slug', $identifier);
-            })->firstOrFail();
+            })->first();
+            // An old slug (former "beach-" slugs) still finds the beach.
+            $beach ??= ($oldId = \App\Support\BeachSlugRedirects::beachId($identifier)) ? $query->findOrFail($oldId) : abort(404);
         }
 
         return new BeachResource($beach);
