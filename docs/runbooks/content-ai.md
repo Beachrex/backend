@@ -57,8 +57,10 @@ The small `*_translation` tables (beach attributes, badges, islands, lakes, rive
 - Writes only languages with no row or with the English name still in it; new rows copy the English row (same slug, so no URL changes); `full_name` and `filter_title` are translated with the name when the English row has them.
 - Beach and city names (`beach_translation`, `city_translation`, active places only): only Greek, Ukrainian, Russian and Bulgarian, in their own script, with the country as context; Latin-script languages keep the local name through the English fallback. A new row never copies the English description.
 - 2026-10-12 on dev (owner ran and checked both): `msgbatch_01LoA71A7oxGfwMbUQsqtR8t` reference tables, 36 requests, 3 563 names; `msgbatch_013mxKXsoN265PRZpKsmhGit` beach and city names in el/ua/ru/bg, 57 requests, 8 900 names. Then `cache:clear-api --type=all`, `search:index`, `front_dev` recreated.
-- uat/prod get these with the next DB promotion (dev → uat → prod).
+- Before the launch uat/prod got these with the DB copy at launch; after the launch run `translations:ai` on prod (see below).
 
-## uat / prod
+## Which environment (ADR 2026-10-23)
 
-uat gets the dev DB by promotion (ADR 2026-10-08), so the pass runs on dev only. Prod gets uat's DB at launch.
+- **Before the prod launch:** run on dev; uat and prod got the data with the one-time DB copy at launch.
+- **After the launch:** there is no DB promotion any more (prod holds real users). `content:ai` and `translations:ai` write only the environment they run on, so run them **on prod** (owner): `plan` → `preview` → `submit` → `status` → `apply` (dry run) → `apply --write` → `cache:clear-api --type=all` → `search:index`. Replace `.env.dev`/`api_dev` with `.env.prod`/`api_prod` in the commands above. Trying a new prompt is still done on dev with `preview` (it writes nothing).
+- dev and uat may lag behind prod's content; that is fine. A data fix every environment needs is a migration, not a command.

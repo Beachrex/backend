@@ -1059,3 +1059,19 @@ This file is read by: All new AI agents to understand past decisions
 - It sets the `lake` waterbody (looked up by code), links a missing `lake_id` to the lake with the same English name (or the old slug as code), creating the lake if needed. An existing `lake_id` with another name is reported, never changed. Saves go through Eloquent (model cache + Scout), then `CacheService::clearAll()`.
 
 **Consequences:** The owner runs it once per environment. The 4 old river beaches (`location_id = 4`: two Drava test beaches, two on the Scheldt estuary) are out of scope. The old DB spells one lake two ways (Grevelingenmeer / Gravelingenmeer), so two lakes can exist for it; merging needs a lake field in the beach admin form (not there today).
+
+
+## [2026-10-23] After the prod launch: code moves by merges, data by migrations, no DB promotion
+
+**Status**: Accepted (owner, 2026-10-23: "Na zacetku prenesemo bazo na vsa okolja pol pa se tk z mergi v dev uat in main deploya tam pa tk mamo pol migracije ki se morajo pognati ob deploju" — "tako ja")
+
+**Context**: Until the launch, uat and prod got their data by copying the dev/uat database (ADR 2026-10-08, TASK-002; prod launch runbook Phase B). After the launch the prod database holds real users, favorites and purchases, so it can never be overwritten again. An admin "promote" button was considered and dropped: branching already moves the code.
+
+**Decision**:
+1. The database is copied to the environments once, at the launch (prod from uat, runbook Phase B). After that, no environment's database is copied over another one's.
+2. Code moves only by PRs `dev → uat → main`; each deploy runs `php artisan migrate --force`.
+3. **Data changes that every environment needs are migrations** (idempotent, matching current values, never overwriting text a person edited), e.g. `2026_10_23_060000_fix_hero_banner_title`.
+4. **Commands and admin edits write only the environment they run on.** Content work after the launch (`content:ai`, `translations:ai`, `webcams:import`, admin edits) runs on **prod**, by the owner: dry run first, then `--write`/`--apply`, then `cache:clear-api --type=all` and `search:index`. dev and uat may lag behind prod's content; that is acceptable. When a test environment needs fresh content, it may be refreshed *from* prod (never the other way), after removing personal data.
+
+**Consequences**: Runbooks that said "runs on dev only, uat/prod get it by DB promotion" are updated (`content-ai.md`, `prod-launch.md`). Agents write data fixes as migrations, not as one-off commands on dev.
+
