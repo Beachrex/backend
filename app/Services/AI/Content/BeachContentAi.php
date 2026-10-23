@@ -578,7 +578,7 @@ TXT;
             return 'beach or its name not found';
         }
 
-        $local = $this->cleanLine($data['local_name'] ?? null);
+        $local = $this->cleanName($data['local_name'] ?? null);
         if ($local === null || ! $this->sharesWord($local, $source->name)) {
             return 'name "'.($data['local_name'] ?? '').'" does not match "'.$source->name.'"';
         }
@@ -590,7 +590,7 @@ TXT;
         $names = [];
         foreach (self::locales() as $locale) {
             $names[$locale] = in_array($locale, self::NON_LATIN, true)
-                ? ($this->cleanLine($data[$locale] ?? null) ?? $local)
+                ? ($this->cleanName($data[$locale] ?? null) ?? $local)
                 : $local;
         }
 
@@ -884,6 +884,14 @@ TXT;
         $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
 
         return $value === '' || mb_strlen($value) > self::NAME_MAX ? null : $value;
+    }
+
+    /** A beach name needs at least one letter: a bare number ("335") is never a name (owner 2026-10-23). */
+    private function cleanName(mixed $value): ?string
+    {
+        $value = $this->cleanLine($value);
+
+        return $value !== null && preg_match('/\p{L}/u', $value) ? $value : null;
     }
 
     /** At least one word of 3+ letters in common, ignoring case and diacritics (guards against a wrong name). */
