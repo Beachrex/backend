@@ -130,6 +130,10 @@ Every PR updates, in the same PR:
   owner's own store. **Never** in the repo, chat, logs or agent context.
 - The agent never reads or prints secret values. It **names** the variable and says where the owner sets it.
 - A secret that appeared in chat, a log or a commit is compromised → rotate it.
+- **Docs, examples and `.env.example` contain only variable names or obvious placeholders**
+  (`GOOGLE_CLIENT_SECRET=your-client-secret`, token `1|xxxxxxxx…`). Never paste a real value from an env file,
+  a CI variable, a server or an API response into a doc, a task report, a Swagger example or a test fixture —
+  not even "to show what is configured". This is how keys leaked in Oct 2026.
 - **Never copy files to the VPS by hand** (`scp`/`rsync`/`ssh`). Every change goes through CI/CD.
 - Every mutating API route: `auth:sanctum` + an authorization check (`admin` middleware or ownership).
   Anyone can get a Sanctum token via `/register` or Google sign-in — a token alone is not authorization.
