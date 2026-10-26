@@ -52,6 +52,11 @@ How to test the changes
 
 ---
 
+## 2026-10-26 - Fix: nginx resolves api_<env> per request (api.beachrex.com 502)
+
+- `api.beachrex.com` answered 502: `api_prod` was recreated 3 days earlier (new container IP) while `web_prod` (nginx) had been running for 2 weeks with the old IP (a static `fastcgi_pass api_prod:9000` is resolved once at start). The owner restarted `web_prod`; the API answered again.
+- `deploy/nginx/api.{dev,uat,prod}.conf`: `resolver 127.0.0.11 valid=10s` (Docker DNS) and `fastcgi_pass $php_upstream`, so a recreated API container is found within 10 s. Checked with `nginx -t`. The deploy syncs these files and recreates `web_<env>`.
+
 ## 2026-10-26 - Security: remove leaked credentials from docs and examples
 
 ### Overview
