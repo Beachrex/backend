@@ -108,7 +108,7 @@ Backend:
 
 ```json
 {
-  "token": "1|8C05td6vuOSBLDMvWjg2EpxumuSO9h4h5tP4GGEe63440ff9",
+  "token": "1|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx63440ff9",
   "token_type": "Bearer",
   "expires_in": 0,
   "user": {

@@ -214,8 +214,8 @@ Verified in `storage/api-docs/api-docs.json`:
 ### Environment Variables Required
 ```bash
 GOOGLE_AUTH_ENABLED=true
-GOOGLE_CLIENT_ID=678635083753-ndb9eij53cj5k3dlah8v07qe8rjpf8oq.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=https://dev-api.beachrex.com/api/v1/auth/google/callback
 ```
 

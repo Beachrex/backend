@@ -52,6 +52,20 @@ How to test the changes
 
 ---
 
+## 2026-10-26 - Security: remove leaked credentials from docs and examples
+
+### Overview
+GitGuardian flagged a Google OAuth client secret and a Sanctum token in this public repo. Both were real values pasted into docs/examples.
+
+### Changes Made
+- `docs/ai/implementation/TASK_5_PHASE_2_COMPLETE.md`: real `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` replaced with placeholders.
+- `GoogleCallbackResponse` OpenAPI example, `storage/api-docs/api-docs.json`, `AUTH_GOOGLE_SETUP.md`: real Sanctum token replaced with `1|xxxx…`.
+- `docs/DEVELOPMENT-RULES.md` §8: docs/examples/`.env.example` hold only names or placeholders.
+- Owner: Google client secret rotated in Google Cloud Console; values remain in git history, so rotation is the fix.
+
+### Affected Endpoints
+- None (documentation example only; `/api/v1/auth/google/callback` response schema unchanged).
+
 ## 2026-10-23 - Data fix: beach descriptions from the old database
 
 - Owner: "v stari bazi imamo opise … na novi bazi pa ni". The old `beach_description` table held 2282 texts for 793 beaches in 8 languages (en, de, it, fr, es, sl, hr, ru). On dev, 338 active beaches had no English description and no other language had any (the page showed English or nothing). The old dump has no descriptions for places (regions, islands, towns are only names on the beach row).
