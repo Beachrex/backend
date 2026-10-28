@@ -52,6 +52,26 @@ How to test the changes
 
 ---
 
+## 2026-10-28 - Search: in a named place, count and list like the place pages
+
+**Found on dev after the search totals change:** "toscana" counted 43 beaches but 0 towns (page: 21), "kvarner" 0
+islands (page: 4), "krk" / "brač" 0 towns (page: 19 for Krk). The lower types were filtered through the city and island
+indexes by `region_id` / `island_id`, which those documents did not carry on dev. The 43 beaches were right
+(`/regions/toscana` `beaches_count` 43, `/beaches?region=toscana` total 43); the page's "All beaches (20)" is the
+carousel expander labelled with its 20 cards (web fix in Beachrex/web-client).
+
+**Changes:** `SearchController::placeModels()` reads the types below a named place from the database: active beaches
+(most viewed first) and towns/islands/regions with at least one active beach (most beaches first), the same rules as
+`/cities`, `/islands`, `/regions/{slug}`. Plain queries unchanged. OpenAPI description of `totals_by_type` updated.
+ADR 2026-10-28 "Search in a named place counts like the place pages".
+
+**Affected endpoints:** `GET /api/v1/search` (counts and order of the lower types when `meta.place` is set; no field
+changes).
+
+**Testing:** `SearchPlaceScopeTest` (4 tests with an index whose documents lack the place ids, as on dev; compares the
+totals with `/regions/{slug}`, `/cities?region_code=`, `/islands?region_code=`, `/islands/{slug}`,
+`/cities?island_code=`). With the index-based scope all 4 fail (0 towns, 0 beaches).
+
 ## 2026-10-28 - Search: real totals per type, a place name scopes the result
 
 **Owner report (2026-10-28):** the header search for "france" showed "All 28 = Beaches 10 + Cities 10 + Regions 7 +

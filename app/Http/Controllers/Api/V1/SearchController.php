@@ -198,7 +198,7 @@ class SearchController extends Controller
      *                 @OA\Property(
      *                     property="totals_by_type",
      *                     type="object",
-     *                     description="Total matches per type (not capped by `limit`). When `place` is set, the types below it count everything in that place (e.g. all beaches in France).",
+     *                     description="Total matches per type (not capped by `limit`). When `place` is set, the types below it count everything in that place as the place pages do: active beaches, and towns/islands/regions with at least one active beach (e.g. all beaches in France). Those types are then listed most viewed (beaches) or most beaches (places) first.",
      *                     @OA\Property(property="beaches", type="integer", example=412),
      *                     @OA\Property(property="cities", type="integer", example=87),
      *                     @OA\Property(property="islands", type="integer", example=26),
@@ -309,17 +309,12 @@ class SearchController extends Controller
             }
             $scope = $place !== null ? self::scopeFilters($place, $type) : [];
 
-            try {
-                [$models, $total] = $this->searchModels($class, $query, $wheres + $scope, $limit);
-            } catch (\Throwable $e) {
-                if ($scope === []) {
-                    throw $e;
-                }
-                // The index may not accept the place filter yet (settings still being applied after a deploy):
-                // a plain search beats an error.
-                report($e);
-                [$models, $total] = $this->searchModels($class, $query, $wheres, $limit);
-            }
+            // In a named place the lower types are read from the database with the rules of the place pages
+            // (active beaches; towns, islands, regions with at least one active beach), so "Toscana: 43 beaches,
+            // 21 towns" in search is the same number as on the Toscana page (owner follow-up 2026-10-28).
+            [$models, $total] = $scope === []
+                ? $this->searchModels($class, $query, $wheres, $limit)
+                : $this->placeModels($class, $wheres + $scope, $limit);
             $totals[$key] = $total;
 
             $models = match ($type) {
@@ -384,6 +379,34 @@ class SearchController extends Controller
         $models = $engine->map($builder, $raw, $builder->model);
 
         return [$models, (int) $engine->getTotalCount($raw)];
+    }
+
+    /**
+     * Everything of one type inside the named place, as the place pages count it: active beaches (most viewed
+     * first, as "Browse all beaches"), or towns/islands/regions with at least one active beach (most beaches first).
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $class
+     * @param  array<string, string|int>  $wheres  column => value
+     * @return array{0: \Illuminate\Database\Eloquent\Collection, 1: int}
+     */
+    private function placeModels(string $class, array $wheres, int $limit): array
+    {
+        $activeBeaches = fn ($q) => $q->where('status_id', 1);
+
+        $query = $class === Beach::class
+            ? Beach::query()->where('status_id', 1)
+            : $class::query()->whereHas('beaches', $activeBeaches);
+        foreach ($wheres as $column => $value) {
+            $query->where($query->getModel()->qualifyColumn($column), $value);
+        }
+
+        $total = (clone $query)->count();
+
+        $class === Beach::class
+            ? $query->orderByDesc('beach_views')->orderBy('id')
+            : $query->withCount(['beaches' => $activeBeaches])->orderByDesc('beaches_count')->orderBy('id');
+
+        return [$query->limit($limit)->get(), $total];
     }
 
     /**
