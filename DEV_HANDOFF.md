@@ -52,6 +52,44 @@ How to test the changes
 
 ---
 
+## 2026-10-28 - Search: real totals per type, a place name scopes the result
+
+**Owner report (2026-10-28):** the header search for "france" showed "All 28 = Beaches 10 + Cities 10 + Regions 7 +
+Country 1" although France has ~400 beaches and 87 towns, and listed Italian beaches (Principina a Mare, Giannella)
+above French ones.
+
+**Root causes:**
+- Counts: `meta.results_by_type` is the number of items returned, capped by `limit` (the web asks 10 per type); the
+  web showed it as the tab count. No total existed in the response.
+- Italian beaches: Meilisearch matches the last query word as a prefix, so "france" matches "Francesco" ("Church of
+  San Francesco" in Principina a Mare's description). The beaches index listed `description` second in
+  `searchableAttributes`, and the attribute ranking rule runs before exactness, so a description hit outranked a
+  `country_name` hit.
+
+**Changes:**
+- `GET /api/v1/search` searches countries, regions, islands, cities, beaches in that order. When the query is exactly
+  the name (any language; case, diacritics, spaces ignored) of one place of the first type that has such a match, the
+  lower types are filtered to that place (`country_code`, `region_id`, `island_id`, `city_id`). Two places with the
+  same name -> no scope.
+- Each type is fetched with `page=1, hitsPerPage=limit` (exhaustive `totalHits`) instead of `limit`.
+- New `meta` fields (additive): `totals_by_type` {beaches, cities, islands, regions, countries}, `total_matches`
+  (their sum), `place` ({type, id, code, name} or null). `results_by_type` and `total_results` unchanged.
+- Index: beaches `searchableAttributes` now `name, translated_names, country/region/island/city names, place_names,
+  description, translated_descriptions`; `region_id`, `island_id`, `city_id` added to the beach document (cities:
+  `region_id`, `island_id`; islands: `region_id`) and as filterable attributes; `pagination.maxTotalHits` 20000 on
+  beaches and cities (Meilisearch caps totals at 1000 by default). `search:update-settings` applies `pagination`.
+  The deploy runs `search:update-settings` and `search:index`, so no manual step.
+- Search cache key `search:v2:` (cached payload now has totals and place).
+- ADR 2026-10-28 "Search counts are real totals; a place name scopes the result".
+
+**Affected endpoints:** `GET /api/v1/search` (additive meta fields; for a query that names a place, the lower types
+now list only results in that place).
+
+**Testing:** `php artisan test --filter=SearchTotalsTest` (10 tests on Scout's collection engine: totals vs limit,
+limit boundary, no Italian beach for "france", Slovenian "Francija", region scope, no scope for a non-place query,
+same-name places, index settings, OpenAPI). Deliberate breaks: without the scope 3 tests fail; with item counts as
+totals 4 fail; the old attribute order fails the index test.
+
 ## 2026-10-28 - TASK-008: homepage media example beach (`beach_views.config.showcase_beach_id`)
 
 **Owner request (2026-10-28):** make "View beaches from all angles" on the homepage interactive, on one real beach.

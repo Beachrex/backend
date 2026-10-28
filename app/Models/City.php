@@ -219,6 +219,9 @@ class City extends Model
             'name' => $enTranslation?->name ?? $this->code,
             'slug' => $enTranslation?->slug ?? $this->code,
             'country_code' => $this->country_code,
+            // Filters for a search scoped to a named place (SearchController)
+            'region_id' => $this->region_id,
+            'island_id' => $this->island_id,
             'country_name' => $this->country?->name ?? '',
             'region_name' => $this->region?->name ?? '',
             'island_name' => $this->island?->name ?? '',

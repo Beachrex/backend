@@ -1089,3 +1089,33 @@ This file is read by: All new AI agents to understand past decisions
 
 **Consequences**: Admin guide `prva-stran.md` explains how to change the beach. The static Items stay as fallback content and are still edited in admin.
 
+
+
+## [2026-10-28] Search counts are real totals; a place name scopes the result
+
+**Status**: Accepted (agent's reading of the owner's report 2026-10-28: "za Francijo, ki ima ~400 plaž, kaže 10 plaž … ne prikazuje dejanskega stanja")
+
+**Context**: The search dropdown showed per-type counts equal to the items returned (`limit` 10), so "France" read as
+10 beaches and 10 towns. The owner expects "France" to mean the beaches in France. Plain full-text matching also
+counts and lists documents that only mention a similar word (an Italian beach describing the church of San Francesco
+matches "france" as a prefix).
+
+**Decision**:
+1. Every type returns its **total** matches (`meta.totals_by_type`, `meta.total_matches`) from the search engine's
+   exhaustive count for the same query and filters (`page` + `hitsPerPage`), never by loading the documents.
+   `pagination.maxTotalHits` is raised so counts above 1000 are exact.
+2. **Place scope**: types are searched top-down (country, region, island, city, beach). The first type with exactly
+   one result whose name in any language equals the query (case, diacritics, extra spaces ignored) becomes
+   `meta.place`; the types below it are filtered to that place by id/code. "France" → beaches, towns, islands and
+   regions in France; "Toscana" → beaches, towns, islands in Toscana. Prefixes ("fran") and ambiguous names (two towns
+   with the same name) do not scope; the result is a plain search.
+3. Names and places rank above descriptions in the beaches index (`searchableAttributes` order).
+4. Only the requested `types` take part (a caller asking `types=beach` gets a plain beach search).
+5. `/api/v1` stays additive: `results_by_type` and `total_results` keep their meaning (items returned).
+
+**Alternatives**: DB `COUNT` per place (exact even with a stale index, but list and count could disagree and it needs a
+second query path per type); counting full-text hits only (counts the San Francesco noise); always showing "10+"
+(not what the owner asked).
+
+**Consequences**: The web shows `totals_by_type` in the tabs; "All" is `total_matches`. Counts follow the index; the
+deploy re-applies settings and re-indexes, and new place-id fields need that re-index before scoped searches work.

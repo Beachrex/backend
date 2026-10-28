@@ -9487,6 +9487,7 @@
                                                     "example": "miami"
                                                 },
                                                 "total_results": {
+                                                    "description": "Number of items returned (at most `limit` per type)",
                                                     "type": "integer",
                                                     "example": 12
                                                 },
@@ -9514,6 +9515,69 @@
                                                         }
                                                     },
                                                     "type": "object"
+                                                },
+                                                "total_matches": {
+                                                    "description": "Sum of totals_by_type: every match, not capped by `limit`",
+                                                    "type": "integer",
+                                                    "example": 533
+                                                },
+                                                "totals_by_type": {
+                                                    "description": "Total matches per type (not capped by `limit`). When `place` is set, the types below it count everything in that place (e.g. all beaches in France).",
+                                                    "properties": {
+                                                        "beaches": {
+                                                            "type": "integer",
+                                                            "example": 412
+                                                        },
+                                                        "cities": {
+                                                            "type": "integer",
+                                                            "example": 87
+                                                        },
+                                                        "islands": {
+                                                            "type": "integer",
+                                                            "example": 26
+                                                        },
+                                                        "regions": {
+                                                            "type": "integer",
+                                                            "example": 7
+                                                        },
+                                                        "countries": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "place": {
+                                                    "description": "The place the query names exactly (any language, case and diacritics ignored), or null. Results of the types below it are limited to it.",
+                                                    "properties": {
+                                                        "type": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "country",
+                                                                "region",
+                                                                "island",
+                                                                "city"
+                                                            ],
+                                                            "example": "country"
+                                                        },
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 12
+                                                        },
+                                                        "code": {
+                                                            "description": "Map filter code (country ISO code, region/island/city code)",
+                                                            "type": "string",
+                                                            "example": "FR",
+                                                            "nullable": true
+                                                        },
+                                                        "name": {
+                                                            "description": "Localized name",
+                                                            "type": "string",
+                                                            "example": "France"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"

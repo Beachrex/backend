@@ -73,6 +73,12 @@ class UpdateMeilisearchSettings extends Command
                     ]);
                 }
 
+                // maxTotalHits caps the exhaustive `totalHits` the search counts use (default 1000)
+                if (isset($settings['pagination'])) {
+                    $this->info("  - Setting pagination");
+                    $index->updatePagination($settings['pagination']);
+                }
+
                 // Note: ignorePlurals is not supported in Meilisearch
                 // It was removed from config/scout.php
 

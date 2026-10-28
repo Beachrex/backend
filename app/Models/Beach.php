@@ -391,6 +391,10 @@ class Beach extends Model
             'slug' => $enTranslation?->slug ?? $this->name,
             'description' => $enTranslation?->description ?? '',
             'country_code' => $this->country_code,
+            // Filters for a search scoped to a named place (SearchController)
+            'region_id' => $this->region_id,
+            'island_id' => $this->island_id,
+            'city_id' => $this->city_id,
             'country_name' => $this->country?->name ?? '',
             'region_name' => $this->region?->name ?? '',
             'city_name' => $this->city?->name ?? '',
