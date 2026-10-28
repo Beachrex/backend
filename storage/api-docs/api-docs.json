@@ -14867,9 +14867,11 @@
                         "nullable": true
                     },
                     "config": {
-                        "description": "Additional configuration data (JSON)",
+                        "description": "Additional configuration (key-value, values are strings). beach_views: showcase_beach_id = id of the beach shown as the interactive media example on the homepage (TASK-008).",
                         "type": "object",
-                        "example": null,
+                        "example": {
+                            "showcase_beach_id": "989"
+                        },
                         "nullable": true
                     },
                     "media": {

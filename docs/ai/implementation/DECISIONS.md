@@ -1075,3 +1075,17 @@ This file is read by: All new AI agents to understand past decisions
 
 **Consequences**: Runbooks that said "runs on dev only, uat/prod get it by DB promotion" are updated (`content-ai.md`, `prod-launch.md`). Agents write data fixes as migrations, not as one-off commands on dev.
 
+## [2026-10-28] Homepage media example: one real beach, chosen in the section config (TASK-008)
+
+**Status**: Accepted (agent's reading of the owner's request 2026-10-28: "da dejansko vidiš na primeru ene plaže kako zgleda"; owner may pick another beach or presentation)
+
+**Context**: "View beaches from all angles" was four static cards. The owner wants visitors to see the media on one real beach. The beach must be changeable without a deploy; the homepage must stay fast and never lose the section.
+
+**Decision**:
+1. The example beach is `config.showcase_beach_id` of `first_page_content` `beach_views` (existing admin KeyValue field). Default 989 (Svetilnik, Izola) by an idempotent migration that never overwrites an admin value.
+2. The web loads that beach's details server-side (ISR 300 s, `NOT_A_VIEW_HEADERS`) and renders cards from its own photos; clicks open the beach page's `MediaOverlay` with the same content components. No iframe before a click.
+3. Any failure (no id, unknown beach, no media) falls back to the static cards from admin Items.
+4. Saving a `FirstPageContent` row clears the homepage API cache in every locale (as a translation save already did), so config edits are visible within the web's 5-minute ISR.
+
+**Consequences**: Admin guide `prva-stran.md` explains how to change the beach. The static Items stay as fallback content and are still edited in admin.
+

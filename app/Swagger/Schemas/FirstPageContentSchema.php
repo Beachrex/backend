@@ -51,8 +51,8 @@ namespace App\Swagger\Schemas;
  *         property="config",
  *         type="object",
  *         nullable=true,
- *         description="Additional configuration data (JSON)",
- *         example=null
+ *         description="Additional configuration (key-value, values are strings). beach_views: showcase_beach_id = id of the beach shown as the interactive media example on the homepage (TASK-008).",
+ *         example={"showcase_beach_id": "989"}
  *     ),
  *     @OA\Property(
  *         property="media",

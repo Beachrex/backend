@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-28 - TASK-008: homepage media example beach (`beach_views.config.showcase_beach_id`)
+
+**Owner request (2026-10-28):** make "View beaches from all angles" on the homepage interactive, on one real beach.
+
+**Changes:**
+- Migration `2026_10_28_120000_set_homepage_showcase_beach`: sets `first_page_content.config.showcase_beach_id = "989"`
+  (Svetilnik, Izola) on `beach_views` when the key is missing and the beach exists. Idempotent; keeps an admin value
+  and other keys.
+- `FirstPageContent` saved/deleted now clears `first_page_content:index:{locale}` and
+  `first_page_content:show:{code}:{locale}` for all locales (before, only translation saves did; a status or config
+  edit stayed cached for 30 days on Redis).
+- OpenAPI: `FirstPageContent.config` description and example. Admin guide `docs/guides/admin/prva-stran.md`.
+- Web side: Beachrex/web-client (TASK-008) reads the key and loads `GET /api/v1/beach-details/{id}`.
+
+**Affected endpoints:** `GET /api/v1/first-page-content` — `beach_views.config` now has `showcase_beach_id` (additive).
+
+**Testing:** `php artisan test --filter=HomepageShowcaseBeachTest` (5 passed; without the model change the cache test
+fails). Spec: `docs/tasks/TASK-008-homepage-media-showcase.md`, ADR 2026-10-28.
+
 ## 2026-10-26 - Fix: nginx resolves api_<env> per request (api.beachrex.com 502)
 
 - `api.beachrex.com` answered 502: `api_prod` was recreated 3 days earlier (new container IP) while `web_prod` (nginx) had been running for 2 weeks with the old IP (a static `fastcgi_pass api_prod:9000` is resolved once at start). The owner restarted `web_prod`; the API answered again.
