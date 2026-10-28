@@ -1119,3 +1119,23 @@ second query path per type); counting full-text hits only (counts the San France
 
 **Consequences**: The web shows `totals_by_type` in the tabs; "All" is `total_matches`. Counts follow the index; the
 deploy re-applies settings and re-indexes, and new place-id fields need that re-index before scoped searches work.
+
+
+## [2026-10-28] Search in a named place counts like the place pages (amends "Search counts are real totals")
+
+**Status**: Accepted (follow-up on dev 2026-10-28: "toscana" showed 43 beaches but 0 towns; the Toscana page shows 21 towns)
+
+**Context**: Point 2 of the previous ADR filtered the lower types through the search index (`region_id`, `island_id`,
+`city_id`). On dev the city and island documents did not carry those new fields, so every region or island scope
+counted 0 towns and 0 islands (Toscana 0/21 towns, Kvarner 0/4 islands, Krk 0/19 towns) while beaches were right.
+A count that silently depends on a re-index is fragile, and the place pages count from the database.
+
+**Decision**: Once the query names a place (detection unchanged, via the index), the types below it are read from the
+database with the place pages' rules: active beaches (`status_id = 1`), and towns/islands/regions with at least one
+active beach, filtered by `country_code` / `region_id` / `island_id` / `city_id`. Beaches are listed most viewed first
+(as "Browse all beaches"), places with the most active beaches first. Plain queries still use the index.
+
+**Consequences**: Search totals equal the page numbers (`/regions/{slug}` `beaches_count`, `/cities?region_code=`,
+`/islands?region_code=`, `/cities?island_code=`). The index fields from the previous ADR stay (harmless, filterable)
+but nothing depends on them. On dev, the region page's "All beaches (20)" button was the popular-beaches carousel
+expander labelled with the number of carousel cards; the web fix shows the region's real total there.

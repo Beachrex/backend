@@ -9522,7 +9522,7 @@
                                                     "example": 533
                                                 },
                                                 "totals_by_type": {
-                                                    "description": "Total matches per type (not capped by `limit`). When `place` is set, the types below it count everything in that place (e.g. all beaches in France).",
+                                                    "description": "Total matches per type (not capped by `limit`). When `place` is set, the types below it count everything in that place as the place pages do: active beaches, and towns/islands/regions with at least one active beach (e.g. all beaches in France). Those types are then listed most viewed (beaches) or most beaches (places) first.",
                                                     "properties": {
                                                         "beaches": {
                                                             "type": "integer",
