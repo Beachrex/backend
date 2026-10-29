@@ -183,9 +183,16 @@ return [
     |
     */
 
+    // Owner 2026-10-29: free chat $5/day, then off until the next day (ADR "AI chat daily cost cap and Turnstile").
     'circuit_breakers' => [
-        'free_tier_daily_limit' => env('AI_FREE_TIER_DAILY_LIMIT', 500.00), // USD
-        'emergency_shutdown_limit' => env('AI_EMERGENCY_SHUTDOWN_LIMIT', 5000.00), // USD
+        // Free AI chat (all usage except the paid trip planner). Back on automatically at local midnight.
+        'free_tier_daily_limit' => (float) env('AI_FREE_TIER_DAILY_LIMIT', 5.00), // USD
+        // Everything together, including the paid trip planner (emergency stop for all AI).
+        'emergency_shutdown_limit' => (float) env('AI_EMERGENCY_SHUTDOWN_LIMIT', 20.00), // USD
+        // Whose calendar day the limits count: the owner's (Slovenia), so the chat comes back at local midnight.
+        'timezone' => env('AI_DAILY_LIMIT_TIMEZONE', 'Europe/Ljubljana'),
+        // One e-mail per day when a limit trips; empty = log only.
+        'alert_email' => env('AI_ALERT_EMAIL'),
     ],
 
     /*

@@ -11,6 +11,7 @@ use App\Models\AiSession;
 use App\Models\AiUsage;
 use App\Models\Beach;
 use App\Models\BeachTranslation;
+use App\Services\AI\AiSpendMeter;
 use App\Services\AI\Agent\ChatAgent;
 use App\Services\AI\Chat\PageContextHint;
 use App\Services\AI\Chat\PlaceResolver;
@@ -60,6 +61,9 @@ class ChatController extends Controller
         private readonly ChatAgent $agent,
         private readonly PageContextHint $pageContext,
     ) {}
+
+    /** Spend meter checkpoint at the start of this request (every LLM call after it belongs to this answer). */
+    private array $spendMark = ['cost' => 0.0, 'in' => 0, 'out' => 0];
 
     /**
      * Handle chat request.
@@ -121,6 +125,11 @@ class ChatController extends Controller
      *         )
      *     ),
      *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden - Cloudflare Turnstile is on and the token is missing or rejected; run the widget and resend with turnstile_token",
+     *         @OA\JsonContent(ref="#/components/schemas/AiTurnstileError")
+     *     ),
+     *     @OA\Response(
      *         response=413,
      *         description="Payload Too Large - Token budget exceeded",
      *         @OA\JsonContent(
@@ -161,14 +170,14 @@ class ChatController extends Controller
      *     ),
      *     @OA\Response(
      *         response=503,
-     *         description="Service Unavailable - AI service temporarily disabled (error=service_unavailable), or the AI provider is busy / out of quota / timed out (error=ai_unavailable, Retry-After: 60)",
+     *         description="Service Unavailable - AI switched off (error=service_unavailable), the daily cost limit is reached (error=service_unavailable, reason=daily_limit, retry_after = next local midnight; back on by itself), or the AI provider is busy / out of quota / timed out (error=ai_unavailable, Retry-After: 60)",
      *         @OA\JsonContent(
      *             ref="#/components/schemas/AiServiceUnavailableError",
      *             example={
      *                 "error": "service_unavailable",
-     *                 "message": "AI service is temporarily unavailable due to high costs",
-     *                 "retry_after": 3600,
-     *                 "fallback_url": "https://beachrex.com/search"
+     *                 "reason": "daily_limit",
+     *                 "message": "The AI assistant has reached its daily limit and is resting until tomorrow.",
+     *                 "retry_after": "2026-10-30T00:00:00+01:00"
      *             }
      *         )
      *     )
@@ -181,6 +190,7 @@ class ChatController extends Controller
     {
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
+        $this->spendMark = AiSpendMeter::current()->mark();
 
         // Get or create session
         $session = $this->getOrCreateSession($request);
@@ -304,6 +314,7 @@ class ChatController extends Controller
         } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException $e) {
             // The AI provider is busy, out of quota or slow: a clear "try again" instead of a generic 500.
             Log::warning('AI chat provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+            $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
 
             return response()->json([
                 'error' => 'ai_unavailable',
@@ -311,6 +322,7 @@ class ChatController extends Controller
                 'request_id' => $requestId,
             ], 503, ['Retry-After' => '60']);
         } catch (\Exception $e) {
+            $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
             Log::error('AI chat error', [
                 'request_id' => $requestId,
                 'session_id' => $session->id ?? null,
@@ -338,12 +350,17 @@ class ChatController extends Controller
             ] : null, $pageHint);
         } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException|\OpenAI\Exceptions\ErrorException|\Anthropic\Core\Exceptions\APIException $e) {
             Log::warning('AI chat agent provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+            $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
 
             return response()->json([
                 'error' => 'ai_unavailable',
                 'message' => 'The AI assistant is busy right now. Please try again in a minute.',
                 'request_id' => $requestId,
             ], 503, ['Retry-After' => '60']);
+        } catch (\Throwable $e) {
+            // Tool rounds already billed before the failure still count toward the daily limit.
+            $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
+            throw $e;
         }
 
         /** @var \App\Services\AI\Agent\AgentResult $result */
@@ -955,6 +972,41 @@ class ChatController extends Controller
     }
 
     /**
+     * A request that failed after LLM calls were billed (a later tool round, the answer after the understanding
+     * call) still records their cost: otherwise failing requests would never trip the daily limit.
+     */
+    private function recordFailedSpend(AiSession $session, $user, string $requestId, float $startTime): void
+    {
+        $spent = AiSpendMeter::current()->since($this->spendMark);
+        if ($spent['cost'] <= 0 && $spent['in'] + $spent['out'] === 0) {
+            return;
+        }
+
+        try {
+            AiUsage::create([
+                'user_id' => $user?->id,
+                'session_id' => $session->id,
+                'tier' => $session->tier,
+                'event_type' => 'chat',
+                'llm_provider' => $spent['provider'] ?? 'unknown',
+                'llm_model' => Str::limit((string) ($spent['model'] ?? 'unknown'), 50, ''),
+                'tokens_input' => $spent['in'],
+                'tokens_output' => $spent['out'],
+                'tokens_total' => $spent['in'] + $spent['out'],
+                'cost_usd' => $spent['cost'],
+                'latency_ms' => (int) ((microtime(true) - $startTime) * 1000),
+                'cache_hit' => false,
+                'locale' => $session->locale,
+                'user_agent' => $session->user_agent,
+                'ip_address' => $session->ip_address,
+                'request_id' => $requestId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('AI chat: could not record the cost of a failed request', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Track usage metrics.
      */
     private function trackUsage(
@@ -968,6 +1020,9 @@ class ChatController extends Controller
         ?ChatCompletionResponse $understandingResponse = null,
     ): void {
         $extra = $understandingResponse;
+        // Every LLM call of this request counts (the meter also sees calls whose response is not passed here).
+        $metered = AiSpendMeter::current()->since($this->spendMark);
+        $cost = max($llmResponse->costUsd + ($extra?->costUsd ?? 0), $metered['cost']);
         // Create usage record in database
         AiUsage::create([
             'user_id' => $user?->id,
@@ -979,7 +1034,7 @@ class ChatController extends Controller
             'tokens_input' => $llmResponse->inputTokens + ($extra?->inputTokens ?? 0),
             'tokens_output' => $llmResponse->outputTokens + ($extra?->outputTokens ?? 0),
             'tokens_total' => $llmResponse->totalTokens + ($extra?->totalTokens ?? 0),
-            'cost_usd' => $llmResponse->costUsd + ($extra?->costUsd ?? 0),
+            'cost_usd' => $cost,
             'latency_ms' => $latencyMs,
             'cache_hit' => false,
             'beaches_fetched' => $context['metadata']['beaches_fetched'] ?? 0,

@@ -153,7 +153,9 @@ class ChatAgentTest extends TestCase
         $this->assertStringContainsString($this->bacviceUrl(), $result->text);
         $this->assertSame('anthropic', $result->provider);
         $this->assertSame(2200, $result->inputTokens);
-        $this->assertGreaterThan(0, $result->costUsd);
+        // Both rounds at Opus 5.5 prices ($4 / $20 per MTok, cache write 1.25x, cache read 0.05x):
+        // round 1: (1000 + 2000*1.25)*4 + 50*20 = 15000; round 2: (1200 + 2000*0.05)*4 + 80*20 = 6800 → $0.0218
+        $this->assertEqualsWithDelta(0.0218, $result->costUsd, 1e-9);
 
         $this->assertCount(2, $history);
         $first = json_decode((string) $history[0]['request']->getBody(), true);

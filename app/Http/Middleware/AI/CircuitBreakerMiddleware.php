@@ -2,128 +2,68 @@
 
 namespace App\Http\Middleware\AI;
 
+use App\Services\AI\AiDailySpend;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
-use App\Models\AiUsage;
 
 /**
- * Circuit Breaker Middleware for AI Endpoints
- * 
- * Prevents runaway costs by disabling AI service when daily cost limits are exceeded:
- * - Free tier daily limit: $500 USD → Disable free tier only
- * - Emergency shutdown limit: $5,000 USD → Disable all tiers
- * 
- * Returns 503 Service Unavailable when circuit breaker is triggered.
- * 
- * Source: docs/ai/architecture/api-contracts.md Section 3.4
+ * Daily cost circuit breaker for the AI endpoints (ADR 2025-12-22, limits changed by the owner on 2026-10-29).
+ *
+ * - Free AI chat: off when today's free usage reaches `ai.circuit_breakers.free_tier_daily_limit` (default $5).
+ * - Everything (also the paid trip planner): off at `emergency_shutdown_limit` (default $20).
+ * - "Today" is the local day in `ai.circuit_breakers.timezone`; at the next midnight it is open again by itself.
+ *
+ * A tripped breaker answers 503 with `reason: "daily_limit"` and `retry_after` (next local midnight, ISO 8601),
+ * which the website shows as "the assistant is resting until tomorrow".
+ *
+ * Route parameter: `chat` (default) checks both limits; `trip_planner` (paid, bought credits) only the emergency
+ * limit, so a busy free chat never blocks a plan someone paid for.
  */
 class CircuitBreakerMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $scope = 'chat'): Response
     {
-        // Check if AI service is enabled
-        if (!config('ai.features.enabled')) {
+        if (! config('ai.features.enabled')) {
             return response()->json([
                 'error' => 'service_unavailable',
                 'message' => 'AI service is temporarily disabled',
                 'retry_after' => null,
             ], 503);
         }
-        
-        $user = $request->user();
-        $tier = $this->determineTier($user);
-        
-        // Get circuit breaker limits
-        $freeTierLimit = config('ai.circuit_breakers.free_tier_daily_limit');
-        $emergencyLimit = config('ai.circuit_breakers.emergency_shutdown_limit');
-        
-        // Check emergency shutdown (all tiers)
-        $totalDailyCost = $this->getDailyCost();
-        
-        if ($totalDailyCost >= $emergencyLimit) {
-            return response()->json([
-                'error' => 'service_unavailable',
-                'message' => 'AI service is temporarily unavailable due to high demand',
-                'retry_after' => $this->getRetryAfter(),
-            ], 503);
+
+        $emergencyLimit = (float) config('ai.circuit_breakers.emergency_shutdown_limit');
+        $total = AiDailySpend::cost(AiDailySpend::BUCKET_ALL);
+        if ($total >= $emergencyLimit) {
+            AiDailySpend::tripped(AiDailySpend::BUCKET_ALL, $total, $emergencyLimit);
+
+            return $this->limitReached('The AI assistant has reached its daily limit and is resting until tomorrow.');
         }
-        
-        // Check free tier limit (free tier only)
-        if ($tier === 'free') {
-            $freeTierDailyCost = $this->getDailyCost('free');
-            
-            if ($freeTierDailyCost >= $freeTierLimit) {
-                return response()->json([
-                    'error' => 'service_unavailable',
-                    'message' => 'Free tier AI service is temporarily unavailable. Please try again tomorrow or upgrade to paid tier.',
-                    'retry_after' => $this->getRetryAfter(),
-                    'upgrade_url' => 'https://beachrex.com/pricing',
-                ], 503);
+
+        // Every visitor uses the free chat today (PlanEnforcementService::determineTier): no paid chat tier yet.
+        if ($scope === 'chat') {
+            $freeLimit = (float) config('ai.circuit_breakers.free_tier_daily_limit');
+            $free = AiDailySpend::cost(AiDailySpend::BUCKET_FREE);
+            if ($free >= $freeLimit) {
+                AiDailySpend::tripped(AiDailySpend::BUCKET_FREE, $free, $freeLimit);
+
+                return $this->limitReached('The AI assistant has reached its daily limit and is resting until tomorrow.');
             }
         }
-        
+
         return $next($request);
     }
-    
-    /**
-     * Get total daily cost for AI usage.
-     * 
-     * @param string|null $tier Filter by tier (null = all tiers)
-     * @return float Total cost in USD
-     */
-    private function getDailyCost(?string $tier = null): float
+
+    private function limitReached(string $message): JsonResponse
     {
-        // Cache key for daily cost
-        $cacheKey = $tier 
-            ? "ai:circuit_breaker:daily_cost:{$tier}:" . now()->format('Y-m-d')
-            : "ai:circuit_breaker:daily_cost:all:" . now()->format('Y-m-d');
-        
-        // Cache for 5 minutes to reduce DB queries
-        return Cache::remember($cacheKey, 300, function () use ($tier) {
-            $query = AiUsage::whereDate('created_at', today());
-            
-            if ($tier) {
-                $query->where('tier', $tier);
-            }
-            
-            return (float) $query->sum('cost_usd');
-        });
-    }
-    
-    /**
-     * Get retry-after timestamp (next day at midnight UTC).
-     * 
-     * @return string ISO 8601 timestamp
-     */
-    private function getRetryAfter(): string
-    {
-        return now()->addDay()->startOfDay()->toIso8601String();
-    }
-    
-    /**
-     * Determine user's tier.
-     * 
-     * For MVP: All authenticated users are 'free' tier until payment system is implemented.
-     * Anonymous users are always 'free' tier.
-     */
-    private function determineTier($user): string
-    {
-        if (!$user) {
-            return 'free';
-        }
-        
-        // TODO: Once payment system is implemented, check user's actual tier
-        // For now, all authenticated users are 'free' tier
-        // Future: return $user->ai_tier ?? 'free';
-        
-        return 'free';
+        $resetsAt = AiDailySpend::resetsAt();
+
+        return response()->json([
+            'error' => 'service_unavailable',
+            'reason' => 'daily_limit',
+            'message' => $message,
+            'retry_after' => $resetsAt->toIso8601String(),
+        ], 503, ['Retry-After' => (string) max(60, $resetsAt->getTimestamp() - time())]);
     }
 }
-

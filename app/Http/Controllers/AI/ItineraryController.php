@@ -144,14 +144,14 @@ class ItineraryController extends Controller
      *     ),
      *     @OA\Response(
      *         response=503,
-     *         description="Service Unavailable - Circuit breaker triggered or AI service disabled",
+     *         description="Service Unavailable - AI switched off, or the emergency daily cost limit (all AI) is reached (reason=daily_limit; the free chat limit does not apply to the paid planner)",
      *         @OA\JsonContent(
      *             ref="#/components/schemas/AiServiceUnavailableError",
      *             example={
      *                 "error": "service_unavailable",
-     *                 "message": "AI service is temporarily unavailable due to high demand",
-     *                 "retry_after": "2025-12-30T00:00:00Z",
-     *                 "fallback_url": "https://beachrex.com/search"
+     *                 "reason": "daily_limit",
+     *                 "message": "The AI assistant has reached its daily limit and is resting until tomorrow.",
+     *                 "retry_after": "2026-10-30T00:00:00+01:00"
      *             }
      *         )
      *     )

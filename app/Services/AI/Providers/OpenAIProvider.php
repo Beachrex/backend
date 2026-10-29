@@ -22,17 +22,6 @@ use Illuminate\Support\Facades\Log;
  */
 class OpenAIProvider implements LLMProviderInterface
 {
-    /**
-     * OpenAI pricing per 1M tokens (as of 2024-12)
-     * Source: https://openai.com/api/pricing/
-     */
-    private const PRICING = [
-        'gpt-4o' => ['input' => 2.50, 'output' => 10.00],
-        'gpt-4o-mini' => ['input' => 0.150, 'output' => 0.600],
-        'gpt-4-turbo' => ['input' => 10.00, 'output' => 30.00],
-        'gpt-4' => ['input' => 30.00, 'output' => 60.00],
-        'gpt-3.5-turbo' => ['input' => 0.50, 'output' => 1.50],
-    ];
     
     private string $defaultModel;
     private int $timeout;
@@ -156,14 +145,8 @@ class OpenAIProvider implements LLMProviderInterface
      */
     public function calculateCost(string $model, int $inputTokens, int $outputTokens): float
     {
-        // Get pricing for model (fallback to gpt-3.5-turbo if not found)
-        $pricing = self::PRICING[$model] ?? self::PRICING['gpt-3.5-turbo'];
-        
-        // Calculate cost per million tokens
-        $inputCost = ($inputTokens / 1_000_000) * $pricing['input'];
-        $outputCost = ($outputTokens / 1_000_000) * $pricing['output'];
-        
-        return round($inputCost + $outputCost, 6);
+        // Shared price table; an unknown model is priced conservatively (never as a cheap model, never $0).
+        return \App\Services\AI\ModelPricing::cost('openai', $model, $inputTokens, $outputTokens);
     }
     
     /**

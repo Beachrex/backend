@@ -270,16 +270,19 @@ Route::prefix('api/v1')
         // Note: OptionalAuthMiddleware allows both anonymous and authenticated access
         // Two admin switches (TASK-009, owner 2026-10-29): AI chat and AI trip planner (paid). Each route belongs to
         // exactly one switch, and the switch runs before the rest of the AI stack.
-        $aiStack = [
+        // Daily cost limits (owner 2026-10-29): the free chat stops at its own limit, the paid trip planner only at
+        // the emergency limit. Turnstile (bot check) guards the free chat; the planner needs sign-in and credits.
+        $aiStack = fn (string $scope, array $extra = []) => [
             \App\Http\Middleware\AI\OptionalAuthMiddleware::class,
-            \App\Http\Middleware\AI\CircuitBreakerMiddleware::class,
+            \App\Http\Middleware\AI\CircuitBreakerMiddleware::class.':'.$scope,
             \App\Http\Middleware\AI\RateLimitMiddleware::class,
+            ...$extra,
             \App\Http\Middleware\AI\TokenBudgetMiddleware::class,
         ];
 
         // AI chat switch (`ai_assistant_enabled`)
         Route::prefix('ai')
-            ->middleware([\App\Http\Middleware\EnsureAiAssistantEnabled::class, ...$aiStack])
+            ->middleware([\App\Http\Middleware\EnsureAiAssistantEnabled::class, ...$aiStack('chat', [\App\Http\Middleware\AI\VerifyTurnstile::class])])
             ->group(function () {
                 // Chat endpoint (primary AI interaction)
                 Route::post('/chat', [\App\Http\Controllers\AI\ChatController::class, 'chat']);
@@ -290,7 +293,7 @@ Route::prefix('api/v1')
 
         // AI trip planner switch (`ai_trip_planner_enabled`)
         Route::prefix('ai')
-            ->middleware([\App\Http\Middleware\EnsureAiTripPlannerEnabled::class, ...$aiStack])
+            ->middleware([\App\Http\Middleware\EnsureAiTripPlannerEnabled::class, ...$aiStack('trip_planner')])
             ->group(function () {
                 // Itinerary endpoint (PRIMARY REVENUE - multi-day trip planning)
                 Route::post('/itineraries', [\App\Http\Controllers\AI\ItineraryController::class, 'generate']);
