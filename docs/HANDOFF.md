@@ -277,6 +277,7 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 - **Legal translations:** terms §6 and the footer pages were machine-translated; have the main languages checked.
 - **Footer pages on dev (TASK-004):** run `static-pages:sync --dry-run`, then without `--dry-run` (commands in DEV_HANDOFF / the chat). Same on uat/prod at promotion (prod launch runbook B6).
 - **CookieYes:** enable "Google Consent Mode"; domain `beachrex.com`.
+- **Microsoft Clarity (web-client#138, 2026-10-29):** prod only, loaded after the CookieYes "analytics" consent. In CookieYes, run a scan / put the Clarity cookies (`_clck`, `_clsk`, `CLID`, `MUID`, `ANONCHK`, `SM`) in the "Analytics" category; the privacy and cookie policies (static pages) name only Google Analytics and should also name Microsoft Clarity (Microsoft Corporation) as an analytics provider.
 - **Legal texts:** the privacy policy, cookie policy and terms are drafts (they name OpenAI and Stripe, which the code uses); review, ideally with a lawyer.
 
 - **Waterbody data (QA #69):** every beach has waterbody `sea` (3 774 on dev, 2026-10-08), so the lake/river/pool tiles and filters find nothing. Owner decision 2026-10-08: keep the tiles and add the data ("to zaenkrat pusti, samo zabeleži, moramo dodati podatke"). No code change.
