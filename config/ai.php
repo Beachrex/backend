@@ -65,6 +65,9 @@ return [
         // Claude effort (low/medium/high): chat answers rarely gain from more thinking; measure before raising.
         'effort' => env('AI_CHAT_EFFORT', 'low'),
         'max_tool_rounds' => (int) env('AI_CHAT_MAX_TOOL_ROUNDS', 4),
+        // Owner 2026-10-29 ("hramba chatov ok"): conversations are deleted this many days after their last activity
+        // by the daily `ai:prune-conversations` (routes/console.php). 0 = the scheduled job does not run.
+        'retention_days' => (int) env('AI_CHAT_RETENTION_DAYS', 180),
     ],
 
     /*

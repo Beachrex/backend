@@ -1325,6 +1325,20 @@ deleted after the session expires" statement never matched the code and does not
 is a scheduled command deleting old `ai_sessions` (messages cascade). Deleting one visitor's conversation on request
 is a developer task until then.
 
+**Amendment (2026-10-29, owner: "Hramba chatov ok", "Dopolni politiko")**: retention decided — **180 days** after a
+conversation's last activity (`AI_CHAT_RETENTION_DAYS`, default 180; 0 = scheduled job off). `ai:prune-conversations`
+runs daily at 01:40 Europe/Ljubljana: deletes expired `ai_sessions` and their `ai_messages` in chunks; their `ai_usage`
+rows keep time, model, tokens and cost for statistics and the daily limits but lose `session_id`, and — the agent's
+reading of data minimisation — also the IP hash and user agent (nothing reads them after the day is over). A session
+with a message newer than the cutoff is kept even if `last_activity_at` is stale. Trip-planner data (purchases,
+credits, itinerary plans) is not touched. The privacy and cookie policies (19 languages, static pages) now say that
+chats are stored and reviewed by staff to improve the service (legitimate interest), kept 180 days, deletable earlier
+on request to info@beachrex.com, and name Anthropic (OpenAI for some features such as the trip planner), Cloudflare
+Turnstile (necessary security check) and Microsoft Clarity (analytics, consent only). The texts reach a database only
+when the owner runs `static-pages:sync` on that environment (ADR 2026-10-23: no DB promotion). The legal wording was
+written by the agent and should be reviewed by someone qualified. Database backups keep a deleted conversation up to
+`BACKUP_KEEP_DAYS` (14) longer. `docs/ai/architecture/data-retention-policy.md` rewritten to match.
+
 
 ## [2026-10-29] Closed dev/uat websites behind an e-mail magic link
 
