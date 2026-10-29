@@ -42,6 +42,8 @@ class ChatRequest extends FormRequest
             'context.preferences.surface_types.*' => ['string', 'in:sand,pebble,rock,concrete'],
             'context.preferences.facilities' => ['nullable', 'array'],
             'context.preferences.facilities.*' => ['string'],
+            // Cloudflare Turnstile token (website; checked by VerifyTurnstile, only needed when the server asks)
+            'turnstile_token' => ['nullable', 'string', 'max:2048'],
             // TASK-010: page the chat widget is on (untrusted hint, see PageContextHint)
             ...PageContextHint::rules(),
         ];

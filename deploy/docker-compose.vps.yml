@@ -150,6 +150,8 @@ services:
         NEXT_PUBLIC_CDN_TEASER: ${NEXT_PUBLIC_CDN_TEASER}
         NEXT_PUBLIC_CDN_LARGE: ${NEXT_PUBLIC_CDN_LARGE}
         NEXT_PUBLIC_CDN_ASSETS: ${NEXT_PUBLIC_CDN_ASSETS}
+        # Cloudflare Turnstile on the AI chat; empty = off (set in .env.front.<env>)
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     image: beachrex/front:prod
     restart: unless-stopped
     env_file: [../envs/.env.front.prod]
@@ -241,6 +243,8 @@ services:
         NEXT_PUBLIC_CDN_TEASER: ${NEXT_PUBLIC_CDN_TEASER}
         NEXT_PUBLIC_CDN_LARGE: ${NEXT_PUBLIC_CDN_LARGE}
         NEXT_PUBLIC_CDN_ASSETS: ${NEXT_PUBLIC_CDN_ASSETS}
+        # Cloudflare Turnstile on the AI chat; empty = off (set in .env.front.<env>)
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     image: beachrex/front:uat
     restart: unless-stopped
     env_file: [../envs/.env.front.uat]
@@ -332,6 +336,8 @@ services:
         NEXT_PUBLIC_CDN_TEASER: ${NEXT_PUBLIC_CDN_TEASER}
         NEXT_PUBLIC_CDN_LARGE: ${NEXT_PUBLIC_CDN_LARGE}
         NEXT_PUBLIC_CDN_ASSETS: ${NEXT_PUBLIC_CDN_ASSETS}
+        # Cloudflare Turnstile on the AI chat; empty = off (set in .env.front.<env>)
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     image: beachrex/front:dev
     restart: unless-stopped
     env_file: [../envs/.env.front.dev]

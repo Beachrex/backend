@@ -3,6 +3,8 @@
 namespace App\Services\AI\Agent;
 
 use Anthropic\Client;
+use App\Services\AI\AiSpendMeter;
+use App\Services\AI\ModelPricing;
 
 /**
  * Claude via the official Anthropic PHP SDK (Messages API with client tools, manual loop).
@@ -11,13 +13,6 @@ use Anthropic\Client;
  */
 class AnthropicAgentModel implements AgentModel
 {
-    /** USD per 1M tokens (input, output), first-party API prices (claude-api reference, 2026-10). */
-    private const PRICING = [
-        'claude-opus-5-5' => [4.00, 20.00],
-        'claude-sonnet-5-5' => [2.00, 10.00],
-        'claude-haiku-5-5' => [0.10, 0.50],
-    ];
-
     public function __construct(
         private readonly string $model,
         private readonly string $effort,
@@ -43,7 +38,8 @@ class AnthropicAgentModel implements AgentModel
             'name' => $t['name'], 'description' => $t['description'], 'inputSchema' => $t['parameters'],
         ], $tools);
 
-        $in = $out = $cacheRead = $cacheWrite = 0;
+        $in = $out = 0;
+        $cost = 0.0;
         $calls = [];
         $servedBy = $this->model;
         for ($round = 0; ; $round++) {
@@ -60,14 +56,21 @@ class AnthropicAgentModel implements AgentModel
                 betas: ['server-side-fallback-2026-07-01'],
             );
 
-            $in += (int) ($response->usage->inputTokens ?? 0);
-            $out += (int) ($response->usage->outputTokens ?? 0);
-            $cacheRead += (int) ($response->usage->cacheReadInputTokens ?? 0);
-            $cacheWrite += (int) ($response->usage->cacheCreationInputTokens ?? 0);
+            // Every round is billed; each is priced by the model that served it (a server-side fallback may
+            // answer with another model) and counted at once, so a later failure keeps the cost of this round.
             $servedBy = (string) ($response->model ?? $servedBy);
+            $roundIn = (int) ($response->usage->inputTokens ?? 0);
+            $roundOut = (int) ($response->usage->outputTokens ?? 0);
+            $cacheRead = (int) ($response->usage->cacheReadInputTokens ?? 0);
+            $cacheWrite = (int) ($response->usage->cacheCreationInputTokens ?? 0);
+            $roundCost = ModelPricing::cost('anthropic', $servedBy, $roundIn, $roundOut, $cacheRead, $cacheWrite);
+            AiSpendMeter::current()->add('anthropic', $servedBy, $roundIn, $roundOut, $roundCost);
+            $in += $roundIn; // uncached input; cached tokens are in the cost only
+            $out += $roundOut;
+            $cost += $roundCost;
 
             if ($response->stopReason === 'refusal') {
-                return new AgentResult('', 'anthropic', $servedBy, $in, $out, $this->cost($in, $out, $cacheRead, $cacheWrite), $calls, refused: true);
+                return new AgentResult('', 'anthropic', $servedBy, $in, $out, round($cost, 6), $calls, refused: true);
             }
 
             if ($response->stopReason !== 'tool_use') {
@@ -78,7 +81,7 @@ class AnthropicAgentModel implements AgentModel
                     }
                 }
 
-                return new AgentResult(trim($text), 'anthropic', $servedBy, $in, $out, $this->cost($in, $out, $cacheRead, $cacheWrite), $calls);
+                return new AgentResult(trim($text), 'anthropic', $servedBy, $in, $out, round($cost, 6), $calls);
             }
 
             // Keep the whole assistant turn (including thinking blocks) unchanged, then answer every tool call
@@ -94,13 +97,5 @@ class AnthropicAgentModel implements AgentModel
             }
             $messages[] = ['role' => 'user', 'content' => $results];
         }
-    }
-
-    private function cost(int $in, int $out, int $cacheRead, int $cacheWrite): float
-    {
-        [$pin, $pout] = self::PRICING[$this->model] ?? self::PRICING['claude-opus-5-5'];
-
-        // Cache reads ~0.05-0.1x and writes 1.25x the input price; 0.1x is used for reads (upper bound).
-        return round(($in + $cacheRead * 0.1 + $cacheWrite * 1.25) / 1e6 * $pin + $out / 1e6 * $pout, 6);
     }
 }

@@ -1236,3 +1236,59 @@ not see the split. The data model already has the split: `beach.indoor_pools_cou
 **Consequences**: The tiles and the nested options show results as soon as pool places with counts exist. The
 importer must map indoor/outdoor (e.g. OSM `indoor=yes`, `covered=yes`, `building`) to the counts.
 
+## [2026-10-29] AI chat daily cost cap and Turnstile (supersedes the limits in the 2025-12-22 circuit breaker ADR)
+
+**Status**: Accepted (owner 2026-10-29: "Anthropic uporabljamo … brezplačni uporabniki 5 $ na dan; če je preseženo,
+se chat izklopi in se naslednji dan avtomatsko vklopi … Turnstile ja")
+
+**Context**: The circuit breaker limits were $500 (free) / $5,000 (all) per UTC day, far above what a small site
+should spend. The live chat runs on Anthropic (`AI_CHAT_ENGINE=agent`, `AI_CHAT_PROVIDER=anthropic`, Claude Opus
+5.5). A limit is only as good as the cost it counts, and the chat had no bot protection.
+
+Audit of the cost before this change: the agent engine summed every tool round with correct Opus 5.5 prices ($4 /
+$20 per MTok) but priced cache reads at 0.1x instead of 0.05x (over-count), priced every round by the configured
+model even when a server-side fallback served it, priced an unknown Claude model as Opus without a warning, and lost
+the cost of rounds already billed when a later round failed. The pipeline engine and the trip planner (still OpenAI
+via `LLMService`) lost the understanding call's cost when the answer call failed, counted only the last of two
+itinerary narration attempts, and priced an unknown OpenAI model as gpt-3.5-turbo (cheaper than most). The public
+`POST /ai/test` called the LLM without recording any cost. The trip planner's paid plans counted toward the free
+limit and were stopped by it.
+
+**Decision**:
+1. Limits: free chat **$5** per day (`AI_FREE_TIER_DAILY_LIMIT`), everything **$20** per day
+   (`AI_EMERGENCY_SHUTDOWN_LIMIT`, the agent's suggestion; owner can change by env). Free bucket = free-tier usage
+   except `event_type=itinerary`. The trip planner routes check only the emergency limit.
+2. Day = calendar day in `AI_DAILY_LIMIT_TIMEZONE` (default **Europe/Ljubljana**, the owner's day; `app.timezone`
+   stays UTC). Every key and query is per local date, so the chat is back on at local midnight without any job.
+3. One price table (`ModelPricing`) for every LLM call: Anthropic prices from the published table (checked
+   2026-10-29), cache read/write multipliers per model, Haiku 5.5 long-prompt tier, each round priced by the model
+   that served it; an unknown model gets the most expensive tier of its provider and a logged warning, never $0.
+4. Every LLM call adds its cost to a request/job-scoped `AiSpendMeter`; the chat records it also when the request
+   fails after billed calls, and the itinerary records all narration attempts. `POST /ai/test` records its cost.
+5. The 5-minute cache of the daily sums is dropped on every new `ai_usage` row, so only requests already running
+   when the limit is crossed can overshoot (a few cents).
+6. A tripped limit answers 503 `{error: service_unavailable, reason: daily_limit, retry_after: <next local midnight>}`
+   (+ `Retry-After` header); the website shows "resting until tomorrow". Once per bucket and day: a log warning and,
+   if `AI_ALERT_EMAIL` is set, an e-mail (sent after the response).
+7. **Cloudflare Turnstile** on `POST /ai/chat` and `/ai/test` (`TURNSTILE_SECRET_KEY`; empty = off): the website
+   sends `turnstile_token` with the first message of a conversation (site key `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
+   build time; empty = off). After one successful siteverify the session is remembered as verified for the session
+   lifetime (sliding 30 min), bound to the visitor's IP hash. Missing/rejected token → 403 `turnstile_required` /
+   `turnstile_failed`; the website re-runs the widget and resends once. Cloudflare unreachable or our secret rejected
+   → the request passes (logged): an outage on their side must not take the chat down.
+8. **Mobile app**: `TURNSTILE_REQUIRED_FOR=web` (default) checks only browser requests (they always send `Origin` or
+   `Sec-Fetch-*`; React Native sends neither). `all` checks every client.
+9. The trip planner is not behind Turnstile: it needs sign-in and a bought credit.
+
+**Security trade-off (mobile)**: in `web` mode a script that sends no `Origin`/`Sec-Fetch-*` headers is not
+challenged. Turnstile then stops browser abuse and naive bots only; a determined script is still bounded by the
+per-IP rate limit and, finally, by the $5 daily limit (which also switches the chat off for real visitors until
+midnight). To close the gap later: the mobile app gets its own proof (Turnstile in a WebView, or App Attest / Play
+Integrity verified by the API), then `TURNSTILE_REQUIRED_FOR=all` (or a per-client rule).
+
+**Consequences**: With Opus 5.5 an answer costs about $0.02–0.05 (evaluation 2026-10-09: ~$0.036), so $5 is
+roughly 100–250 chat answers per day for all visitors together. When it trips, every visitor sees the resting
+message until midnight. Cookie consent: Turnstile is a strictly necessary security service (no consent banner
+category needed); the privacy policy should name Cloudflare Turnstile. The site sends no Content-Security-Policy
+header today; if one is added, it must allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
+

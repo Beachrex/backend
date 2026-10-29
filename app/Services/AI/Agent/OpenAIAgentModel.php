@@ -2,17 +2,13 @@
 
 namespace App\Services\AI\Agent;
 
+use App\Services\AI\AiSpendMeter;
+use App\Services\AI\ModelPricing;
 use OpenAI\Laravel\Facades\OpenAI;
 
 /** OpenAI chat completions with function calling. */
 class OpenAIAgentModel implements AgentModel
 {
-    /** USD per 1M tokens (input, output); unknown models are costed as gpt-4o. */
-    private const PRICING = [
-        'gpt-4o' => [2.50, 10.00],
-        'gpt-4o-mini' => [0.15, 0.60],
-    ];
-
     public function __construct(private readonly string $model) {}
 
     public function converse(string $system, array $history, string $message, array $tools, callable $runTool, int $maxToolRounds): AgentResult
@@ -36,12 +32,17 @@ class OpenAIAgentModel implements AgentModel
                 $params['tool_choice'] = 'auto';
             }
             $response = OpenAI::chat()->create($params);
-            $in += $response->usage->promptTokens ?? 0;
-            $out += $response->usage->completionTokens ?? 0;
+            $roundIn = (int) ($response->usage->promptTokens ?? 0);
+            $roundOut = (int) ($response->usage->completionTokens ?? 0);
+            // Counted per round, so a later failure keeps the cost of the rounds already billed.
+            AiSpendMeter::current()->add('openai', $this->model, $roundIn, $roundOut,
+                ModelPricing::cost('openai', $this->model, $roundIn, $roundOut));
+            $in += $roundIn;
+            $out += $roundOut;
             $msg = $response->choices[0]->message;
 
             if (empty($msg->toolCalls) || $round >= $maxToolRounds) {
-                return new AgentResult(trim((string) $msg->content), 'openai', $this->model, $in, $out, $this->cost($in, $out), $calls);
+                return new AgentResult(trim((string) $msg->content), 'openai', $this->model, $in, $out, ModelPricing::cost('openai', $this->model, $in, $out), $calls);
             }
 
             $messages[] = ['role' => 'assistant', 'content' => $msg->content, 'tool_calls' => array_map(fn ($c) => [
@@ -54,12 +55,5 @@ class OpenAIAgentModel implements AgentModel
                 $messages[] = ['role' => 'tool', 'tool_call_id' => $call->id, 'content' => $runTool($call->function->name, $input)];
             }
         }
-    }
-
-    private function cost(int $in, int $out): float
-    {
-        [$pin, $pout] = self::PRICING[$this->model] ?? self::PRICING['gpt-4o'];
-
-        return round($in / 1e6 * $pin + $out / 1e6 * $pout, 6);
     }
 }

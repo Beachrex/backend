@@ -90,6 +90,14 @@ php artisan config:clear
 
 ## 3. Circuit Breakers
 
+> **Current state (2026-10-29, owner; ADR "AI chat daily cost cap and Turnstile")** — this section's numbers are
+> the original design and are superseded: free chat **$5/day**, everything **$20/day** (code defaults, env
+> overrides `AI_FREE_TIER_DAILY_LIMIT` / `AI_EMERGENCY_SHUTDOWN_LIMIT`). The day is the local day in
+> `AI_DAILY_LIMIT_TIMEZONE` (default Europe/Ljubljana), so the chat is back on at local midnight. The paid trip
+> planner only stops at the emergency limit and does not count toward the free one. Cache keys use the local date
+> (`App\Services\AI\AiDailySpend::cacheKey()`) and are dropped on every new `ai_usage` row. Optional e-mail:
+> `AI_ALERT_EMAIL`. Prices: `App\Services\AI\ModelPricing`.
+
 ### 3.1 Free Tier Daily Limit
 
 **Purpose**: Automatically disable free tier when daily cost exceeds threshold
