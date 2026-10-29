@@ -1292,6 +1292,39 @@ message until midnight. Cookie consent: Turnstile is a strictly necessary securi
 category needed); the privacy policy should name Cloudflare Turnstile. The site sends no Content-Security-Policy
 header today; if one is added, it must allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
 
+## [2026-10-29] AI chat history in the admin; retention is an owner decision
+
+**Status**: Accepted (owner 2026-10-29: "v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore
+daje — zgodovina, da se lahko izboljšujemo"). Clarifies the 2025-12-22 "No Long-Term User Memory" ADR, see below.
+
+**Context**: The chat already stored every answered turn (`ai_messages`: question and answer text, intent, tool calls
+or beaches in `context`, tokens) for both engines, anonymous and signed-in, with the session (`ai_sessions`) and the
+cost row (`ai_usage`). Nothing deletes these rows: `expires_at` (30 min, sliding) only ends the conversation for the
+model, and the cleanup jobs in `docs/ai/architecture/data-retention-policy.md` (30 days messages / 90 days sessions,
+"APPROVED" 2025-12-23) were never implemented. Missing for a useful history: the engine, the page the chat was opened
+on, a link from a turn to its cost/model, and turns that got no answer (the question was lost).
+
+**Decision**:
+1. Admin-only, read-only page **AI → Chat conversations** (`AiConversationResource`) over the existing tables; no
+   create, edit or delete; the public API response is unchanged.
+2. Store additively: `ai_sessions.engine`, `ai_sessions.page_context` (first page), `ai_messages.page_context`,
+   `ai_messages.request_id` (= `ai_usage.request_id`, gives model and cost per turn), and failed turns as a user
+   message with `ai_messages.error` (`ai_unavailable`, `internal_error`, `payment_required`). Failed turns are never
+   sent to the model as history. Requests rejected before the controller (AI switched off, daily cost limit, rate
+   limit, Turnstile) are not stored.
+3. Privacy: chat text is shown only on this page (no global search, not logged anywhere else); the IP hash and user
+   agent are not shown.
+4. No automatic deletion is added. The retention period (proposal: 180 days, then delete the session and its
+   messages; `ai_usage` keeps the cost without the session link) and the privacy policy wording are owner decisions.
+   The repo's policy text (`database/content/static-pages/*.json`, "AI beach assistant") says questions and answers
+   are "processed to generate a reply" and names only OpenAI; it does not say that conversations are kept and read
+   to improve the service, and does not name Anthropic. Until decided, rows are kept indefinitely, as before.
+
+**Consequences**: The model's memory rule (current session only) is unchanged; the 2025-12-22 "all user data is
+deleted after the session expires" statement never matched the code and does not hold. A retention job, once decided,
+is a scheduled command deleting old `ai_sessions` (messages cascade). Deleting one visitor's conversation on request
+is a developer task until then.
+
 
 ## [2026-10-29] Closed dev/uat websites behind an e-mail magic link
 

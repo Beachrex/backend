@@ -40,6 +40,12 @@ Stanje: ✅ napisano · ⏳ še ni napisano
 |---|---|---|---|
 | Fotografije, videi, 360° | Media → Media, Media Collections, Media Types | [mediji.md](mediji.md) | ✅ |
 
+## AI
+
+| Funkcija | Kje v adminu | Navodila | Stanje |
+|---|---|---|---|
+| Pogovori z AI klepetom (zgodovina vprašanj in odgovorov) | AI → Chat conversations | [ai-pogovori.md](ai-pogovori.md) | ✅ |
+
 ## Uporabniki in sistem
 
 | Funkcija | Kje v adminu | Navodila | Stanje |
