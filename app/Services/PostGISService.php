@@ -764,7 +764,8 @@ class PostGISService
                 m.order,
                 mc.code as collection_code,
                 b.folder_name,
-                b.mobile_upload
+                b.mobile_upload,
+                b.has_vtour
             FROM media m
             INNER JOIN media_collections mc ON m.media_collection_id = mc.id
             INNER JOIN beach b ON m.mediable_id = b.id
@@ -809,7 +810,7 @@ class PostGISService
                 $mainImage ??= $gallery[0]['url'] ?? null;
 
             // Format videos - only essential fields, sorted by is_primary DESC, then order ASC
-            $videos = $mediaByCollection->get('beach_videos', collect())
+            $videos = BeachGallery::videos($mediaByCollection)
                 ->sortBy([
                     fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
                     fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
@@ -825,7 +826,9 @@ class PostGISService
             // Format 360 spheres - only tour_url needed
             $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
             $vtourUrl = null;
-            if ($spheres360Collection->isNotEmpty() && isset($spheres360Collection->first()->folder_name)) {
+            // A tour known to be missing (beach.has_vtour = false, owner 2026-10-29) is left out, like BeachResource.
+            if ($spheres360Collection->isNotEmpty() && isset($spheres360Collection->first()->folder_name)
+                && $spheres360Collection->first()->has_vtour !== false) {
                 $sphere = $spheres360Collection->first();
                 // Same rule as BeachDetailsResource: mobile uploads live under img/beaches_mobile/.
                 $baseFolder = $sphere->mobile_upload ? 'beaches_mobile' : 'beaches';

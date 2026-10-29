@@ -95,6 +95,7 @@ class Beach extends Model
         'longitude' => 'decimal:8',
         'parking' => 'integer',
         'mobile_upload' => 'boolean',
+        'has_vtour' => 'boolean',
         'boat_only' => 'boolean',
         'beach_views' => 'integer',
         'indoor_area_m2' => 'decimal:2',

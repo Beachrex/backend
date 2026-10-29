@@ -34,3 +34,12 @@ Schedule::command('webcams:embed-check --shown')
     ->dailyAt('05:10')
     ->withoutOverlapping()
     ->when(fn () => (bool) config('webcams.import.embed_recheck_enabled'));
+
+// 360° tours (owner 2026-10-29): record which beaches have a generated krpano tour, so the API can send the panorama
+// to the website's own viewer instead of a missing tour. New beaches daily; everyone once a week.
+Schedule::command('media:check-vtours')
+    ->dailyAt('04:40')
+    ->withoutOverlapping();
+Schedule::command('media:check-vtours --all')
+    ->weeklyOn(0, '04:50')
+    ->withoutOverlapping();
