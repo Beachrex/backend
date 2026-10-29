@@ -42,7 +42,17 @@ BLUE="front_${ENV_NAME}"
 GREEN="front_${ENV_NAME}_green"
 HEALTH_PATH=/api/health
 
-log() { echo "[$(date -u +%H:%M:%S)] $*"; }
+# Every log line is also kept for one GitHub annotation at the end: the run log itself is not always
+# readable (the agent sandbox cannot download Actions logs), annotations are (API check-run annotations).
+SUMMARY_FILE="$(mktemp)"
+log() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$SUMMARY_FILE"; }
+annotate() {
+  [ -s "$SUMMARY_FILE" ] || return 0
+  local body
+  body="$(sed -e 's/%/%25/g' "$SUMMARY_FILE" | awk 'BEGIN{ORS="%0A"} {print}')"
+  echo "::notice title=Website deploy ${ENV_NAME}::${body}"
+  rm -f "$SUMMARY_FILE"
+}
 
 dc() {
   local env_args=()
@@ -66,13 +76,13 @@ PROBE_STOP="$(mktemp -u)"
 probe_once() {
   # Prints "<http code> <color>"; the color comes from the health JSON ({"status":"ok","color":"blue"}).
   local out
-  out="$(curl -sk --max-time 10 -w ' %{http_code}' \
+  out="$(curl -sk --max-time 10 -w ' %{time_total}s %{http_code}' \
     --resolve "${SITE_HOST}:${PROBE_HTTPS_PORT}:127.0.0.1" \
     "https://${SITE_HOST}:${PROBE_HTTPS_PORT}${HEALTH_PATH}" 2>/dev/null || true)"
-  local code="${out##* }"
+  local code="${out##* }" rest="${out% *}"
   local color
   color="$(printf '%s' "$out" | sed -n 's/.*"color":"\([a-z]*\)".*/\1/p')"
-  echo "${code:-000} ${color:--}"
+  echo "${code:-000} ${color:--} ${rest##* }"
 }
 
 start_probe() {
@@ -106,12 +116,12 @@ stop_probe() {
   total="$(wc -l < "$PROBE_LOG" | tr -d ' ')"
   bad="$(awk '$2 == "000" || $2 ~ /^5/' "$PROBE_LOG" | wc -l | tr -d ' ')"
   log "Probe: ${total} requests during the deploy, ${bad} failed (000 or 5xx). Status codes (count code):"
-  awk '{print $2}' "$PROBE_LOG" | sort | uniq -c | sed 's/^/    /'
+  awk '{print $2}' "$PROBE_LOG" | sort | uniq -c | sed 's/^/    /' | tee -a "$SUMMARY_FILE"
   log "Probe: who answered, in order (count code color):"
-  awk '{print $2, $3}' "$PROBE_LOG" | uniq -c | sed 's/^/    /'
+  awk '{print $2, $3}' "$PROBE_LOG" | uniq -c | sed 's/^/    /' | tee -a "$SUMMARY_FILE"
   if [ "$bad" -gt 0 ]; then
     log "Probe: failed requests:"
-    awk '$2 == "000" || $2 ~ /^5/' "$PROBE_LOG" | head -50 | sed 's/^/    /'
+    awk '$2 == "000" || $2 ~ /^5/' "$PROBE_LOG" | head -50 | sed 's/^/    /' | tee -a "$SUMMARY_FILE"
   fi
   rm -f "$PROBE_LOG"
   [ "$bad" -gt 255 ] && bad=255
@@ -187,6 +197,7 @@ roll_to() {
 finish() {
   local rc=$?
   stop_probe || true
+  annotate
   exit "$rc"
 }
 trap finish EXIT
@@ -214,7 +225,9 @@ trap - EXIT
 BAD=0
 stop_probe || BAD=$?
 if [ "$BAD" -gt 0 ]; then
-  echo "::error::Website deploy of ${ENV_NAME} finished, but the probe saw ${BAD} failed requests (see above)."
+  annotate
+  echo "::error::Website deploy of ${ENV_NAME} finished, but the probe saw ${BAD} failed requests (see the notice / log)."
   exit 1
 fi
 log "Website deploy of ${ENV_NAME} complete: blue serves the new version, green stopped."
+annotate

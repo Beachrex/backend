@@ -52,6 +52,23 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Zero-downtime deploys: probe details as annotations, nginx reload before failing
+
+### Overview
+First dev run of the API rollout (Beachrex/backend#178, run 40953158685) finished but its probe reported 4 failed
+requests, and the job then stopped before "Reload Nginx". The Actions log cannot be downloaded from the agent
+sandbox, so the cause was not visible.
+
+### Changes
+- Both deploy scripts print their timeline and probe summary (with per-request time) as one `::notice` annotation,
+  readable through the check-run annotations API.
+- Backend workflow: a probe failure no longer skips "Reload Nginx"; a separate last step fails the job.
+
+### Testing
+Local Docker simulation (see the entry below): both scripts still 0 failed; the notice contains the timeline.
+
+---
+
 ## 2026-10-29 - Zero-downtime deploys (website blue/green, API rolling replacement)
 
 ### Overview

@@ -40,7 +40,17 @@ HEALTH_PATH=/api/v1/health
 # web_<env> caches DNS for 10 s (resolver ... valid=10s in deploy/nginx/api.<env>.conf).
 DNS_CACHE_WAIT_S=12
 
-log() { echo "[$(date -u +%H:%M:%S)] $*"; }
+# Every log line is also kept for one GitHub annotation at the end: the run log itself is not always
+# readable (the agent sandbox cannot download Actions logs), annotations are (API check-run annotations).
+SUMMARY_FILE="$(mktemp)"
+log() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$SUMMARY_FILE"; }
+annotate() {
+  [ -s "$SUMMARY_FILE" ] || return 0
+  local body
+  body="$(sed -e 's/%/%25/g' "$SUMMARY_FILE" | awk 'BEGIN{ORS="%0A"} {print}')"
+  echo "::notice title=API rollout ${ENV_NAME}::${body}"
+  rm -f "$SUMMARY_FILE"
+}
 dc() { docker compose -f "$COMPOSE_FILE" --env-file "$ROOT/envs/.env.${ENV_NAME}" "$@"; }
 
 # ---------- probe (proof of zero downtime) ----------
@@ -49,13 +59,13 @@ PROBE_LOG="$(mktemp)"
 PROBE_STOP="$(mktemp -u)"
 is_bad() { case "$1" in 000 | 5??) return 0 ;; *) return 1 ;; esac; }
 probe_once() {
-  curl -sk -o /dev/null --max-time 10 -w '%{http_code}' --resolve "${API_HOST}:${PROBE_HTTPS_PORT}:127.0.0.1" \
+  curl -sk -o /dev/null --max-time 10 -w '%{http_code} %{time_total}s' --resolve "${API_HOST}:${PROBE_HTTPS_PORT}:127.0.0.1" \
     "https://${API_HOST}:${PROBE_HTTPS_PORT}${HEALTH_PATH}" 2>/dev/null || true
 }
 start_probe() {
   local first
   first="$(probe_once)"
-  if is_bad "$first"; then
+  if is_bad "${first%% *}"; then
     log "Probe: https://${API_HOST}${HEALTH_PATH} via 127.0.0.1 answered '${first}' before the rollout; probe off."
     return 0
   fi
@@ -78,10 +88,10 @@ stop_probe() {
   total="$(wc -l < "$PROBE_LOG" | tr -d ' ')"
   bad="$(awk '$2 == "000" || $2 ~ /^5/' "$PROBE_LOG" | wc -l | tr -d ' ')"
   log "Probe: ${total} requests during the rollout, ${bad} failed (000 or 5xx). Status codes (count code):"
-  awk '{print $2}' "$PROBE_LOG" | sort | uniq -c | sed 's/^/    /'
+  awk '{print $2}' "$PROBE_LOG" | sort | uniq -c | sed 's/^/    /' | tee -a "$SUMMARY_FILE"
   if [ "$bad" -gt 0 ]; then
     log "Probe: failed requests:"
-    awk '$2 == "000" || $2 ~ /^5/' "$PROBE_LOG" | head -50 | sed 's/^/    /'
+    awk '$2 == "000" || $2 ~ /^5/' "$PROBE_LOG" | head -50 | sed 's/^/    /' | tee -a "$SUMMARY_FILE"
   fi
   rm -f "$PROBE_LOG"
   [ "$bad" -gt 255 ] && bad=255
@@ -90,6 +100,7 @@ stop_probe() {
 finish() {
   local rc=$?
   stop_probe || true
+  annotate
   exit "$rc"
 }
 trap finish EXIT
@@ -166,7 +177,9 @@ trap - EXIT
 BAD=0
 stop_probe || BAD=$?
 if [ "$BAD" -gt 0 ]; then
-  echo "::error::API rollout of ${ENV_NAME} finished, but the probe saw ${BAD} failed requests (see above)."
+  annotate
+  echo "::error::API rollout of ${ENV_NAME} finished, but the probe saw ${BAD} failed requests (see the notice / log)."
   exit 3
 fi
 log "API rollout of ${ENV_NAME} complete: ${NEW_NAME} serves the new version."
+annotate
