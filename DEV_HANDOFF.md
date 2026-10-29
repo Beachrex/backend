@@ -55,7 +55,7 @@ How to test the changes
 ## 2026-10-29 - Published beach counts per location level (beach details + place pages)
 
 ### Overview
-`location.continent|country|region|island|city` in the beach details response now carry `beaches_count`: the number of published beaches (`status_id = 1`) in that place, the same count its place page shows. The web client shows it in the location pill tabs on the beach banner ("Beaches: 1167").
+`location.continent|country|region|island|city` in the beach details response now carry `beaches_count`: the number of published beaches (`status_id = 1`) in that place, the same count its place page shows. The web client shows it in the location pill tabs on the beach and place banners ("Beaches: 1167").
 
 ### Changes Made
 - `app/Http/Resources/BeachDetailsResource.php`: `publishedBeachCount()` helper; `beaches_count` on each location level (absent levels stay absent).
@@ -75,6 +75,29 @@ Beach details are cached per beach and locale for 8 h (`CacheService::BEACH_DETA
 `php artisan test --filter='BeachDetails|SyncStaticPages|PlaceParentBeachCounts'`
 
 ---
+
+## 2026-10-29 - Pool types under "Pool" in the water body filter: tests and data note (owner report)
+
+### Overview
+Owner: "filter bi mogli razbit na notranji in zunanji bazen … če stisneš na prvi strani outdoor ali indoor, filter ne
+zazna". The home page tiles send `?pool_type=indoor|outdoor`; the map showed the chip but "Najdeno (0)".
+Checked: the API already filters `pool_type` (QA #70, `indoor_pools_count` / `outdoor_pools_count` > 0) on both query
+paths. **The 0 is data:** dev has no pool places yet (Beachrex MCP on dev: `waterbody=pool` → 0, `has_swimming_pool`
+→ 0; Slovenia has only its 20 sea beaches). No code bug in the API.
+
+### Changes
+- `tests/Feature/PoolWaterbodyFilterApiTest.php` (new): `waterbody=pool` returns indoor, outdoor and unclassified pool
+  places; the home page tile params return results; `waterbody=pool&pool_type=indoor|outdoor` returns only that kind
+  (map and list endpoints); unknown `pool_type` is ignored; `/beaches/filters?pool_type=indoor` still lists `pool` and
+  both pool types (the web nests them under "Pool"). Deliberate break (`> 0` → `>= 0` in the raw SQL path) fails 2 tests.
+- No API, schema or search index change. The web-client shows the pool types under "Pool" (web-client `DEV_HANDOFF.md`).
+
+### Affected endpoints
+None changed. Behaviour documented: `waterbody` and `pool_type` combine with AND.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/PoolWaterbodyFilterApiTest.php` → OK (7 tests); full suite: only the 4 known
+API-key failures.
 
 ## 2026-10-29 - Footer pages: share capital removed
 

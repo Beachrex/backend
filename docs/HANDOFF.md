@@ -239,6 +239,7 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Owner's open actions
 
+- **Pools (2026-10-29, ADR "Indoor / outdoor pools"):** dev has no pool places yet, so "Bazen", "Notranji bazen" and "Zunanji bazen" show 0. When pool places are added (importer or admin), set **Indoor pools count** / **Outdoor pools count** on each one (beach form), otherwise it is found only by "Bazen". The map and list filters read the database (no search index change).
 - **AI guide off on prod (TASK-009, 2026-10-29):** after the code is on prod, Admin (dock.beachrex.com) → System → Site settings → switch **AI guide on** off → Save. Guide `docs/guides/admin/nastavitve-strani.md`.
 - **Lake beaches (2026-10-22, `beaches:fix-lake-waterbody`, guide `docs/guides/admin/jezerske-plaze.md`):** on dev run the command without options (dry run, expect ~42 × `waterbody -> lake`), send the output, then `--apply` and `php artisan search:index Beach`. uat/prod only when the owner decides (the same two steps per environment).
 - **TASK-006 Windy webcams (run in this order on dev, each with `--dry-run` first; send the outputs to the agent):**

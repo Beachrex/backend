@@ -1207,3 +1207,30 @@ need the page. Anything the browser sends can be forged, and a page title in a p
 **Consequences**: The mobile app can send the same field later. A beach that is inactive or missing gives a generic
 "beach page" hint. Conversation persistence across tabs is a website concern (localStorage); the server session still
 expires after 30 minutes of inactivity, after which the model no longer sees the earlier turns.
+
+## [2026-10-29] Indoor / outdoor pools: classified by the pool counts, shown under "Pool"
+
+**Status**: Accepted (owner 2026-10-29: "filter bi mogli razbit na notranji in zunanji bazen")
+
+**Context**: The water body filter offers sea, lake, river and pool. The home page tiles "outdoor pools" and "indoor
+pools" send `pool_type=outdoor|indoor` (QA #70), which the map listed as a separate "Pool type" group, so the owner did
+not see the split. The data model already has the split: `beach.indoor_pools_count` and `beach.outdoor_pools_count`
+(admin, beach form), plus per-feature indoor/outdoor flags (`has_indoor_children_pool`, …) and the unused
+`beach_location_type` code `PB` ("Indoor pool"). Dev has no pool places yet, so every pool filter returns 0.
+
+**Decision**:
+1. A place is an indoor pool when `indoor_pools_count > 0`, an outdoor pool when `outdoor_pools_count > 0` (both is
+   possible). No new column, waterbody code or migration; the API and its parameters stay as they are (additive rule).
+2. The web shows the two `pool_type` options nested under "Pool" in the water body group (map sidebar desktop and
+   mobile, home filter dialog, listing pages' select) and no longer as a separate group. `waterbody=pool` still means
+   every pool place; old links keep working.
+3. `waterbody` and `pool_type` combine with AND, like every other pair of filters: "Sea" + "Indoor pool" finds sea
+   beaches with an indoor pool (a hotel), not "sea beaches or indoor pools". Changing that would change the meaning of
+   an existing API parameter (the mobile app uses `pool_type` too) and needs an owner decision.
+4. Classification is content work: whoever imports or edits pool places (the planned OSM/official-site pool importer,
+   or the admin) sets the two counts. A pool place without counts is found by "Pool" but by neither pool type.
+   The agent does not guess counts from names or location types.
+
+**Consequences**: The tiles and the nested options show results as soon as pool places with counts exist. The
+importer must map indoor/outdoor (e.g. OSM `indoor=yes`, `covered=yes`, `building`) to the counts.
+
