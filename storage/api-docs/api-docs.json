@@ -13524,7 +13524,7 @@
                         "nullable": true
                     },
                     "tour_url": {
-                        "description": "Virtual tour HTML path for 360 spheres (present only for spheres_360 collection).",
+                        "description": "Virtual tour HTML path for 360 spheres (spheres_360 only). Null when the tour was never generated: show the panorama in `url` in an own 360° viewer instead.",
                         "type": "string",
                         "example": "img/beaches/hr-6-o-hvar/vtour/tour.html",
                         "nullable": true
@@ -14214,7 +14214,7 @@
                                 "items": {
                                     "properties": {
                                         "tour_url": {
-                                            "description": "URL to 360° virtual tour",
+                                            "description": "URL to 360° virtual tour. spheres_360 is left out when the beach is known to have no generated tour.",
                                             "type": "string",
                                             "example": "img/beaches/hr-69-o-pag/vtour/tour.html"
                                         }
@@ -16420,7 +16420,7 @@
                                 "items": {
                                     "properties": {
                                         "tour_url": {
-                                            "description": "URL to 360 degree virtual tour",
+                                            "description": "URL to 360 degree virtual tour. spheres_360 is empty when the beach is known to have no generated tour.",
                                             "type": "string",
                                             "example": "img/beaches/br-1-copacabana/vtour/tour.html"
                                         }

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\BeachGallery;
+use App\Support\SphereTour;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachDetailsResource extends JsonResource
@@ -395,7 +396,7 @@ class BeachDetailsResource extends JsonResource
 
         return [
             'gallery' => $this->formatMediaCollection(BeachGallery::pick($mediaByCollection)),
-            'videos' => $this->formatMediaCollection($mediaByCollection->get('beach_videos', collect())),
+            'videos' => $this->formatMediaCollection(BeachGallery::videos($mediaByCollection)),
             'spheres_360' => $this->formatMediaCollection($mediaByCollection->get('beach_360_sphere', collect()), 'beach_360_sphere'),
             'parking_images' => $this->formatMediaCollection($mediaByCollection->get('parking_images', collect())),
             'spot_images' => $this->formatMediaCollection($mediaByCollection->get('beach_spot_images', collect())),
@@ -411,10 +412,11 @@ class BeachDetailsResource extends JsonResource
         // beaches store their files under img/beaches_mobile/, while regular
         // uploads use img/beaches/. Using the wrong base folder caused the 360°
         // tour to 404 on mobile-uploaded beaches (e.g. Albania beaches).
+        // Null when the tour was never generated (owner 2026-10-29): the website then shows the panorama (`url`)
+        // in its own 360° viewer. Checked against storage once per beach (App\Support\SphereTour).
         $vtourUrl = null;
-        if ($collectionCode === 'beach_360_sphere' && $this->folder_name && $mediaItems->isNotEmpty()) {
-            $baseFolder = $this->mobile_upload ? 'beaches_mobile' : 'beaches';
-            $vtourUrl = "img/{$baseFolder}/{$this->folder_name}/vtour/tour.html";
+        if ($collectionCode === 'beach_360_sphere' && $mediaItems->isNotEmpty()) {
+            $vtourUrl = SphereTour::url($this->resource, checkUnknown: true);
         }
 
         return $mediaItems->map(function ($media) use ($vtourUrl, $collectionCode) {

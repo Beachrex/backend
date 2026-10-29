@@ -241,3 +241,25 @@ Viri: `MediaResource`, `MediaTypeResource`, `MediaCollectionResource` (+ `Pages/
 ukaz `app/Console/Commands/EmbedImageCopyright.php`. Logotip na fotografijah iz mobilne aplikacije: ADR 2026-10-29,
 `App\Support\Watermark`, ukaz `media:publish-watermark` (deploy), spletna stran `buildCdnUrl` v `beach-images.ts`. Galerija in glavna slika v API: `App\Http\Resources\BeachResource`,
 `App\Support\BeachGallery`. Odprto: `HANDOFF.md` → »Copyright backfill«.
+
+## 360° ogledi in videi iz mobilne aplikacije (od 2026-10-29)
+
+**360° ogled.** Plaža ima lahko 360° panoramo, ogled (krpano `vtour/tour.html`) pa ni bil nikoli izdelan (primer:
+Plage du Port Vieux, Biarritz). Spletna stran takrat panoramo pokaže v svojem 360° pregledovalniku, zato okno ni več
+črno. Ali ima plaža ogled, si sistem zapomni (`beach.has_vtour`); preverja ga vsak dan ob 04:40 (nove plaže) in vsako
+nedeljo ob 04:50 (vse plaže). Če ogled kasneje izdelaš in naložiš, ga stran uporabi najkasneje po nedeljskem
+preverjanju; takoj, če poženeš ukaz spodaj.
+
+Ukaz (bere samo shrambo, zapiše samo oznako):
+
+```
+docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.<okolje> exec -T api_<okolje> php artisan media:check-vtours --dry-run
+docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.<okolje> exec -T api_<okolje> php artisan media:check-vtours --all
+```
+
+`--dry-run` samo izpiše plaže brez ogleda; brez `--all` preveri le plaže, ki še niso bile preverjene. Stran plaže
+ima podatke v predpomnilniku do 8 ur.
+
+**Video v galeriji.** Video datoteke (`.mp4`, `.mov` …), ki so pri nalaganju z mobilno aplikacijo pristale med
+fotografijami, stran prikaže kot **video** (kartica »Video«), ne kot fotografijo. V adminu jih ni treba premikati.
+
