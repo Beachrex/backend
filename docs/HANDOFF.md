@@ -64,9 +64,16 @@ BASE_URL=http://localhost:9 npx playwright test e2e/*.unit.spec.ts --project=chr
 MCP server: only on dev (`https://mcp-dev.beachrex.com/mcp`).
 **Cloudflare proxy is on** (orange cloud) for the dev/uat sites and APIs (checked 2026-10-09); owner keeps it on (global visitors, DDoS protection). Nginx takes the visitor IP from `CF-Connecting-IP` for Cloudflare's ranges only (`deploy/nginx/beachrex.conf`); if Cloudflare publishes new ranges, update that list. Sessions: `SESSION_DRIVER=database` in all three env files (owner, 2026-10-09).
 There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see below); it can be reloaded before real users write to it.
-**Host nginx (fixed 2026-10-09):** `/etc/nginx/sites-available/beachrex` is now a symlink to `/opt/beachrex/deploy/nginx/beachrex.conf`, so every deploy's `deploy/` sync plus `nginx reload` applies the repo file. Before that it was a stale copy from 2026-09-11: the nginx changes of session 8 (rate limit, gzip, keepalive, Cloudflare real IP, HTTP/2) were only live from 2026-10-09 22:31. Backup of the old copy: `/root/nginx-beachrex-live-20261009.conf`. Each deploy syncs `deploy/` from **its own branch**, so nginx follows whichever environment deployed last; keep `deploy/nginx` the same on dev, uat and main.
+**Host nginx (fixed 2026-10-09):** `/etc/nginx/sites-available/beachrex` is now a symlink to `/opt/beachrex/deploy/nginx/beachrex.conf`, so every deploy's `deploy/` sync plus `nginx reload` applies the repo file. Before that it was a stale copy from 2026-09-11: the nginx changes of session 8 (rate limit, gzip, keepalive, Cloudflare real IP, HTTP/2) were only live from 2026-10-09 22:31. Backup of the old copy: `/root/nginx-beachrex-live-20261009.conf`. Each deploy syncs `deploy/` from **its own branch**, so nginx follows whichever environment deployed last; keep `deploy/nginx` the same on dev, uat and main. The website blue/green state is outside it: `/opt/beachrex/nginx-state/front_<env>.conf` (runbook `zero-downtime-deploys.md`).
 
 ## Done
+
+- 2026-10-29: **Zero-downtime deploys** (owner: 502 "Host Error" during every website deploy, "uredi"). Website:
+  blue/green `front_<env>` ↔ `front_<env>_green` switched in host nginx by a state file + graceful reload, end state
+  always blue; API: second `api_<env>` container next to the old one, migrations in the new one, old one stopped
+  gracefully, `web_<env>` kept. Both deploys probe their site every 0.2 s and fail on any 5xx. ADR 2026-10-29,
+  runbook `docs/runbooks/zero-downtime-deploys.md` (which color is live, rollback, **promotion order: backend
+  dev → uat → main first, then web-client**). Status in DEV_HANDOFF of both repos.
 
 - 2026-10-29: **Google ads (AdSense) admin switch, off by default** (owner: "izklopi mi Google ads na produkciji …
   prek admina vklapljali ali izklapljali"). New site setting `ads_enabled` (idempotent migration inserts **off**),

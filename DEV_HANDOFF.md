@@ -52,6 +52,57 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Zero-downtime deploys: probe details as annotations, nginx reload before failing
+
+### Overview
+First dev run of the API rollout (Beachrex/backend#178, run 40953158685) finished but its probe reported 4 failed
+requests, and the job then stopped before "Reload Nginx". The Actions log cannot be downloaded from the agent
+sandbox, so the cause was not visible.
+
+### Changes
+- Both deploy scripts print their timeline and probe summary (with per-request time) as one `::notice` annotation,
+  readable through the check-run annotations API.
+- Backend workflow: a probe failure no longer skips "Reload Nginx"; a separate last step fails the job.
+
+### Testing
+Local Docker simulation (see the entry below): both scripts still 0 failed; the notice contains the timeline.
+
+---
+
+## 2026-10-29 - Zero-downtime deploys (website blue/green, API rolling replacement)
+
+### Overview
+Owner (beachrex.com live since today): every deploy caused a few seconds of 502 "Host Error". Website deploys
+recreated `front_<env>` in place; API deploys recreated `web_<env>` + `api_<env>`. Both are now switched without a
+gap. ADR 2026-10-29 "Zero-downtime deploys", runbook `docs/runbooks/zero-downtime-deploys.md`.
+
+### Changes
+- `deploy/docker-compose.vps.yml`: `front_<env>_green` services (ports 3011/3012/3013, profile `green`, same image),
+  `BEACHREX_COLOR` env and a healthcheck (`/api/health`) on all front containers.
+- `deploy/nginx/beachrex.conf`: two upstreams per website (blue-first / green-first, other color as `backup`,
+  keepalive), `location /` picks one via the optional state include `/opt/beachrex/nginx-state/front_<env>*.conf`;
+  `Connection` header from a map (keepalive except WebSocket upgrades), `proxy_next_upstream error timeout`, 2 tries.
+- `deploy/nginx/api.<env>.conf`: `fastcgi_connect_timeout 1s`, `fastcgi_next_upstream error timeout`, 2 tries.
+- `deploy/scripts/front-deploy.sh` (called by the web-client workflow) and `deploy/scripts/api-rollout.sh` (called
+  by this repo's workflow), both with a 0.2 s probe through host nginx that fails the run on any 000/5xx.
+- `.github/workflows/deploy.yml`: `deploy/nginx/` synced with `rsync --inplace` first; build/up/migrate/cache steps
+  replaced by `api-rollout.sh` (exit 3 = probe failures → remaining steps run, then the job fails).
+
+### Affected endpoints
+None (deploy only). The website gets `GET /api/health` (web-client).
+
+### Testing
+- `nginx -t` (nginx 1.24, stub certs, `http2 on` removed for 1.24) with and without `/opt/beachrex/nginx-state`: ok.
+- Local Docker simulation with the real scripts, compose file and host nginx config, fake servers that start in
+  1–2 s and stop gracefully, 12 concurrent GET/POST clients through nginx:
+  website blue → green → blue: 0 failed of 625 (probe 58/58 × 200); resume from a left-over green: 0 failed;
+  API rollout: 0 failed of 744 (probe 69/69 × 200).
+  Deliberate break (old commands under the same load): website in-place recreate → 100 179 × 502;
+  API `up -d --force-recreate web_dev` → 1 782 × 502.
+- Proof on dev: the probe summary in the "Build and start on VPS" step of the deploy run.
+
+---
+
 ## 2026-10-29 - Site settings: Google ads (AdSense) switch, default off
 
 ### Overview
