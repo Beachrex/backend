@@ -12,3 +12,4 @@ Take the next free number from this table.
 | TASK-006 | Windy webcams: import, local matching, widget rendering — `TASK-006-windy-webcams.md` | Built, live on dev (2026-10-14); data import is an owner step | backend #114–#118, web-client #75 |
 | TASK-004 | Pre-launch review: audit, footer pages in 19 locales, `/beaches` real data, SEO, prod runbook | In progress (most steps live on dev) | backend #43–#48, web-client #16–#22 |
 | TASK-008 | Interactive "View beaches from all angles" on the homepage — `TASK-008-homepage-media-showcase.md` | In progress | |
+| TASK-009 | Switch the AI beach guide on/off in admin (per environment) — `TASK-009-ai-assistant-switch.md` | In progress | |

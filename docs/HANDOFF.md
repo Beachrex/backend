@@ -233,6 +233,7 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Owner's open actions
 
+- **AI guide off on prod (TASK-009, 2026-10-29):** after the code is on prod, Admin (dock.beachrex.com) → System → Site settings → switch **AI guide on** off → Save. Guide `docs/guides/admin/nastavitve-strani.md`.
 - **Lake beaches (2026-10-22, `beaches:fix-lake-waterbody`, guide `docs/guides/admin/jezerske-plaze.md`):** on dev run the command without options (dry run, expect ~42 × `waterbody -> lake`), send the output, then `--apply` and `php artisan search:index Beach`. uat/prod only when the owner decides (the same two steps per environment).
 - **TASK-006 Windy webcams (run in this order on dev, each with `--dry-run` first; send the outputs to the agent):**
   1. Read the full Windy terms (`account.windy.com/agreements/windy-webcams-api-terms-of-use`): commercial use, storing metadata. Pro tier (9 990 €/year) only if needed.

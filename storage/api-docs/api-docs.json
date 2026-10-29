@@ -9598,6 +9598,43 @@
                 }
             }
         },
+        "/api/v1/site-settings": {
+            "get": {
+                "tags": [
+                    "Site settings"
+                ],
+                "summary": "Public site switches",
+                "description": "Switches the owner sets in admin (System → Site settings), per environment. Clients hide a feature that is off. ai_assistant_enabled = false: the AI beach guide (chat, itineraries, buying credits) is off and its /api/v1/ai/* routes answer 503 ai_disabled.",
+                "operationId": "getSiteSettings",
+                "responses": {
+                    "200": {
+                        "description": "Current switches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "ai_assistant_enabled": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/resolve-slug/{slug}": {
             "get": {
                 "tags": [
@@ -17171,6 +17208,10 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
+        },
+        {
+            "name": "Site settings",
+            "description": "Site settings"
         },
         {
             "name": "Sporting Activities",
