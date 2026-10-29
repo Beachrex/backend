@@ -149,6 +149,10 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
+          # nginx configs first and in place: web_<env> bind-mounts api.<env>.conf as a single file, which only
+          # shows changes when the file is rewritten, not replaced (zero-downtime deploys, ADR 2026-10-29).
+          rsync -az --inplace \
+            deploy/nginx/ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/deploy/nginx/
           rsync -az --delete \
             deploy/ ${VPS_USER}@${VPS_HOST}:/opt/beachrex/deploy/
 
@@ -163,16 +167,14 @@ jobs:
             cd /opt/beachrex/deploy
             ENV_FILE=/opt/beachrex/envs/.env.${ENV_NAME}
             API_SVC=api_${ENV_NAME}
-            WEB_SVC=web_${ENV_NAME}
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} build \${API_SVC}
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d pgsql redis
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate \${WEB_SVC}
+            # Zero-downtime API deploy (ADR 2026-10-29): build, start a second api container, migrate and cache in
+            # it, retire the old one; web_<env> stays up. Exit 3 = done, but the probe saw failed requests: finish
+            # the remaining steps and fail at the end. Runbook: docs/runbooks/zero-downtime-deploys.md
+            ROLLOUT_RC=0
+            bash /opt/beachrex/deploy/scripts/api-rollout.sh ${ENV_NAME} || ROLLOUT_RC=\$?
+            if [ \$ROLLOUT_RC != 0 ] && [ \$ROLLOUT_RC != 3 ]; then exit \$ROLLOUT_RC; fi
             # Scheduler (daily db:backup) reuses the freshly built api image.
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate --no-deps scheduler_${ENV_NAME}
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan migrate --force
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan config:cache
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
-            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
             # Watermark PNG for mobile-app photos (ADR 2026-10-29): uploaded once to the shared bucket, never overwritten.
             # Not fatal: without it Imagor shows the photo unmarked or errors only on watermarked URLs; the next deploy retries.
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan media:publish-watermark || echo '::warning::media:publish-watermark failed'
@@ -222,6 +224,7 @@ jobs:
               echo 'MCP server rebuilt, restarted and verified on port '\$MCP_PORT
             fi
 
+            if [ \$ROLLOUT_RC = 3 ]; then echo 'API rollout probe saw failed requests (see the rollout log above).'; exit 1; fi
             echo 'Deploy of ${ENV_NAME} complete.'
           "
 
