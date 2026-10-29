@@ -269,18 +269,18 @@ class ChatHistoryAdminTest extends TestCase
     }
 
     #[Test]
-    public function view_page_shows_the_transcript_metadata_and_can_delete_one_conversation(): void
+    public function view_page_shows_the_transcript_and_metadata_and_is_read_only(): void
     {
         $session = $this->conversation([], null, ['page_context' => ['page_type' => 'beach', 'beach_id' => 42, 'path' => '/sl/plaze/x']]);
+        $rid = (string) \Illuminate\Support\Str::uuid();
         AiMessage::create(['session_id' => $session->id, 'role' => 'user', 'content' => 'Je <b>ta</b> plaža za otroke?', 'intent' => 'agent',
-            'context' => ['tool_calls' => [['name' => 'get_beach_details', 'input' => ['id' => 42]]]]]);
+            'context' => ['tool_calls' => [['name' => 'get_beach_details', 'input' => ['id' => 42]]]], 'request_id' => $rid]);
         AiMessage::create(['session_id' => $session->id, 'role' => 'assistant', 'content' => 'Da, plitvo morje.', 'intent' => 'agent',
-            'context' => ['beaches' => [['id' => 42, 'name' => 'Plaža Bacvice']]], 'tokens_total' => 30]);
+            'context' => ['beaches' => [['id' => 42, 'name' => 'Plaža Bacvice']]], 'tokens_total' => 30, 'request_id' => $rid]);
         AiMessage::create(['session_id' => $session->id, 'role' => 'user', 'content' => 'Pa parkirišče?', 'intent' => 'agent',
             'context' => [], 'error' => 'ai_unavailable']);
-        AiUsage::create(['session_id' => $session->id, 'tier' => 'free', 'event_type' => 'chat', 'llm_provider' => 'openai',
-            'llm_model' => 'fake', 'cost_usd' => 0.0123]);
-        $other = $this->conversation([['user', 'Other', null]]);
+        AiUsage::create(['session_id' => $session->id, 'tier' => 'free', 'event_type' => 'chat', 'llm_provider' => 'anthropic',
+            'llm_model' => 'claude-fake-model', 'cost_usd' => 0.0123, 'request_id' => $rid]);
         $this->adminPanel();
 
         // (A full HTTP page render needs the dashboard route, which tests do not register; Livewire renders the page.)
@@ -291,14 +291,38 @@ class ChatHistoryAdminTest extends TestCase
             ->assertSee('get_beach_details')
             ->assertSee('beach #42 · /sl/plaze/x')
             ->assertSee('the AI provider was busy')
-            ->assertSee('$0.0123')
-            ->assertDontSee('1.2.3.4')->assertDontSee(hash('sha256', '1.2.3.4'));
+            ->assertSee('claude-fake-model · $0.0123')
+            ->assertDontSee('1.2.3.4')->assertDontSee(hash('sha256', '1.2.3.4'))
+            ->assertActionDoesNotExist('delete')
+            ->assertActionDoesNotExist('edit');
 
-        Livewire::test(ViewAiConversation::class, ['record' => $session->getKey()])->callAction('delete');
+        $this->assertFalse(\App\Filament\BrAdmin\Resources\AiConversationResource::canCreate());
+        $this->assertFalse(\App\Filament\BrAdmin\Resources\AiConversationResource::canDelete($session));
+        $this->assertFalse(\App\Filament\BrAdmin\Resources\AiConversationResource::canDeleteAny());
+    }
 
-        $this->assertNull(AiSession::find($session->id));
-        $this->assertSame(0, AiMessage::where('session_id', $session->id)->count());
-        $this->assertSame(1, AiUsage::count()); // cost statistics stay
-        $this->assertNotNull(AiSession::find($other->id));
+    #[Test]
+    public function an_unexpected_agent_error_keeps_the_question_and_still_returns_500(): void
+    {
+        config(['ai.chat.engine' => 'agent']);
+        self::$agentThrows = new \RuntimeException('boom');
+
+        $this->postJson('/api/v1/ai/chat', ['message' => 'Plaže v Piranu?'])->assertStatus(500);
+
+        $failed = AiMessage::sole();
+        $this->assertSame('Plaže v Piranu?', $failed->content);
+        $this->assertSame('internal_error', $failed->error);
+    }
+
+    #[Test]
+    public function conversations_stay_listed_after_the_30_minute_session_expiry(): void
+    {
+        $expired = $this->conversation([['user', 'Old chat', null], ['assistant', 'Old answer', null]], null, [
+            'created_at' => now()->subDays(40), 'last_activity_at' => now()->subDays(40), 'expires_at' => now()->subDays(40),
+        ]);
+        $this->adminPanel();
+
+        Livewire::test(ListAiConversations::class)->assertCanSeeTableRecords([$expired]);
+        Livewire::test(ViewAiConversation::class, ['record' => $expired->getKey()])->assertOk()->assertSee('Old answer');
     }
 }

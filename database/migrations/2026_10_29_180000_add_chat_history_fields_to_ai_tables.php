@@ -37,6 +37,10 @@ return new class extends Migration
         // The admin list sorts by start time and filters on failed turns.
         DB::statement('CREATE INDEX IF NOT EXISTS ai_sessions_created_at_index ON ai_sessions (created_at)');
         DB::statement('CREATE INDEX IF NOT EXISTS ai_messages_session_error_index ON ai_messages (session_id) WHERE error IS NOT NULL');
+        // Per-row subqueries of the list (first question, last message time) and the transcript order.
+        DB::statement('CREATE INDEX IF NOT EXISTS ai_messages_session_created_index ON ai_messages (session_id, created_at, id)');
+        // Model and cost of one turn on the transcript (ai_usage.request_id = ai_messages.request_id).
+        DB::statement('CREATE INDEX IF NOT EXISTS ai_usage_request_id_index ON ai_usage (request_id)');
 
         // Text search in the admin (ILIKE '%…%'): a trigram index when the extension can be created. Optional: on a
         // database where the user may not create it the search still works, only without the index.
@@ -64,6 +68,8 @@ return new class extends Migration
     {
         DB::statement('DROP INDEX IF EXISTS ai_messages_content_trgm_index');
         DB::statement('DROP INDEX IF EXISTS ai_messages_session_error_index');
+        DB::statement('DROP INDEX IF EXISTS ai_messages_session_created_index');
+        DB::statement('DROP INDEX IF EXISTS ai_usage_request_id_index');
         DB::statement('DROP INDEX IF EXISTS ai_sessions_created_at_index');
 
         Schema::table('ai_messages', function (Blueprint $table) {

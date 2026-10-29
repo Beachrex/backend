@@ -33,9 +33,7 @@ class ItineraryControllerTest extends TestCase
         }
 
         // Clear circuit breaker cache (use correct key format from middleware)
-        Cache::forget('ai:circuit_breaker:daily_cost:all:' . now()->format('Y-m-d'));
-        Cache::forget('ai:circuit_breaker:daily_cost:free:' . now()->format('Y-m-d'));
-        Cache::forget('ai:circuit_breaker:daily_cost:basic:' . now()->format('Y-m-d'));
+        \App\Services\AI\AiDailySpend::forget();
 
         // Enable AI features
         Config::set('ai.features.enabled', true);
@@ -272,7 +270,7 @@ class ItineraryControllerTest extends TestCase
         $user = User::factory()->create();
 
         // Trigger circuit breaker by exceeding daily cost limit (use correct key format from middleware)
-        Cache::put('ai:circuit_breaker:daily_cost:all:' . now()->format('Y-m-d'), 5001, 86400);
+        Cache::put(\App\Services\AI\AiDailySpend::cacheKey('all'), 5001, 300);
 
         $response = $this->actingAs($user)->postJson('/api/v1/ai/itineraries', [
             'destination' => [

@@ -1236,25 +1236,91 @@ not see the split. The data model already has the split: `beach.indoor_pools_cou
 **Consequences**: The tiles and the nested options show results as soon as pool places with counts exist. The
 importer must map indoor/outdoor (e.g. OSM `indoor=yes`, `covered=yes`, `building`) to the counts.
 
-## [2026-10-29] AI chat history in the admin; retention is an owner decision
+## [2026-10-29] AI chat daily cost cap and Turnstile (supersedes the limits in the 2025-12-22 circuit breaker ADR)
 
-**Status**: Accepted (owner 2026-10-29: "da v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu … da se lahko
-izboljšujemo na podlagi tega"). Amends the 2025-12-22 "No Long-Term User Memory" ADR in one point, see below.
+**Status**: Accepted (owner 2026-10-29: "Anthropic uporabljamo … brezplačni uporabniki 5 $ na dan; če je preseženo,
+se chat izklopi in se naslednji dan avtomatsko vklopi … Turnstile ja")
 
-**Context**: The chat already stored every answered turn in `ai_messages` with no deletion, although the 2025-12-22
-ADR says "after session expires, all user data is deleted". That ADR is about the *model's* memory (it still sees only
-the current session's last turns); the stored rows were never pruned. The owner wants to read the conversations.
+**Context**: The circuit breaker limits were $500 (free) / $5,000 (all) per UTC day, far above what a small site
+should spend. The live chat runs on Anthropic (`AI_CHAT_ENGINE=agent`, `AI_CHAT_PROVIDER=anthropic`, Claude Opus
+5.5). A limit is only as good as the cost it counts, and the chat had no bot protection.
+
+Audit of the cost before this change: the agent engine summed every tool round with correct Opus 5.5 prices ($4 /
+$20 per MTok) but priced cache reads at 0.1x instead of 0.05x (over-count), priced every round by the configured
+model even when a server-side fallback served it, priced an unknown Claude model as Opus without a warning, and lost
+the cost of rounds already billed when a later round failed. The pipeline engine and the trip planner (still OpenAI
+via `LLMService`) lost the understanding call's cost when the answer call failed, counted only the last of two
+itinerary narration attempts, and priced an unknown OpenAI model as gpt-3.5-turbo (cheaper than most). The public
+`POST /ai/test` called the LLM without recording any cost. The trip planner's paid plans counted toward the free
+limit and were stopped by it.
 
 **Decision**:
-1. Admin-only, read-only page **AI → Chat conversations** over the existing tables; the API response is unchanged.
-2. Store what the history needs, additively: engine, the validated `page_context`, `request_id` (link to `ai_usage`
-   cost), and failed turns (question + error code). Failed turns are not sent to the model as history.
-3. Privacy: chat text is shown only on this page (no global search, not logged elsewhere); the IP hash and user agent
-   are not shown. One conversation can be deleted from its page (e.g. a visitor's request); there is no bulk delete.
-4. No automatic deletion is added: how long chats are kept (e.g. 90 or 180 days, then delete or anonymise) and the
-   wording of the privacy policy (today it says questions are "processed", not that they are kept and read to improve
-   the service) are owner decisions. Until then the rows are kept indefinitely, as before.
+1. Limits: free chat **$5** per day (`AI_FREE_TIER_DAILY_LIMIT`), everything **$20** per day
+   (`AI_EMERGENCY_SHUTDOWN_LIMIT`, the agent's suggestion; owner can change by env). Free bucket = free-tier usage
+   except `event_type=itinerary`. The trip planner routes check only the emergency limit.
+2. Day = calendar day in `AI_DAILY_LIMIT_TIMEZONE` (default **Europe/Ljubljana**, the owner's day; `app.timezone`
+   stays UTC). Every key and query is per local date, so the chat is back on at local midnight without any job.
+3. One price table (`ModelPricing`) for every LLM call: Anthropic prices from the published table (checked
+   2026-10-29), cache read/write multipliers per model, Haiku 5.5 long-prompt tier, each round priced by the model
+   that served it; an unknown model gets the most expensive tier of its provider and a logged warning, never $0.
+4. Every LLM call adds its cost to a request/job-scoped `AiSpendMeter`; the chat records it also when the request
+   fails after billed calls, and the itinerary records all narration attempts. `POST /ai/test` records its cost.
+5. The 5-minute cache of the daily sums is dropped on every new `ai_usage` row, so only requests already running
+   when the limit is crossed can overshoot (a few cents).
+6. A tripped limit answers 503 `{error: service_unavailable, reason: daily_limit, retry_after: <next local midnight>}`
+   (+ `Retry-After` header); the website shows "resting until tomorrow". Once per bucket and day: a log warning and,
+   if `AI_ALERT_EMAIL` is set, an e-mail (sent after the response).
+7. **Cloudflare Turnstile** on `POST /ai/chat` and `/ai/test` (`TURNSTILE_SECRET_KEY`; empty = off): the website
+   sends `turnstile_token` with the first message of a conversation (site key `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
+   build time; empty = off). After one successful siteverify the session is remembered as verified for the session
+   lifetime (sliding 30 min), bound to the visitor's IP hash. Missing/rejected token → 403 `turnstile_required` /
+   `turnstile_failed`; the website re-runs the widget and resends once. Cloudflare unreachable or our secret rejected
+   → the request passes (logged): an outage on their side must not take the chat down.
+8. **Mobile app**: `TURNSTILE_REQUIRED_FOR=web` (default) checks only browser requests (they always send `Origin` or
+   `Sec-Fetch-*`; React Native sends neither). `all` checks every client.
+9. The trip planner is not behind Turnstile: it needs sign-in and a bought credit.
 
-**Consequences**: The model's memory rule is unchanged (session only). A retention job, when decided, deletes
-`ai_sessions` (messages cascade; `ai_usage` keeps cost without the session link).
+**Security trade-off (mobile)**: in `web` mode a script that sends no `Origin`/`Sec-Fetch-*` headers is not
+challenged. Turnstile then stops browser abuse and naive bots only; a determined script is still bounded by the
+per-IP rate limit and, finally, by the $5 daily limit (which also switches the chat off for real visitors until
+midnight). To close the gap later: the mobile app gets its own proof (Turnstile in a WebView, or App Attest / Play
+Integrity verified by the API), then `TURNSTILE_REQUIRED_FOR=all` (or a per-client rule).
 
+**Consequences**: With Opus 5.5 an answer costs about $0.02–0.05 (evaluation 2026-10-09: ~$0.036), so $5 is
+roughly 100–250 chat answers per day for all visitors together. When it trips, every visitor sees the resting
+message until midnight. Cookie consent: Turnstile is a strictly necessary security service (no consent banner
+category needed); the privacy policy should name Cloudflare Turnstile. The site sends no Content-Security-Policy
+header today; if one is added, it must allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
+
+## [2026-10-29] AI chat history in the admin; retention is an owner decision
+
+**Status**: Accepted (owner 2026-10-29: "v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore
+daje — zgodovina, da se lahko izboljšujemo"). Clarifies the 2025-12-22 "No Long-Term User Memory" ADR, see below.
+
+**Context**: The chat already stored every answered turn (`ai_messages`: question and answer text, intent, tool calls
+or beaches in `context`, tokens) for both engines, anonymous and signed-in, with the session (`ai_sessions`) and the
+cost row (`ai_usage`). Nothing deletes these rows: `expires_at` (30 min, sliding) only ends the conversation for the
+model, and the cleanup jobs in `docs/ai/architecture/data-retention-policy.md` (30 days messages / 90 days sessions,
+"APPROVED" 2025-12-23) were never implemented. Missing for a useful history: the engine, the page the chat was opened
+on, a link from a turn to its cost/model, and turns that got no answer (the question was lost).
+
+**Decision**:
+1. Admin-only, read-only page **AI → Chat conversations** (`AiConversationResource`) over the existing tables; no
+   create, edit or delete; the public API response is unchanged.
+2. Store additively: `ai_sessions.engine`, `ai_sessions.page_context` (first page), `ai_messages.page_context`,
+   `ai_messages.request_id` (= `ai_usage.request_id`, gives model and cost per turn), and failed turns as a user
+   message with `ai_messages.error` (`ai_unavailable`, `internal_error`, `payment_required`). Failed turns are never
+   sent to the model as history. Requests rejected before the controller (AI switched off, daily cost limit, rate
+   limit, Turnstile) are not stored.
+3. Privacy: chat text is shown only on this page (no global search, not logged anywhere else); the IP hash and user
+   agent are not shown.
+4. No automatic deletion is added. The retention period (proposal: 180 days, then delete the session and its
+   messages; `ai_usage` keeps the cost without the session link) and the privacy policy wording are owner decisions.
+   The repo's policy text (`database/content/static-pages/*.json`, "AI beach assistant") says questions and answers
+   are "processed to generate a reply" and names only OpenAI; it does not say that conversations are kept and read
+   to improve the service, and does not name Anthropic. Until decided, rows are kept indefinitely, as before.
+
+**Consequences**: The model's memory rule (current session only) is unchanged; the 2025-12-22 "all user data is
+deleted after the session expires" statement never matched the code and does not hold. A retention job, once decided,
+is a scheduled command deleting old `ai_sessions` (messages cascade). Deleting one visitor's conversation on request
+is a developer task until then.

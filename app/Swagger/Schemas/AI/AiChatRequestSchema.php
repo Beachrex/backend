@@ -89,6 +89,14 @@ namespace App\Swagger\Schemas\AI;
  *         )
  *     ),
  *     @OA\Property(
+ *         property="turnstile_token",
+ *         type="string",
+ *         nullable=true,
+ *         maxLength=2048,
+ *         description="Cloudflare Turnstile token (widget action `ai_chat`). Needed only when the server has Turnstile on and asks for it (403 turnstile_required / turnstile_failed): browser requests, or every client when TURNSTILE_REQUIRED_FOR=all. One successful check covers the conversation (session_id) for the session lifetime from the same IP.",
+ *         example="0.xxxxxxxx"
+ *     ),
+ *     @OA\Property(
  *         property="page_context",
  *         type="object",
  *         nullable=true,

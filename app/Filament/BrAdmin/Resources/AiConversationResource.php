@@ -51,6 +51,17 @@ class AiConversationResource extends Resource
         return false;
     }
 
+    /** Read-only: no retention/deletion policy is decided yet (owner decision, ADR 2026-10-29). */
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
     /** No global search over chat text (it may hold personal data). */
     public static function canGloballySearch(): bool
     {
@@ -176,6 +187,9 @@ class AiConversationResource extends Resource
                 Infolists\Components\TextEntry::make('tokens_used')->label('Tokens'),
                 Infolists\Components\TextEntry::make('cost_usd')->label('Cost (USD)')
                     ->formatStateUsing(fn ($state) => $state === null ? '—' : '$'.number_format((float) $state, 4))->placeholder('—'),
+                Infolists\Components\TextEntry::make('models')->label('Model')->placeholder('—')
+                    ->state(fn (AiSession $r) => AiUsage::query()->where('session_id', $r->id)
+                        ->distinct()->orderBy('llm_model')->pluck('llm_model')->implode(', ') ?: null),
                 Infolists\Components\TextEntry::make('page_context')->label('Opened on')->columnSpan(2)
                     ->state(fn (AiSession $r) => self::pageLabel($r->page_context))->placeholder('—'),
                 Infolists\Components\TextEntry::make('id')->label('Session id')->columnSpanFull()->copyable(),
@@ -183,7 +197,12 @@ class AiConversationResource extends Resource
             Infolists\Components\Section::make('Transcript')->schema([
                 Infolists\Components\ViewEntry::make('transcript')->hiddenLabel()
                     ->view('filament.ai-conversations.transcript')
-                    ->state(fn (AiSession $r) => $r->messages()->orderBy('created_at')->orderBy('id')->get()),
+                    ->state(fn (AiSession $r) => [
+                        'messages' => $r->messages()->orderBy('created_at')->orderBy('id')->get(),
+                        // Model and cost of each answered turn (ai_usage row with the same request_id), one query.
+                        'usage' => AiUsage::query()->where('session_id', $r->id)->whereNotNull('request_id')
+                            ->get(['request_id', 'llm_model', 'cost_usd'])->keyBy('request_id'),
+                    ]),
             ]),
         ]);
     }

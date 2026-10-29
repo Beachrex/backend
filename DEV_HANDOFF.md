@@ -54,40 +54,86 @@ How to test the changes
 
 ## 2026-10-29 - Admin "AI → Chat conversations": read-only history of the AI chat
 
-**Owner (2026-10-29):** "da v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore daje" — a history
-to learn from and improve the assistant.
+**Owner (2026-10-29):** "v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore daje — zgodovina, da
+se lahko izboljšujemo." ADR 2026-10-29 "AI chat history in the admin; retention is an owner decision".
 
 ### What was stored before
-Every successful chat turn already saved the user question and the assistant answer (`ai_messages`, both engines,
-anonymous and signed-in), with the session (`ai_sessions`: user, locale, tier, tokens, hashed IP, user agent) and the
-cost row (`ai_usage`). Not stored: the engine, `page_context`, a link from a turn to its `ai_usage` row, and turns that
-failed (provider busy/timeout, server error, 402 for paid trip plans) — the question was lost. No pruning job exists:
-`expires_at` (30 min) only ends the conversation for the model, rows stay.
+Every answered chat turn: question and answer text in `ai_messages` (both engines, anonymous and signed-in; tool calls
+or returned beaches in `context`), the session in `ai_sessions` (user, locale, tier, tokens, hashed IP, user agent), the
+cost in `ai_usage`. Not stored: the engine, `page_context`, a link from a turn to its `ai_usage` row (model, cost),
+and turns that failed (provider busy/timeout, server error, 402 trip plan) — the question was lost. Nothing prunes these
+tables: the 30-min `expires_at` only ends the conversation for the model; the 30/90-day cleanup in
+`docs/ai/architecture/data-retention-policy.md` was never implemented (note added there).
 
 ### Changes
 - Migration `2026_10_29_180000_add_chat_history_fields_to_ai_tables` (additive, idempotent): `ai_sessions.engine`,
-  `ai_sessions.page_context` (first page), `ai_messages.page_context`, `ai_messages.error`, `ai_messages.request_id`;
-  index `ai_sessions(created_at)`, partial index on failed turns, `pg_trgm` GIN index on `ai_messages.content` when the
-  extension can be created (otherwise skipped, search still works); backfills `engine` of existing sessions.
-- `ChatController`: stores the engine on new sessions, the validated `page_context` on the user message (and the first
-  one on the session), the `request_id` on both messages, and a failed turn as a user message with `error`
-  (`ai_unavailable`, `internal_error`, `payment_required`). Failed turns are left out of the history sent to the model.
-  The API response is unchanged.
-- Admin **AI → Chat conversations** (`AiConversationResource`): list (started, last message, user e-mail or
-  "anonymous", language, engine, messages, first question, page, tokens, cost, errors), filters (date range, signed
-  in/anonymous, language, engine, has an error), search in all message text and the user e-mail, 25/50/100 per page,
-  all columns as subqueries (constant query count). View page: transcript with times, tools used, beaches shown,
-  failed turns; delete one conversation (confirmation; `ai_usage` rows stay). Stats above the list (14 days).
-  No IP hash or user agent is shown. No create/edit, no bulk delete, no global search.
-- Admin guide `docs/guides/admin/ai-pogovori.md`, ADR 2026-10-29 "AI chat history in the admin".
+  `ai_sessions.page_context`, `ai_messages.page_context`, `ai_messages.error`, `ai_messages.request_id`; indexes
+  `ai_sessions(created_at)`, `ai_messages(session_id, created_at, id)`, partial `ai_messages(session_id) WHERE error`,
+  `ai_usage(request_id)`, and a `pg_trgm` GIN index on `ai_messages.content` when the extension can be created
+  (otherwise skipped; search still works). Backfills `engine` of existing sessions from the message intent.
+- `ChatController`: stores the engine on new sessions, the validated `page_context` (first one on the session, each
+  on its user message), the `request_id` on both messages, and a failed turn as a user message with `error`
+  (`ai_unavailable`, `internal_error` incl. unexpected agent exceptions, `payment_required`). Failed turns are left
+  out of the history sent to the model. API response unchanged; no new logging of chat text.
+- Admin **AI → Chat conversations** (`/ai-conversations`, `AiConversationResource`), read-only (no create/edit/delete):
+  list (started, last message, user e-mail or "anonymous", language, engine, messages, first question, page, tokens,
+  cost, errors; newest first), filters (date range, signed in/anonymous, language, engine, has an error), search in
+  all message text and the user e-mail (LIKE wildcards escaped), columns as subqueries (query count independent of
+  rows). View: metadata (incl. models used) and a transcript with times, page, tools used, beaches shown, model and
+  cost per answer, failed turns. Stats widget (14 days). No IP hash or user agent shown; no global search.
+- Docs: admin guide `docs/guides/admin/ai-pogovori.md` (+ README row), ADR.
+
+### Owner decisions open
+Retention period (proposal 180 days, then delete) and the privacy policy wording ("AI beach assistant" says questions
+are processed to answer and names only OpenAI; it should say chats are kept and read to improve the service, for how
+long, and name Anthropic).
 
 ### Affected Endpoints
 None changed. `POST /api/v1/ai/chat` stores more (see above); response shape unchanged.
 
 ### Testing
-`php vendor/bin/phpunit tests/Feature/AI/ChatHistoryAdminTest.php` (agent and pipeline storage, failed turns kept out of
-the model history, guest 302 / non-admin 403, anonymous + signed-in rows, search in assistant text with literal `%`,
-filters, constant query count, transcript escaping, delete).
+`php vendor/bin/phpunit tests/Feature/AI/ChatHistoryAdminTest.php` (12 tests: agent and pipeline storage through a
+real chat request with faked LLM, failed turns incl. unexpected errors and kept out of the model history, guest
+redirect / non-admin 403, anonymous + signed-in rows, search in assistant text, filters, constant query count,
+transcript escaping and per-turn model/cost, read-only, conversations still listed after session expiry).
+
+---
+
+## 2026-10-29 - AI chat: $5/day free limit with real Anthropic cost, Cloudflare Turnstile
+
+**Owner (2026-10-29):** "Anthropic uporabljamo … brezplačni uporabniki 5 $ na dan; če je preseženo, se chat izklopi in
+se naslednji dan avtomatsko vklopi … Turnstile ja". ADR 2026-10-29 "AI chat daily cost cap and Turnstile".
+
+### Changes
+- Limits (code defaults, env still overrides): free chat `AI_FREE_TIER_DAILY_LIMIT` **5** (was 500), all AI
+  `AI_EMERGENCY_SHUTDOWN_LIMIT` **20** (was 5000). Day = local day in `AI_DAILY_LIMIT_TIMEZONE` (default
+  Europe/Ljubljana); back on at local midnight. Paid trip planner: emergency limit only, not counted in the free one.
+  `.env.example` no longer sets 500/5000 (CI copied them).
+- Cost: `App\Services\AI\ModelPricing` (one price table, Anthropic per published table, cache multipliers, unknown
+  model → most expensive tier + warning); `AiSpendMeter` (scoped) collects every LLM call; a chat that fails after
+  billed calls still writes an `ai_usage` row; itinerary cost includes both narration attempts; `/ai/test` records cost.
+- `AiDailySpend`: local-date sums and cache keys, cache dropped on every new `ai_usage` row, once-a-day log + optional
+  e-mail `AI_ALERT_EMAIL`.
+- Turnstile: `VerifyTurnstile` middleware on the chat group, `TurnstileVerifier` (siteverify), config
+  `services.turnstile` (`TURNSTILE_SECRET_KEY`, `TURNSTILE_REQUIRED_FOR=web|all`). Session remembered as verified
+  for 30 min (sliding), bound to the IP hash.
+- `deploy/docker-compose.vps.yml`: front build arg `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (empty default).
+
+### Affected Endpoints
+- `POST /api/v1/ai/chat`, `POST /api/v1/ai/test`: request field `turnstile_token` (optional); new 403
+  `{"error":"turnstile_required"|"turnstile_failed"}` only when `TURNSTILE_SECRET_KEY` is set and the request is from a
+  browser (or `TURNSTILE_REQUIRED_FOR=all`); 503 at the daily limit now has `reason: "daily_limit"`, `retry_after`
+  (ISO 8601, next local midnight) and a `Retry-After` header (additive). The OpenAPI 503 schema now describes the
+  real body (`retry_after` was already an ISO string, `fallback_url` was never sent).
+- `POST /api/v1/ai/itineraries`, `POST /api/v1/ai/itinerary-plans`: no longer stopped by the free chat limit.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AI/AiCostCapTest.php tests/Feature/AI/ChatTurnstileTest.php` (prices, every
+Claude round counted, failed request keeps its cost, $4.99 open / $5.02 closed, local midnight reopens, trip planner
+not stopped by the free limit, one mail per day; Turnstile missing/invalid/wrong action/valid-once-per-session/new
+IP/TTL/off without secret/mobile in web vs all mode/Cloudflare down/wrong secret/planner not gated).
+
+---
 
 ## 2026-10-29 - TASK-009 amended: separate admin switches for AI chat and the AI trip planner
 

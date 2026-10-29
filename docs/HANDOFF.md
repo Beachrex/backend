@@ -68,6 +68,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-29: **AI chat $5/day limit with real Anthropic cost + Cloudflare Turnstile** (owner: "brezplačni uporabniki
+  5 $ na dan … naslednji dan avtomatsko vklopi", "Turnstile ja"). Limits free $5 / all $20 per Ljubljana day, every LLM
+  round costed (`ModelPricing`, `AiSpendMeter`), the paid trip planner no longer stopped by the free limit, Turnstile
+  on the chat (off until the owner sets the keys, owner action above), website "resting until tomorrow" message.
+  ADR 2026-10-29. PRs: backend + web-client; status in DEV_HANDOFF of both repos.
+
 - 2026-10-29: **Logo watermark on mobile-app photos** (owner: "dodaj watermark na fotografije, ki ga nimajo").
   Imagor draws `img/watermark/beachrex-watermark-v1.png` on `img/beaches_mobile/` photos when shown (originals
   untouched, reversible); the backend deploy uploads the PNG once (`media:publish-watermark`). ADR 2026-10-29.
@@ -239,6 +245,17 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Owner's open actions
 
+- **AI chat limit + Turnstile (2026-10-29, ADR "AI chat daily cost cap and Turnstile"):**
+  1. Check that the server env files do not still override the new limits with the old 500/5000 (values are not
+     secret): `grep -E '^AI_(FREE_TIER_DAILY_LIMIT|EMERGENCY_SHUTDOWN_LIMIT)=' /opt/beachrex/envs/.env.dev /opt/beachrex/envs/.env.uat /opt/beachrex/envs/.env.prod`.
+     Delete those lines (code defaults: free chat $5, everything $20 per day) or set the values you want; redeploy the API.
+  2. Optional: `AI_ALERT_EMAIL=<your address>` in `.env.<env>` → one e-mail per day when a limit trips.
+  3. Turnstile: Cloudflare dashboard → Turnstile → Add widget → hostnames `beachrex.com` (+ `dev.beachrex.com`,
+     `uat.beachrex.com` if wanted), mode **Managed** (or Invisible) → copy the keys. Site key into
+     `/opt/beachrex/envs/.env.front.<env>` as `NEXT_PUBLIC_TURNSTILE_SITE_KEY=…`, secret key into
+     `/opt/beachrex/envs/.env.<env>` as `TURNSTILE_SECRET_KEY=…`; then redeploy the **API first**, then the web
+     (Actions → Deploy → Run workflow, or the next merge). Without both keys Turnstile stays off.
+  4. Privacy/cookie texts: name Cloudflare Turnstile as a strictly necessary security service (CookieYes: no consent needed).
 - **Pools (2026-10-29, ADR "Indoor / outdoor pools"):** dev has no pool places yet, so "Bazen", "Notranji bazen" and "Zunanji bazen" show 0. When pool places are added (importer or admin), set **Indoor pools count** / **Outdoor pools count** on each one (beach form), otherwise it is found only by "Bazen". The map and list filters read the database (no search index change).
 - **AI trip planner off on prod (TASK-009, 2026-10-29):** after the code is on prod, Admin (dock.beachrex.com) → System → Site settings → switch **AI trip planner (paid)** off (leave **AI chat** on) → Save. Guide `docs/guides/admin/nastavitve-strani.md`.
 - **Lake beaches (2026-10-22, `beaches:fix-lake-waterbody`, guide `docs/guides/admin/jezerske-plaze.md`):** on dev run the command without options (dry run, expect ~42 × `waterbody -> lake`), send the output, then `--apply` and `php artisan search:index Beach`. uat/prod only when the owner decides (the same two steps per environment).
@@ -260,6 +277,7 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 - **Legal translations:** terms §6 and the footer pages were machine-translated; have the main languages checked.
 - **Footer pages on dev (TASK-004):** run `static-pages:sync --dry-run`, then without `--dry-run` (commands in DEV_HANDOFF / the chat). Same on uat/prod at promotion (prod launch runbook B6).
 - **CookieYes:** enable "Google Consent Mode"; domain `beachrex.com`.
+- **Microsoft Clarity (web-client#138, 2026-10-29):** prod only, loaded after the CookieYes "analytics" consent. In CookieYes, run a scan / put the Clarity cookies (`_clck`, `_clsk`, `CLID`, `MUID`, `ANONCHK`, `SM`) in the "Analytics" category; the privacy and cookie policies (static pages) name only Google Analytics and should also name Microsoft Clarity (Microsoft Corporation) as an analytics provider.
 - **Legal texts:** the privacy policy, cookie policy and terms are drafts (they name OpenAI and Stripe, which the code uses); review, ideally with a lawyer.
 
 - **Waterbody data (QA #69):** every beach has waterbody `sea` (3 774 on dev, 2026-10-08), so the lake/river/pool tiles and filters find nothing. Owner decision 2026-10-08: keep the tiles and add the data ("to zaenkrat pusti, samo zabeleži, moramo dodati podatke"). No code change.

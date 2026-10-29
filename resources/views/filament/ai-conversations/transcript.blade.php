@@ -5,15 +5,18 @@
         'internal_error' => 'No answer: server error',
         'payment_required' => 'No answer: paid feature (multi-day trip plan)',
     ];
+    $state = $getState() ?? [];
+    $usage = $state['usage'] ?? collect();
 @endphp
 <div class="space-y-3">
-    @forelse ($getState() ?? [] as $message)
+    @forelse ($state['messages'] ?? [] as $message)
         @php
             $isUser = $message->role === 'user';
             $ctx = is_array($message->context) ? $message->context : [];
             $beaches = array_values(array_filter($ctx['beaches'] ?? [], fn ($b) => is_array($b) && isset($b['name'])));
             $tools = array_values(array_filter($ctx['tool_calls'] ?? [], fn ($c) => is_array($c) && isset($c['name'])));
             $page = \App\Filament\BrAdmin\Resources\AiConversationResource::pageLabel($message->page_context);
+            $turn = ! $isUser && $message->request_id ? $usage->get($message->request_id) : null;
         @endphp
         <div @class([
             'rounded-lg p-3 border',
@@ -26,6 +29,7 @@
                 @if ($message->intent && $message->intent !== 'agent')<span>intent: {{ $message->intent }}</span>@endif
                 @if ($message->tokens_total)<span>{{ $message->tokens_total }} tokens</span>@endif
                 @if ($page)<span>page: {{ $page }}</span>@endif
+                @if ($turn)<span>{{ $turn->llm_model }} · ${{ number_format((float) $turn->cost_usd, 4) }}</span>@endif
                 @if (! empty($ctx['refused']))<span class="text-warning-600">refused (off-topic)</span>@endif
             </div>
             <div class="whitespace-pre-wrap break-words text-sm text-gray-950 dark:text-white">{{ $message->content }}</div>

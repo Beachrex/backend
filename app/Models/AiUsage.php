@@ -43,6 +43,12 @@ class AiUsage extends Model
     /**
      * The attributes that should be cast.
      */
+    protected static function booted(): void
+    {
+        // The circuit breaker's daily sums are cached; a new cost makes the next check read the real total.
+        static::created(fn () => \App\Services\AI\AiDailySpend::forget());
+    }
+
     protected function casts(): array
     {
         return [
