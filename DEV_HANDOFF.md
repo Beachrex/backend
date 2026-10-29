@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Footer pages: full company details, not liable for VAT
+
+Owner, 2026-10-29: the company details stay on the site (legal notice under ZEPT art. 5 and ZGD-1 art. 32, GDPR art. 13, ZVPot-1 for paid AI plans); MOJA PLAŽA, d.o.o. is **not liable for VAT** (tax no. 53794214, reg. no. 6791174000). Register court and share capital per the business register (Okrožno sodišče v Mariboru, EUR 12,500).
+
+- `database/content/static-pages/{19 locales}.json`:
+  - `about-us`, section "Who is behind Beachrex": rewritten. Intro (Maribor, lakes/pools/spas coming), how the data is made, **Company details** (company, registered office, reg. no., tax no. with VAT status, register court, share capital, e-mail), **Work with us** (link to the contact page) and **Spotted a mistake?** (link to the contribution rules). Links use each locale's slugs.
+  - `terms-of-use` §5: the seller was described as "VAT-registered in Slovenia" — wrong. Now: reg. no., tax no., not liable for VAT.
+  - `contact`: VAT status after the tax number, register court and share capital added.
+  - `privacy-policy` §1: VAT status after the tax number.
+- Test: `SyncStaticPagesTest::test_company_details_are_complete_and_not_vat_registered`.
+
+**Apply per environment (owner):** `php artisan static-pages:sync --dry-run`, then without `--dry-run` (data only, no API change).
+
+**Open (owner):** Stripe checkout uses `automatic_tax` when `ai.stripe.tax_enabled` is on. A company that is not liable for VAT must not charge VAT: keep it off (and Stripe Tax registrations empty) until the company registers for VAT.
+
 ## 2026-10-29 - Watermark PNG for mobile-app photos (`media:publish-watermark`)
 
 **Owner request (2026-10-29):** photos uploaded from the mobile app have no Beachrex logo; add it. ADR 2026-10-29
