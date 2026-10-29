@@ -170,6 +170,33 @@ limit boundary, no Italian beach for "france", Slovenian "Francija", region scop
 same-name places, index settings, OpenAPI). Deliberate breaks: without the scope 3 tests fail; with item counts as
 totals 4 fail; the old attribute order fails the index test.
 
+## 2026-10-29 - User type "Adventurer": Slovenian "Pustolovec", Croatian "Pustolovac"
+
+### Overview
+Owner, 2026-10-29: "Adventurer" was "Pustolov" in Slovenian and Croatian, which is wrong. Correct forms:
+Slovenian **Pustolovec**, Croatian **Pustolovac** (capitalised like the other user-type labels).
+
+### Changes Made
+- Migration `2026_10_29_120000_fix_adventurer_name_sl_hr`: `user_type_translation` of `user_type.code = adventurer`,
+  `sl` "Pustolov"/`pustolov` → "Pustolovec"/`pustolovec`, `hr` "Pustolov"/`pustolov` → "Pustolovac"/`pustolovac`.
+  Idempotent; each column changes only while it still holds the exact old value (admin edits stay). Runs on every
+  environment at deploy (ADR 2026-10-23).
+- Slug decision: the slug follows the name. User-type slugs are not used in any web URL or filter (filters use
+  `code`/`id`: `BeachFilterService`, web `DynamicSearchBeaches`), so no redirect is needed.
+- `database/seeders/UserTypeSeeder.php`: same values for fresh databases.
+- Test `tests/Feature/AdventurerNameSlHrTest.php` (migration: fixes, idempotent, other user types and edited values
+  untouched; seeder: fresh seed has the right names).
+
+### Affected Endpoints
+- `GET /api/v1/beaches/filters`, `GET /api/v1/user-types` and beach details: `user_type` name/slug for `sl`, `hr`
+  (no schema change). API caches are cleared by the deploy.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AdventurerNameSlHrTest.php`; on dev: `GET /api/v1/beaches/filters` with
+`Accept-Language: sl` → "Pustolovec", `hr` → "Pustolovac".
+
+---
+
 ## 2026-10-28 - TASK-008: homepage media example beach (`beach_views.config.showcase_beach_id`)
 
 **Owner request (2026-10-28):** make "View beaches from all angles" on the homepage interactive, on one real beach.

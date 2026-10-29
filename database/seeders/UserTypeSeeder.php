@@ -71,9 +71,9 @@ class UserTypeSeeder extends Seeder
         $translations = [
             'adventurer' => [
                 'en' => ['name' => 'Adventurer', 'slug' => 'adventurer'],
-                'sl' => ['name' => 'Pustolov', 'slug' => 'pustolov'],
+                'sl' => ['name' => 'Pustolovec', 'slug' => 'pustolovec'],
                 'de' => ['name' => 'Abenteurer', 'slug' => 'abenteurer'],
-                'hr' => ['name' => 'Pustolov', 'slug' => 'pustolov'],
+                'hr' => ['name' => 'Pustolovac', 'slug' => 'pustolovac'],
                 'fr' => ['name' => 'Aventurier', 'slug' => 'aventurier'],
                 'es' => ['name' => 'Aventurero', 'slug' => 'aventurero'],
                 'it' => ['name' => 'Avventuriero', 'slug' => 'avventuriero'],
