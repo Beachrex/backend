@@ -68,6 +68,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-29: **Logo watermark on mobile-app photos** (owner: "dodaj watermark na fotografije, ki ga nimajo").
+  Imagor draws `img/watermark/beachrex-watermark-v1.png` on `img/beaches_mobile/` photos when shown (originals
+  untouched, reversible); the backend deploy uploads the PNG once (`media:publish-watermark`). ADR 2026-10-29.
+  PRs: backend (PNG + command + deploy step) and web-client (`buildCdnUrl`); status in DEV_HANDOFF of both repos.
+  Not covered: the mobile app and the MCP server build their own image URLs (no watermark there yet).
+
 - 2026-10-14 (session 10): **TASK-006 Windy webcams — code live on dev, data not imported yet** (owner: plan approved, 3 km radius, mode B, direct iframe, other providers hidden). Spec `docs/tasks/TASK-006-windy-webcams.md`, proof `docs/tasks/TASK-006.feedback.md`, API facts `docs/technical/windy-webcams-api.md`.
 
   | PR | Change | Deploy run |
@@ -180,7 +186,7 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
   | Beachrex/web-client#32, #33 | Author page `/{locale}/gregor-balazic` (platform design, 19 languages, footer link); role "Founder of Beachrex" | 73 / 74 |
 
   The owner ran `static-pages:sync` on dev for the MCP page, the media kit and terms §6.
-  Owner decisions 2026-10-08: no watermark; trademark to be registered at EUIPO (owner); the author page text stays in `messages/*.json` (no CMS for now); the mobile side padding (global `.container { padding: 0 5px }` in `web-client/src/styles/globals.css`) stays as it is for now.
+  Owner decisions 2026-10-08: no watermark (**superseded 2026-10-29** for mobile-app photos: ADR "Watermark mobile-app photos on the fly"); trademark to be registered at EUIPO (owner); the author page text stays in `messages/*.json` (no CMS for now); the mobile side padding (global `.container { padding: 0 5px }` in `web-client/src/styles/globals.css`) stays as it is for now.
   X shows no link card for dev URLs because dev's robots.txt is `Disallow: /` (by design); production will.
 
 - 2026-10-08 (session 5): **TASK-004 pre-launch review. Live on dev** (each finding verified in code first):

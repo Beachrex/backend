@@ -173,6 +173,9 @@ jobs:
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan config:cache
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan route:cache
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan cache:clear
+            # Watermark PNG for mobile-app photos (ADR 2026-10-29): uploaded once to the shared bucket, never overwritten.
+            # Not fatal: without it Imagor shows the photo unmarked or errors only on watermarked URLs; the next deploy retries.
+            docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} exec -T \${API_SVC} php artisan media:publish-watermark || echo '::warning::media:publish-watermark failed'
             # Itinerary worker (AI-3): restarted after migrate and config:cache so it runs the new code and schema.
             docker compose -f docker-compose.vps.yml --env-file \${ENV_FILE} up -d --force-recreate --no-deps worker_${ENV_NAME}
             # Index settings from config/scout.php first (new searchable fields such as place_names), then the data.

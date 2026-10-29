@@ -1149,3 +1149,37 @@ expander labelled with the number of carousel cards; the web fix shows the regio
 **Decision**: Table `site_settings` with key `ai_assistant_enabled` (default on), edited in admin (System → Site settings). Off: website hides the menu entry and `llms.txt` line and answers 404 on `/ai/*` and `/payment/*`; API answers 503 `ai_disabled` on `/api/v1/ai/*` and Stripe checkout. Public read: `GET /api/v1/site-settings`. `AI_ENABLED` stays as the server-level kill switch.
 
 **Consequences**: Future site switches go into the same table and page. The mobile app should read `/site-settings` and hide its AI entry when off.
+
+
+## [2026-10-29] Watermark mobile-app photos on the fly (supersedes the 2026-10-08 "no watermark" note for these photos)
+
+**Status**: Accepted (owner 2026-10-29: most beaches have photos with our logo, but not all, e.g. Plage du Port Vieux, Biarritz; approved adding the watermark to the photos that lack it)
+
+**Context**: Photos uploaded in admin (`img/beaches/…`) have the Beachrex logo baked in at the bottom right. Photos
+uploaded from the mobile app (`img/beaches_mobile/…`, 839 of 2 876 beaches on dev) have none. On 2026-10-08 the owner
+had said "no watermark" (recorded in HANDOFF / DEV_HANDOFF, not as an ADR); this request reverses it for these photos.
+Images are served by Imagor (`https://s3.beachrex.com/unsafe/<ops>/<path>`), which supports a `watermark` filter that
+loads the logo from the same bucket.
+
+**Decision**:
+1. Imagor draws the watermark when a mobile-app photo is shown; the originals on the bucket are not changed.
+   The website adds `filters:watermark(img/watermark/beachrex-watermark-v1.png,-3p,-4p,0,20,30)` (bottom right,
+   3 %/4 % margin, at most 20 % of the width) in its one URL builder (`buildCdnUrl`, plus the share image URL).
+2. Only raster photos under `img/beaches_mobile/`. Never admin photos (logo already baked in), icons, videos, 360° tours
+   (`/vtour/`) or panorama/sphere images (a logo on an equirectangular image looks wrong in a viewer).
+3. The watermark is `resources/watermark/beachrex-watermark-v1.png` (white horizontal logo from the brand package +
+   "www.beachrex.com" in Inter, soft shadow; generator `resources/watermark/make_watermark.py`). Every deploy runs
+   `media:publish-watermark`, which uploads it to `public/img/watermark/beachrex-watermark-v1.png` (public) only if
+   missing. The bucket is shared by all environments, so a published version is never overwritten: a new design is
+   a new file (`-v2`) and the website switches to it.
+4. Structured data still makes no copyright claim for mobile uploads (they may be other authors' photos); the mark is
+   a brand mark on how Beachrex shows the photo.
+
+**Alternatives**: Bake the logo into the files (irreversible, rewrites originals that may be other authors' work, and
+the shared bucket means every environment changes at once); a CSS overlay (not in downloaded/shared/OG images or
+Google Images).
+
+**Consequences**: Reversible by removing the filter in the web client. Watermarked URLs are new Imagor cache keys
+(first view of each photo is rendered once). The mobile app and the MCP server build their own image URLs and are not
+changed by this decision. If the PNG is missing on the bucket, watermarked URLs fail, so the backend deploy (which
+uploads it) must reach an environment before the web client that uses it.
