@@ -52,6 +52,15 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - nginx: HTTPS for beachrex.com (prod launch D3)
+
+- `deploy/nginx/beachrex.conf`: the HTTP-only placeholder for `beachrex.com` / `www.beachrex.com` is replaced by
+  80 → 301 HTTPS, a `www.beachrex.com` 443 block that 301s to `https://beachrex.com$request_uri`, and a
+  `beachrex.com` 443 block proxying to `beachrex_front_prod`. Certificate `/etc/letsencrypt/live/beachrex.com/`.
+- **Merge only after the owner issued the certificate** (`sudo certbot certonly --nginx -d beachrex.com -d www.beachrex.com`),
+  otherwise `nginx reload` fails for every environment. Then promote to uat/main so all branches carry the same file.
+- Check: `curl -sI https://www.beachrex.com/en` → 301 to `https://beachrex.com/en`; `https://beachrex.com/en` → 200.
+
 ## 2026-10-29 - Published beach counts per location level (beach details + place pages)
 
 ### Overview
