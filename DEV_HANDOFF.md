@@ -52,6 +52,29 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Pool types under "Pool" in the water body filter: tests and data note (owner report)
+
+### Overview
+Owner: "filter bi mogli razbit na notranji in zunanji bazen … če stisneš na prvi strani outdoor ali indoor, filter ne
+zazna". The home page tiles send `?pool_type=indoor|outdoor`; the map showed the chip but "Najdeno (0)".
+Checked: the API already filters `pool_type` (QA #70, `indoor_pools_count` / `outdoor_pools_count` > 0) on both query
+paths. **The 0 is data:** dev has no pool places yet (Beachrex MCP on dev: `waterbody=pool` → 0, `has_swimming_pool`
+→ 0; Slovenia has only its 20 sea beaches). No code bug in the API.
+
+### Changes
+- `tests/Feature/PoolWaterbodyFilterApiTest.php` (new): `waterbody=pool` returns indoor, outdoor and unclassified pool
+  places; the home page tile params return results; `waterbody=pool&pool_type=indoor|outdoor` returns only that kind
+  (map and list endpoints); unknown `pool_type` is ignored; `/beaches/filters?pool_type=indoor` still lists `pool` and
+  both pool types (the web nests them under "Pool"). Deliberate break (`> 0` → `>= 0` in the raw SQL path) fails 2 tests.
+- No API, schema or search index change. The web-client shows the pool types under "Pool" (web-client `DEV_HANDOFF.md`).
+
+### Affected endpoints
+None changed. Behaviour documented: `waterbody` and `pool_type` combine with AND.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/PoolWaterbodyFilterApiTest.php` → OK (7 tests); full suite: only the 4 known
+API-key failures.
+
 ## 2026-10-29 - Footer pages: share capital removed
 
 Owner, 2026-10-29: the share capital is not shown on the site (not confirmed, not needed). Removed from `about-us` (company details) and `contact` in all 19 locales (`database/content/static-pages/*.json`). Test `SyncStaticPagesTest::test_company_details_are_complete_and_not_vat_registered` now checks that no page shows it.
