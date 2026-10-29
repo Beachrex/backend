@@ -38,5 +38,12 @@
   "Parking Capacity": "Parkoló kapacitása",
   "Beach Inclination": "Strand lejtése",
   "Swimming Depth": "Úszási mélység",
-  "Occupancy": "Zsúfoltság"
+  "Occupancy": "Zsúfoltság",
+  "Your link to the Beachrex test website": "Az Ön linkje a Beachrex tesztoldalához",
+  "Use this link to open the Beachrex test website :host.": "Ezzel a linkkel nyitja meg a Beachrex tesztoldalát: :host.",
+  "Open the test website": "Tesztoldal megnyitása",
+  "It works once.": "Egyszer használható.",
+  "If you did not ask for this link, you can ignore this email.": "Ha nem kérte ezt a linket, hagyja figyelmen kívül ezt az e-mailt.",
+  "If this e-mail may open the test website, we have sent a link.": "Ha ez az e-mail-cím hozzáfér a tesztoldalhoz, elküldtük a linket.",
+  "This link is invalid, already used or expired.": "A link érvénytelen, már felhasználták, vagy lejárt."
 }

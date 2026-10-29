@@ -1292,3 +1292,49 @@ message until midnight. Cookie consent: Turnstile is a strictly necessary securi
 category needed); the privacy policy should name Cloudflare Turnstile. The site sends no Content-Security-Policy
 header today; if one is added, it must allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
 
+
+## [2026-10-29] Closed dev/uat websites behind an e-mail magic link
+
+**Status**: Accepted (owner 2026-10-29: "dev in uat stran bi morali zapreti — vpišem svoj mail, dobim magic link,
+potem se v sejo shrani, da lahko gledam; da ne bo kdorkoli vtipkal dev/uat in prišel na stran")
+
+**Context**: dev.beachrex.com and uat.beachrex.com are reachable by anyone who types the address (only `noindex`
+keeps them out of search engines). They show unreleased work and spend AI budget.
+
+**Decision**:
+1. Only the **web frontends** dev/uat are closed. Not production (`beachrex.com`, live), not the APIs (the mobile dev
+   builds use dev-api; the API is not secret), not the admin (dock-dev/dock-uat have their own login).
+2. Off unless `PREVIEW_GATE_ENABLED=true`: in `.env.front.<env>` (website) and `.env.<env>` (API). **Never** active
+   on production, whatever the env says: the website checks `isProductionSite(NEXT_PUBLIC_BASE_URL)`, the API checks
+   `FRONTEND_URL` against `beachrex.com` / `www.beachrex.com`.
+3. Who may enter: the admins of that environment (`users.is_admin`) plus `PREVIEW_ALLOWED_EMAILS` (API env, comma
+   list). `POST /api/v1/preview-access/request` answers the same for every address (no enumeration) and sends the
+   e-mail after the response (same timing). One-time token: 64 random characters, only its SHA-256 stored
+   (`preview_access_tokens`), 15 minutes, single use (atomic `UPDATE … WHERE used_at IS NULL`). Limits: 5 requests
+   per minute per IP; per address 1 e-mail per minute and 5 per hour (silently skipped). `return_path` must be a
+   relative path (422 otherwise). Both endpoints answer 404 when the gate is off for that environment.
+4. The e-mail link opens `/preview-access/callback?token=…` on the website, a page with a button; the button POSTs
+   the token to the website's `/preview-access/verify`, which calls `POST /api/v1/preview-access/verify` **server
+   side** and sets its own cookie. The return path is stored with the token on the API (not in the link) and
+   sanitized again by the website.
+   *Deviation from the first sketch (link → route handler that verifies on GET):* mail link scanners (Outlook Safe
+   Links, corporate gateways) open every URL in an e-mail and would use up a single-use token before the person
+   clicks. A GET that only shows a button cannot be spent that way.
+5. The cookie `beachrex_preview` = `v1.<expires>.<nonce>.<HMAC-SHA256>`, signed with the server-only
+   `PREVIEW_GATE_SECRET` (≥ 32 characters; `openssl rand -hex 32`), HttpOnly, Secure, SameSite=Lax, 30 days, host-only.
+   The Next.js middleware verifies it with Web Crypto before the locale handling; no valid cookie → 307
+   `/preview-access?return=<path>`. Exempt: `/preview-access*`, `/_next/`, `robots.txt`, favicon, static files (and
+   everything the middleware matcher already skips: `/api`, `/images`, `/brand/`, `/vendor/`, sitemaps, `ads.txt`,
+   `llms.txt`).
+6. Enabled without a usable secret → every gated page answers 503 "This test website is closed" (fail closed, no
+   crash loop).
+7. Env plumbing: non-`NEXT_PUBLIC_` variables are **not** inlined into the Next 14.2 middleware bundle (checked in
+   the build output: the bundle reads `process.env.PREVIEW_GATE_*`, the middleware manifest `env` lists only Next's
+   own keys; the edge sandbox copies the server's `process.env` per request). The front containers already get
+   `.env.front.<env>` through `env_file`, so no build args and no compose change. Changing the values needs only a
+   container restart (the deploy recreates it).
+
+**Consequences**: Revoking all cookies = change `PREVIEW_GATE_SECRET` and redeploy the website. The gate does not
+protect the API (by design), nor the public files the middleware never sees (sitemaps list dev URLs, but the pages
+behind them are closed). Testers without an admin account need their address in `PREVIEW_ALLOWED_EMAILS`. The
+sandbox cannot reach dev/uat: the live check (mail arrives, link opens the site) is the owner's.
