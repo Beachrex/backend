@@ -11191,6 +11191,55 @@
                         },
                         "type": "object",
                         "nullable": true
+                    },
+                    "page_context": {
+                        "description": "TASK-010: the website page the chat widget is open on. Optional, an untrusted hint only (lets the assistant understand 'this beach' / 'here'); never used for authorization. For page_type=beach the server resolves the beach name and place from beach_id (active beaches only) and ignores title. Other keys → 422.",
+                        "required": [
+                            "page_type"
+                        ],
+                        "properties": {
+                            "page_type": {
+                                "type": "string",
+                                "enum": [
+                                    "home",
+                                    "beach",
+                                    "destination",
+                                    "country",
+                                    "region",
+                                    "island",
+                                    "city",
+                                    "search",
+                                    "map",
+                                    "article",
+                                    "other"
+                                ],
+                                "example": "beach"
+                            },
+                            "path": {
+                                "description": "Page path without query string: starts with /, only letters, digits and - . _ ~ / % (URL-encoded)",
+                                "type": "string",
+                                "maxLength": 300,
+                                "example": "/en/beaches/europe/croatia/split-dalmatia/split/bacvice",
+                                "nullable": true
+                            },
+                            "beach_id": {
+                                "description": "Beach id on beach pages",
+                                "type": "integer",
+                                "minimum": 1,
+                                "example": 989,
+                                "nullable": true
+                            },
+                            "title": {
+                                "description": "Page heading (not used for beach pages; cleaned and cut to 80 characters before it reaches the model)",
+                                "type": "string",
+                                "maxLength": 120,
+                                "example": "Split",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": false
                     }
                 },
                 "type": "object"
@@ -12132,6 +12181,11 @@
                         "example": [
                             "Not enough beaches matched all requested user_types; that filter was relaxed."
                         ]
+                    },
+                    "page_context_used": {
+                        "description": "Chat only (TASK-010): true when a valid page_context was sent and turned into a page hint for the model.",
+                        "type": "boolean",
+                        "example": true
                     }
                 },
                 "type": "object"

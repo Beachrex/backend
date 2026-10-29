@@ -218,6 +218,33 @@ Slovenian **Pustolovec**, Croatian **Pustolovac** (capitalised like the other us
 
 ---
 
+## 2026-10-29 - TASK-010: `page_context` on the AI chat (widget knows the current page)
+
+**Owner request (2026-10-29):** AI chat as a widget on every page that knows which page the user is on. ADR "The chat knows the page it is opened on".
+
+### Changes Made
+- `app/Services/AI/Chat/PageContextHint.php` (new): validation rules for `page_context` and the server-built hint line
+  (beach resolved from `beach_id`, active only; other pages: cleaned, truncated, quoted title).
+- `app/Http/Requests/AI/ChatRequest.php`: `page_context` rules (strict: enum, ints, lengths, path charset, no extra keys).
+- `app/Http/Controllers/AI/ChatController.php`: both engines use the hint; response `metadata.page_context_used`.
+- `app/Services/AI/Agent/ChatAgent.php`: optional `$pageHint` appended to the per-message context line (system prompt unchanged).
+- OpenAPI: `AiChatRequest.page_context`, `AiResponseMetadata.page_context_used`; `storage/api-docs/api-docs.json` regenerated.
+
+### Affected Endpoints
+- `POST /api/v1/ai/chat` — new optional field (additive):
+  ```json
+  {"message": "Is this beach good for kids?",
+   "page_context": {"page_type": "beach", "beach_id": 989, "path": "/en/beaches/europe/croatia/split-dalmatia/split/bacvice"}}
+  ```
+  `page_type`: home | beach | destination | country | region | island | city | search | map | article | other (required
+  when `page_context` is sent); `path` ≤ 300, starts with `/`, `[A-Za-z0-9-._~/%]`; `beach_id` int 1…2147483647;
+  `title` ≤ 120 (only for non-beach pages). Anything else → 422.
+
+### Testing
+- `php vendor/bin/phpunit tests/Feature/AI/ChatPageContextTest.php` → 19 tests OK; full suite: only the 4 known API-key failures.
+
+---
+
 ## 2026-10-28 - TASK-008: homepage media example beach (`beach_views.config.showcase_beach_id`)
 
 **Owner request (2026-10-28):** make "View beaches from all angles" on the homepage interactive, on one real beach.
