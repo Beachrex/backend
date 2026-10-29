@@ -38,5 +38,12 @@
   "Parking Capacity": "Місткість парковки",
   "Beach Inclination": "Нахил пляжу",
   "Swimming Depth": "Глибина для плавання",
-  "Occupancy": "Заповненість"
+  "Occupancy": "Заповненість",
+  "Your link to the Beachrex test website": "Ваше посилання на тестовий сайт Beachrex",
+  "Use this link to open the Beachrex test website :host.": "За цим посиланням відкривається тестовий сайт Beachrex :host.",
+  "Open the test website": "Відкрити тестовий сайт",
+  "It works once.": "Воно діє один раз.",
+  "If you did not ask for this link, you can ignore this email.": "Якщо ви не запитували це посилання, просто проігноруйте цей лист.",
+  "If this e-mail may open the test website, we have sent a link.": "Якщо ця адреса має доступ до тестового сайту, ми надіслали посилання.",
+  "This link is invalid, already used or expired.": "Посилання недійсне, уже використане або прострочене."
 }

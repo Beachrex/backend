@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
+use App\Http\Controllers\Api\V1\PreviewAccessController;
 use App\Http\Controllers\Api\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BeachController;
@@ -74,6 +75,12 @@ Route::prefix('api/v1')
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
         Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:5,1');
         Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
+
+        // Closed dev/uat websites: e-mail magic links (404 unless PREVIEW_GATE_ENABLED, never on production)
+        Route::prefix('preview-access')->group(function () {
+            Route::post('/request', [PreviewAccessController::class, 'request'])->middleware('throttle:5,1');
+            Route::post('/verify', [PreviewAccessController::class, 'verify'])->middleware('throttle:20,1');
+        });
 
         // Google OAuth routes (public, rate limited)
         Route::prefix('auth/google')->middleware('throttle:10,1')->group(function () {

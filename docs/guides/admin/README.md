@@ -52,6 +52,7 @@ Stanje: ✅ napisano · ⏳ še ni napisano
 |---|---|---|---|
 | Uporabniki, administratorji, uvoženi s stare strani | User Management → Users, Genders | [uporabniki.md](uporabniki.md) | ✅ |
 | Nastavitve strani: stikali AI klepeta in AI načrtovalca | System → Site settings | [nastavitve-strani.md](nastavitve-strani.md) | ✅ |
+| Zaprta testna stran dev/uat (e-poštna povezava) | strežnik: `.env.front.<okolje>`, `.env.<okolje>` | [zaprta-testna-stran.md](zaprta-testna-stran.md) | ✅ |
 | Podvojeni slugi | System → Fix Duplicate Slugs | [podvojeni-slugi.md](podvojeni-slugi.md) | ✅ |
 | Statusi | System → Statuses | [sifranti.md](sifranti.md) | ✅ |
 

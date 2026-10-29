@@ -8285,6 +8285,156 @@
                 }
             }
         },
+        "/api/v1/preview-access/request": {
+            "post": {
+                "tags": [
+                    "Preview access"
+                ],
+                "summary": "Send a one-time link that opens the closed dev/uat website",
+                "description": "Only when the preview gate is on for this environment (`PREVIEW_GATE_ENABLED=true`, never on production); otherwise 404. Always answers 200 with the same message, whether or not the address may enter (admins of this environment and `PREVIEW_ALLOWED_EMAILS`). The e-mail is sent after the response, in the request's language, with a link to `{FRONTEND_URL}/preview-access/callback?token=…` (valid 15 minutes, one use). At most one e-mail per address per minute and 5 per hour (further requests are silently skipped). Rate limit: 5 requests per minute per IP.",
+                "operationId": "requestPreviewAccess",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "return_path": {
+                                        "description": "Website path to open after the link: relative, starting with a single `/` (default `/`)",
+                                        "type": "string",
+                                        "maxLength": 512,
+                                        "example": "/si/plaze"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Request accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "If this e-mail may open the test website, we have sent a link."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The preview gate is off for this environment"
+                    },
+                    "422": {
+                        "description": "Validation error (invalid e-mail, or `return_path` is not a relative path)"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                }
+            }
+        },
+        "/api/v1/preview-access/verify": {
+            "post": {
+                "tags": [
+                    "Preview access"
+                ],
+                "summary": "Use up a one-time preview link (called by the website server)",
+                "description": "Only when the preview gate is on for this environment; otherwise 404. A token works once and for 15 minutes. On success the website sets its own signed cookie. Rate limit: 20 requests per minute per IP (the callers are the website servers).",
+                "operationId": "verifyPreviewAccess",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "Xy12…"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "format": "email",
+                                            "example": "john@example.com"
+                                        },
+                                        "return_path": {
+                                            "type": "string",
+                                            "example": "/si/plaze"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unknown, used or expired token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "This link is invalid, already used or expired."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The preview gate is off for this environment"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                }
+            }
+        },
         "/api/v1/recommended-transport-types": {
             "get": {
                 "tags": [
@@ -17335,6 +17485,10 @@
         {
             "name": "Parking Capacities",
             "description": "Parking Capacities"
+        },
+        {
+            "name": "Preview access",
+            "description": "Preview access"
         },
         {
             "name": "Recommended Transport Types",

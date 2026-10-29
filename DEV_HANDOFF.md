@@ -52,6 +52,37 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Closed dev/uat websites: e-mail magic link (preview access)
+
+### Overview
+Owner: "dev in uat stran bi morali zapreti — vpišem svoj mail, dobim magic link, potem se v sejo shrani, da lahko
+gledam". ADR "Closed dev/uat websites behind an e-mail magic link". The website (web-client middleware) decides who
+sees a page; the API only sends and checks one-time links. Off unless `PREVIEW_GATE_ENABLED=true`; never on prod.
+
+### Changes
+- `config/preview_access.php`: `enabled` (`PREVIEW_GATE_ENABLED`), `allowed_emails` (`PREVIEW_ALLOWED_EMAILS`),
+  `ttl_minutes` 15, `emails_per_hour` 5.
+- Migration `2026_10_29_170000_create_preview_access_tokens_table` (email, `token_hash` SHA-256 unique, `return_path`,
+  `expires_at`, `used_at`, `created_at`); rows older than a day are deleted when new links are requested.
+- `App\Services\PreviewAccess\PreviewAccess`: `enabled()` (config + `app.frontend_url` not beachrex.com),
+  `safeReturnPath()`, `isAllowed()` (admin of this env or allow list, case-insensitive), `sendLink()` (per-address
+  1/min, 5/h, silent), `consume()` (atomic single use).
+- `PreviewAccessController` + routes (throttle 5/min per IP for request, 20/min for verify — its callers are the
+  website servers), `PreviewAccessLinkNotification` + `emails/preview-access(-text).blade.php` (password-reset look),
+  7 new strings in all 19 `lang/*.json`.
+
+### Affected Endpoints
+- `POST /api/v1/preview-access/request` `{email, return_path?}` → 200 same message for every address; 404 when off;
+  422 invalid e-mail or non-relative `return_path`; 429.
+- `POST /api/v1/preview-access/verify` `{token}` → 200 `{ok: true, email, return_path}`; 422 `{ok: false, message}`
+  for unknown/used/expired; 404 when off; 429.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/PreviewAccessApiTest.php` (15 tests): link only for admins/allow list with the
+same response, hashed storage, single use, expiry boundary (14 min ok, 15 min + 1 s rejected), per-address and per-IP
+limits, open-redirect paths rejected, default `/`, 404 when off and on prod, localized mail. Deliberate break
+(no `used_at` check / no allow check / no path check) → 3 failures.
+
 ## 2026-10-29 - Admin "AI → Chat conversations": read-only history of the AI chat
 
 **Owner (2026-10-29):** "v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore daje — zgodovina, da

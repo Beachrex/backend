@@ -68,6 +68,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-29: **Closed dev/uat websites behind an e-mail magic link** (owner: "dev in uat stran bi morali zapreti —
+  vpišem svoj mail, dobim magic link"). API `POST /api/v1/preview-access/request` + `/verify`, website middleware +
+  `/preview-access` pages, signed 30-day cookie; off until the owner sets the env (owner action below), never on prod.
+  ADR 2026-10-29, guide `docs/guides/admin/zaprta-testna-stran.md`. PRs: backend + web-client; status in DEV_HANDOFF
+  of both repos.
+
 - 2026-10-29: **AI chat $5/day limit with real Anthropic cost + Cloudflare Turnstile** (owner: "brezplačni uporabniki
   5 $ na dan … naslednji dan avtomatsko vklopi", "Turnstile ja"). Limits free $5 / all $20 per Ljubljana day, every LLM
   round costed (`ModelPricing`, `AiSpendMeter`), the paid trip planner no longer stopped by the free limit, Turnstile
@@ -245,6 +251,20 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Owner's open actions
 
+- **Close dev/uat websites (2026-10-29, ADR "Closed dev/uat websites behind an e-mail magic link", guide
+  `docs/guides/admin/zaprta-testna-stran.md`):** nothing changes until these steps.
+  1. `openssl rand -hex 32` (a new value per environment; never paste it in chat).
+  2. `/opt/beachrex/envs/.env.front.dev`: `PREVIEW_GATE_ENABLED=true` and `PREVIEW_GATE_SECRET=<that value>`.
+  3. `/opt/beachrex/envs/.env.dev` (API): `PREVIEW_GATE_ENABLED=true`; optional
+     `PREVIEW_ALLOWED_EMAILS=a@example.com,b@example.com` (admins of the environment always get a link). `MAIL_*` and
+     `FRONTEND_URL=https://dev.beachrex.com` must be set (check that `MAIL_*` is in `.env.dev`; HANDOFF lists it for
+     uat/prod only).
+  4. Redeploy the **API first** (backend Actions → Deploy to VPS → Run workflow → dev), then the **website**
+     (web-client Actions → Deploy to VPS → Run workflow → dev). The website reads the two values at runtime, so a
+     recreate of `front_dev` is enough; the deploy does that.
+  5. Check: open https://dev.beachrex.com in a private window → e-mail form → link → button → the site opens.
+  6. uat: the same with `.env.front.uat`, `.env.uat`, environment uat (the code reaches uat only with a promotion).
+  Revoke everyone: new `PREVIEW_GATE_SECRET` + website redeploy. Switch off: `PREVIEW_GATE_ENABLED=false` in both files.
 - **AI chat limit + Turnstile (2026-10-29, ADR "AI chat daily cost cap and Turnstile"):**
   1. Check that the server env files do not still override the new limits with the old 500/5000 (values are not
      secret): `grep -E '^AI_(FREE_TIER_DAILY_LIMIT|EMERGENCY_SHUTDOWN_LIMIT)=' /opt/beachrex/envs/.env.dev /opt/beachrex/envs/.env.uat /opt/beachrex/envs/.env.prod`.

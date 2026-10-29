@@ -38,5 +38,12 @@
   "Parking Capacity": "Вместимость парковки",
   "Beach Inclination": "Уклон пляжа",
   "Swimming Depth": "Глубина для плавания",
-  "Occupancy": "Заполненность"
+  "Occupancy": "Заполненность",
+  "Your link to the Beachrex test website": "Ваша ссылка на тестовый сайт Beachrex",
+  "Use this link to open the Beachrex test website :host.": "По этой ссылке открывается тестовый сайт Beachrex :host.",
+  "Open the test website": "Открыть тестовый сайт",
+  "It works once.": "Она действует один раз.",
+  "If you did not ask for this link, you can ignore this email.": "Если вы не запрашивали эту ссылку, просто проигнорируйте это письмо.",
+  "If this e-mail may open the test website, we have sent a link.": "Если у этого адреса есть доступ к тестовому сайту, мы отправили ссылку.",
+  "This link is invalid, already used or expired.": "Ссылка недействительна, уже использована или истекла."
 }

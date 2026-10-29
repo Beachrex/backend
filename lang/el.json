@@ -38,5 +38,12 @@
   "Parking Capacity": "Χωρητικότητα στάθμευσης",
   "Beach Inclination": "Κλίση παραλίας",
   "Swimming Depth": "Βάθος κολύμβησης",
-  "Occupancy": "Πληρότητα"
+  "Occupancy": "Πληρότητα",
+  "Your link to the Beachrex test website": "Ο σύνδεσμός σας για τον δοκιμαστικό ιστότοπο Beachrex",
+  "Use this link to open the Beachrex test website :host.": "Με αυτόν τον σύνδεσμο ανοίγετε τον δοκιμαστικό ιστότοπο Beachrex :host.",
+  "Open the test website": "Άνοιγμα δοκιμαστικού ιστότοπου",
+  "It works once.": "Λειτουργεί μία φορά.",
+  "If you did not ask for this link, you can ignore this email.": "Αν δεν ζητήσατε αυτόν τον σύνδεσμο, αγνοήστε αυτό το email.",
+  "If this e-mail may open the test website, we have sent a link.": "Αν αυτό το email έχει πρόσβαση στον δοκιμαστικό ιστότοπο, στείλαμε σύνδεσμο.",
+  "This link is invalid, already used or expired.": "Ο σύνδεσμος δεν είναι έγκυρος, έχει ήδη χρησιμοποιηθεί ή έχει λήξει."
 }

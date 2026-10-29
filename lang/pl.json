@@ -38,5 +38,12 @@
   "Parking Capacity": "Pojemność parkingu",
   "Beach Inclination": "Nachylenie plaży",
   "Swimming Depth": "Głębokość do pływania",
-  "Occupancy": "Obłożenie"
+  "Occupancy": "Obłożenie",
+  "Your link to the Beachrex test website": "Twój link do testowej strony Beachrex",
+  "Use this link to open the Beachrex test website :host.": "Tym linkiem otworzysz testową stronę Beachrex :host.",
+  "Open the test website": "Otwórz stronę testową",
+  "It works once.": "Działa jeden raz.",
+  "If you did not ask for this link, you can ignore this email.": "Jeśli nie prosiłeś o ten link, zignoruj tę wiadomość.",
+  "If this e-mail may open the test website, we have sent a link.": "Jeśli ten adres ma dostęp do strony testowej, wysłaliśmy link.",
+  "This link is invalid, already used or expired.": "Link jest nieprawidłowy, został już użyty lub wygasł."
 }

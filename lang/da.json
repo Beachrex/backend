@@ -38,5 +38,12 @@
   "Parking Capacity": "Parkeringskapacitet",
   "Beach Inclination": "Strandens hældning",
   "Swimming Depth": "Svømmedybde",
-  "Occupancy": "Belægning"
+  "Occupancy": "Belægning",
+  "Your link to the Beachrex test website": "Dit link til Beachrex' testside",
+  "Use this link to open the Beachrex test website :host.": "Med dette link åbner du Beachrex' testside :host.",
+  "Open the test website": "Åbn testsiden",
+  "It works once.": "Det virker én gang.",
+  "If you did not ask for this link, you can ignore this email.": "Hvis du ikke har bedt om dette link, kan du se bort fra denne e-mail.",
+  "If this e-mail may open the test website, we have sent a link.": "Hvis denne e-mailadresse har adgang til testsiden, har vi sendt et link.",
+  "This link is invalid, already used or expired.": "Linket er ugyldigt, allerede brugt eller udløbet."
 }

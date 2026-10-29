@@ -38,5 +38,12 @@
   "Parking Capacity": "Kapacita parkoviště",
   "Beach Inclination": "Sklon pláže",
   "Swimming Depth": "Hloubka pro plavání",
-  "Occupancy": "Obsazenost"
+  "Occupancy": "Obsazenost",
+  "Your link to the Beachrex test website": "Váš odkaz na testovací web Beachrex",
+  "Use this link to open the Beachrex test website :host.": "Tímto odkazem otevřete testovací web Beachrex :host.",
+  "Open the test website": "Otevřít testovací web",
+  "It works once.": "Funguje jednou.",
+  "If you did not ask for this link, you can ignore this email.": "Pokud jste o tento odkaz nežádali, tento e-mail ignorujte.",
+  "If this e-mail may open the test website, we have sent a link.": "Pokud má tato adresa přístup k testovacímu webu, poslali jsme odkaz.",
+  "This link is invalid, already used or expired.": "Odkaz je neplatný, již použitý nebo vypršel."
 }
