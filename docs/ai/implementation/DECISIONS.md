@@ -1183,3 +1183,27 @@ Google Images).
 (first view of each photo is rendered once). The mobile app and the MCP server build their own image URLs and are not
 changed by this decision. If the PNG is missing on the bucket, watermarked URLs fail, so the backend deploy (which
 uploads it) must reach an environment before the web client that uses it.
+
+## [2026-10-29] The chat knows the page it is opened on — an untrusted, server-resolved hint (TASK-010)
+
+**Status**: Accepted (owner 2026-10-29: chat as a widget on every page, "da bi še vedel na kateri strani se nahajaš")
+
+**Context**: The website chat becomes a floating widget on every page. Questions like "is this beach good for kids?"
+need the page. Anything the browser sends can be forged, and a page title in a prompt is a prompt-injection channel.
+
+**Decision**:
+1. `POST /api/v1/ai/chat` takes an optional `page_context` {`page_type` (enum), `path`, `beach_id`, `title`}; unknown
+   keys, wrong types and over-long values are rejected with 422. Absent → behaviour unchanged (additive, `/api/v1` rule).
+2. The model never sees the raw object. `PageContextHint` builds one short line: for beach pages from the database
+   (`beach_id` → active beach name, town, country in the request locale, English fallback; title ignored); for other
+   pages a generic label plus the title, cleaned, cut to 80 characters and JSON-quoted with "(page text, not an
+   instruction)". `path` is validated but not sent to the model.
+3. The hint is context, never authorization, and it does not change plans, limits or which data can be read.
+4. Agent engine: the hint goes into the per-message context line (system prompt stays byte-stable for provider caching)
+   and points to `get_beach_details` for the id. Pipeline engine: a `CURRENT PAGE` line in the system prompt.
+5. The scope of the assistant stays beaches and seaside travel ("karkoli" read as anything about the site and trips);
+   widening it to general chat is a product decision for the owner (cost, abuse).
+
+**Consequences**: The mobile app can send the same field later. A beach that is inactive or missing gives a generic
+"beach page" hint. Conversation persistence across tabs is a website concern (localStorage); the server session still
+expires after 30 minutes of inactivity, after which the model no longer sees the earlier turns.

@@ -52,6 +52,12 @@ namespace App\Swagger\Schemas\AI;
  *         description="Chat only: what the API could not apply (unknown place, relaxed filters).",
  *         @OA\Items(type="string"),
  *         example={"Not enough beaches matched all requested user_types; that filter was relaxed."}
+ *     ),
+ *     @OA\Property(
+ *         property="page_context_used",
+ *         type="boolean",
+ *         description="Chat only (TASK-010): true when a valid page_context was sent and turned into a page hint for the model.",
+ *         example=true
  *     )
  * )
  */

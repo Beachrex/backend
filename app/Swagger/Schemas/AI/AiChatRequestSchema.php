@@ -87,6 +87,18 @@ namespace App\Swagger\Schemas\AI;
  *                 example={"parking", "showers", "playground"}
  *             )
  *         )
+ *     ),
+ *     @OA\Property(
+ *         property="page_context",
+ *         type="object",
+ *         nullable=true,
+ *         additionalProperties=false,
+ *         description="TASK-010: the website page the chat widget is open on. Optional, an untrusted hint only (lets the assistant understand 'this beach' / 'here'); never used for authorization. For page_type=beach the server resolves the beach name and place from beach_id (active beaches only) and ignores title. Other keys → 422.",
+ *         required={"page_type"},
+ *         @OA\Property(property="page_type", type="string", enum={"home", "beach", "destination", "country", "region", "island", "city", "search", "map", "article", "other"}, example="beach"),
+ *         @OA\Property(property="path", type="string", maxLength=300, nullable=true, description="Page path without query string: starts with /, only letters, digits and - . _ ~ / % (URL-encoded)", example="/en/beaches/europe/croatia/split-dalmatia/split/bacvice"),
+ *         @OA\Property(property="beach_id", type="integer", minimum=1, nullable=true, description="Beach id on beach pages", example=989),
+ *         @OA\Property(property="title", type="string", maxLength=120, nullable=true, description="Page heading (not used for beach pages; cleaned and cut to 80 characters before it reaches the model)", example="Split")
  *     )
  * )
  */
