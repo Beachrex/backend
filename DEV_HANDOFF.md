@@ -52,6 +52,21 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - TASK-009: AI guide on/off in admin (System → Site settings)
+
+**Owner request (2026-10-29):** switch the AI guide off on prod until Stripe is set up and the guide is tested.
+
+**Changes:**
+- Migration `2026_10_29_090000_create_site_settings_table` (`site_settings`, seeds `ai_assistant_enabled = 1`).
+- Model `SiteSetting` (cached key → value array `site_settings:all`, cleared on save/delete).
+- Admin page `App\Filament\BrAdmin\Pages\SiteSettings` (System → Site settings), toggle "AI guide on". Guide: `docs/guides/admin/nastavitve-strani.md`.
+- Middleware `EnsureAiAssistantEnabled` on `/api/v1/ai/*` and `POST /api/v1/payments/stripe/checkout`: off → 503 `{"error":"ai_disabled"}`.
+- New public endpoint `GET /api/v1/site-settings` → `{"success":true,"data":{"ai_assistant_enabled":true}}` (OpenAPI regenerated).
+
+**Affected endpoints:** new `GET /api/v1/site-settings`; `/api/v1/ai/*` and Stripe checkout can now answer 503 `ai_disabled` (additive: a new error code on an existing status).
+
+**Testing:** `SiteSettingsAiSwitchTest` (7 tests: default on, API, all AI routes + checkout 503 when off, unaffected when on, checkout still 401 for guests, admin toggles via Livewire, non-admin 403 / guest redirect). With the gate disabled: 2 failed. Full suite: 710 tests, only the 4 known API-key failures.
+
 ## 2026-10-28 - Search: in a named place, count and list like the place pages
 
 **Found on dev after the search totals change:** "toscana" counted 43 beaches but 0 towns (page: 21), "kvarner" 0

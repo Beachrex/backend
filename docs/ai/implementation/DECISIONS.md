@@ -1139,3 +1139,13 @@ active beach, filtered by `country_code` / `region_id` / `island_id` / `city_id`
 `/islands?region_code=`, `/cities?island_code=`). The index fields from the previous ADR stay (harmless, filterable)
 but nothing depends on them. On dev, the region page's "All beaches (20)" button was the popular-beaches carousel
 expander labelled with the number of carousel cards; the web fix shows the region's real total there.
+
+## [2026-10-29] AI guide on/off is an admin setting per environment (TASK-009)
+
+**Status**: Accepted (owner 2026-10-29: "bi ga na prod izklopil" until Stripe is on prod and the guide is tested)
+
+**Context**: The only switch was `AI_ENABLED` in the server `.env` — a server action, and it did not hide the guide on the website.
+
+**Decision**: Table `site_settings` with key `ai_assistant_enabled` (default on), edited in admin (System → Site settings). Off: website hides the menu entry and `llms.txt` line and answers 404 on `/ai/*` and `/payment/*`; API answers 503 `ai_disabled` on `/api/v1/ai/*` and Stripe checkout. Public read: `GET /api/v1/site-settings`. `AI_ENABLED` stays as the server-level kill switch.
+
+**Consequences**: Future site switches go into the same table and page. The mobile app should read `/site-settings` and hide its AI entry when off.

@@ -104,6 +104,9 @@ Route::prefix('api/v1')
         // Public media routes
         Route::get('/media/{id}', [MediaController::class, 'show']);
 
+        // TASK-009: public site switches (admin → System → Site settings)
+        Route::get('/site-settings', [\App\Http\Controllers\Api\V1\SiteSettingsController::class, 'show']);
+
         // Global search route
         Route::get('/search', [SearchController::class, 'search']);
 
@@ -267,6 +270,7 @@ Route::prefix('api/v1')
         // Note: OptionalAuthMiddleware allows both anonymous and authenticated access
         Route::prefix('ai')
             ->middleware([
+                \App\Http\Middleware\EnsureAiAssistantEnabled::class, // TASK-009: admin switch
                 \App\Http\Middleware\AI\OptionalAuthMiddleware::class,
                 \App\Http\Middleware\AI\CircuitBreakerMiddleware::class,
                 \App\Http\Middleware\AI\RateLimitMiddleware::class,
@@ -291,7 +295,9 @@ Route::prefix('api/v1')
 
         Route::prefix('payments/stripe')->group(function () {
             // Checkout endpoint (requires authentication)
-            Route::middleware('auth:sanctum')->post('/checkout', [\App\Http\Controllers\Payment\CheckoutController::class, 'create']);
+            // AI credits only: closed while the AI guide is switched off (TASK-009)
+            Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureAiAssistantEnabled::class])
+                ->post('/checkout', [\App\Http\Controllers\Payment\CheckoutController::class, 'create']);
 
             // Webhook endpoint (no authentication - uses Stripe signature verification)
             Route::post('/webhook', [\App\Http\Controllers\Payment\WebhookController::class, 'handle']);
