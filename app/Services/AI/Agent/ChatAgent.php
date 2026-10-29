@@ -39,9 +39,10 @@ PROMPT;
     /**
      * @param array<int, array{role: string, content: string}> $history
      * @param array{latitude: float, longitude: float}|null $location
+     * @param string|null $pageHint TASK-010: server-built line about the page the user is on (PageContextHint)
      * @return array{message: string, beaches: array, result: AgentResult}
      */
-    public function answer(string $message, array $history, string $apiLocale, ?array $location): array
+    public function answer(string $message, array $history, string $apiLocale, ?array $location, ?string $pageHint = null): array
     {
         $tools = new BeachTools($this->api);
         $webLocale = self::WEB_LOCALES[$apiLocale] ?? $apiLocale;
@@ -50,6 +51,9 @@ PROMPT;
         $context = "[Context: website language {$language}; answer in the language the user writes in (default {$language}).";
         if ($location) {
             $context .= " The user shared their location: latitude {$location['latitude']}, longitude {$location['longitude']}.";
+        }
+        if ($pageHint !== null && $pageHint !== '') {
+            $context .= ' '.$pageHint;
         }
         $context .= ']';
 

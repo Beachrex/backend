@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Support\BeachGallery;
+use App\Support\SphereTour;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachResource extends JsonResource
@@ -13,6 +15,7 @@ class BeachResource extends JsonResource
     public static function cardRelations(): array
     {
         return [
+            'shownWebcams',
             'translations',
             'continent.translations',
             'country.translations',
@@ -99,7 +102,7 @@ class BeachResource extends JsonResource
         $mediaByCollection = $this->media->groupBy('mediaCollection.code');
 
         // Format gallery images - only essential fields, sorted by is_primary DESC, then order ASC
-        $gallery = $mediaByCollection->get('beach_gallery', collect())
+        $gallery = BeachGallery::pick($mediaByCollection)
             ->sortBy([
                 fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
                 fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
@@ -112,8 +115,12 @@ class BeachResource extends JsonResource
                 ];
             })->values()->toArray();
 
+            // No primary image (e.g. beaches uploaded from the mobile app, France): use the first gallery photo,
+            // otherwise the web skips the card and region/city pages showed no beaches (owner 2026-10-12).
+            $mainImage ??= $gallery[0]['url'] ?? null;
+
         // Format videos - only essential fields, sorted by is_primary DESC, then order ASC
-        $videos = $mediaByCollection->get('beach_videos', collect())
+        $videos = BeachGallery::videos($mediaByCollection)
             ->sortBy([
                 fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
                 fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
@@ -132,11 +139,8 @@ class BeachResource extends JsonResource
         // uploads use img/beaches/. Using the wrong base folder caused the 360°
         // tour to 404 on mobile-uploaded beaches (e.g. Albania beaches).
         $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
-        $vtourUrl = null;
-        if ($this->folder_name && $spheres360Collection->isNotEmpty()) {
-            $baseFolder = $this->mobile_upload ? 'beaches_mobile' : 'beaches';
-            $vtourUrl = "img/{$baseFolder}/{$this->folder_name}/vtour/tour.html";
-        }
+        // Lists never ask storage: a tour known to be missing (beach.has_vtour = false) is left out (owner 2026-10-29).
+        $vtourUrl = $spheres360Collection->isNotEmpty() ? SphereTour::url($this->resource) : null;
 
         $spheres360 = [];
         if ($vtourUrl) {
@@ -163,6 +167,7 @@ class BeachResource extends JsonResource
         $media['embeds'] = [
             'video_url' => $this->video_url,
             'webcam' => $this->webcam,
+            'windy_webcam_id' => $this->shownWebcams->first()?->windy_id,
         ];
 
         // Build tags: up to 4 names from sporting activities, culinary offers, natural conditions

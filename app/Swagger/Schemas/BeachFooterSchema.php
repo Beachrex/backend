@@ -10,7 +10,7 @@ namespace App\Swagger\Schemas;
  *     type="object",
  *     @OA\Property(property="id", type="integer", example=793),
  *     @OA\Property(property="name", type="string", example="Beach Bucanj", description="Localized beach name (with English fallback)"),
- *     @OA\Property(property="slug", type="string", example="beach-bucanj", description="Localized beach slug (with English fallback)"),
+ *     @OA\Property(property="slug", type="string", example="bucanj", description="Localized beach slug (with English fallback)"),
  *     @OA\Property(property="continent_slug", type="string", nullable=true, example="europe", description="Localized continent slug"),
  *     @OA\Property(property="country_slug", type="string", nullable=true, example="croatia", description="Localized country slug"),
  *     @OA\Property(property="region_slug", type="string", nullable=true, example="dalmatia", description="Localized region slug"),

@@ -52,6 +52,620 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Published beach counts per location level (beach details + place pages)
+
+### Overview
+`location.continent|country|region|island|city` in the beach details response now carry `beaches_count`: the number of published beaches (`status_id = 1`) in that place, the same count its place page shows. The web client shows it in the location pill tabs on the beach and place banners ("Beaches: 1167").
+
+### Changes Made
+- `app/Http/Resources/BeachDetailsResource.php`: `publishedBeachCount()` helper; `beaches_count` on each location level (absent levels stay absent).
+- `app/Swagger/Schemas/BeachDetailsSchema.php` + regenerated `storage/api-docs/api-docs.json`.
+- `tests/Feature/BeachDetailsApiTest.php`: counts per level, unpublished beaches not counted, levels without an island/city have no count.
+- Place show endpoints load the published count on their nested parents (`App\Support\PublishedBeachCounts`), so the place pages' pills can show it too: country → `continent.beaches_count`; region → `country.beaches_count`, `country.continent.beaches_count`; island → those + `region.beaches_count`; city → those + `island.beaches_count`. The nested schemas already documented `beaches_count`, so `api-docs.json` did not change for this part.
+- `tests/Feature/PlaceParentBeachCountsApiTest.php`: parent counts on all four show endpoints (unpublished not counted).
+
+### Cache
+Beach details are cached per beach and locale for 8 h (`CacheService::BEACH_DETAILS_TTL`). The counts are computed only on a cache miss, so after a beach is published or unpublished, the counts on *other* beaches' pages refresh within 8 h (saving a beach clears only its own cache). No command is needed. Cost on a miss: five `COUNT(*)` queries. Place details (country/region/island/city show) are cached 30 days (`REFERENCE_DATA_TTL`); the parent counts there follow the same cache as the place's own `beaches_count` (saving a beach clears the continent and country show caches).
+
+### Affected Endpoints
+- `GET /api/v1/beach-details/{identifier}` - new `location.*.beaches_count` (additive, non-breaking).
+- `GET /api/v1/countries/{codeOrSlug}`, `/regions/{slug}`, `/islands/{slug}`, `/cities/{slug}` - nested parents now carry `beaches_count` (additive).
+
+### Testing
+`php artisan test --filter='BeachDetails|SyncStaticPages|PlaceParentBeachCounts'`
+
+---
+
+## 2026-10-29 - Pool types under "Pool" in the water body filter: tests and data note (owner report)
+
+### Overview
+Owner: "filter bi mogli razbit na notranji in zunanji bazen … če stisneš na prvi strani outdoor ali indoor, filter ne
+zazna". The home page tiles send `?pool_type=indoor|outdoor`; the map showed the chip but "Najdeno (0)".
+Checked: the API already filters `pool_type` (QA #70, `indoor_pools_count` / `outdoor_pools_count` > 0) on both query
+paths. **The 0 is data:** dev has no pool places yet (Beachrex MCP on dev: `waterbody=pool` → 0, `has_swimming_pool`
+→ 0; Slovenia has only its 20 sea beaches). No code bug in the API.
+
+### Changes
+- `tests/Feature/PoolWaterbodyFilterApiTest.php` (new): `waterbody=pool` returns indoor, outdoor and unclassified pool
+  places; the home page tile params return results; `waterbody=pool&pool_type=indoor|outdoor` returns only that kind
+  (map and list endpoints); unknown `pool_type` is ignored; `/beaches/filters?pool_type=indoor` still lists `pool` and
+  both pool types (the web nests them under "Pool"). Deliberate break (`> 0` → `>= 0` in the raw SQL path) fails 2 tests.
+- No API, schema or search index change. The web-client shows the pool types under "Pool" (web-client `DEV_HANDOFF.md`).
+
+### Affected endpoints
+None changed. Behaviour documented: `waterbody` and `pool_type` combine with AND.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/PoolWaterbodyFilterApiTest.php` → OK (7 tests); full suite: only the 4 known
+API-key failures.
+
+## 2026-10-29 - Footer pages: share capital removed
+
+Owner, 2026-10-29: the share capital is not shown on the site (not confirmed, not needed). Removed from `about-us` (company details) and `contact` in all 19 locales (`database/content/static-pages/*.json`). Test `SyncStaticPagesTest::test_company_details_are_complete_and_not_vat_registered` now checks that no page shows it.
+
+**Apply per environment (owner):** `static-pages:sync --dry-run`, then without `--dry-run`.
+
+## 2026-10-29 - Footer pages: full company details, not liable for VAT
+
+Owner, 2026-10-29: the company details stay on the site (legal notice under ZEPT art. 5 and ZGD-1 art. 32, GDPR art. 13, ZVPot-1 for paid AI plans); MOJA PLAŽA, d.o.o. is **not liable for VAT** (tax no. 53794214, reg. no. 6791174000). Register court and share capital per the business register (Okrožno sodišče v Mariboru, EUR 12,500).
+
+- `database/content/static-pages/{19 locales}.json`:
+  - `about-us`, section "Who is behind Beachrex": rewritten. Intro (Maribor, lakes/pools/spas coming), how the data is made, **Company details** (company, registered office, reg. no., tax no. with VAT status, register court, share capital, e-mail), **Work with us** (link to the contact page) and **Spotted a mistake?** (link to the contribution rules). Links use each locale's slugs.
+  - `terms-of-use` §5: the seller was described as "VAT-registered in Slovenia" — wrong. Now: reg. no., tax no., not liable for VAT.
+  - `contact`: VAT status after the tax number, register court and share capital added.
+  - `privacy-policy` §1: VAT status after the tax number.
+- Test: `SyncStaticPagesTest::test_company_details_are_complete_and_not_vat_registered`.
+
+**Apply per environment (owner):** `php artisan static-pages:sync --dry-run`, then without `--dry-run` (data only, no API change).
+
+**Open (owner):** Stripe checkout uses `automatic_tax` when `ai.stripe.tax_enabled` is on. A company that is not liable for VAT must not charge VAT: keep it off (and Stripe Tax registrations empty) until the company registers for VAT.
+
+## 2026-10-29 - Watermark PNG for mobile-app photos (`media:publish-watermark`)
+
+**Owner request (2026-10-29):** photos uploaded from the mobile app have no Beachrex logo; add it. ADR 2026-10-29
+"Watermark mobile-app photos on the fly".
+
+**Changes:**
+- `resources/watermark/beachrex-watermark-v1.png` (808×260, transparent; white horizontal logo + "www.beachrex.com",
+  soft shadow) and its generator `resources/watermark/make_watermark.py`.
+- `App\Support\Watermark` (source file, Imagor path `img/watermark/beachrex-watermark-v1.png`, bucket key under `public/`).
+- Command `media:publish-watermark {--disk=spaces}`: uploads the PNG with public visibility only if the key is missing;
+  never overwrites; fails when the (non-throwing) spaces disk refuses the write.
+- `.github/workflows/deploy.yml`: runs `media:publish-watermark` after `cache:clear` on every deploy (not fatal: a
+  failure is a workflow warning; the next deploy retries).
+- The website adds Imagor's `watermark` filter to mobile-app photo URLs (Beachrex/web-client, same date).
+- Admin guide `docs/guides/admin/mediji.md`: section "Logotip na fotografijah iz mobilne aplikacije".
+
+**Affected endpoints:** none (no API change).
+
+**Testing:** `PublishWatermarkTest` (4 tests: asset is a transparent PNG; upload when missing, public, same bytes;
+second run never overwrites; write refused → failure). Deliberate break (no existence check, no write check): 2 fail.
+
+## 2026-10-29 - Fix: 360° without a generated tour, videos inside the gallery (mobile uploads)
+
+**Owner report (dev, 2026-10-29):** Plage du Port Vieux (3247) — black "360° view" popup; also a `…-video.mp4` in the
+gallery shown as a broken photo and no "Video" card.
+
+**Findings:** the beach has its panorama but the krpano tour was never generated (checked all 2815 beaches with a
+panorama on dev: only this one is missing). 12 beaches have video files in the gallery collection.
+
+**Changes:**
+- `beach.has_vtour` (migration `2026_10_29_100000`; null = not checked). `App\Support\SphereTour`: beach details ask
+  storage once per unchecked beach and store the answer; a tour counts as missing only when the panorama next to it
+  is found (the disk does not throw, so unreachable storage never marks tours missing). Lists and map cards never ask
+  storage; they leave out a tour known to be missing.
+- `media:check-vtours [--all] [--dry-run]`, scheduled daily 04:40 (unchecked) and Sundays 04:50 (`--all`).
+- `BeachGallery::videos()` / `isVideo()` (MIME `video/*` or extension, MIME can be wrong on mobile uploads): video
+  files in photo collections move from `gallery` to `videos` in beach details, lists and map cards.
+- OpenAPI: `tour_url` null meaning; admin guide `mediji.md` + index row.
+
+**Affected endpoints:** `GET /api/v1/beach-details/{id}` (`spheres_360[].tour_url` can be null, `gallery` without video
+files, `videos` includes them), `GET /api/v1/beaches`, map/nearby endpoints (same media rules). No field added or removed.
+
+**Testing:** `MobileUploadMediaTest` 6 tests (against the old resources: 4 failed). Full suite: 716 tests, only the 4
+known API-key failures. Website part (panorama viewer, `<video>` for uploaded files): Beachrex/web-client follow-up PR.
+
+## 2026-10-29 - TASK-009: AI guide on/off in admin (System → Site settings)
+
+**Owner request (2026-10-29):** switch the AI guide off on prod until Stripe is set up and the guide is tested.
+
+**Changes:**
+- Migration `2026_10_29_090000_create_site_settings_table` (`site_settings`, seeds `ai_assistant_enabled = 1`).
+- Model `SiteSetting` (cached key → value array `site_settings:all`, cleared on save/delete).
+- Admin page `App\Filament\BrAdmin\Pages\SiteSettings` (System → Site settings), toggle "AI guide on". Guide: `docs/guides/admin/nastavitve-strani.md`.
+- Middleware `EnsureAiAssistantEnabled` on `/api/v1/ai/*` and `POST /api/v1/payments/stripe/checkout`: off → 503 `{"error":"ai_disabled"}`.
+- New public endpoint `GET /api/v1/site-settings` → `{"success":true,"data":{"ai_assistant_enabled":true}}` (OpenAPI regenerated).
+
+**Affected endpoints:** new `GET /api/v1/site-settings`; `/api/v1/ai/*` and Stripe checkout can now answer 503 `ai_disabled` (additive: a new error code on an existing status).
+
+**Testing:** `SiteSettingsAiSwitchTest` (7 tests: default on, API, all AI routes + checkout 503 when off, unaffected when on, checkout still 401 for guests, admin toggles via Livewire, non-admin 403 / guest redirect). With the gate disabled: 2 failed. Full suite: 710 tests, only the 4 known API-key failures.
+
+## 2026-10-28 - Search: in a named place, count and list like the place pages
+
+**Found on dev after the search totals change:** "toscana" counted 43 beaches but 0 towns (page: 21), "kvarner" 0
+islands (page: 4), "krk" / "brač" 0 towns (page: 19 for Krk). The lower types were filtered through the city and island
+indexes by `region_id` / `island_id`, which those documents did not carry on dev. The 43 beaches were right
+(`/regions/toscana` `beaches_count` 43, `/beaches?region=toscana` total 43); the page's "All beaches (20)" is the
+carousel expander labelled with its 20 cards (web fix in Beachrex/web-client).
+
+**Changes:** `SearchController::placeModels()` reads the types below a named place from the database: active beaches
+(most viewed first) and towns/islands/regions with at least one active beach (most beaches first), the same rules as
+`/cities`, `/islands`, `/regions/{slug}`. Plain queries unchanged. OpenAPI description of `totals_by_type` updated.
+ADR 2026-10-28 "Search in a named place counts like the place pages".
+
+**Affected endpoints:** `GET /api/v1/search` (counts and order of the lower types when `meta.place` is set; no field
+changes).
+
+**Testing:** `SearchPlaceScopeTest` (4 tests with an index whose documents lack the place ids, as on dev; compares the
+totals with `/regions/{slug}`, `/cities?region_code=`, `/islands?region_code=`, `/islands/{slug}`,
+`/cities?island_code=`). With the index-based scope all 4 fail (0 towns, 0 beaches).
+
+## 2026-10-28 - Search: real totals per type, a place name scopes the result
+
+**Owner report (2026-10-28):** the header search for "france" showed "All 28 = Beaches 10 + Cities 10 + Regions 7 +
+Country 1" although France has ~400 beaches and 87 towns, and listed Italian beaches (Principina a Mare, Giannella)
+above French ones.
+
+**Root causes:**
+- Counts: `meta.results_by_type` is the number of items returned, capped by `limit` (the web asks 10 per type); the
+  web showed it as the tab count. No total existed in the response.
+- Italian beaches: Meilisearch matches the last query word as a prefix, so "france" matches "Francesco" ("Church of
+  San Francesco" in Principina a Mare's description). The beaches index listed `description` second in
+  `searchableAttributes`, and the attribute ranking rule runs before exactness, so a description hit outranked a
+  `country_name` hit.
+
+**Changes:**
+- `GET /api/v1/search` searches countries, regions, islands, cities, beaches in that order. When the query is exactly
+  the name (any language; case, diacritics, spaces ignored) of one place of the first type that has such a match, the
+  lower types are filtered to that place (`country_code`, `region_id`, `island_id`, `city_id`). Two places with the
+  same name -> no scope.
+- Each type is fetched with `page=1, hitsPerPage=limit` (exhaustive `totalHits`) instead of `limit`.
+- New `meta` fields (additive): `totals_by_type` {beaches, cities, islands, regions, countries}, `total_matches`
+  (their sum), `place` ({type, id, code, name} or null). `results_by_type` and `total_results` unchanged.
+- Index: beaches `searchableAttributes` now `name, translated_names, country/region/island/city names, place_names,
+  description, translated_descriptions`; `region_id`, `island_id`, `city_id` added to the beach document (cities:
+  `region_id`, `island_id`; islands: `region_id`) and as filterable attributes; `pagination.maxTotalHits` 20000 on
+  beaches and cities (Meilisearch caps totals at 1000 by default). `search:update-settings` applies `pagination`.
+  The deploy runs `search:update-settings` and `search:index`, so no manual step.
+- Search cache key `search:v2:` (cached payload now has totals and place).
+- ADR 2026-10-28 "Search counts are real totals; a place name scopes the result".
+
+**Affected endpoints:** `GET /api/v1/search` (additive meta fields; for a query that names a place, the lower types
+now list only results in that place).
+
+**Testing:** `php artisan test --filter=SearchTotalsTest` (10 tests on Scout's collection engine: totals vs limit,
+limit boundary, no Italian beach for "france", Slovenian "Francija", region scope, no scope for a non-place query,
+same-name places, index settings, OpenAPI). Deliberate breaks: without the scope 3 tests fail; with item counts as
+totals 4 fail; the old attribute order fails the index test.
+
+## 2026-10-29 - User type "Adventurer": Slovenian "Pustolovec", Croatian "Pustolovac"
+
+### Overview
+Owner, 2026-10-29: "Adventurer" was "Pustolov" in Slovenian and Croatian, which is wrong. Correct forms:
+Slovenian **Pustolovec**, Croatian **Pustolovac** (capitalised like the other user-type labels).
+
+### Changes Made
+- Migration `2026_10_29_120000_fix_adventurer_name_sl_hr`: `user_type_translation` of `user_type.code = adventurer`,
+  `sl` "Pustolov"/`pustolov` → "Pustolovec"/`pustolovec`, `hr` "Pustolov"/`pustolov` → "Pustolovac"/`pustolovac`.
+  Idempotent; each column changes only while it still holds the exact old value (admin edits stay). Runs on every
+  environment at deploy (ADR 2026-10-23).
+- Slug decision: the slug follows the name. User-type slugs are not used in any web URL or filter (filters use
+  `code`/`id`: `BeachFilterService`, web `DynamicSearchBeaches`), so no redirect is needed.
+- `database/seeders/UserTypeSeeder.php`: same values for fresh databases.
+- Test `tests/Feature/AdventurerNameSlHrTest.php` (migration: fixes, idempotent, other user types and edited values
+  untouched; seeder: fresh seed has the right names).
+
+### Affected Endpoints
+- `GET /api/v1/beaches/filters`, `GET /api/v1/user-types` and beach details: `user_type` name/slug for `sl`, `hr`
+  (no schema change). API caches are cleared by the deploy.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AdventurerNameSlHrTest.php`; on dev: `GET /api/v1/beaches/filters` with
+`Accept-Language: sl` → "Pustolovec", `hr` → "Pustolovac".
+
+---
+
+## 2026-10-29 - TASK-010: `page_context` on the AI chat (widget knows the current page)
+
+**Owner request (2026-10-29):** AI chat as a widget on every page that knows which page the user is on. ADR "The chat knows the page it is opened on".
+
+### Changes Made
+- `app/Services/AI/Chat/PageContextHint.php` (new): validation rules for `page_context` and the server-built hint line
+  (beach resolved from `beach_id`, active only; other pages: cleaned, truncated, quoted title).
+- `app/Http/Requests/AI/ChatRequest.php`: `page_context` rules (strict: enum, ints, lengths, path charset, no extra keys).
+- `app/Http/Controllers/AI/ChatController.php`: both engines use the hint; response `metadata.page_context_used`.
+- `app/Services/AI/Agent/ChatAgent.php`: optional `$pageHint` appended to the per-message context line (system prompt unchanged).
+- OpenAPI: `AiChatRequest.page_context`, `AiResponseMetadata.page_context_used`; `storage/api-docs/api-docs.json` regenerated.
+
+### Affected Endpoints
+- `POST /api/v1/ai/chat` — new optional field (additive):
+  ```json
+  {"message": "Is this beach good for kids?",
+   "page_context": {"page_type": "beach", "beach_id": 989, "path": "/en/beaches/europe/croatia/split-dalmatia/split/bacvice"}}
+  ```
+  `page_type`: home | beach | destination | country | region | island | city | search | map | article | other (required
+  when `page_context` is sent); `path` ≤ 300, starts with `/`, `[A-Za-z0-9-._~/%]`; `beach_id` int 1…2147483647;
+  `title` ≤ 120 (only for non-beach pages). Anything else → 422.
+
+### Testing
+- `php vendor/bin/phpunit tests/Feature/AI/ChatPageContextTest.php` → 19 tests OK; full suite: only the 4 known API-key failures.
+
+---
+
+## 2026-10-28 - TASK-008: homepage media example beach (`beach_views.config.showcase_beach_id`)
+
+**Owner request (2026-10-28):** make "View beaches from all angles" on the homepage interactive, on one real beach.
+
+**Changes:**
+- Migration `2026_10_28_120000_set_homepage_showcase_beach`: sets `first_page_content.config.showcase_beach_id = "989"`
+  (Svetilnik, Izola) on `beach_views` when the key is missing and the beach exists. Idempotent; keeps an admin value
+  and other keys.
+- `FirstPageContent` saved/deleted now clears `first_page_content:index:{locale}` and
+  `first_page_content:show:{code}:{locale}` for all locales (before, only translation saves did; a status or config
+  edit stayed cached for 30 days on Redis).
+- OpenAPI: `FirstPageContent.config` description and example. Admin guide `docs/guides/admin/prva-stran.md`.
+- Web side: Beachrex/web-client (TASK-008) reads the key and loads `GET /api/v1/beach-details/{id}`.
+
+**Affected endpoints:** `GET /api/v1/first-page-content` — `beach_views.config` now has `showcase_beach_id` (additive).
+
+**Testing:** `php artisan test --filter=HomepageShowcaseBeachTest` (5 passed; without the model change the cache test
+fails). Spec: `docs/tasks/TASK-008-homepage-media-showcase.md`, ADR 2026-10-28.
+
+## 2026-10-26 - Fix: nginx resolves api_<env> per request (api.beachrex.com 502)
+
+- `api.beachrex.com` answered 502: `api_prod` was recreated 3 days earlier (new container IP) while `web_prod` (nginx) had been running for 2 weeks with the old IP (a static `fastcgi_pass api_prod:9000` is resolved once at start). The owner restarted `web_prod`; the API answered again.
+- `deploy/nginx/api.{dev,uat,prod}.conf`: `resolver 127.0.0.11 valid=10s` (Docker DNS) and `fastcgi_pass $php_upstream`, so a recreated API container is found within 10 s. Checked with `nginx -t`. The deploy syncs these files and recreates `web_<env>`.
+
+## 2026-10-26 - Security: remove leaked credentials from docs and examples
+
+### Overview
+GitGuardian flagged a Google OAuth client secret and a Sanctum token in this public repo. Both were real values pasted into docs/examples.
+
+### Changes Made
+- `docs/ai/implementation/TASK_5_PHASE_2_COMPLETE.md`: real `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` replaced with placeholders.
+- `GoogleCallbackResponse` OpenAPI example, `storage/api-docs/api-docs.json`, `AUTH_GOOGLE_SETUP.md`: real Sanctum token replaced with `1|xxxx…`.
+- `docs/DEVELOPMENT-RULES.md` §8: docs/examples/`.env.example` hold only names or placeholders.
+- Owner: Google client secret rotated in Google Cloud Console; values remain in git history, so rotation is the fix.
+
+### Affected Endpoints
+- None (documentation example only; `/api/v1/auth/google/callback` response schema unchanged).
+
+## 2026-10-23 - Data fix: beach descriptions from the old database
+
+- Owner: "v stari bazi imamo opise … na novi bazi pa ni". The old `beach_description` table held 2282 texts for 793 beaches in 8 languages (en, de, it, fr, es, sl, hr, ru). On dev, 338 active beaches had no English description and no other language had any (the page showed English or nothing). The old dump has no descriptions for places (regions, islands, towns are only names on the beach row).
+- `database/legacy/old-beach-descriptions.json`: the texts extracted once from the dump (beach id => locale => text), old HTML turned into plain text with line breaks (the page renders `whitespace-pre-line`), entities decoded. The migration never reads the dump (it holds the user table).
+- Migration `2026_10_23_160000_import_old_beach_descriptions`: writes a text only where that language's description is empty or still a copy of the English one; written or generated descriptions stay. A missing language row is created from the English row (name, slug). Idempotent; runs on every environment. Deploy clears the cache and re-indexes search.
+- Test: `tests/Feature/ImportOldBeachDescriptionsTest.php`.
+
+## 2026-10-23 - Beach slugs from the local name (no more "beach-" prefix)
+
+- Owner: beach URLs ended in an English "beach-" slug in every language (`/pl/plaze/.../beach-svetilnik`) while the page says "Svetilnik". The old import built slugs from English names and replaced the local word for beach ("Plage de la Garoupe" → `beach-de-la-garoupe`); the slug was copied to all 19 languages.
+- Migration `2026_10_23_140000_beach_slugs_from_local_names`: every beach whose slug starts with `beach-` gets one slug of its local name (English row's name): `svetilnik`, `plage-de-la-garoupe`. Same slug in every language, as before. A repeated name, or a slug equal to another beach or a place slug, gets the town appended (`zal-krk`), then the island, region, id. On dev data: 2139 beaches change, 1756 plain, 383 with the town; no collisions left.
+- Old slugs go to `beach_slug_redirects` (one row per language); earlier redirects pointing at an old slug are re-pointed (no chains). Idempotent.
+- Lookup: `App\Support\BeachSlugRedirects::beachId()` used by `/beach-details/{slug}`, `/beaches/{slug}` and `/resolve-slug/{slug}`; the web client answers an old slug with a 301 (web-client PR "301 from an old beach slug"). Legacy old-site URLs resolve to the beach id, so they point at the new slug directly.
+- Deploy clears the cache and runs `search:index` after migrating, so search results carry the new slugs.
+- Test: `tests/Feature/BeachSlugsFromLocalNamesTest.php`.
+
+## 2026-10-23 - Fix: a beach name without letters (Russian "335" for Tratica)
+
+- Owner: `/ru/.../pasman/kraj/beach-tratica-kraj` was titled "335". A scan of all 2876 beaches in all 19 languages on dev found only this one name without a letter.
+- Migration `2026_10_23_120000_fix_beach_names_without_letters`: every beach name with no letter takes the same beach's name in the nearest language (ru/ua/bg try each other, then English). Idempotent; real names are never touched. Deploy clears the cache and re-indexes search afterwards.
+- Guard: `content:ai` names (`BeachContentAi::cleanName`) and `translations:ai` names must contain a letter; a bare number falls back to the local name or is refused.
+- Test: `tests/Feature/BeachNameWithoutLettersTest.php`.
+
+## 2026-10-23 - Fix: home page translations for da, el, nl, pt, sq
+
+- Owner: the Greek home page showed most blocks in English. `/first-page-content` had no section or item rows for da, el, nl, pt and sq (only the hero title), so it fell back to English. All other locales were complete (checked on dev for all 19; `/beaches/filters` and `/countries` are translated everywhere).
+- Migration `2026_10_23_100000_add_first_page_content_missing_locales`: titles/descriptions for browse_map, find_beach, beach_views, accommodation, coastal_destinations, footer_text and the 8 items. Idempotent: inserts missing rows, replaces rows that still hold the English text, keeps human translations; clears the first-page cache. Runs on every environment (no DB promotion after launch).
+- Test: `tests/Feature/FirstPageContentMissingLocalesTest.php`.
+
+## 2026-10-22 - CI: a crashed test run no longer passes
+
+### Overview
+The CI test step passed a run that died on a PHP fatal error: the known environment-dependent failures (`PlanEnforcementTest`, `CountrySlugSupportTest`) always make the exit code non-zero, so the step only grepped for unknown `FAILED` lines, and a fatal error prints none. Found 2026-10-22 when a new test class crashed (`Cannot override final method … name()`) and CI was green.
+
+### Changes
+- `.github/scripts/check-test-output.sh <exit code> <output file>`: fails on a PHP fatal error, on a missing `Tests:` summary line (run did not finish), on any `FAILED` line outside the known tests, and when the failed count in the summary differs from the number of known failures. Passes on exit 0 or when only the known tests failed.
+- `.github/workflows/deploy.yml` (job `test`): calls the script instead of the inline grep. Deploy job unchanged.
+
+### Affected endpoints
+None.
+
+### Testing
+Run locally against real `php artisan test` output: known failures only → pass (4 failed, 663 passed); the fatal-error run → fail; an unexpected failure (old option seeder) → fail; clean filtered run → pass.
+
+---
+
+## 2026-10-22 - Fix: option names in Title Case ("Drobno Kamenje", "Plažni Bar")
+
+### Overview
+Owner report 2026-10-22: filter and characteristic names (beach type, food & drink, infrastructure, natural conditions, activities, …) were stored in Title Case, which is wrong in Slovenian and most other languages. They are now in sentence case in all 19 languages: only the first word, and each part after "/", keeps a capital; acronyms and mixed-case words (WiFi, ΑμεΑ) stay. German keeps its capitalised nouns; only "Ins Wasser springen" and "Unterschiedlich/gemischt" change there. Croatian "Ski lift / Wakeboard" gets the translation the 2026-10-21 fix intended ("Vučnica za wakeboard"). Slugs are unchanged.
+
+### Changes
+- `database/migrations/2026_10_22_180000_option_names_sentence_case.php` — 532 exact `[table, locale, old, new]` updates taken from `GET /beaches/filters` in all 19 languages on dev. Idempotent (matches the exact current value, so names already edited in admin stay), reversible (`down()`).
+- Option seeders (BeachType, AccommodationAround, CulinaryOffer, LocationInfrastructure, NaturalLocationCondition, SportingActivities, UnderwaterCharacteristic, RecommendedTransportType, AreaDescription, BeachInclination, UserType): names in sentence case, so a fresh database matches.
+
+### Affected endpoints
+No API contract change. Option `name` values change in `/api/v1/beaches/filters`, beach details and beach lists. The deploy runs `cache:clear` and `search:index` after `migrate`, so nothing to run by hand.
+
+### Testing
+Follow-up `2026_10_22_190000_option_names_sentence_case_hyphen_apostrophe.php`: 7 names whose capital followed a hyphen or apostrophe (fr "Maître-Nageur", "Camping-Car", "Complexe d'Appartements", "… dans l'Eau"; it "Scivolo d'Acqua"; de adjective "FKK-Freundlich"), found on dev after the first fix.
+
+`php artisan test --filter=OptionNamesSentenceCaseTest` (listed names change, German nouns and admin-edited names stay, slugs stay, idempotent, `down()` restores; every fix only changes letter case; option seeders have no Title Case names outside German).
+
+---
+
+## 2026-10-22 - Fix: lake beaches from the old database were "Sea" (`beaches:fix-lake-waterbody`)
+
+### Overview
+The old database stores `waterbody_id = 3` (sea) on every beach; lake beaches are marked only by `location_id = 3` + `lake_name`. The old-DB import copied the sea waterbody, so 42 lake beaches (NL, BE, FR, GR) show "Sea" and are missing from the lake filter. New one-off owner command fixes the existing rows (no re-import). ADR 2026-10-22.
+
+### Changes
+- `app/Console/Commands/FixLakeBeachWaterbody.php` — `beaches:fix-lake-waterbody [--apply] [--file=]`. Dry run by default. Sets the `lake` waterbody, links a missing `lake_id` (finds the lake by English name or old slug, creates it if missing), reports an existing link to a differently named lake without changing it, skips beaches that do not exist. Idempotent. Clears the API cache after `--apply`.
+- `database/legacy/lake-beaches.json` — the 42 beach IDs + lake names extracted from `database/sql/beachrex_old.sql`.
+- Admin guide `docs/guides/admin/jezerske-plaze.md` + index row.
+
+### Affected endpoints
+No API contract change. After the owner runs the command: `waterbody` of those 42 beaches becomes Lake in `/api/v1/beach-details/{id}`, beach lists and the waterbody filter.
+
+### Testing
+`php artisan test --filter=FixLakeBeachWaterbodyTest` (dry run writes nothing, apply, second run is a no-op, mismatched lake reported, missing file fails, bundled list = 42 unique IDs).
+Owner, per environment: `php artisan beaches:fix-lake-waterbody` → check → `--apply` → `php artisan search:index Beach`.
+
+---
+
+## 2026-10-23 - `/beaches/filters`: several countries / regions / islands at once
+
+Owner 2026-10-23: the map now allows several places per filter ("HR,IT"). `/beaches` already filtered by any of them, but `/beaches/filters` resolved `country=HR,IT` as one code and returned no regions (on dev: `country=HR` 7 regions, `country=HR,IT` 0), so a selected region was dropped by the web's validation. `country`, `region`, `island` (and their `_code` aliases) now take comma-separated codes or ids; region/island/city options are scoped with `whereIn`; unknown codes are ignored as before (no scoping); cache key uses the sorted list. OpenAPI descriptions updated. Tests in `tests/Feature/FilterAliasApiTest.php`.
+
+## 2026-10-23 - Docs: after the launch, code by merges, data by migrations (no DB promotion)
+
+Owner 2026-10-23 (an admin "promote" button was considered and dropped): the DB is copied to the environments once at the launch; after that code moves by PRs `dev → uat → main` and migrations run on deploy; content commands and admin edits write only their own environment, so content work runs on prod. ADR 2026-10-23; `docs/runbooks/content-ai.md` ("Which environment") and `docs/runbooks/prod-launch.md` ("After the launch") updated; one line in `CLAUDE.md`.
+
+## 2026-10-23 - Data fix: home page hero title had a "DEV" marker
+
+Pre-launch audit: the hero title was "All worries are smaller on the beach! DEV" in English (typed in the admin on dev, carried to uat by the DB promotion; prod gets uat's DB). da, pt, nl, el and sq had no row and showed that English title. Migration `2026_10_23_060000_fix_hero_banner_title` removes the marker (only while the title still has it) and adds the five missing titles (with the English description/metadata); existing rows stay. Test: `tests/Feature/HeroBannerTitleFixTest.php`.
+
+## 2026-10-22 - Fix: searching a country name ("grčija", "nemčija") found only the country
+
+Owner 2026-10-22. The Meilisearch documents held parent places in English only (`country->name` etc. return the English translation), so a beach in Greece matched "Greece" but not "Grčija", "Griechenland" or "Ελλάδα"; "albanija" only worked through typo tolerance against "Albania".
+- New searchable field `place_names` (trait `App\Models\Traits\IndexesPlaceNames`): the names of the parent places in every language — beaches: country, region, island, city; cities: country, region, island; islands: country, region; regions: country. Ranked after the item's own names, before descriptions (`config/scout.php`).
+- `makeAllSearchableUsing` eager-loads the place translations for `scout:import`.
+- Deploy runs `search:update-settings` before `search:index`, so new searchable fields take effect without a manual step.
+- Test: `tests/Feature/SearchPlaceNamesTest.php` (fails without the fix).
+
+## 2026-10-21 - Fix: `content:ai generate/seo` refused with "compiled grammar is too large"
+
+Owner preview on dev (`preview --part=generate --id=1 --id=2`): the API returned 400 because the output schema had one nested object (meta, description, FAQ list) per language, 19 copies. The answer is now `{"texts": [{locale, meta, description?, faq}]}` with one item definition and `locale` as an enum of the requested languages; the prompt lists the languages and asks for exactly one entry each. `apply` maps the list back per language (first entry per language wins, unknown codes are ignored, a missing language is picked up again by `seo`). Regression test: `the_output_schema_stays_small_for_19_languages` (fails on the old schema).
+
+## 2026-10-21 - TASK-007: search snippet, intro and FAQ for beaches (`content:ai generate` / `seo`)
+
+Owner 2026-10-21 (preview of `generate` read like a field list; "za opise se strinjam, čimveč"). Spec `docs/tasks/TASK-007-seo-geo-descriptions.md`, ADR 2026-10-21, runbook `docs/runbooks/content-ai.md`.
+
+- **DB (additive):** `beach_translation.meta_description` (varchar 320, null), `beach_translation.faq` (jsonb, null, `[{q, a}]`).
+- **API (additive):** `GET /api/v1/beach-details/{id}` → `basic_info.meta_description` (string|null) and `basic_info.faq` (`[{q, a}]`, empty when none), requested language only. OpenAPI updated. The AI chat context leaves both out.
+- **`content:ai generate`:** per language `{meta, description, faq}`; prompt: intro without logistics, rotating opening angle, FAQ with direct answers, featured tier (`AI_CONTENT_FEATURED`, default 200 by `beach_views`). Facts gain `town_centre`, `beaches_in_town`, `nearest_beaches` (computed, active beaches, 10 km).
+- **`content:ai seo`** (new part): snippet + FAQ for beaches with a description; never writes descriptions.
+- Every field is written only where empty; a snippet > 200 characters or an FAQ with < 2 valid items is left out (and retried by `seo`).
+- **Admin:** beach → Translations: "Search snippet" and "Frequently asked questions" fields.
+- Tests: `tests/Feature/ContentAiSeoTest.php`; `ContentAiTest` updated for the new answer shape.
+- Owner action: `php artisan migrate` runs with the deploy; then `content:ai plan --part=generate --part=seo` and `preview` (see runbook).
+
+## 2026-10-21 - Data fix: untranslated and broken names in filters and beach cards
+
+**Owner report (dev, 2026-10-21):** English words in the Greek filters (Hostel, Beach bar), Cyrillic city names
+with Latin letters, names like `L\'Escala`, and the beach card title "Ražanac → Ражанац" in Ukrainian.
+
+**Audit:** `GET /api/v1/beaches/filters` in all 19 languages on dev, compared option by option with English.
+Names identical to English that are real words in that language (Hotel, Pizzeria, Marina, WC …) were left.
+
+**Changes:** migration `2026_10_21_120000_fix_untranslated_and_broken_translation_names` (idempotent; each update
+matches the exact current value, so rows already corrected in admin are untouched; slugs unchanged):
+- el: Hostel → Ξενώνας, Beach bar → Μπαρ παραλίας, WiFi hotspot → Σημείο πρόσβασης WiFi, Kitesurfing → Κάιτσερφ
+- sl: "Smučarski Vlečnica / Wakeboard" → "Vlečnica za wakeboard", "Povečanje" (beach inclination) → "Naraščajoč naklon"; hr: "Ski Lift / Wakeboard" → "Vučnica za wakeboard" (also in the seeders)
+- ua/bg: 7 city names with Latin letters (ids 1514, 515, 78, 496, 408, 1000, 1306)
+- ua beach "Ražanac → Ражанац" → "Ражанац"
+- `\'` → `'` in `city_translation.name` and `beach_translation.name` (11 cities × all languages on dev)
+- Deploy runs `cache:clear` and `search:index` after `migrate`, so the API shows the new names right away.
+
+**Not changed (owner decision):** duplicate cities 386/1533 — see `docs/HANDOFF.md` open items.
+
+**Affected endpoints:** `GET /api/v1/beaches/filters`, beach lists/details/search — name values only.
+
+**Testing:** `php artisan test --filter=TranslationNameCleanupMigrationTest` (4 passed; with the un-escape step
+broken: 1 failed). On prod the same migration runs when `dev` is promoted (owner).
+
+## 2026-10-21 - Fix: map filter section titles were English in every language
+
+**Owner report (dev, 2026-10-21):** on the beach map, filter section titles (Region, City, Accommodation,
+Culinary Offer, Infrastructure, Natural Conditions, Activities, Underwater, Transport, Accessibility, Area Type,
+Parking Capacity, Beach Inclination, Swimming Depth, Occupancy) were English in all 19 languages.
+
+**Cause:** `FilterController` takes the title from `filter_title` of the first row's translation. The column was
+added for these tables (`2025_12_19_000002`) but never filled, so every request fell back to a hardcoded English string.
+
+**Changes:**
+- Beachrex/backend#124: the fallback is now `__('<Title>', [], $locale)` (Laravel JSON translations), like
+  Parking / Pool type already were. A non-empty `filter_title` in the DB still overrides it; an empty string no
+  longer blocks the fallback. The 20 titles are in all 19 `lang/*.json` files.
+- This PR: regression test `tests/Feature/FilterGroupTitleLocaleTest.php` (against the pre-#124 controller: 2 failed).
+
+**Affected endpoints:** `GET /api/v1/beaches/filters` — `data.*.title` values only; no field added, removed or renamed.
+
+**Testing:** `php artisan test --filter=FilterGroupTitleLocaleTest`; on dev, `Accept-Language: ua` returns
+`Регіон`, `Місто`, `Харчування`, `Природні умови` … (checked 2026-10-21 after deploy of #124).
+
+## 2026-10-19 - Fix: beach page showed Windy's "embed player … is not publicly available"
+
+**Owner report (dev, 2026-10-19):** the "Live webcam" section of a Nice beach showed Windy's message
+"Sorry. The embed player for this webcam is not publicly available." instead of the player.
+
+**Cause:** a webcam is shown only when its public player check (`embed_status`) is `ok`, but the check ran once
+(2026-10-14) and is repeated only after 30 days (`embed_check_stale_days`) or by the monthly refresh (off). A
+webcam whose owner switches embedding off afterwards stayed `ok` in our DB, and the cached beach details
+(8 h) kept it even after a re-check.
+
+**Changes:**
+- `webcams:embed-check --shown` re-checks every webcam shown on a place (approved / auto-approved), however
+  recently checked; scheduled **daily at 05:10** (`WEBCAMS_EMBED_RECHECK_ENABLED`, default `true`; no API key).
+- A shown webcam whose result changes: primary moves to the next usable webcam (`WebcamRefresher::demote`) and
+  the place's cached beach details are cleared (also after `webcams:refresh`).
+- A failed request (`unknown`) no longer overwrites a known result, so a network blip cannot hide a working webcam.
+- The check now asks the player with the same query and `Referer` (the website, `FRONTEND_URL`) as the iframe
+  on our beach page, so it sees what a visitor sees.
+
+**Affected endpoints:** none changed; `GET /api/v1/beaches/{id}` (details `webcams[]`) and list/map
+`windy_webcam_id` stop returning such webcams after the re-check.
+
+**Tests:** `tests/Feature/Webcams/WebcamEmbedRecheckTest.php` (4 tests, all fail on the old code).
+
+**Owner, on dev now:** `php artisan webcams:embed-check --shown` (≈1 s per shown webcam).
+
+---
+
+## 2026-10-14 - Fix: `webcams:match` offered an approved webcam to a neighbouring place
+
+**Found on dev (owner's all-country run):** `SQLSTATE[23505] … place_webcams_one_place_per_webcam, windy_id 1598991907` — the owner had approved Prvi Žal (Lumbarda) for place 1188; the matcher treated that approved *matcher* row as replaceable, offered the webcam to place 1187 and the run stopped.
+
+**Fix:** only unreviewed matcher proposals of places in scope are replaceable; approved, legacy and manual rows always reserve their webcam. A unique conflict during a run (e.g. an admin approval at the same moment) now skips that place (`conflict` in the summary) instead of stopping the run.
+
+**Tests:** regression `a_webcam_approved_on_one_place_is_never_offered_to_another` (fails on the old code).
+
+---
+
+## 2026-10-14 - `webcams:export`: CSV of places with webcams and their website links
+
+**Owner:** "izpiše vse plaže in link do beachrex do te plaže ki imajo kamere … link mora biti dev.beachrex … csv".
+
+**Change:** `php artisan webcams:export [--base-url=https://dev.beachrex.com] [--all] [--country=HR] [--locale=en]` — read-only CSV in `storage/app/webcams/export-*.csv`: place id, country, beach, website URL (same builder as the AI chat/MCP, `BeachTools::beachUrl()`), Windy id/title/URL, status, primary, source, score, distance, webcam status, player status. Default: only webcams shown on the site. Admin guide: `spletne-kamere.md`; file download steps: `splosno.md`.
+
+**Affected endpoints:** none. **Tests:** `tests/Feature/Webcams/WebcamExportTest.php`.
+
+---
+
+## 2026-10-14 - TASK-006 step 4: webcam review in admin + verified webcams in the API
+
+**Changes:**
+- Admin (Filament) → Content → **Webcam review** (`/place-webcams`, admins only): pending first, filters status/country/place type/source, columns place (OSM link), webcam (windy.com link), distance, score and a one-line "why", status, source, primary. Actions: Preview (the same iframe as the site), Approve, Reject, Set primary, bulk approve/reject, **Add webcam by hand** (id, Windy link or embed code; unknown ids verified with one API call).
+- `PlaceWebcamReview`: approve (first approved becomes primary; refused if the webcam is shown on another place), reject (primary handed to the next shown webcam), set primary, manual add; each clears the place's cached `beach_details:*` keys.
+- `Beach::shownWebcams()` (approved/auto-approved and usable), `WindyWebcam::scopeUsable()`, `playerUrl()`.
+
+**Affected endpoints (additive only; `webcam` unchanged for old app builds):**
+- `GET /api/v1/beach-details/{identifier}`: new `webcams[]` (`windy_id`, `title`, `is_primary`, `player_url`, `page_url`), primary first; new `embeds.windy_webcam_id`.
+- `GET /api/v1/beaches`, `/beaches/most-visited`, favorites, `/api/v1/spatial/beaches/*`: new `media.embeds.windy_webcam_id` (primary verified webcam or null).
+- OpenAPI regenerated.
+
+**Tests:** `tests/Feature/Webcams/WebcamReviewAndApiTest.php` (API filtering, list/map field, review rules, manual add, cache clear, admin 302/403, table action).
+
+---
+
+## 2026-10-14 - TASK-006 step 3: legacy webcam salvage and scheduled refresh
+
+**Changes:**
+- `php artisan webcams:legacy-extract [--country=] [--dry-run]`: reads `beach.webcam` (never changes it), extracts Windy/Lookr ids, looks up unknown ids once via the API (`webcamIds`, 50 per call), checks the public player, scores with the matcher's rules and writes `place_webcams` rows with `source=legacy`. Beyond 3 km or already shown on another place → pending at best. CSV report in `storage/app/webcams/legacy-extract-*.csv` (kept / pending / below_threshold / dead / unparseable). Checked against all 3 774 legacy values: 250 ids (237 unique), same as Phase 0.
+- `php artisan webcams:refresh [--force]` + daily schedule 04:20 (only when `WEBCAMS_REFRESH_ENABLED=true` and a key is set): resumes a budget-paused import, otherwise re-imports every 30 days; then player check, primary moved off unusable webcams, match re-run for affected places, warning log (+ e-mail to `WEBCAMS_ALERT_EMAIL`) when > 10 % of places lose their main webcam.
+- `WindyApiClient::byIds()`, `WebcamImporter::store()`, `WebcamMatcher::scorePair()`.
+- `.env.example`: `WEBCAMS_REFRESH_ENABLED`, `WEBCAMS_ALERT_EMAIL`.
+
+**Affected endpoints:** none.
+
+**Order on dev (owner):** `webcams:import` → `webcams:embed-check` → `webcams:legacy-extract` → `webcams:match` (each with `--dry-run` first).
+
+**Tests:** `tests/Feature/Webcams/WebcamLegacyAndRefreshTest.php`.
+
+---
+
+## 2026-10-14 - TASK-006 step 2: Windy import (budgeted, resumable) and player check
+
+**Changes:**
+- Migration `2026_10_14_150000_create_windy_import_tables`: `windy_import_slices` (checkpoint per country/region slice) and `windy_api_usage` (requests per day).
+- `WindyApiClient`: `x-windy-api-key` header, comma-separated arrays (spec `explode: false`), back-off on 429/5xx (Retry-After or 2ⁿ s), hard daily budget (`WINDY_DAILY_REQUEST_BUDGET`). The key is never logged.
+- `WebcamImporter` + `php artisan webcams:import [--country=HR] [--fresh] [--dry-run]`: categories beach/coast/lake/river/port, `include=categories,location,player`; countries with more than 1 050 webcams are split by region; images never stored; after a complete, untruncated country, webcams not returned get `missing_since`. Re-running the same command resumes the unfinished run.
+- `EmbedChecker` + `php artisan webcams:embed-check [--id=] [--limit=] [--dry-run]`: public player page (no key, 1 request/s) → `embed_status` ok / not_public / unavailable.
+
+**Affected endpoints:** none.
+
+**How to run on dev (owner, after `WINDY_API_KEY` is in `.env.dev`):**
+```
+php artisan webcams:import --country=HR --dry-run
+php artisan webcams:import --country=HR
+php artisan webcams:embed-check --dry-run && php artisan webcams:embed-check
+php artisan webcams:match --country=HR --dry-run
+```
+
+**Tests:** `tests/Feature/Webcams/WebcamImportTest.php` (Windy API mocked).
+
+---
+
+## 2026-10-14 - TASK-006 step 1: Windy webcam tables, scoring and local matcher
+
+**Owner:** plan approved 2026-10-14 (3 km radius, mode B, direct iframe, other providers hidden). Spec `docs/tasks/TASK-006-windy-webcams.md`.
+
+**Changes:**
+- Migration `2026_10_14_120000_create_windy_webcams_tables`: `windy_webcams` (Windy metadata, `location geography` kept in sync by trigger, `embed_status`; never image URLs) and `place_webcams` (place ↔ webcam, score, breakdown, source, review status, primary). Partial unique indexes: one primary per place; a shown webcam belongs to one place. `beach.webcam` untouched.
+- `config/webcams.php`: radius, distance/category/name points, thresholds, place-type profiles (beach, pool_spa).
+- `App\Services\Webcams\WebcamIdExtractor` (legacy Windy + Lookr embeds, Windy player/iframe/page URLs), `NameMatcher`, `WebcamScorer`, `WebcamMatcher`.
+- `php artisan webcams:match [--dry-run] [--country=HR] [--place=ID] [--only-missing]` — zero API calls.
+- `.env.example`: `WINDY_API_KEY`, `WINDY_DAILY_REQUEST_BUDGET`, `WEBCAMS_MAX_RADIUS_M`.
+
+**Affected endpoints:** none yet (API field comes in a later step).
+
+**Tests:** `tests/Unit/Webcams/*`, `tests/Feature/Webcams/WebcamMatcherTest.php` (PostGIS). Nothing to run on dev until the import (step 2) fills `windy_webcams`.
+
+---
+
+## 2026-10-12 - `translations:ai`: beach and city names in Greek and Cyrillic
+
+**Owner:** "loti se ja" (after the reference-data batch, 3 563 names, was written on dev).
+
+**Change:** `translations:ai` now also covers `beach_translation` and `city_translation` (active places only), for el, ua, ru and bg only, in their own script, with the country code as context and a place-name prompt. New rows copy the English row's slug but never its description (descriptions are translated separately by `content:ai`).
+
+**Tests:** `tests/Feature/TranslationsAiTest.php`.
+
+## 2026-10-12 - `translations:ai`: AI translations for reference data
+
+**Owner:** "DA" to translating the missing reference translations with AI (`translations:audit`: da, pt, nl, el, sq have no rows in most attribute tables; badges only en/hr; Albanian country names in English).
+
+**Change:** `php artisan translations:ai plan|preview|submit|status|apply` (runbook `docs/runbooks/content-ai.md`). Covers every small `*_translation` table with `name` (attributes, badges, islands, lakes, rivers, countries, continents; not beaches, cities, regions, pages, articles). One Message Batch request per table chunk of 40 rows. Writes only languages that have no row or still the English name; new rows copy the English row (slug included). `TranslationTables` (shared with `translations:audit`) now also finds `country_translation` / `continent_translation` (keyed by code).
+
+**Tests:** `tests/Feature/TranslationsAiTest.php`, `tests/Feature/TranslationsAuditTest.php`.
+
+## 2026-10-12 - `main_image` falls back to the first gallery photo
+
+**Owner report:** French region pages (Bretagne, Nouvelle-Aquitaine) showed no most visited beaches ("All beaches (0)") and city pages no beaches. The API returned them (`GET /api/v1/beaches/most-visited?region_code=bretagne` → Plage du Verger) but with `"main_image": null`: these mobile-app beaches have no usable primary photo (the first media has an empty `file_path`, or none is primary), and the web skips cards without a main image.
+
+**Change:** `BeachResource` (most visited, lists) and `PostGISService` card results (radius / bounding box) set `main_image` to the first gallery photo (`BeachGallery::pick`) when they have none. Response shape unchanged.
+
+**Tests:** `tests/Feature/BeachMainImageFallbackTest.php` (both fail without the change).
+## 2026-10-12 - Beach page: missing translation falls back to English, not the raw code
+
+**Owner report:** Greek beach page showed "small_stones", "adventurer". `translations:audit` on dev: da, pt, nl, el, sq have no rows at all in most attribute tables (beach type, user type, facilities, …).
+
+**Change:** `BeachDetailsResource` (`GET /api/v1/beach-details/{identifier}`) took the requested locale's translation or else the code. It now takes the requested locale, then English, then the code (30 attribute blocks: location, characteristics, facilities, activities, natural conditions, …). The list resources already did this (`HandlesTranslations::getTranslation`). Response shape unchanged. The missing translations themselves are filled separately.
+
+**Tests:** `tests/Feature/BeachDetailsEnglishFallbackTest.php` (fails without the change).
+
+## 2026-10-12 - `translations:audit` (read-only translation gap report)
+
+**Owner report:** Greek beach pages show raw codes ("small_stones", "adventurer"), Albanian shows English country names and burger-menu entries, Russian/Ukrainian/Bulgarian/Greek have untranslated parts.
+
+**Change:** `php artisan translations:audit [--table=…] [--examples=N]` walks every `*_translation` table that has `name` and `locale` and, per supported locale (`SetLocaleFromHeader::SUPPORTED_LOCALES`, without `en`), prints rows that are missing and rows whose name is identical to English. Writes nothing. The output decides which tables get translated next.
+
+**Tests:** `tests/Feature/TranslationsAuditTest.php`.
+
+## 2026-10-11 - Beach gallery falls back to the beach's other photos
+
+**Owner report:** Njivice (id 844) showed no photos. It has no `beach_gallery` photo, only a 360° panorama and two `parking_images`.
+
+**Change:** `App\Support\BeachGallery::pick()` returns the `beach_gallery` photos, or, when there are none, the beach's photos from `beach_spot_images`, `infrastructure_images`, `parking_images`, `info_images` (in that order). Videos and 360° spheres are never used. Used by:
+- `GET /api/v1/beach-details/{identifier}` → `data.media.gallery` (`BeachDetailsResource`);
+- `BeachResource` → `media.gallery`;
+- card results from `PostGISService` (radius, bounding box) → `media.gallery`; the media query also loads the fallback collections.
+
+Response shape unchanged (no OpenAPI change). The other collections (`parking_images`, …) are still returned as before. Prev/next navigation thumbnails still use `beach_gallery` only.
+
+**Tests:** `tests/Feature/BeachGalleryFallbackTest.php` (card gallery, beach-details API, gallery wins, no videos/spheres).
+
 ## 2026-10-09 - OpenAPI: full search result fields for islands, regions and countries
 
 Mobile report (relayed by the owner): the `GET /api/v1/search` response documented only the URL slugs for `islands`, `regions` and `countries`, so generated clients missed `id`, `name`, `slug`, `main_image`, `country_name` and the other fields the API already returns.

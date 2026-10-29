@@ -141,27 +141,31 @@ return [
         'key' => env('MEILISEARCH_KEY'),
         'index-settings' => [
             'beaches' => [
-                'filterableAttributes' => ['country_code', 'region_name', 'city_name', 'island_name', 'type'],
+                'filterableAttributes' => ['country_code', 'region_id', 'island_id', 'city_id', 'region_name', 'city_name', 'island_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'description', 'country_name', 'region_name', 'city_name', 'island_name', 'translated_names', 'translated_descriptions'],
+                // Order = attribute ranking: names and places before free text. "france" used to rank Italian
+                // beaches whose description names the church of San Francesco above French beaches (2026-10-28).
+                'searchableAttributes' => ['name', 'translated_names', 'country_name', 'region_name', 'island_name', 'city_name', 'place_names', 'description', 'translated_descriptions'],
+                'pagination' => ['maxTotalHits' => 20000],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'cities' => [
-                'filterableAttributes' => ['country_code', 'region_name', 'type'],
+                'filterableAttributes' => ['country_code', 'region_id', 'island_id', 'region_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names'],
+                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names', 'place_names'],
+                'pagination' => ['maxTotalHits' => 20000],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'islands' => [
-                'filterableAttributes' => ['country_code', 'region_name', 'type'],
+                'filterableAttributes' => ['country_code', 'region_id', 'region_name', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names'],
+                'searchableAttributes' => ['name', 'country_name', 'region_name', 'translated_names', 'place_names'],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'regions' => [
                 'filterableAttributes' => ['country_code', 'type'],
                 'sortableAttributes' => ['name'],
-                'searchableAttributes' => ['name', 'country_name', 'translated_names'],
+                'searchableAttributes' => ['name', 'country_name', 'translated_names', 'place_names'],
                 'nonSeparatorTokens' => ['č', 'Č', 'ć', 'Ć', 'š', 'Š', 'đ', 'Đ', 'ž', 'Ž', 'ü', 'Ü', 'ö', 'Ö', 'ä', 'Ä', 'ß'],
             ],
             'countries' => [

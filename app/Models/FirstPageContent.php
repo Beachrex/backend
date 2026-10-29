@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\HasMedia;
 use App\Traits\Cacheable;
+use Illuminate\Support\Facades\Cache;
 
 class FirstPageContent extends Model
 {
@@ -30,6 +31,28 @@ class FirstPageContent extends Model
     ];
 
     protected $appends = ['title'];
+
+    /**
+     * The API caches the homepage for 30 days under "first_page_content:index:{locale}" and
+     * "first_page_content:show:{code}:{locale}". Saving a section in admin (status, order, config such as
+     * `showcase_beach_id`) must clear both, like a translation save already does. `Cacheable` only clears
+     * `reference:FirstPageContent:*`, which these keys are not.
+     */
+    protected static function booted(): void
+    {
+        $forget = static function (FirstPageContent $content): void {
+            $codes = array_unique(array_filter([$content->code, $content->getOriginal('code')]));
+            foreach (\App\Http\Middleware\SetLocaleFromHeader::SUPPORTED_LOCALES as $locale) {
+                Cache::forget("first_page_content:index:{$locale}");
+                foreach ($codes as $code) {
+                    Cache::forget("first_page_content:show:{$code}:{$locale}");
+                }
+            }
+        };
+
+        static::saved($forget);
+        static::deleted($forget);
+    }
 
     /**
      * Get the English title from translations

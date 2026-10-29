@@ -140,7 +140,8 @@ $DC exec -T api_prod php artisan cache:clear
 Template for D3 (443 block; the 80 block becomes `return 301 https://$host$request_uri;`):
 ```nginx
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    http2 on;
     server_name www.beachrex.com;
     ssl_certificate /etc/letsencrypt/live/beachrex.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/beachrex.com/privkey.pem;
@@ -149,7 +150,8 @@ server {
     return 301 https://beachrex.com$request_uri;
 }
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    http2 on;
     server_name beachrex.com;
     ssl_certificate /etc/letsencrypt/live/beachrex.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/beachrex.com/privkey.pem;
@@ -172,7 +174,14 @@ other host must not use `api.beachrex.com`; the owner checks this before the DNS
 | P4 | Agent | Promote `uat → main` (PR), check the prod deploy | Deploy green; C2 health `ok` with the merge SHA; C4 search |
 | P5 | Owner | DNS: A record `api.beachrex.com` → `2.28.76.142`, **DNS only** (grey cloud) until the certificate exists | `api.beachrex.com` resolves to the VPS |
 | P6 | Owner | `sudo certbot certonly --nginx -d api.beachrex.com` (certbot must not edit nginx) | `/etc/letsencrypt/live/api.beachrex.com/fullchain.pem` exists |
-| P7 | Agent | Merge the nginx PR with the `api.beachrex.com` 443 block. **Only after P6**, otherwise `nginx reload` fails for every environment | `https://api.beachrex.com/api/v1/health` → `ok`; then the owner may turn the Cloudflare proxy on (SSL mode Full) |
+| P7 | Agent | Merge the nginx PR (done 2026-10-09; the host file had to become a symlink first, see HANDOFF) with the `api.beachrex.com` 443 block. **Only after P6**, otherwise `nginx reload` fails for every environment | `https://api.beachrex.com/api/v1/health` → `ok`; then the owner may turn the Cloudflare proxy on (SSL mode Full) |
+
+## After the launch: how code and data move (ADR 2026-10-23)
+
+- The DB copy (Phase B) happens **once**. After real users write to `beachrex_prod`, no database is copied over prod again.
+- Code: PRs `dev → uat → main`; every deploy runs the migrations.
+- Data every environment needs: a migration (idempotent; never overwrites text a person edited).
+- Content work (`content:ai`, `translations:ai`, `webcams:import`, admin edits): on prod, by the owner, dry run first. dev/uat may lag behind; refresh them *from* prod when needed, never the other way.
 
 ## Rollback
 

@@ -11,7 +11,7 @@ namespace App\Swagger\Schemas\Auth;
  *         property="token",
  *         type="string",
  *         description="Sanctum personal access token (Bearer token)",
- *         example="1|8C05td6vuOSBLDMvWjg2EpxumuSO9h4h5tP4GGEe63440ff9"
+ *         example="1|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx63440ff9"
  *     ),
  *     @OA\Property(
  *         property="token_type",

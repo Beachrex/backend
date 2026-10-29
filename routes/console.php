@@ -20,3 +20,26 @@ Schedule::call(fn () => app(\App\Services\AI\Itinerary\ItineraryPlanService::cla
     ->name('itinerary-plans:fail-stale')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// TASK-006: Windy webcam refresh. Daily, but it only re-imports every 30 days or resumes a run that hit the
+// request budget. Off until WEBCAMS_REFRESH_ENABLED=true (after the owner's first manual import).
+Schedule::command('webcams:refresh')
+    ->dailyAt('04:20')
+    ->withoutOverlapping()
+    ->when(fn () => (bool) config('webcams.refresh.enabled') && (bool) config('webcams.api.key'));
+
+// TASK-006: Windy owners can switch embedding off at any time ("not publicly available" in the player), so the
+// webcams shown on our pages are re-checked daily in the public player (no API key, ~1 request/s).
+Schedule::command('webcams:embed-check --shown')
+    ->dailyAt('05:10')
+    ->withoutOverlapping()
+    ->when(fn () => (bool) config('webcams.import.embed_recheck_enabled'));
+
+// 360° tours (owner 2026-10-29): record which beaches have a generated krpano tour, so the API can send the panorama
+// to the website's own viewer instead of a missing tour. New beaches daily; everyone once a week.
+Schedule::command('media:check-vtours')
+    ->dailyAt('04:40')
+    ->withoutOverlapping();
+Schedule::command('media:check-vtours --all')
+    ->weeklyOn(0, '04:50')
+    ->withoutOverlapping();
