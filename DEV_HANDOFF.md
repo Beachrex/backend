@@ -52,6 +52,42 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - AI chat: $5/day free limit with real Anthropic cost, Cloudflare Turnstile
+
+**Owner (2026-10-29):** "Anthropic uporabljamo … brezplačni uporabniki 5 $ na dan; če je preseženo, se chat izklopi in
+se naslednji dan avtomatsko vklopi … Turnstile ja". ADR 2026-10-29 "AI chat daily cost cap and Turnstile".
+
+### Changes
+- Limits (code defaults, env still overrides): free chat `AI_FREE_TIER_DAILY_LIMIT` **5** (was 500), all AI
+  `AI_EMERGENCY_SHUTDOWN_LIMIT` **20** (was 5000). Day = local day in `AI_DAILY_LIMIT_TIMEZONE` (default
+  Europe/Ljubljana); back on at local midnight. Paid trip planner: emergency limit only, not counted in the free one.
+  `.env.example` no longer sets 500/5000 (CI copied them).
+- Cost: `App\Services\AI\ModelPricing` (one price table, Anthropic per published table, cache multipliers, unknown
+  model → most expensive tier + warning); `AiSpendMeter` (scoped) collects every LLM call; a chat that fails after
+  billed calls still writes an `ai_usage` row; itinerary cost includes both narration attempts; `/ai/test` records cost.
+- `AiDailySpend`: local-date sums and cache keys, cache dropped on every new `ai_usage` row, once-a-day log + optional
+  e-mail `AI_ALERT_EMAIL`.
+- Turnstile: `VerifyTurnstile` middleware on the chat group, `TurnstileVerifier` (siteverify), config
+  `services.turnstile` (`TURNSTILE_SECRET_KEY`, `TURNSTILE_REQUIRED_FOR=web|all`). Session remembered as verified
+  for 30 min (sliding), bound to the IP hash.
+- `deploy/docker-compose.vps.yml`: front build arg `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (empty default).
+
+### Affected Endpoints
+- `POST /api/v1/ai/chat`, `POST /api/v1/ai/test`: request field `turnstile_token` (optional); new 403
+  `{"error":"turnstile_required"|"turnstile_failed"}` only when `TURNSTILE_SECRET_KEY` is set and the request is from a
+  browser (or `TURNSTILE_REQUIRED_FOR=all`); 503 at the daily limit now has `reason: "daily_limit"`, `retry_after`
+  (ISO 8601, next local midnight) and a `Retry-After` header (additive). The OpenAPI 503 schema now describes the
+  real body (`retry_after` was already an ISO string, `fallback_url` was never sent).
+- `POST /api/v1/ai/itineraries`, `POST /api/v1/ai/itinerary-plans`: no longer stopped by the free chat limit.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AI/AiCostCapTest.php tests/Feature/AI/ChatTurnstileTest.php` (prices, every
+Claude round counted, failed request keeps its cost, $4.99 open / $5.02 closed, local midnight reopens, trip planner
+not stopped by the free limit, one mail per day; Turnstile missing/invalid/wrong action/valid-once-per-session/new
+IP/TTL/off without secret/mobile in web vs all mode/Cloudflare down/wrong secret/planner not gated).
+
+---
+
 ## 2026-10-29 - TASK-009 amended: separate admin switches for AI chat and the AI trip planner
 
 **Owner (2026-10-29):** hide the paid trip planner, not the chat; switch either or both in admin. He will switch only

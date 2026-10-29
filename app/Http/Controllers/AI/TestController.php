@@ -63,6 +63,20 @@ class TestController extends Controller
                 'maxTokens' => 500,
             ]);
 
+            // Public endpoint that calls the LLM: its cost counts toward the free daily limit like the chat.
+            \App\Models\AiUsage::create([
+                'user_id' => $user?->id,
+                'tier' => $tier,
+                'event_type' => 'test',
+                'llm_provider' => $response->provider,
+                'llm_model' => \Illuminate\Support\Str::limit((string) $response->model, 50, ''),
+                'tokens_input' => $response->inputTokens,
+                'tokens_output' => $response->outputTokens,
+                'tokens_total' => $response->totalTokens,
+                'cost_usd' => $response->costUsd,
+                'ip_address' => hash('sha256', (string) $request->ip()),
+            ]);
+
             return response()->json([
                 'session_id' => $request->header('X-Session-ID', 'test-session'),
                 'message' => $response->getContent(),

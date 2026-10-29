@@ -91,6 +91,16 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden - Cloudflare Turnstile is on and the token is missing or rejected; run the widget and resend with turnstile_token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiTurnstileError"
+                                }
+                            }
+                        }
+                    },
                     "413": {
                         "description": "Payload Too Large - Token budget exceeded",
                         "content": {
@@ -140,7 +150,7 @@
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable - AI service temporarily disabled (error=service_unavailable), or the AI provider is busy / out of quota / timed out (error=ai_unavailable, Retry-After: 60)",
+                        "description": "Service Unavailable - AI switched off (error=service_unavailable), the daily cost limit is reached (error=service_unavailable, reason=daily_limit, retry_after = next local midnight; back on by itself), or the AI provider is busy / out of quota / timed out (error=ai_unavailable, Retry-After: 60)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -148,9 +158,9 @@
                                 },
                                 "example": {
                                     "error": "service_unavailable",
-                                    "message": "AI service is temporarily unavailable due to high costs",
-                                    "retry_after": 3600,
-                                    "fallback_url": "https://beachrex.com/search"
+                                    "reason": "daily_limit",
+                                    "message": "The AI assistant has reached its daily limit and is resting until tomorrow.",
+                                    "retry_after": "2026-10-30T00:00:00+01:00"
                                 }
                             }
                         }
@@ -310,7 +320,7 @@
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable - Circuit breaker triggered or AI service disabled",
+                        "description": "Service Unavailable - AI switched off, or the emergency daily cost limit (all AI) is reached (reason=daily_limit; the free chat limit does not apply to the paid planner)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -318,9 +328,9 @@
                                 },
                                 "example": {
                                     "error": "service_unavailable",
-                                    "message": "AI service is temporarily unavailable due to high demand",
-                                    "retry_after": "2025-12-30T00:00:00Z",
-                                    "fallback_url": "https://beachrex.com/search"
+                                    "reason": "daily_limit",
+                                    "message": "The AI assistant has reached its daily limit and is resting until tomorrow.",
+                                    "retry_after": "2026-10-30T00:00:00+01:00"
                                 }
                             }
                         }
@@ -11198,6 +11208,13 @@
                         "type": "object",
                         "nullable": true
                     },
+                    "turnstile_token": {
+                        "description": "Cloudflare Turnstile token (widget action `ai_chat`). Needed only when the server has Turnstile on and asks for it (403 turnstile_required / turnstile_failed): browser requests, or every client when TURNSTILE_REQUIRED_FOR=all. One successful check covers the conversation (session_id) for the session lifetime from the same IP.",
+                        "type": "string",
+                        "maxLength": 2048,
+                        "example": "0.xxxxxxxx",
+                        "nullable": true
+                    },
                     "page_context": {
                         "description": "TASK-010: the website page the chat widget is open on. Optional, an untrusted hint only (lets the assistant understand 'this beach' / 'here'); never used for authorization. For page_type=beach the server resolves the beach name and place from beach_id (active beaches only) and ignores title. Other keys → 422.",
                         "required": [
@@ -11554,35 +11571,68 @@
             },
             "AiServiceUnavailableError": {
                 "title": "AI Service Unavailable Error (503)",
-                "description": "Error response when AI service is temporarily unavailable",
+                "description": "The AI is not available right now. error=service_unavailable: switched off on the server (retry_after null) or a daily cost limit is reached (reason=daily_limit, retry_after = next local midnight, Europe/Ljubljana by default; the chat is back on by itself then). error=ai_unavailable: the AI provider is busy, out of quota or timed out (Retry-After: 60).",
                 "required": [
                     "error",
-                    "message",
-                    "retry_after",
-                    "fallback_url"
+                    "message"
                 ],
                 "properties": {
                     "error": {
                         "type": "string",
                         "enum": [
-                            "service_unavailable"
+                            "service_unavailable",
+                            "ai_unavailable"
                         ],
                         "example": "service_unavailable"
                     },
+                    "reason": {
+                        "description": "Present when a daily cost limit is reached",
+                        "type": "string",
+                        "enum": [
+                            "daily_limit"
+                        ],
+                        "example": "daily_limit",
+                        "nullable": true
+                    },
                     "message": {
                         "type": "string",
-                        "example": "AI service is temporarily unavailable due to high costs"
+                        "example": "The AI assistant has reached its daily limit and is resting until tomorrow."
                     },
                     "retry_after": {
-                        "description": "Seconds until retry",
-                        "type": "integer",
-                        "example": 3600
-                    },
-                    "fallback_url": {
-                        "description": "Fallback URL for regular search",
+                        "description": "When to try again (ISO 8601 with offset)",
                         "type": "string",
-                        "format": "uri",
-                        "example": "https://beachrex.com/search"
+                        "format": "date-time",
+                        "example": "2026-10-30T00:00:00+01:00",
+                        "nullable": true
+                    },
+                    "request_id": {
+                        "description": "Only with error=ai_unavailable",
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "AiTurnstileError": {
+                "title": "AI chat robot check (403)",
+                "description": "Cloudflare Turnstile is on and the request has no valid token: run the Turnstile widget (action ai_chat) and send the message again with turnstile_token.",
+                "required": [
+                    "error",
+                    "message"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "enum": [
+                            "turnstile_required",
+                            "turnstile_failed"
+                        ],
+                        "example": "turnstile_required"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Please confirm that you are not a robot."
                     }
                 },
                 "type": "object"
