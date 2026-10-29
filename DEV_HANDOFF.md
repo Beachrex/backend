@@ -52,6 +52,12 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Footer pages: share capital removed
+
+Owner, 2026-10-29: the share capital is not shown on the site (not confirmed, not needed). Removed from `about-us` (company details) and `contact` in all 19 locales (`database/content/static-pages/*.json`). Test `SyncStaticPagesTest::test_company_details_are_complete_and_not_vat_registered` now checks that no page shows it.
+
+**Apply per environment (owner):** `static-pages:sync --dry-run`, then without `--dry-run`.
+
 ## 2026-10-29 - Footer pages: full company details, not liable for VAT
 
 Owner, 2026-10-29: the company details stay on the site (legal notice under ZEPT art. 5 and ZGD-1 art. 32, GDPR art. 13, ZVPot-1 for paid AI plans); MOJA PLAŽA, d.o.o. is **not liable for VAT** (tax no. 53794214, reg. no. 6791174000). Register court and share capital per the business register (Okrožno sodišče v Mariboru, EUR 12,500).
