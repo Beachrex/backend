@@ -6,6 +6,7 @@ use App\Models\Traits\HasAsciiPaths;
 use App\Models\Traits\HasMedia;
 use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Traits\IndexesPlaceNames;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Laravel\Scout\Searchable;
 
 class Beach extends Model
 {
-    use HasFactory, Cacheable, HasMedia, Searchable, HasAsciiPaths;
+    use HasFactory, Cacheable, HasMedia, Searchable, HasAsciiPaths, IndexesPlaceNames;
 
     /** Storage paths kept ASCII-only (TASK-002). */
     protected array $asciiPathAttributes = ['folder_name'];
@@ -94,6 +95,7 @@ class Beach extends Model
         'longitude' => 'decimal:8',
         'parking' => 'integer',
         'mobile_upload' => 'boolean',
+        'has_vtour' => 'boolean',
         'boat_only' => 'boolean',
         'beach_views' => 'integer',
         'indoor_area_m2' => 'decimal:2',
@@ -148,6 +150,16 @@ class Beach extends Model
     public function region(): BelongsTo
     {
         return $this->belongsTo(Region::class);
+    }
+
+    /** TASK-006: Windy webcams shown on this place (approved or auto-approved, usable), primary first. */
+    public function shownWebcams(): HasMany
+    {
+        return $this->hasMany(PlaceWebcam::class, 'place_id')
+            ->whereIn('review_status', PlaceWebcam::VISIBLE)
+            ->whereHas('webcam', fn ($q) => $q->usable())
+            ->with('webcam')
+            ->orderByDesc('is_primary')->orderByDesc('match_score');
     }
 
     public function city(): BelongsTo
@@ -380,6 +392,10 @@ class Beach extends Model
             'slug' => $enTranslation?->slug ?? $this->name,
             'description' => $enTranslation?->description ?? '',
             'country_code' => $this->country_code,
+            // Filters for a search scoped to a named place (SearchController)
+            'region_id' => $this->region_id,
+            'island_id' => $this->island_id,
+            'city_id' => $this->city_id,
             'country_name' => $this->country?->name ?? '',
             'region_name' => $this->region?->name ?? '',
             'city_name' => $this->city?->name ?? '',
@@ -390,6 +406,8 @@ class Beach extends Model
             'type' => 'beach',
             // Add all translated names and descriptions for multi-language search
             'translated_names' => implode(' ', array_unique($translatedNames)),
+            // Parent places in every language (search by "Grčija", "Dalmacija" …)
+            'place_names' => $this->placeNames(),
             'translated_descriptions' => implode(' ', array_unique($translatedDescriptions)),
         ];
     }
@@ -413,5 +431,17 @@ class Beach extends Model
     {
         // Only index active beaches
         return $this->status_id === 1;
+    }
+
+    /** @return list<string> parent places indexed as `place_names` (search). */
+    protected function placeNameRelations(): array
+    {
+        return ['country', 'region', 'island', 'city'];
+    }
+
+    /** Eager-load the place translations for `scout:import` (one query per relation, not per record). */
+    protected function makeAllSearchableUsing(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->with($this->placeNameEagerLoads());
     }
 }

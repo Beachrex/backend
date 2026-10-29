@@ -10,7 +10,7 @@ namespace App\Swagger\Schemas;
  *     type="object",
  *     @OA\Property(property="id", type="integer", example=793, description="Beach ID"),
  *     @OA\Property(property="name", type="string", example="Beach Bucanj", description="Beach name (with English fallback if translation missing)"),
- *     @OA\Property(property="slug", type="string", example="beach-bucanj", description="URL-friendly slug (with English fallback if translation missing)"),
+ *     @OA\Property(property="slug", type="string", example="bucanj", description="URL-friendly slug (with English fallback if translation missing)"),
  *     @OA\Property(property="latitude", type="string", example="42.5996000", description="Beach latitude"),
  *     @OA\Property(property="longitude", type="string", example="18.2302000", description="Beach longitude"),
  *     @OA\Property(property="country_code", type="string", example="HR", description="ISO country code"),
@@ -55,7 +55,7 @@ namespace App\Swagger\Schemas;
  *             description="360-degree sphere tours (only if beach has 360° spheres)",
  *             @OA\Items(
  *                 type="object",
- *                 @OA\Property(property="tour_url", type="string", example="img/beaches/hr-69-o-pag/vtour/tour.html", description="URL to 360° virtual tour")
+ *                 @OA\Property(property="tour_url", type="string", example="img/beaches/hr-69-o-pag/vtour/tour.html", description="URL to 360° virtual tour. spheres_360 is left out when the beach is known to have no generated tour.")
  *             )
  *         ),
  *         @OA\Property(
@@ -63,7 +63,8 @@ namespace App\Swagger\Schemas;
  *             type="object",
  *             description="External embeds for the beach",
  *             @OA\Property(property="video_url", type="string", nullable=true, example="https://youtu.be/k_pSc9aWyz0", description="YouTube video URL"),
- *             @OA\Property(property="webcam", type="string", nullable=true, example="<iframe src='...'></iframe>", description="Webcam embed code")
+ *             @OA\Property(property="webcam", type="string", nullable=true, example="<iframe src='...'></iframe>", description="Legacy pasted webcam embed (unverified)"),
+ *             @OA\Property(property="windy_webcam_id", type="integer", nullable=true, example=1616668973, description="Primary verified Windy webcam id (TASK-006), or null")
  *         )
  *     ),
  *     @OA\Property(

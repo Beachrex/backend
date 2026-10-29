@@ -56,7 +56,7 @@ namespace App\Swagger\Schemas;
  *             description="360-degree sphere tours (only present if beach has 360 degree spheres)",
  *             @OA\Items(
  *                 type="object",
- *                 @OA\Property(property="tour_url", type="string", example="img/beaches/br-1-copacabana/vtour/tour.html", description="URL to 360 degree virtual tour")
+ *                 @OA\Property(property="tour_url", type="string", example="img/beaches/br-1-copacabana/vtour/tour.html", description="URL to 360 degree virtual tour. spheres_360 is empty when the beach is known to have no generated tour.")
  *             )
  *         ),
  *         @OA\Property(
@@ -64,7 +64,8 @@ namespace App\Swagger\Schemas;
  *             type="object",
  *             description="External embeds for the beach (always present)",
  *             @OA\Property(property="video_url", type="string", nullable=true, example="https://youtu.be/k_pSc9aWyz0", description="YouTube video URL"),
- *             @OA\Property(property="webcam", type="string", nullable=true, example=null, description="Webcam embed code")
+ *             @OA\Property(property="webcam", type="string", nullable=true, example=null, description="Legacy pasted webcam embed (unverified)"),
+ *             @OA\Property(property="windy_webcam_id", type="integer", nullable=true, example=1616668973, description="Primary verified Windy webcam id (TASK-006), or null")
  *         )
  *     ),
  *     @OA\Property(

@@ -4450,7 +4450,7 @@
                     {
                         "name": "country",
                         "in": "query",
-                        "description": "Filter by country code or ID (e.g., HR, SI, or numeric ID). Alias: country_code",
+                        "description": "Scope the options to one or several countries: codes or IDs, comma-separated (HR, HR,IT). Alias: country_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -4466,7 +4466,7 @@
                     {
                         "name": "region",
                         "in": "query",
-                        "description": "Filter by region ID or code. Alias: region_code",
+                        "description": "Scope the options to one or several regions: codes or IDs, comma-separated (istra,kvarner); unknown codes are ignored. Alias: region_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -4482,7 +4482,7 @@
                     {
                         "name": "island",
                         "in": "query",
-                        "description": "Filter by island ID or code. Alias: island_code",
+                        "description": "Scope the options to one or several islands: codes or IDs, comma-separated; unknown codes are ignored. Alias: island_code",
                         "required": false,
                         "schema": {
                             "oneOf": [
@@ -9487,6 +9487,7 @@
                                                     "example": "miami"
                                                 },
                                                 "total_results": {
+                                                    "description": "Number of items returned (at most `limit` per type)",
                                                     "type": "integer",
                                                     "example": 12
                                                 },
@@ -9514,6 +9515,69 @@
                                                         }
                                                     },
                                                     "type": "object"
+                                                },
+                                                "total_matches": {
+                                                    "description": "Sum of totals_by_type: every match, not capped by `limit`",
+                                                    "type": "integer",
+                                                    "example": 533
+                                                },
+                                                "totals_by_type": {
+                                                    "description": "Total matches per type (not capped by `limit`). When `place` is set, the types below it count everything in that place as the place pages do: active beaches, and towns/islands/regions with at least one active beach (e.g. all beaches in France). Those types are then listed most viewed (beaches) or most beaches (places) first.",
+                                                    "properties": {
+                                                        "beaches": {
+                                                            "type": "integer",
+                                                            "example": 412
+                                                        },
+                                                        "cities": {
+                                                            "type": "integer",
+                                                            "example": 87
+                                                        },
+                                                        "islands": {
+                                                            "type": "integer",
+                                                            "example": 26
+                                                        },
+                                                        "regions": {
+                                                            "type": "integer",
+                                                            "example": 7
+                                                        },
+                                                        "countries": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "place": {
+                                                    "description": "The place the query names exactly (any language, case and diacritics ignored), or null. Results of the types below it are limited to it.",
+                                                    "properties": {
+                                                        "type": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "country",
+                                                                "region",
+                                                                "island",
+                                                                "city"
+                                                            ],
+                                                            "example": "country"
+                                                        },
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 12
+                                                        },
+                                                        "code": {
+                                                            "description": "Map filter code (country ISO code, region/island/city code)",
+                                                            "type": "string",
+                                                            "example": "FR",
+                                                            "nullable": true
+                                                        },
+                                                        "name": {
+                                                            "description": "Localized name",
+                                                            "type": "string",
+                                                            "example": "France"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -9530,6 +9594,43 @@
                     },
                     "400": {
                         "description": "Bad request - missing or invalid query parameter"
+                    }
+                }
+            }
+        },
+        "/api/v1/site-settings": {
+            "get": {
+                "tags": [
+                    "Site settings"
+                ],
+                "summary": "Public site switches",
+                "description": "Switches the owner sets in admin (System → Site settings), per environment. Clients hide a feature that is off. ai_assistant_enabled = false: the AI beach guide (chat, itineraries, buying credits) is off and its /api/v1/ai/* routes answer 503 ai_disabled.",
+                "operationId": "getSiteSettings",
+                "responses": {
+                    "200": {
+                        "description": "Current switches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "ai_assistant_enabled": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -11090,6 +11191,55 @@
                         },
                         "type": "object",
                         "nullable": true
+                    },
+                    "page_context": {
+                        "description": "TASK-010: the website page the chat widget is open on. Optional, an untrusted hint only (lets the assistant understand 'this beach' / 'here'); never used for authorization. For page_type=beach the server resolves the beach name and place from beach_id (active beaches only) and ignores title. Other keys → 422.",
+                        "required": [
+                            "page_type"
+                        ],
+                        "properties": {
+                            "page_type": {
+                                "type": "string",
+                                "enum": [
+                                    "home",
+                                    "beach",
+                                    "destination",
+                                    "country",
+                                    "region",
+                                    "island",
+                                    "city",
+                                    "search",
+                                    "map",
+                                    "article",
+                                    "other"
+                                ],
+                                "example": "beach"
+                            },
+                            "path": {
+                                "description": "Page path without query string: starts with /, only letters, digits and - . _ ~ / % (URL-encoded)",
+                                "type": "string",
+                                "maxLength": 300,
+                                "example": "/en/beaches/europe/croatia/split-dalmatia/split/bacvice",
+                                "nullable": true
+                            },
+                            "beach_id": {
+                                "description": "Beach id on beach pages",
+                                "type": "integer",
+                                "minimum": 1,
+                                "example": 989,
+                                "nullable": true
+                            },
+                            "title": {
+                                "description": "Page heading (not used for beach pages; cleaned and cut to 80 characters before it reaches the model)",
+                                "type": "string",
+                                "maxLength": 120,
+                                "example": "Split",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": false
                     }
                 },
                 "type": "object"
@@ -12031,6 +12181,11 @@
                         "example": [
                             "Not enough beaches matched all requested user_types; that filter was relaxed."
                         ]
+                    },
+                    "page_context_used": {
+                        "description": "Chat only (TASK-010): true when a valid page_context was sent and turned into a page hint for the model.",
+                        "type": "boolean",
+                        "example": true
                     }
                 },
                 "type": "object"
@@ -12381,7 +12536,7 @@
                     "token": {
                         "description": "Sanctum personal access token (Bearer token)",
                         "type": "string",
-                        "example": "1|8C05td6vuOSBLDMvWjg2EpxumuSO9h4h5tP4GGEe63440ff9"
+                        "example": "1|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx63440ff9"
                     },
                     "token_type": {
                         "description": "Token type (always 'Bearer')",
@@ -12690,6 +12845,33 @@
                                 "example": "Beautiful sandy beach",
                                 "nullable": true
                             },
+                            "meta_description": {
+                                "description": "Search snippet in the requested language only (TASK-007)",
+                                "type": "string",
+                                "example": "Shallow sandy beach at the Neretva mouth near Ploče, good for small children and kiters.",
+                                "nullable": true
+                            },
+                            "faq": {
+                                "description": "Questions and answers in the requested language only; empty when none (TASK-007)",
+                                "type": "array",
+                                "items": {
+                                    "required": [
+                                        "q",
+                                        "a"
+                                    ],
+                                    "properties": {
+                                        "q": {
+                                            "type": "string",
+                                            "example": "Is Ušće Neretve good for small children?"
+                                        },
+                                        "a": {
+                                            "type": "string",
+                                            "example": "Yes, at Ušće Neretve the water becomes 1 m deep only about 100 m from the shore."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
                             "latitude": {
                                 "type": "string",
                                 "example": "42.5996000"
@@ -12727,6 +12909,11 @@
                                         "type": "string",
                                         "example": "europe",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12751,6 +12938,11 @@
                                         "type": "string",
                                         "example": "croatia",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12770,6 +12962,11 @@
                                         "type": "string",
                                         "example": "dalmatia",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12789,6 +12986,11 @@
                                         "type": "string",
                                         "example": "split",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12808,6 +13010,11 @@
                                         "type": "string",
                                         "example": "hvar",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -13110,6 +13317,36 @@
                         },
                         "type": "object"
                     },
+                    "webcams": {
+                        "description": "Verified Windy webcams (TASK-006), primary first. Embed `player_url` in an iframe (16:9) and keep a link to `page_url`.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "windy_id": {
+                                    "type": "integer",
+                                    "example": 1616668973
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "example": "Neum",
+                                    "nullable": true
+                                },
+                                "is_primary": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "player_url": {
+                                    "type": "string",
+                                    "example": "https://webcams.windy.com/webcams/public/embed/player?webcamId=1616668973&playerType=day&loop=0&autoPlay=0&interactive=1"
+                                },
+                                "page_url": {
+                                    "type": "string",
+                                    "example": "https://www.windy.com/webcams/1616668973"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
                     "embeds": {
                         "description": "Embedded content (videos, webcams, maps, widgets). Note: Real-time weather data is now available via separate endpoint /beaches/{identifier}/weather",
                         "properties": {
@@ -13119,8 +13356,15 @@
                                 "nullable": true
                             },
                             "webcam": {
+                                "description": "Legacy pasted webcam embed (unverified; kept for old app builds). Use `webcams`.",
                                 "type": "string",
                                 "example": "<iframe>...</iframe>",
+                                "nullable": true
+                            },
+                            "windy_webcam_id": {
+                                "description": "Primary verified Windy webcam id (TASK-006), or null",
+                                "type": "integer",
+                                "example": 1616668973,
                                 "nullable": true
                             },
                             "map_url": {
@@ -13359,7 +13603,7 @@
                         "nullable": true
                     },
                     "tour_url": {
-                        "description": "Virtual tour HTML path for 360 spheres (present only for spheres_360 collection).",
+                        "description": "Virtual tour HTML path for 360 spheres (spheres_360 only). Null when the tour was never generated: show the panorama in `url` in an own 360° viewer instead.",
                         "type": "string",
                         "example": "img/beaches/hr-6-o-hvar/vtour/tour.html",
                         "nullable": true
@@ -13411,7 +13655,7 @@
                     "slug": {
                         "description": "Localized beach slug (with English fallback)",
                         "type": "string",
-                        "example": "beach-bucanj"
+                        "example": "bucanj"
                     },
                     "continent_slug": {
                         "description": "Localized continent slug",
@@ -13923,7 +14167,7 @@
                     "slug": {
                         "description": "URL-friendly slug (with English fallback if translation missing)",
                         "type": "string",
-                        "example": "beach-bucanj"
+                        "example": "bucanj"
                     },
                     "latitude": {
                         "description": "Beach latitude",
@@ -14049,7 +14293,7 @@
                                 "items": {
                                     "properties": {
                                         "tour_url": {
-                                            "description": "URL to 360° virtual tour",
+                                            "description": "URL to 360° virtual tour. spheres_360 is left out when the beach is known to have no generated tour.",
                                             "type": "string",
                                             "example": "img/beaches/hr-69-o-pag/vtour/tour.html"
                                         }
@@ -14067,9 +14311,15 @@
                                         "nullable": true
                                     },
                                     "webcam": {
-                                        "description": "Webcam embed code",
+                                        "description": "Legacy pasted webcam embed (unverified)",
                                         "type": "string",
                                         "example": "<iframe src='...'></iframe>",
+                                        "nullable": true
+                                    },
+                                    "windy_webcam_id": {
+                                        "description": "Primary verified Windy webcam id (TASK-006), or null",
+                                        "type": "integer",
+                                        "example": 1616668973,
                                         "nullable": true
                                     }
                                 },
@@ -14797,9 +15047,11 @@
                         "nullable": true
                     },
                     "config": {
-                        "description": "Additional configuration data (JSON)",
+                        "description": "Additional configuration (key-value, values are strings). beach_views: showcase_beach_id = id of the beach shown as the interactive media example on the homepage (TASK-008).",
                         "type": "object",
-                        "example": null,
+                        "example": {
+                            "showcase_beach_id": "989"
+                        },
                         "nullable": true
                     },
                     "media": {
@@ -16247,7 +16499,7 @@
                                 "items": {
                                     "properties": {
                                         "tour_url": {
-                                            "description": "URL to 360 degree virtual tour",
+                                            "description": "URL to 360 degree virtual tour. spheres_360 is empty when the beach is known to have no generated tour.",
                                             "type": "string",
                                             "example": "img/beaches/br-1-copacabana/vtour/tour.html"
                                         }
@@ -16265,9 +16517,15 @@
                                         "nullable": true
                                     },
                                     "webcam": {
-                                        "description": "Webcam embed code",
+                                        "description": "Legacy pasted webcam embed (unverified)",
                                         "type": "string",
                                         "example": null,
+                                        "nullable": true
+                                    },
+                                    "windy_webcam_id": {
+                                        "description": "Primary verified Windy webcam id (TASK-006), or null",
+                                        "type": "integer",
+                                        "example": 1616668973,
                                         "nullable": true
                                     }
                                 },
@@ -17029,6 +17287,10 @@
         {
             "name": "Road to Parking Types",
             "description": "Road to Parking Types"
+        },
+        {
+            "name": "Site settings",
+            "description": "Site settings"
         },
         {
             "name": "Sporting Activities",

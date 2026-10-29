@@ -169,4 +169,33 @@ class SyncStaticPagesTest extends TestCase
 
         $this->artisan('static-pages:sync', ['--dry-run' => true])->assertExitCode(0);
     }
+
+    /**
+     * Owner, 2026-10-29: MOJA PLAŽA, d.o.o. is not liable for VAT. The legal notice (ZEPT 5. člen,
+     * ZGD-1 32. člen) stays complete in every locale: about-us carries the full company details,
+     * contact and privacy name the VAT status, and no page claims VAT registration.
+     */
+    public function test_company_details_are_complete_and_not_vat_registered(): void
+    {
+        foreach (glob(base_path('database/content/static-pages/*.json')) as $file) {
+            $lang = basename($file);
+            $pages = json_decode(File::get($file), true);
+
+            $about = $pages['about-us']['content'];
+            foreach (['MOJA PLAŽA, d.o.o.', 'Prušnikova ulica 22, 2000 Maribor', '6791174000', '53794214', 'mailto:info@beachrex.com'] as $needle) {
+                $this->assertStringContainsString($needle, $about, "{$lang} about-us: {$needle}");
+            }
+            // Owner, 2026-10-29: share capital is not shown on the site.
+            $this->assertDoesNotMatchRegularExpression('/12[ .,]500/', File::get($file), "{$lang}: share capital shown");
+            $this->assertSame(3, substr_count($about, '<h3>'), "{$lang} about-us: company, partners, corrections");
+
+            $this->assertStringContainsString('53794214 (', $pages['contact']['content'], "{$lang} contact: VAT status");
+            $this->assertStringContainsString('53794214 (', $pages['privacy-policy']['content'], "{$lang} privacy: VAT status");
+
+            $all = File::get($file);
+            foreach (['VAT-registered', 'umsatzsteuerlich registriert', 'zavezanec za DDV v Sloveniji', 'obveznik PDV-a u Sloveniji', 'momsregistreret i Slovenien'] as $wrong) {
+                $this->assertStringNotContainsString($wrong, $all, "{$lang}: claims VAT registration");
+            }
+        }
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\AI;
 
+use App\Services\AI\Chat\PageContextHint;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -41,6 +42,8 @@ class ChatRequest extends FormRequest
             'context.preferences.surface_types.*' => ['string', 'in:sand,pebble,rock,concrete'],
             'context.preferences.facilities' => ['nullable', 'array'],
             'context.preferences.facilities.*' => ['string'],
+            // TASK-010: page the chat widget is on (untrusted hint, see PageContextHint)
+            ...PageContextHint::rules(),
         ];
     }
 

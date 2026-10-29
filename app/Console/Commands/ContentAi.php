@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * AI data-quality pass over beach names, region names and descriptions (owner 2026-10-09).
+ * AI data-quality pass over beach names, region names, descriptions, search snippets and FAQs (owner 2026-10-09, TASK-007).
  * Runbook: docs/runbooks/content-ai.md.
  *
  *   plan    - counts and a rough cost, no AI calls, no writes
@@ -22,7 +22,7 @@ class ContentAi extends Command
 {
     protected $signature = 'content:ai
                             {action : plan, preview, submit, status or apply}
-                            {--part=* : names, regions, descriptions, generate (plan: all when omitted)}
+                            {--part=* : names, regions, descriptions, generate, seo (plan: all when omitted)}
                             {--batch= : Batch id (status, apply)}
                             {--id=* : Only these beach or region ids}
                             {--limit= : Only the first N items per part}
@@ -33,7 +33,7 @@ class ContentAi extends Command
                             {--force : submit: send even if an earlier batch of the same part was not applied yet}
                             {--write : apply: write to the database (default is a dry run)}';
 
-    protected $description = 'AI data quality: beach names without "Beach", region and description translations, generated descriptions';
+    protected $description = 'AI data quality: beach names without "Beach", region and description translations, generated descriptions, search snippets and FAQs';
 
     /** USD per 1M tokens (input, output) at batch price (half the standard price). */
     private const BATCH_PRICES = [
@@ -47,7 +47,9 @@ class ContentAi extends Command
         'names' => [700, 500],
         'regions' => [600, 1500],
         'descriptions' => [1500, 8000],
-        'generate' => [900, 5000],
+        // TASK-007: snippet + intro + 3-5 FAQs in 19 languages (featured beaches a bit more).
+        'generate' => [1600, 12000],
+        'seo' => [2200, 8000],
     ];
 
     public function handle(BeachContentAi $ai): int

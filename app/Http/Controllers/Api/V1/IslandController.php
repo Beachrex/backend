@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\IslandResource;
 use App\Models\Island;
 use App\Services\CacheService;
+use App\Support\PublishedBeachCounts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -294,6 +295,9 @@ class IslandController extends Controller
 
                 // Get next and previous islands
                 $navigation = $this->getNavigationIslands($island, $locale);
+
+                // Parent levels' published beach counts for the location pill tabs.
+                PublishedBeachCounts::loadOnParents($island, ['country', 'country.continent', 'region']);
 
                 $resource = new IslandResource($island);
                 $resourceArray = $resource->toArray($request);

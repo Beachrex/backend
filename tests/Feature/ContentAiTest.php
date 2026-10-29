@@ -170,7 +170,7 @@ class ContentAiTest extends TestCase
         $this->assertStringContainsString('Beach Slanica', $names['params']['messages'][0]['content']);
 
         $generate = $this->ai->request('generate', $beach, 'claude-opus-5-5', 'low');
-        $this->assertSame(BeachContentAi::locales(), $generate['params']['outputConfig']['format']['schema']['required']);
+        $this->assertSame(BeachContentAi::locales(), $generate['params']['outputConfig']['format']['schema']['properties']['texts']['items']['properties']['locale']['enum']);
         $this->assertStringContainsString('"name":"Slanica"', $generate['params']['messages'][0]['content'], 'facts use the name without "Beach"');
 
         $this->assertNull($this->ai->request('descriptions', $beach, 'claude-opus-5-5', 'low'), 'no text to translate');
@@ -199,7 +199,7 @@ class ContentAiTest extends TestCase
         $this->assertSame('Slanica', $facts['name_by_language']['de'], 'languages without a row use the source name without "Beach"');
         $this->assertStringContainsString('at most 155 characters', $request['params']['system']);
         $this->assertStringContainsString('only when you are certain', $request['params']['system']);
-        $this->assertStringContainsString('not with a generic', $request['params']['system']);
+        $this->assertStringContainsString('never open with a generic', $request['params']['system']);
         $this->assertStringContainsString('never turn the distance into a depth', $request['params']['system']);
     }
 
@@ -208,7 +208,7 @@ class ContentAiTest extends TestCase
     {
         $id = $this->beach(['en' => ['Beach Slanica', null]]);
         $long = str_repeat('Sand and pines. ', 20);
-        $answer = json_encode(array_fill_keys(BeachContentAi::locales(), $long));
+        $answer = json_encode(array_fill_keys(BeachContentAi::locales(), ['meta' => 'Short.', 'description' => $long, 'faq' => []]));
 
         $short = $this->ai->apply("generate-{$id}", $answer, dryRun: true);
         $full = $this->ai->apply("generate-{$id}", $answer, dryRun: true, previewChars: PHP_INT_MAX);

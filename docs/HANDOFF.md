@@ -1,4 +1,4 @@
-# Handoff — state as of 2026-10-09 (end of session 8)
+# Handoff — state as of 2026-10-14 (session 10: TASK-006 Windy webcams)
 
 > **Two agent roles** ([`AGENT-ROLES.md`](AGENT-ROLES.md)): the **web agent** (default) starts here; the **mobile agent** starts at [`mobile/MOBILE-PLAN.md`](mobile/MOBILE-PLAN.md).
 > **Next session, start here:** read this file, `docs/DEVELOPMENT-RULES.md`, and the newest entries in `DEV_HANDOFF.md` of both repos (2026-10-09).
@@ -59,13 +59,45 @@ BASE_URL=http://localhost:9 npx playwright test e2e/*.unit.spec.ts --project=chr
 |---|---|---|---|---|
 | dev | `dev` | https://dev.beachrex.com | https://dev-api.beachrex.com | https://dock-dev.beachrex.com |
 | uat | `uat` | https://uat.beachrex.com | https://uat-api.beachrex.com | https://dock-uat.beachrex.com |
-| prod | `main` | beachrex.com — **not live** (old site, DNS points elsewhere) | api.beachrex.com — not live | dock.beachrex.com |
+| prod | `main` | beachrex.com — **not live** (old site, DNS points elsewhere) | https://api.beachrex.com — **live since 2026-10-09** (no web client yet) | dock.beachrex.com |
 
 MCP server: only on dev (`https://mcp-dev.beachrex.com/mcp`).
 **Cloudflare proxy is on** (orange cloud) for the dev/uat sites and APIs (checked 2026-10-09); owner keeps it on (global visitors, DDoS protection). Nginx takes the visitor IP from `CF-Connecting-IP` for Cloudflare's ranges only (`deploy/nginx/beachrex.conf`); if Cloudflare publishes new ranges, update that list. Sessions: `SESSION_DRIVER=database` in all three env files (owner, 2026-10-09).
-There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT DB (see the prod launch runbook).
+There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see below); it can be reloaded before real users write to it.
+**Host nginx (fixed 2026-10-09):** `/etc/nginx/sites-available/beachrex` is now a symlink to `/opt/beachrex/deploy/nginx/beachrex.conf`, so every deploy's `deploy/` sync plus `nginx reload` applies the repo file. Before that it was a stale copy from 2026-09-11: the nginx changes of session 8 (rate limit, gzip, keepalive, Cloudflare real IP, HTTP/2) were only live from 2026-10-09 22:31. Backup of the old copy: `/root/nginx-beachrex-live-20261009.conf`. Each deploy syncs `deploy/` from **its own branch**, so nginx follows whichever environment deployed last; keep `deploy/nginx` the same on dev, uat and main.
 
 ## Done
+
+- 2026-10-29: **Logo watermark on mobile-app photos** (owner: "dodaj watermark na fotografije, ki ga nimajo").
+  Imagor draws `img/watermark/beachrex-watermark-v1.png` on `img/beaches_mobile/` photos when shown (originals
+  untouched, reversible); the backend deploy uploads the PNG once (`media:publish-watermark`). ADR 2026-10-29.
+  PRs: backend (PNG + command + deploy step) and web-client (`buildCdnUrl`); status in DEV_HANDOFF of both repos.
+  Not covered: the mobile app and the MCP server build their own image URLs (no watermark there yet).
+
+- 2026-10-14 (session 10): **TASK-006 Windy webcams — code live on dev, data not imported yet** (owner: plan approved, 3 km radius, mode B, direct iframe, other providers hidden). Spec `docs/tasks/TASK-006-windy-webcams.md`, proof `docs/tasks/TASK-006.feedback.md`, API facts `docs/technical/windy-webcams-api.md`.
+
+  | PR | Change | Deploy run |
+  |---|---|---|
+  | Beachrex/backend#114 | Spec, Phase 0 findings, ADR | 38582762471 |
+  | Beachrex/backend#115 | `windy_webcams` / `place_webcams`, scoring config, `webcams:match` | 38584442226 |
+  | Beachrex/backend#116 | `webcams:import` (budgeted, resumable), `webcams:embed-check` | 38586183544 |
+  | Beachrex/backend#117 | `webcams:legacy-extract`, `webcams:refresh` + schedule (off) | 38587631077 |
+  | Beachrex/backend#118 | Admin "Webcam review", API `webcams[]` / `windy_webcam_id` (additive) | 38589616635 |
+  | Beachrex/web-client#75 | Beach page iframe section, cards/map use the verified webcam, `FEATURES.windyWebcams` | 38590703623 |
+
+  Until the owner runs the import, **no beach shows a webcam** (old pasted links are hidden by `FEATURES.windyWebcams`).
+
+- 2026-10-12 (session 9): **translations on dev** — owner reports (Greek/Albanian/Cyrillic pages, France, breadcrumbs, map link, 360° hyphen) fixed: Beachrex/web-client#70–#73, Beachrex/backend#107–#111. `translations:ai` wrote 3 563 reference-data names and 8 900 Greek/Cyrillic beach and city names on dev (owner: "super, urejeno"). Open: owner's "Napaka 79" and the RU/UA/BG/GR search wording need a URL or screenshot.
+
+- 2026-10-09 (session 9): **`api.beachrex.com` live** (owner: "usposobiti moramo api.beachrex.com"; runbook `prod-launch.md` "API first"):
+  - backend promoted dev → uat → main (Beachrex/backend#97, #99; nginx #98 → #100 → #101), all deploy runs green;
+  - owner option (a): the dev DB was copied to uat and prod (uat backup `/root/beachrex_uat-before-promote-20261009.dump`); counts 3 774 beaches / 43 335 media / 4 users on all three; API tokens deleted on prod;
+  - `.env.prod` fixed: `SCOUT_PREFIX=prod_`, `SANCTUM_STATEFUL_DOMAINS`, `SESSION_SECURE_COOKIE`, `SESSION_COOKIE`;
+  - Let's Encrypt certificate `api.beachrex.com` (expires 2027-01-07, auto-renew), Cloudflare proxy on;
+  - verified on the server: health `revision` = the main merge SHA, `backup.enabled: false`.
+  - Google OAuth redirect URI for `api.beachrex.com` added by the owner (runbook A3, 2026-10-10).
+  - `MAIL_*` in `.env.prod` and `.env.uat` (owner, 2026-10-10).
+  - Still open for prod: `BACKUP_*` in `.env.prod`, Stripe test/live decision (`STRIPE_ENABLED=true` now), UptimeRobot monitor.
 
 - 2026-10-07: the owner set `OPENAI_MODEL=gpt-4o-mini` in `.env.dev` and `.env.uat`.
 - 2026-10-07 (session 2, work order items 1–5):
@@ -154,7 +186,7 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   | Beachrex/web-client#32, #33 | Author page `/{locale}/gregor-balazic` (platform design, 19 languages, footer link); role "Founder of Beachrex" | 73 / 74 |
 
   The owner ran `static-pages:sync` on dev for the MCP page, the media kit and terms §6.
-  Owner decisions 2026-10-08: no watermark; trademark to be registered at EUIPO (owner); the author page text stays in `messages/*.json` (no CMS for now); the mobile side padding (global `.container { padding: 0 5px }` in `web-client/src/styles/globals.css`) stays as it is for now.
+  Owner decisions 2026-10-08: no watermark (**superseded 2026-10-29** for mobile-app photos: ADR "Watermark mobile-app photos on the fly"); trademark to be registered at EUIPO (owner); the author page text stays in `messages/*.json` (no CMS for now); the mobile side padding (global `.container { padding: 0 5px }` in `web-client/src/styles/globals.css`) stays as it is for now.
   X shows no link card for dev URLs because dev's robots.txt is `Disallow: /` (by design); production will.
 
 - 2026-10-08 (session 5): **TASK-004 pre-launch review. Live on dev** (each finding verified in code first):
@@ -206,6 +238,17 @@ There is **no** Laravel Cloud anymore. The prod DB will be created from the UAT 
   Deploys green: backend dev run 82, uat run 83; frontend dev run 40, uat run 41.
 
 ## Owner's open actions
+
+- **Pools (2026-10-29, ADR "Indoor / outdoor pools"):** dev has no pool places yet, so "Bazen", "Notranji bazen" and "Zunanji bazen" show 0. When pool places are added (importer or admin), set **Indoor pools count** / **Outdoor pools count** on each one (beach form), otherwise it is found only by "Bazen". The map and list filters read the database (no search index change).
+- **AI guide off on prod (TASK-009, 2026-10-29):** after the code is on prod, Admin (dock.beachrex.com) → System → Site settings → switch **AI guide on** off → Save. Guide `docs/guides/admin/nastavitve-strani.md`.
+- **Lake beaches (2026-10-22, `beaches:fix-lake-waterbody`, guide `docs/guides/admin/jezerske-plaze.md`):** on dev run the command without options (dry run, expect ~42 × `waterbody -> lake`), send the output, then `--apply` and `php artisan search:index Beach`. uat/prod only when the owner decides (the same two steps per environment).
+- **TASK-006 Windy webcams (run in this order on dev, each with `--dry-run` first; send the outputs to the agent):**
+  1. Read the full Windy terms (`account.windy.com/agreements/windy-webcams-api-terms-of-use`): commercial use, storing metadata. Pro tier (9 990 €/year) only if needed.
+  2. Set `WINDY_API_KEY` in `/opt/beachrex/envs/.env.dev` (optional `WINDY_DAILY_REQUEST_BUDGET`, default 500) and redeploy dev.
+  3. `php artisan webcams:import --country=HR` (one country first, as the task asks), then `webcams:embed-check`, `webcams:legacy-extract --country=HR`, `webcams:match --country=HR`.
+  4. Look at Admin → Content → **Webcam review** on dock-dev and a beach page with a webcam; send screenshots.
+  5. Then all countries (`webcams:import` without `--country`; it resumes daily if the budget runs out) and `WEBCAMS_REFRESH_ENABLED=true` (+ `WEBCAMS_ALERT_EMAIL`) for the monthly refresh.
+  6. Later: approve removing the legacy `beach.webcam` column (separate task; the mobile app must stop reading `webcam` first).
 
 - **Old beachrex.com URLs (live on dev since 2026-10-08, Beachrex/backend#46 + Beachrex/web-client#19):** test them on dev now. Take 5–10 real old links (Google Maps, other sites), replace `https://www.beachrex.com` with `https://dev.beachrex.com` and open them: each must end on the same beach/place (308), not the home page or a 404. Send the agent any that land wrong; they become test cases. On beachrex.com they start working at the DNS switch (prod launch runbook D2/D3, check D8). After launch: Google Search Console → submit `https://beachrex.com/sitemap.xml` and watch the "Not found (404)" report for a few weeks.
 - **Mobile app (TASK-005, `docs/mobile/MOBILE-PLAN.md` §14):** Apple Developer (D-U-N-S) and Google Play accounts, Expo account (builds run on the owner's computer); for app links (B-M4) the Apple Team ID and the Android signing key SHA-256. Done/decided 2026-10-09: repo `Beachrex/mobile-app`, bundle ID `com.datavallis.beachrex`; no `EXPO_TOKEN`, no Google Maps key, no Sentry.
@@ -332,10 +375,16 @@ The web agent writes this section from the mobile agent's status relayed by the 
 
 ## Open items (found, not yet scheduled)
 
+- **Duplicate cities with a typo (found 2026-10-21, translation audit):** city 386 "Arrenzano" next to 385 "Arenzano" and city 1533 "L'Ametlla de Ma" next to 1532 "L'Ametlla de Mar" (both listed in every language's City filter). Fix = move their beaches to the correct city and deactivate the typo row — data change, **owner to confirm** before it runs. Also el city 1353 "Wisch" is shown as "Βις", the same as Vis (326).
+
+- **Admin bugs found while writing the admin guides (2026-10-14)** — full list with user impact in `docs/guides/admin/README.md` "Znane napake": Fix Duplicate Slugs page calls `beach:fix-duplicate-slugs` (command is `beaches:…`, both actions fail); list search on Countries fails with SQL error `column "name" does not exist` (verified with a Livewire test; likely Regions/Cities/Islands/Lakes/Rivers/Badges/lookups too); translation counters/filters assume 14 locales (19 now) on Beaches, Articles, Badges and the dashboard; most admin saves do not clear the API caches (`beach_details:*` 8 h, lists up to 30 days); badge icon picker stores Font Awesome names but the site loads images; several many-to-many beach features have no field in the beach form; no video/360° upload; article "read more" links 404; `cache:clear-api --type=translations` likely throws. Each needs a fix PR with a regression test — owner to prioritise.
+
+- **web-client API client drift (found 2026-10-14, TASK-006):** `yarn generate:api` against the current backend spec also changes search-result slugs to nullable (backend 2026-10-09 OpenAPI change), which breaks `src/components/Header/GlobalSearch.tsx` types (6 errors). TASK-006 did not regenerate; a small PR should regenerate and handle the nulls. Note: the generator also rewrites `client.gen.ts` `baseUrl` — keep the `process.env.NEXT_PUBLIC_API_ENDPOINT` line.
+
 - **Less JavaScript on every page** (owner 2026-10-09: "zaenkrat ne, ampak si zabeleži"): header/footer as server components, flowbite Dropdown/Sidebar replaced by small own code, lazy burger menu and search results. Expected saving ~60–100 KB gzipped per page (today ~240 KB). Found in the 2026-10-09 performance audit.
 
 - **Old user migration (`users:migrate-from-old-db`): fixed per owner option (a) on 2026-10-09** — random unusable password, never the MD5 hash or "password"; imported users sign in with Google (linked by e-mail). Run only in production after launch (GDPR): `--test` first. Admin → Users has the filter "Imported from old site". Do **not** remove `database/sql/user.sql` (owner).
-  - **Forgot password** (owner 2026-10-09): `POST /api/v1/forgot-password` + `/reset-password`, e-mail via SMTP `mail.datavallis.com:465` as `hello@beachrex.com`; website e-mail sign-in + reset pages. Works only after the owner adds the `MAIL_*` lines to `/opt/beachrex/envs/.env.<env>` and redeploys (prod runbook A2 lists them).
+  - **Forgot password** (owner 2026-10-09): `POST /api/v1/forgot-password` + `/reset-password`, e-mail via SMTP `mail.datavallis.com:465` as `hello@beachrex.com`; website e-mail sign-in + reset pages. Works only after the owner adds the `MAIL_*` lines to `/opt/beachrex/envs/.env.<env>` and redeploys (prod runbook A2 lists them). **`MAIL_*` set in `.env.uat` and `.env.prod`** (owner, 2026-10-10); the deploy caches the config, so a later edit applies only after that environment's next deploy.
 - **Mobile side padding:** the global `.container { padding: 0 5px }` overrides Tailwind padding on every container; owner: leave for now (2026-10-08).
 - **MCP follow-ups (owner feedback 2026-10-07, after a live test in Claude):**
   - **MCP must become production-only** once prod is live (prod launch runbook D5b). Links will then point to `beachrex.com`.
@@ -358,4 +407,4 @@ The web agent writes this section from the mobile agent's status relayed by the 
 
 ## Latest numbers
 
-- Next TASK number: TASK-006 (TASK-001 itinerary quality, TASK-002 ASCII storage paths, TASK-003 chat understanding, TASK-004 pre-launch review, TASK-005 mobile app) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)
+- Next TASK number: TASK-007 (TASK-001 itinerary quality, TASK-002 ASCII storage paths, TASK-003 chat understanding, TASK-004 pre-launch review, TASK-005 mobile app, TASK-006 Windy webcams) · ADR log: `docs/ai/implementation/DECISIONS.md` (dated entries)

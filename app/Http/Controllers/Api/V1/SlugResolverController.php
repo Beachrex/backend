@@ -332,6 +332,13 @@ class SlugResolverController extends Controller
 
         $beach = $beach->first(['id', 'country_code', 'region_id', 'island_id', 'city_id', 'status_id']);
 
+        // An old slug (former "beach-" slugs) still resolves to its beach; the frontend redirects to the new URL.
+        if (! $beach && ($oldId = \App\Support\BeachSlugRedirects::beachId($slug, $locale))) {
+            $beach = Beach::where('status_id', 1)
+                ->when($countryCode, fn ($q) => $q->where('country_code', $countryCode))
+                ->find($oldId, ['id', 'country_code', 'region_id', 'island_id', 'city_id', 'status_id']);
+        }
+
         if ($beach) {
             return [
                 'type' => 'beach',

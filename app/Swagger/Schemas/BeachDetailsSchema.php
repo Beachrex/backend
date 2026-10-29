@@ -16,6 +16,18 @@ namespace App\Swagger\Schemas;
  *         @OA\Property(property="name", type="string", example="Paradise Beach"),
  *         @OA\Property(property="slug", type="string", example="paradise-beach"),
  *         @OA\Property(property="description", type="string", nullable=true, example="Beautiful sandy beach"),
+ *         @OA\Property(property="meta_description", type="string", nullable=true, description="Search snippet in the requested language only (TASK-007)", example="Shallow sandy beach at the Neretva mouth near Ploče, good for small children and kiters."),
+ *         @OA\Property(
+ *             property="faq",
+ *             type="array",
+ *             description="Questions and answers in the requested language only; empty when none (TASK-007)",
+ *             @OA\Items(
+ *                 type="object",
+ *                 required={"q", "a"},
+ *                 @OA\Property(property="q", type="string", example="Is Ušće Neretve good for small children?"),
+ *                 @OA\Property(property="a", type="string", example="Yes, at Ušće Neretve the water becomes 1 m deep only about 100 m from the shore.")
+ *             )
+ *         ),
  *         @OA\Property(property="latitude", type="string", example="42.5996000"),
  *         @OA\Property(property="longitude", type="string", example="18.2302000"),
  *         @OA\Property(property="folder_name", type="string", nullable=true, example="paradise-beach-123"),
@@ -31,7 +43,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="code", type="string", example="EU"),
  *             @OA\Property(property="name", type="string", example="Europe"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="europe")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="europe"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="country",
@@ -40,7 +53,8 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="code", type="string", example="HR"),
  *             @OA\Property(property="name", type="string", example="Croatia"),
  *             @OA\Property(property="full_name", type="string", nullable=true, example="Republic of Croatia"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="croatia")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="croatia"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="region",
@@ -48,7 +62,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="id", type="integer", example=1),
  *             @OA\Property(property="name", type="string", example="Dalmatia"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="dalmatia")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="dalmatia"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="city",
@@ -56,7 +71,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="id", type="integer", example=1),
  *             @OA\Property(property="name", type="string", example="Split"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="split")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="split"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="island",
@@ -64,7 +80,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="id", type="integer", example=1),
  *             @OA\Property(property="name", type="string", example="Hvar"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="hvar")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="hvar"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="river",
@@ -252,11 +269,24 @@ namespace App\Swagger\Schemas;
  *         )
  *     ),
  *     @OA\Property(
+ *         property="webcams",
+ *         type="array",
+ *         description="Verified Windy webcams (TASK-006), primary first. Embed `player_url` in an iframe (16:9) and keep a link to `page_url`.",
+ *         @OA\Items(type="object",
+ *             @OA\Property(property="windy_id", type="integer", example=1616668973),
+ *             @OA\Property(property="title", type="string", nullable=true, example="Neum"),
+ *             @OA\Property(property="is_primary", type="boolean", example=true),
+ *             @OA\Property(property="player_url", type="string", example="https://webcams.windy.com/webcams/public/embed/player?webcamId=1616668973&playerType=day&loop=0&autoPlay=0&interactive=1"),
+ *             @OA\Property(property="page_url", type="string", example="https://www.windy.com/webcams/1616668973")
+ *         )
+ *     ),
+ *     @OA\Property(
  *         property="embeds",
  *         type="object",
  *         description="Embedded content (videos, webcams, maps, widgets). Note: Real-time weather data is now available via separate endpoint /beaches/{identifier}/weather",
  *         @OA\Property(property="video_url", type="string", nullable=true, example="https://youtube.com/watch?v=..."),
- *         @OA\Property(property="webcam", type="string", nullable=true, example="<iframe>...</iframe>"),
+ *         @OA\Property(property="webcam", type="string", nullable=true, example="<iframe>...</iframe>", description="Legacy pasted webcam embed (unverified; kept for old app builds). Use `webcams`."),
+ *         @OA\Property(property="windy_webcam_id", type="integer", nullable=true, example=1616668973, description="Primary verified Windy webcam id (TASK-006), or null"),
  *         @OA\Property(property="map_url", type="string", nullable=true, example="https://maps.google.com/..."),
  *         @OA\Property(property="weather", type="string", nullable=true, example="<div>...</div>", description="Legacy weather widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)"),
  *         @OA\Property(property="water_temperature", type="string", nullable=true, example="<div>...</div>", description="Legacy water temperature widget HTML (deprecated - use /beaches/{identifier}/weather endpoint instead)")
@@ -344,7 +374,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(property="file_name", type="string", example="hr-6-o-hvar-sl3.jpg"),
  *     @OA\Property(property="url", type="string", example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN."),
  *     @OA\Property(property="thumbnail_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative thumbnail path (same as url for now)."),
- *     @OA\Property(property="tour_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/vtour/tour.html", description="Virtual tour HTML path for 360 spheres (present only for spheres_360 collection)."),
+ *     @OA\Property(property="tour_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/vtour/tour.html", description="Virtual tour HTML path for 360 spheres (spheres_360 only). Null when the tour was never generated: show the panorama in `url` in an own 360° viewer instead."),
  *     @OA\Property(property="mime_type", type="string", example="image/jpeg"),
  *     @OA\Property(property="width", type="integer", nullable=true, example=1920),
  *     @OA\Property(property="height", type="integer", nullable=true, example=1080),

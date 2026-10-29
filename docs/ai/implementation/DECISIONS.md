@@ -1003,3 +1003,234 @@ This file is read by: All new AI agents to understand past decisions
 
 **Consequences:** One-off cost (rough estimate printed by `content:ai plan`). The owner reviews `preview` output before submitting. Descriptions written by AI are marked nowhere; if that becomes a legal or editorial need, add a column.
 
+
+## [2026-10-14] Windy webcams: local copy, local matching, direct iframe (TASK-006)
+
+**Context:** `beach.webcam` holds pasted embed HTML from the old site. Of 3 774 rows, 250 carry a Windy/Lookr webcam ID (237 unique); on 2026-10-14 only 73 of those IDs still render, 95 are dead and 69 have embedding disabled. The web never embedded them (it opens the `href`, mostly `lookr.com`). Several cams show a neighbouring place.
+
+**Decision (owner, 2026-10-14):**
+- Windy Webcams API v3 is used **only by batch commands** (import, monthly refresh, legacy ID lookup). Metadata goes into `windy_webcams` (never image URLs); assignments into `place_webcams` with score, breakdown, source and review status. The public site never calls the API.
+- Matching is local (PostGIS), **max radius 3 km**, weights and thresholds in one config file (auto ≥ 70 and +15 over the runner-up, pending 40–69). One webcam is assigned to at most one place. Approved, rejected and manual rows are never overwritten; rejected pairs are never re-proposed.
+- A webcam must pass the public player check (`embed_status = ok`) before it is auto-approved or rendered, because cameras with embedding disabled still exist in the API.
+- The web renders the **iframe directly** (`https://webcams.windy.com/webcams/public/embed/player?webcamId=…&playerType=day`), the same iframe Windy's `player.js` builds, lazy-loaded, with the Windy link kept. No third-party script.
+- Webcams from other providers (WhatsUpCams, Webcamgalore) are **not shown** any more.
+- `beach.webcam` stays (API field and DB column) until the owner approves its removal; old app builds keep working.
+
+**Consequences:** The first import needs `WINDY_API_KEY` on dev and runs as an artisan command there (the agent sandbox cannot reach `api.windy.com`). Free tier caps one filter at 1 050 results, so the importer slices by region/bbox. Professional tier only if that or player ads become a problem.
+
+**Related:** `docs/tasks/TASK-006-windy-webcams.md`, `docs/technical/windy-webcams-api.md`
+
+## [2026-10-14] Admin guides in Slovenian, updated with every feature
+
+**Context:** The admin had developer docs only (implementation notes, runbooks in English). The owner wants user instructions for every admin function, to be collected into one admin manual at the end.
+
+**Decision (owner, 2026-10-14: "ja uredi to za admina ja. prvo naredimo slovenščina ja, če bomo kdaj rabili bomo kasneje angleško"):**
+- `docs/guides/admin/` holds one Slovenian page per admin feature (admin page, action or owner command) and an index (`README.md`) that lists every feature and the status of its guide.
+- Every PR that adds or changes an admin page, admin action or owner command updates its guide in the same PR (DEVELOPMENT-RULES §7 and the before-merge checklist). This is the one exception to "docs in English".
+- Runbooks stay in English for one-off technical procedures; admin guides link to them instead of copying commands.
+
+**Consequences:** The manual can be generated from the index at any time. An English version is a later, separate task.
+
+
+## [2026-10-21] Beach texts for search engines and AI assistants: snippet, intro, FAQ (TASK-007)
+
+**Context:** The owner previewed `content:ai --part=generate` (Livade i Obatnice, Ušće Neretve): every text listed the database fields in the same order, repeated the page icons (parking, road, transport), and gave search engines and AI assistants nothing to quote as a direct answer. On ~2 800 beaches that is one template.
+
+**Decision (owner, 2026-10-21, "za opise se strinjam, čimveč"):**
+- `generate` returns per language a search snippet (≤ 155 characters), an intro without logistics and 3–5 FAQs (question names the beach, answer starts with the direct answer, only questions the facts answer). New part `seo` writes snippet + FAQ for beaches that already have a description (the description is a source, never changed).
+- Facts gain computed context from our own data: distance to the town centre, number of beaches in the town, the nearest 3 active beaches within 10 km. Nothing else about distances may be invented.
+- The opening angle rotates by beach id (4 angles), so neighbouring pages do not read alike.
+- Two tiers: the `AI_CONTENT_FEATURED` (default 200) most viewed beaches get 90–150 words and 5 FAQs; the rest 50–80 words and 3–4 FAQs.
+- Storage: `beach_translation.meta_description`, `beach_translation.faq` (jsonb `[{q, a}]`), written only where empty, editable in the admin. The API returns them for the requested language only (no English fallback).
+- Web: FAQ section + `FAQPage` JSON-LD; the snippet is the meta description.
+
+**Consequences:** About 2.5× the token cost of the old `generate` (FAQ in 19 languages); the owner checks `plan` and can switch to Sonnet. A wrong-language fallback is avoided at the price of empty FAQ for languages the pass has not reached.
+
+
+
+## [2026-10-22] Lake beaches from the old database: fix in place, no re-import
+
+**Context:** In the old database (`database/sql/beachrex_old.sql`) every beach has `waterbody_id = 3` (sea). Lake beaches are marked only by `location_id = 3` (`l_lake`) and `lake_name`. `beaches:migrate-from-old-db` copied `waterbody_id` 1:1 and ignored `location_id`, so 42 lake beaches (33 NL, 7 BE, 1 FR, 1 GR) are "Sea" on dev/uat/prod and missing from the lake filter. Checked on dev via MCP: 4023 Strand Schildmeer and 4166 Strand Nieuwdonk report "Waterbody: Sea".
+
+**Decision (owner, 2026-10-22: "ker ne bomo ponovno uvažali cele stare baze, moramo posodobiti obstoječo našo bazo"):**
+- A one-off owner command `beaches:fix-lake-waterbody` updates the existing rows; the importer is not changed and the old DB is not re-imported.
+- The list of beaches is a reviewed file in the repo (`database/legacy/lake-beaches.json`: the 42 rows with `location_id = 3` **and** a `lake_name`). The two `location_id = 3` rows without a lake name (2546 Playa Bahía Azul, 2649 Praia de Ribeira d'Ilhas) are sea beaches and stay out.
+- Agent's reading: a command, not a migration, because a data migration would run on prod automatically at promotion, while DEVELOPMENT-RULES §9 requires dry run → real run → verification with the owner. Dry run is the default; it writes only with `--apply`. Idempotent.
+- It sets the `lake` waterbody (looked up by code), links a missing `lake_id` to the lake with the same English name (or the old slug as code), creating the lake if needed. An existing `lake_id` with another name is reported, never changed. Saves go through Eloquent (model cache + Scout), then `CacheService::clearAll()`.
+
+**Consequences:** The owner runs it once per environment. The 4 old river beaches (`location_id = 4`: two Drava test beaches, two on the Scheldt estuary) are out of scope. The old DB spells one lake two ways (Grevelingenmeer / Gravelingenmeer), so two lakes can exist for it; merging needs a lake field in the beach admin form (not there today).
+
+
+## [2026-10-23] After the prod launch: code moves by merges, data by migrations, no DB promotion
+
+**Status**: Accepted (owner, 2026-10-23: "Na zacetku prenesemo bazo na vsa okolja pol pa se tk z mergi v dev uat in main deploya tam pa tk mamo pol migracije ki se morajo pognati ob deploju" — "tako ja")
+
+**Context**: Until the launch, uat and prod got their data by copying the dev/uat database (ADR 2026-10-08, TASK-002; prod launch runbook Phase B). After the launch the prod database holds real users, favorites and purchases, so it can never be overwritten again. An admin "promote" button was considered and dropped: branching already moves the code.
+
+**Decision**:
+1. The database is copied to the environments once, at the launch (prod from uat, runbook Phase B). After that, no environment's database is copied over another one's.
+2. Code moves only by PRs `dev → uat → main`; each deploy runs `php artisan migrate --force`.
+3. **Data changes that every environment needs are migrations** (idempotent, matching current values, never overwriting text a person edited), e.g. `2026_10_23_060000_fix_hero_banner_title`.
+4. **Commands and admin edits write only the environment they run on.** Content work after the launch (`content:ai`, `translations:ai`, `webcams:import`, admin edits) runs on **prod**, by the owner: dry run first, then `--write`/`--apply`, then `cache:clear-api --type=all` and `search:index`. dev and uat may lag behind prod's content; that is acceptable. When a test environment needs fresh content, it may be refreshed *from* prod (never the other way), after removing personal data.
+
+**Consequences**: Runbooks that said "runs on dev only, uat/prod get it by DB promotion" are updated (`content-ai.md`, `prod-launch.md`). Agents write data fixes as migrations, not as one-off commands on dev.
+
+## [2026-10-28] Homepage media example: one real beach, chosen in the section config (TASK-008)
+
+**Status**: Accepted (agent's reading of the owner's request 2026-10-28: "da dejansko vidiš na primeru ene plaže kako zgleda"; owner may pick another beach or presentation)
+
+**Context**: "View beaches from all angles" was four static cards. The owner wants visitors to see the media on one real beach. The beach must be changeable without a deploy; the homepage must stay fast and never lose the section.
+
+**Decision**:
+1. The example beach is `config.showcase_beach_id` of `first_page_content` `beach_views` (existing admin KeyValue field). Default 989 (Svetilnik, Izola) by an idempotent migration that never overwrites an admin value.
+2. The web loads that beach's details server-side (ISR 300 s, `NOT_A_VIEW_HEADERS`) and renders cards from its own photos; clicks open the beach page's `MediaOverlay` with the same content components. No iframe before a click.
+3. Any failure (no id, unknown beach, no media) falls back to the static cards from admin Items.
+4. Saving a `FirstPageContent` row clears the homepage API cache in every locale (as a translation save already did), so config edits are visible within the web's 5-minute ISR.
+
+**Consequences**: Admin guide `prva-stran.md` explains how to change the beach. The static Items stay as fallback content and are still edited in admin.
+
+
+
+## [2026-10-28] Search counts are real totals; a place name scopes the result
+
+**Status**: Accepted (agent's reading of the owner's report 2026-10-28: "za Francijo, ki ima ~400 plaž, kaže 10 plaž … ne prikazuje dejanskega stanja")
+
+**Context**: The search dropdown showed per-type counts equal to the items returned (`limit` 10), so "France" read as
+10 beaches and 10 towns. The owner expects "France" to mean the beaches in France. Plain full-text matching also
+counts and lists documents that only mention a similar word (an Italian beach describing the church of San Francesco
+matches "france" as a prefix).
+
+**Decision**:
+1. Every type returns its **total** matches (`meta.totals_by_type`, `meta.total_matches`) from the search engine's
+   exhaustive count for the same query and filters (`page` + `hitsPerPage`), never by loading the documents.
+   `pagination.maxTotalHits` is raised so counts above 1000 are exact.
+2. **Place scope**: types are searched top-down (country, region, island, city, beach). The first type with exactly
+   one result whose name in any language equals the query (case, diacritics, extra spaces ignored) becomes
+   `meta.place`; the types below it are filtered to that place by id/code. "France" → beaches, towns, islands and
+   regions in France; "Toscana" → beaches, towns, islands in Toscana. Prefixes ("fran") and ambiguous names (two towns
+   with the same name) do not scope; the result is a plain search.
+3. Names and places rank above descriptions in the beaches index (`searchableAttributes` order).
+4. Only the requested `types` take part (a caller asking `types=beach` gets a plain beach search).
+5. `/api/v1` stays additive: `results_by_type` and `total_results` keep their meaning (items returned).
+
+**Alternatives**: DB `COUNT` per place (exact even with a stale index, but list and count could disagree and it needs a
+second query path per type); counting full-text hits only (counts the San Francesco noise); always showing "10+"
+(not what the owner asked).
+
+**Consequences**: The web shows `totals_by_type` in the tabs; "All" is `total_matches`. Counts follow the index; the
+deploy re-applies settings and re-indexes, and new place-id fields need that re-index before scoped searches work.
+
+
+## [2026-10-28] Search in a named place counts like the place pages (amends "Search counts are real totals")
+
+**Status**: Accepted (follow-up on dev 2026-10-28: "toscana" showed 43 beaches but 0 towns; the Toscana page shows 21 towns)
+
+**Context**: Point 2 of the previous ADR filtered the lower types through the search index (`region_id`, `island_id`,
+`city_id`). On dev the city and island documents did not carry those new fields, so every region or island scope
+counted 0 towns and 0 islands (Toscana 0/21 towns, Kvarner 0/4 islands, Krk 0/19 towns) while beaches were right.
+A count that silently depends on a re-index is fragile, and the place pages count from the database.
+
+**Decision**: Once the query names a place (detection unchanged, via the index), the types below it are read from the
+database with the place pages' rules: active beaches (`status_id = 1`), and towns/islands/regions with at least one
+active beach, filtered by `country_code` / `region_id` / `island_id` / `city_id`. Beaches are listed most viewed first
+(as "Browse all beaches"), places with the most active beaches first. Plain queries still use the index.
+
+**Consequences**: Search totals equal the page numbers (`/regions/{slug}` `beaches_count`, `/cities?region_code=`,
+`/islands?region_code=`, `/cities?island_code=`). The index fields from the previous ADR stay (harmless, filterable)
+but nothing depends on them. On dev, the region page's "All beaches (20)" button was the popular-beaches carousel
+expander labelled with the number of carousel cards; the web fix shows the region's real total there.
+
+## [2026-10-29] AI guide on/off is an admin setting per environment (TASK-009)
+
+**Status**: Accepted (owner 2026-10-29: "bi ga na prod izklopil" until Stripe is on prod and the guide is tested)
+
+**Context**: The only switch was `AI_ENABLED` in the server `.env` — a server action, and it did not hide the guide on the website.
+
+**Decision**: Table `site_settings` with key `ai_assistant_enabled` (default on), edited in admin (System → Site settings). Off: website hides the menu entry and `llms.txt` line and answers 404 on `/ai/*` and `/payment/*`; API answers 503 `ai_disabled` on `/api/v1/ai/*` and Stripe checkout. Public read: `GET /api/v1/site-settings`. `AI_ENABLED` stays as the server-level kill switch.
+
+**Consequences**: Future site switches go into the same table and page. The mobile app should read `/site-settings` and hide its AI entry when off.
+
+
+## [2026-10-29] Watermark mobile-app photos on the fly (supersedes the 2026-10-08 "no watermark" note for these photos)
+
+**Status**: Accepted (owner 2026-10-29: most beaches have photos with our logo, but not all, e.g. Plage du Port Vieux, Biarritz; approved adding the watermark to the photos that lack it)
+
+**Context**: Photos uploaded in admin (`img/beaches/…`) have the Beachrex logo baked in at the bottom right. Photos
+uploaded from the mobile app (`img/beaches_mobile/…`, 839 of 2 876 beaches on dev) have none. On 2026-10-08 the owner
+had said "no watermark" (recorded in HANDOFF / DEV_HANDOFF, not as an ADR); this request reverses it for these photos.
+Images are served by Imagor (`https://s3.beachrex.com/unsafe/<ops>/<path>`), which supports a `watermark` filter that
+loads the logo from the same bucket.
+
+**Decision**:
+1. Imagor draws the watermark when a mobile-app photo is shown; the originals on the bucket are not changed.
+   The website adds `filters:watermark(img/watermark/beachrex-watermark-v1.png,-3p,-4p,0,20,30)` (bottom right,
+   3 %/4 % margin, at most 20 % of the width) in its one URL builder (`buildCdnUrl`, plus the share image URL).
+2. Only raster photos under `img/beaches_mobile/`. Never admin photos (logo already baked in), icons, videos, 360° tours
+   (`/vtour/`) or panorama/sphere images (a logo on an equirectangular image looks wrong in a viewer).
+3. The watermark is `resources/watermark/beachrex-watermark-v1.png` (white horizontal logo from the brand package +
+   "www.beachrex.com" in Inter, soft shadow; generator `resources/watermark/make_watermark.py`). Every deploy runs
+   `media:publish-watermark`, which uploads it to `public/img/watermark/beachrex-watermark-v1.png` (public) only if
+   missing. The bucket is shared by all environments, so a published version is never overwritten: a new design is
+   a new file (`-v2`) and the website switches to it.
+4. Structured data still makes no copyright claim for mobile uploads (they may be other authors' photos); the mark is
+   a brand mark on how Beachrex shows the photo.
+
+**Alternatives**: Bake the logo into the files (irreversible, rewrites originals that may be other authors' work, and
+the shared bucket means every environment changes at once); a CSS overlay (not in downloaded/shared/OG images or
+Google Images).
+
+**Consequences**: Reversible by removing the filter in the web client. Watermarked URLs are new Imagor cache keys
+(first view of each photo is rendered once). The mobile app and the MCP server build their own image URLs and are not
+changed by this decision. If the PNG is missing on the bucket, watermarked URLs fail, so the backend deploy (which
+uploads it) must reach an environment before the web client that uses it.
+
+## [2026-10-29] The chat knows the page it is opened on — an untrusted, server-resolved hint (TASK-010)
+
+**Status**: Accepted (owner 2026-10-29: chat as a widget on every page, "da bi še vedel na kateri strani se nahajaš")
+
+**Context**: The website chat becomes a floating widget on every page. Questions like "is this beach good for kids?"
+need the page. Anything the browser sends can be forged, and a page title in a prompt is a prompt-injection channel.
+
+**Decision**:
+1. `POST /api/v1/ai/chat` takes an optional `page_context` {`page_type` (enum), `path`, `beach_id`, `title`}; unknown
+   keys, wrong types and over-long values are rejected with 422. Absent → behaviour unchanged (additive, `/api/v1` rule).
+2. The model never sees the raw object. `PageContextHint` builds one short line: for beach pages from the database
+   (`beach_id` → active beach name, town, country in the request locale, English fallback; title ignored); for other
+   pages a generic label plus the title, cleaned, cut to 80 characters and JSON-quoted with "(page text, not an
+   instruction)". `path` is validated but not sent to the model.
+3. The hint is context, never authorization, and it does not change plans, limits or which data can be read.
+4. Agent engine: the hint goes into the per-message context line (system prompt stays byte-stable for provider caching)
+   and points to `get_beach_details` for the id. Pipeline engine: a `CURRENT PAGE` line in the system prompt.
+5. The scope of the assistant stays beaches and seaside travel ("karkoli" read as anything about the site and trips);
+   widening it to general chat is a product decision for the owner (cost, abuse).
+
+**Consequences**: The mobile app can send the same field later. A beach that is inactive or missing gives a generic
+"beach page" hint. Conversation persistence across tabs is a website concern (localStorage); the server session still
+expires after 30 minutes of inactivity, after which the model no longer sees the earlier turns.
+
+## [2026-10-29] Indoor / outdoor pools: classified by the pool counts, shown under "Pool"
+
+**Status**: Accepted (owner 2026-10-29: "filter bi mogli razbit na notranji in zunanji bazen")
+
+**Context**: The water body filter offers sea, lake, river and pool. The home page tiles "outdoor pools" and "indoor
+pools" send `pool_type=outdoor|indoor` (QA #70), which the map listed as a separate "Pool type" group, so the owner did
+not see the split. The data model already has the split: `beach.indoor_pools_count` and `beach.outdoor_pools_count`
+(admin, beach form), plus per-feature indoor/outdoor flags (`has_indoor_children_pool`, …) and the unused
+`beach_location_type` code `PB` ("Indoor pool"). Dev has no pool places yet, so every pool filter returns 0.
+
+**Decision**:
+1. A place is an indoor pool when `indoor_pools_count > 0`, an outdoor pool when `outdoor_pools_count > 0` (both is
+   possible). No new column, waterbody code or migration; the API and its parameters stay as they are (additive rule).
+2. The web shows the two `pool_type` options nested under "Pool" in the water body group (map sidebar desktop and
+   mobile, home filter dialog, listing pages' select) and no longer as a separate group. `waterbody=pool` still means
+   every pool place; old links keep working.
+3. `waterbody` and `pool_type` combine with AND, like every other pair of filters: "Sea" + "Indoor pool" finds sea
+   beaches with an indoor pool (a hotel), not "sea beaches or indoor pools". Changing that would change the meaning of
+   an existing API parameter (the mobile app uses `pool_type` too) and needs an owner decision.
+4. Classification is content work: whoever imports or edits pool places (the planned OSM/official-site pool importer,
+   or the admin) sets the two counts. A pool place without counts is found by "Pool" but by neither pool type.
+   The agent does not guess counts from names or location types.
+
+**Consequences**: The tiles and the nested options show results as soon as pool places with counts exist. The
+importer must map indoor/outdoor (e.g. OSM `indoor=yes`, `covered=yes`, `building`) to the counts.
+
