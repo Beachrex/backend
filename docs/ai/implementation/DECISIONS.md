@@ -1150,6 +1150,8 @@ expander labelled with the number of carousel cards; the web fix shows the regio
 
 **Consequences**: Future site switches go into the same table and page. The mobile app should read `/site-settings` and hide its AI entry when off.
 
+**Amendment (2026-10-29, owner: "želel sem skriti trip planner, ker je plačljiv, ne pa chat … da lahko v adminu izklopim eno ali drugo ali pa oboje")**: two independent switches. `ai_assistant_enabled` now means the **AI chat** only (chat API, chat page, chat widget; 503 `ai_disabled` on `POST /ai/chat` and `/ai/test`). New `ai_trip_planner_enabled` (default on, idempotent migration) covers the **paid trip planner**: `POST /ai/itineraries`, `POST /ai/itinerary-plans`, `GET /payments/products`, `POST /payments/stripe/checkout` answer 503 `ai_trip_planner_disabled`; website planner pages (`/ai/itinerary/*`), `/payment/*`, the menu entry and links to the planner are hidden. The Stripe webhook, `/me/entitlements` and `/me/itinerary-plans` are never switched off (payments already started must complete, bought plans stay readable through the API). `/ai` and the "AI Beach Assistant" menu group disappear only when both are off. `GET /api/v1/site-settings` returns both keys (additive; old clients reading only `ai_assistant_enabled` now see the chat state).
+
 
 ## [2026-10-29] Watermark mobile-app photos on the fly (supersedes the 2026-10-08 "no watermark" note for these photos)
 

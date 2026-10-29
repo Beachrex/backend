@@ -19,3 +19,17 @@ is not on production yet and the guide still needs testing, so I would switch it
 - Admin toggles; non-admin 403, guest → login.
 - Off: API 503 `ai_disabled` on chat, itineraries, itinerary plans, checkout; website without the menu entry; `/ai` 404.
 - On: unchanged behaviour.
+
+## Amendment 2026-10-29: two switches (chat / trip planner)
+
+**Owner (2026-10-29):** "to sva se narobe razumela, želel sem skriti trip planner, ker je plačljiv, ne pa chat.... dodaj
+to, da lahko v adminu izklopim eno ali drugo ali pa oboje,... potem bom trip planner izklopil na prod."
+
+- `ai_assistant_enabled` now means **AI chat** only (key kept for API compatibility).
+- New key `ai_trip_planner_enabled` (default on, idempotent migration `2026_10_29_150000_…`) for the **paid trip planner**.
+- Route → switch: chat = `POST /ai/chat`, `POST /ai/test` (503 `ai_disabled`); planner = `POST /ai/itineraries`,
+  `POST /ai/itinerary-plans`, `GET /payments/products`, `POST /payments/stripe/checkout` (503 `ai_trip_planner_disabled`);
+  never switched = `POST /payments/stripe/webhook`, `GET /me/entitlements`, `GET /me/itinerary-plans[/{id}]`.
+- Website: chat page, widget and "AI beach chat" menu entry follow the chat switch; planner pages (`/ai/itinerary/*`),
+  `/payment/*`, the "AI trip planner" menu entry and planner links follow the planner switch; `/ai` and the menu group
+  disappear only when both are off.

@@ -37,6 +37,7 @@ class SiteSettings extends Page implements HasForms
     {
         $this->form->fill([
             SiteSetting::AI_ASSISTANT_ENABLED => SiteSetting::aiAssistantEnabled(),
+            SiteSetting::AI_TRIP_PLANNER_ENABLED => SiteSetting::aiTripPlannerEnabled(),
         ]);
     }
 
@@ -45,11 +46,14 @@ class SiteSettings extends Page implements HasForms
         return $form
             ->schema([
                 Section::make('AI beach guide')
-                    ->description('Applies to this environment only (dev, uat and prod each have their own switch).')
+                    ->description('Two independent switches. Each applies to this environment only (dev, uat and prod each have their own).')
                     ->schema([
                         Toggle::make(SiteSetting::AI_ASSISTANT_ENABLED)
-                            ->label('AI guide on')
-                            ->helperText('Off: the AI guide disappears from the website menu, its pages answer 404, and the API refuses chat, trip plans and buying credits (website and mobile app). Visible within about 5 minutes.'),
+                            ->label('AI chat')
+                            ->helperText('Off: the AI beach chat (chat page and the chat button on every page) disappears from the website, and the API refuses chat questions (website and mobile app). The trip planner is not affected.'),
+                        Toggle::make(SiteSetting::AI_TRIP_PLANNER_ENABLED)
+                            ->label('AI trip planner (paid)')
+                            ->helperText('Off: the AI trip planner disappears from the website menu and links, its pages and the payment pages answer 404, and the API refuses trip plans, credit prices and buying credits (website and mobile app). Nothing is deleted: plans and credits already bought come back when it is switched on again. The chat is not affected.'),
                     ]),
             ])
             ->statePath('data');
@@ -58,12 +62,14 @@ class SiteSettings extends Page implements HasForms
     public function save(): void
     {
         $state = $this->form->getState();
-        $enabled = (bool) ($state[SiteSetting::AI_ASSISTANT_ENABLED] ?? true);
+        $chat = (bool) ($state[SiteSetting::AI_ASSISTANT_ENABLED] ?? true);
+        $planner = (bool) ($state[SiteSetting::AI_TRIP_PLANNER_ENABLED] ?? true);
 
-        SiteSetting::set(SiteSetting::AI_ASSISTANT_ENABLED, $enabled);
+        SiteSetting::set(SiteSetting::AI_ASSISTANT_ENABLED, $chat);
+        SiteSetting::set(SiteSetting::AI_TRIP_PLANNER_ENABLED, $planner);
 
         Notification::make()
-            ->title($enabled ? 'AI guide is ON' : 'AI guide is OFF')
+            ->title('AI chat is '.($chat ? 'ON' : 'OFF').', AI trip planner is '.($planner ? 'ON' : 'OFF'))
             ->body('The website shows the change within about 5 minutes; the API immediately.')
             ->success()
             ->send();

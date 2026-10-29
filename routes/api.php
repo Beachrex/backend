@@ -268,35 +268,45 @@ Route::prefix('api/v1')
 
         // AI routes (with middleware stack)
         // Note: OptionalAuthMiddleware allows both anonymous and authenticated access
+        // Two admin switches (TASK-009, owner 2026-10-29): AI chat and AI trip planner (paid). Each route belongs to
+        // exactly one switch, and the switch runs before the rest of the AI stack.
+        $aiStack = [
+            \App\Http\Middleware\AI\OptionalAuthMiddleware::class,
+            \App\Http\Middleware\AI\CircuitBreakerMiddleware::class,
+            \App\Http\Middleware\AI\RateLimitMiddleware::class,
+            \App\Http\Middleware\AI\TokenBudgetMiddleware::class,
+        ];
+
+        // AI chat switch (`ai_assistant_enabled`)
         Route::prefix('ai')
-            ->middleware([
-                \App\Http\Middleware\EnsureAiAssistantEnabled::class, // TASK-009: admin switch
-                \App\Http\Middleware\AI\OptionalAuthMiddleware::class,
-                \App\Http\Middleware\AI\CircuitBreakerMiddleware::class,
-                \App\Http\Middleware\AI\RateLimitMiddleware::class,
-                \App\Http\Middleware\AI\TokenBudgetMiddleware::class,
-            ])
+            ->middleware([\App\Http\Middleware\EnsureAiAssistantEnabled::class, ...$aiStack])
             ->group(function () {
                 // Chat endpoint (primary AI interaction)
                 Route::post('/chat', [\App\Http\Controllers\AI\ChatController::class, 'chat']);
-
-                // Itinerary endpoint (PRIMARY REVENUE - multi-day trip planning)
-                Route::post('/itineraries', [\App\Http\Controllers\AI\ItineraryController::class, 'generate']);
-
-                // AI-3: paid itinerary generated in the background (worker_<env>), kept for "My plans"
-                Route::middleware('auth:sanctum')->post('/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'store']);
 
                 // Test endpoint (for testing middleware stack)
                 Route::post('/test', [TestController::class, 'chat']);
             });
 
-        // Payment routes (Stripe integration)
-        Route::get('/payments/products', [\App\Http\Controllers\Payment\CheckoutController::class, 'products']);
+        // AI trip planner switch (`ai_trip_planner_enabled`)
+        Route::prefix('ai')
+            ->middleware([\App\Http\Middleware\EnsureAiTripPlannerEnabled::class, ...$aiStack])
+            ->group(function () {
+                // Itinerary endpoint (PRIMARY REVENUE - multi-day trip planning)
+                Route::post('/itineraries', [\App\Http\Controllers\AI\ItineraryController::class, 'generate']);
+
+                // AI-3: paid itinerary generated in the background (worker_<env>), kept for "My plans"
+                Route::middleware('auth:sanctum')->post('/itinerary-plans', [\App\Http\Controllers\AI\ItineraryPlanController::class, 'store']);
+            });
+
+        // Payment routes (Stripe integration). Products and checkout sell trip-planner credits only, so they follow
+        // the trip planner switch. The webhook is never switched off: a payment already started must complete.
+        Route::middleware(\App\Http\Middleware\EnsureAiTripPlannerEnabled::class)
+            ->get('/payments/products', [\App\Http\Controllers\Payment\CheckoutController::class, 'products']);
 
         Route::prefix('payments/stripe')->group(function () {
             // Checkout endpoint (requires authentication)
-            // AI credits only: closed while the AI guide is switched off (TASK-009)
-            Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureAiAssistantEnabled::class])
+            Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureAiTripPlannerEnabled::class])
                 ->post('/checkout', [\App\Http\Controllers\Payment\CheckoutController::class, 'create']);
 
             // Webhook endpoint (no authentication - uses Stripe signature verification)
