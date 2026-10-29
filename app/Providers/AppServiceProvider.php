@@ -15,7 +15,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One meter per HTTP request / queue job: the cost of every LLM call, also of calls before a failure.
+        $this->app->scoped(\App\Services\AI\AiSpendMeter::class);
     }
 
     /**

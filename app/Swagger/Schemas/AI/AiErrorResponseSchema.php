@@ -145,33 +145,24 @@ namespace App\Swagger\Schemas\AI;
  * @OA\Schema(
  *     schema="AiServiceUnavailableError",
  *     title="AI Service Unavailable Error (503)",
- *     description="Error response when AI service is temporarily unavailable",
+ *     description="The AI is not available right now. error=service_unavailable: switched off on the server (retry_after null) or a daily cost limit is reached (reason=daily_limit, retry_after = next local midnight, Europe/Ljubljana by default; the chat is back on by itself then). error=ai_unavailable: the AI provider is busy, out of quota or timed out (Retry-After: 60).",
  *     type="object",
- *     required={"error", "message", "retry_after", "fallback_url"},
- *     @OA\Property(
- *         property="error",
- *         type="string",
- *         enum={"service_unavailable"},
- *         example="service_unavailable"
- *     ),
- *     @OA\Property(
- *         property="message",
- *         type="string",
- *         example="AI service is temporarily unavailable due to high costs"
- *     ),
- *     @OA\Property(
- *         property="retry_after",
- *         type="integer",
- *         description="Seconds until retry",
- *         example=3600
- *     ),
- *     @OA\Property(
- *         property="fallback_url",
- *         type="string",
- *         format="uri",
- *         description="Fallback URL for regular search",
- *         example="https://beachrex.com/search"
- *     )
+ *     required={"error", "message"},
+ *     @OA\Property(property="error", type="string", enum={"service_unavailable", "ai_unavailable"}, example="service_unavailable"),
+ *     @OA\Property(property="reason", type="string", nullable=true, enum={"daily_limit"}, description="Present when a daily cost limit is reached", example="daily_limit"),
+ *     @OA\Property(property="message", type="string", example="The AI assistant has reached its daily limit and is resting until tomorrow."),
+ *     @OA\Property(property="retry_after", type="string", format="date-time", nullable=true, description="When to try again (ISO 8601 with offset)", example="2026-10-30T00:00:00+01:00"),
+ *     @OA\Property(property="request_id", type="string", format="uuid", nullable=true, description="Only with error=ai_unavailable")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="AiTurnstileError",
+ *     title="AI chat robot check (403)",
+ *     description="Cloudflare Turnstile is on and the request has no valid token: run the Turnstile widget (action ai_chat) and send the message again with turnstile_token.",
+ *     type="object",
+ *     required={"error", "message"},
+ *     @OA\Property(property="error", type="string", enum={"turnstile_required", "turnstile_failed"}, example="turnstile_required"),
+ *     @OA\Property(property="message", type="string", example="Please confirm that you are not a robot.")
  * )
  */
 class AiErrorResponseSchema {}

@@ -40,6 +40,10 @@ class LLMService
         
         try {
             $response = $this->provider->chatCompletion($request);
+
+            // Counted as soon as it is billed, so a later failure in the same request keeps this cost.
+            AiSpendMeter::current()->add($response->provider ?? $this->provider->getProviderName(), (string) $response->model,
+                $response->inputTokens, $response->outputTokens, $response->costUsd);
             
             $latencyMs = (int) round((microtime(true) - $startTime) * 1000);
             

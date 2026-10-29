@@ -50,4 +50,14 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    // Cloudflare Turnstile on the AI chat (owner 2026-10-29). No secret = verification off (local, tests, until
+    // the owner adds the widget). required_for: 'web' = only browser requests (Origin / Sec-Fetch-* headers; the
+    // mobile app sends neither), 'all' = every client (breaks API clients that cannot run Turnstile).
+    'turnstile' => [
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        'required_for' => env('TURNSTILE_REQUIRED_FOR', 'web'),
+        'verify_url' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        'timeout' => 5, // seconds
+    ],
+
 ];
