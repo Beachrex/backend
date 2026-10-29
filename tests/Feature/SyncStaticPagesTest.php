@@ -185,7 +185,8 @@ class SyncStaticPagesTest extends TestCase
             foreach (['MOJA PLAŽA, d.o.o.', 'Prušnikova ulica 22, 2000 Maribor', '6791174000', '53794214', 'mailto:info@beachrex.com'] as $needle) {
                 $this->assertStringContainsString($needle, $about, "{$lang} about-us: {$needle}");
             }
-            $this->assertMatchesRegularExpression('/12[ .,]500/', $about, "{$lang} about-us: share capital");
+            // Owner, 2026-10-29: share capital is not shown on the site.
+            $this->assertDoesNotMatchRegularExpression('/12[ .,]500/', File::get($file), "{$lang}: share capital shown");
             $this->assertSame(3, substr_count($about, '<h3>'), "{$lang} about-us: company, partners, corrections");
 
             $this->assertStringContainsString('53794214 (', $pages['contact']['content'], "{$lang} contact: VAT status");
