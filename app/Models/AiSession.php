@@ -40,6 +40,8 @@ class AiSession extends Model
         'user_agent',
         'last_activity_at',
         'expires_at',
+        'engine',
+        'page_context',
     ];
 
     /**
@@ -52,6 +54,7 @@ class AiSession extends Model
             'tokens_used' => 'integer',
             'last_activity_at' => 'datetime',
             'expires_at' => 'datetime',
+            'page_context' => 'array',
         ];
     }
 

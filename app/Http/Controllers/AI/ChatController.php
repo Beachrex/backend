@@ -196,7 +196,10 @@ class ChatController extends Controller
         $session = $this->getOrCreateSession($request);
 
         // Sliding expiry: an active conversation does not run out after 30 minutes.
-        $session->update(['expires_at' => now()->addMinutes(config('ai.session.ttl', 30))]);
+        // Admin chat history: the page the conversation was first opened on (validated input only).
+        $pageContext = $request->validated('page_context');
+        $session->update(['expires_at' => now()->addMinutes(config('ai.session.ttl', 30))]
+            + ($session->page_context === null && is_array($pageContext) ? ['page_context' => $pageContext] : []));
 
         // Get user message
         $userMessage = $request->input('message');
@@ -206,7 +209,7 @@ class ChatController extends Controller
 
         // AI-2: the model works with the beach tools like the MCP server (config ai.chat.engine).
         if (config('ai.chat.engine') === 'agent') {
-            return $this->agentReply($request, $session, $userMessage, array_values($conversationHistory), $requestId, $startTime);
+            return $this->agentReply($request, $session, $userMessage, array_values($conversationHistory), $requestId, $startTime, $pageContext);
         }
 
         // TASK-003: understand the message in any language (structured LLM extraction);
@@ -218,6 +221,8 @@ class ChatController extends Controller
         // Check plan enforcement for paid features
         $enforcementCheck = $this->checkPlanEnforcement($request->user(), $intent, $userMessage, $understood['days'] ?? null);
         if ($enforcementCheck !== null) {
+            $this->recordFailedTurn($session, $userMessage, $intent, 'payment_required', $pageContext, $requestId);
+
             return $enforcementCheck;
         }
 
@@ -230,6 +235,7 @@ class ChatController extends Controller
         $messages = $this->buildLLMMessages($userMessage, $context, $conversationHistory);
 
         // Call LLM
+        $saved = false;
         try {
             $llmRequest = new ChatCompletionRequest(
                 messages: $messages,
@@ -266,10 +272,13 @@ class ChatController extends Controller
             }
 
             // Save user message
-            $this->saveMessage($session, 'user', $userMessage, $intent, $context, $llmResponse->inputTokens, 0);
+            $this->saveMessage($session, 'user', $userMessage, $intent, $context, $llmResponse->inputTokens, 0,
+                pageContext: $pageContext, requestId: $requestId);
 
             // Save assistant message
-            $this->saveMessage($session, 'assistant', $parsedResponse['message'], $intent, $parsedResponse, 0, $llmResponse->outputTokens);
+            $this->saveMessage($session, 'assistant', $parsedResponse['message'], $intent, $parsedResponse, 0, $llmResponse->outputTokens,
+                requestId: $requestId);
+            $saved = true;
 
             // Update session (both LLM calls count)
             $totalTokens = $llmResponse->totalTokens + ($understandingResponse?->totalTokens ?? 0);
@@ -314,6 +323,9 @@ class ChatController extends Controller
         } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException $e) {
             // The AI provider is busy, out of quota or slow: a clear "try again" instead of a generic 500.
             Log::warning('AI chat provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+            if (! $saved) {
+                $this->recordFailedTurn($session, $userMessage, $intent, 'ai_unavailable', $pageContext, $requestId);
+            }
             $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
 
             return response()->json([
@@ -329,6 +341,9 @@ class ChatController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+            if (! $saved) {
+                $this->recordFailedTurn($session, $userMessage, $intent, 'internal_error', $pageContext, $requestId);
+            }
 
             return response()->json([
                 'error' => 'internal_error',
@@ -340,7 +355,7 @@ class ChatController extends Controller
     /**
      * AI-2 answer: tool-calling agent; markdown text with links to the beach pages, cards for the linked beaches.
      */
-    private function agentReply(ChatRequest $request, AiSession $session, string $userMessage, array $history, string $requestId, float $startTime): JsonResponse
+    private function agentReply(ChatRequest $request, AiSession $session, string $userMessage, array $history, string $requestId, float $startTime, ?array $pageContext = null): JsonResponse
     {
         $location = $request->input('context.location');
         $pageHint = $this->pageContext->describe($request->validated('page_context'), app()->getLocale(), withTools: true);
@@ -350,6 +365,7 @@ class ChatController extends Controller
             ] : null, $pageHint);
         } catch (LLMRateLimitException|LLMQuotaExceededException|LLMTimeoutException|\OpenAI\Exceptions\ErrorException|\Anthropic\Core\Exceptions\APIException $e) {
             Log::warning('AI chat agent provider unavailable', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+            $this->recordFailedTurn($session, $userMessage, 'agent', 'ai_unavailable', $pageContext, $requestId);
             $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
 
             return response()->json([
@@ -359,6 +375,7 @@ class ChatController extends Controller
             ], 503, ['Retry-After' => '60']);
         } catch (\Throwable $e) {
             // Tool rounds already billed before the failure still count toward the daily limit.
+            $this->recordFailedTurn($session, $userMessage, 'agent', 'internal_error', $pageContext, $requestId);
             $this->recordFailedSpend($session, $request->user(), $requestId, $startTime);
             throw $e;
         }
@@ -369,8 +386,10 @@ class ChatController extends Controller
             ? 'Sorry, I cannot help with that. Ask me about beaches, places or what you would like to do at the sea.'
             : $answer['message'];
 
-        $this->saveMessage($session, 'user', $userMessage, 'agent', ['tool_calls' => $result->toolCalls], $result->inputTokens, 0);
-        $this->saveMessage($session, 'assistant', $text, 'agent', ['beaches' => $answer['beaches']], 0, $result->outputTokens);
+        $this->saveMessage($session, 'user', $userMessage, 'agent', ['tool_calls' => $result->toolCalls], $result->inputTokens, 0,
+            pageContext: $pageContext, requestId: $requestId);
+        $this->saveMessage($session, 'assistant', $text, 'agent', ['beaches' => $answer['beaches']] + ($result->refused ? ['refused' => true] : []),
+            0, $result->outputTokens, requestId: $requestId);
         $session->increment('messages_count', 2);
         $session->increment('tokens_used', $result->inputTokens + $result->outputTokens);
         $session->update(['last_activity_at' => now()]);
@@ -438,6 +457,7 @@ class ChatController extends Controller
             'user_agent' => $request->userAgent(),
             'last_activity_at' => now(),
             'expires_at' => now()->addMinutes(config('ai.session.ttl', 30)),
+            'engine' => config('ai.chat.engine') === 'agent' ? 'agent' : 'pipeline',
         ]);
     }
 
@@ -720,6 +740,7 @@ class ChatController extends Controller
     {
         // The user and assistant messages of one turn share a timestamp; id keeps their order.
         return $session->messages()
+            ->whereNull('error') // a failed turn has no answer; the model sees only complete turns
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
             ->limit(5)
@@ -957,7 +978,10 @@ class ChatController extends Controller
         string $intent,
         array $context,
         int $tokensInput,
-        int $tokensOutput
+        int $tokensOutput,
+        ?array $pageContext = null,
+        ?string $requestId = null,
+        ?string $error = null,
     ): void {
         AiMessage::create([
             'session_id' => $session->id,
@@ -968,7 +992,24 @@ class ChatController extends Controller
             'tokens_input' => $tokensInput,
             'tokens_output' => $tokensOutput,
             'tokens_total' => $tokensInput + $tokensOutput,
+            'page_context' => $pageContext,
+            'request_id' => $requestId,
+            'error' => $error,
         ]);
+    }
+
+    /**
+     * Admin chat history: keep the question of a turn that got no answer (provider busy, error, paid feature), so
+     * the admin sees what failed. Never breaks the error response itself.
+     */
+    private function recordFailedTurn(AiSession $session, string $userMessage, string $intent, string $error, ?array $pageContext, string $requestId): void
+    {
+        try {
+            $this->saveMessage($session, 'user', $userMessage, $intent, [], 0, 0,
+                pageContext: $pageContext, requestId: $requestId, error: $error);
+        } catch (\Throwable $e) {
+            Log::warning('AI chat: failed turn not recorded', ['request_id' => $requestId, 'error' => $e->getMessage()]);
+        }
     }
 
     /**
