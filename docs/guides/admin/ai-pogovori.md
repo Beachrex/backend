@@ -1,6 +1,6 @@
 # Pogovori z AI klepetom (zgodovina)
 
-> Velja od: 2026-10-29 · Kje: Admin → **AI → Chat conversations** (`/ai-conversations`, npr.
+> Velja od: 2026-10-29 (rok hrambe 180 dni od 2026-10-29) · Kje: Admin → **AI → Chat conversations** (`/ai-conversations`, npr.
 > https://dock-dev.beachrex.com/ai-conversations) · Okolje: dev, uat, prod (vsako ima svoje pogovore)
 
 ## Čemu služi
@@ -81,16 +81,42 @@ omejitev stroškov, preveč vprašanj v kratkem času, neuspešno preverjanje Tu
   kopiraj drugam, kot je potrebno za izboljšavo.
 - Stran **ne prikaže** naslova IP (shranjen je samo kot zgoščena vrednost za omejevanje števila vprašanj) in ne
   podatkov o brskalniku. Besedilo pogovorov ni v globalnem iskanju admina.
-- **Koliko časa hranimo pogovore, še ni določeno** (odločitev lastnika, glej spodaj). Do takrat se ne briše nič.
-  Če uporabnik prosi za izbris svojega pogovora, to zaenkrat naredi razvijalec (izbris seje izbriše tudi njena sporočila).
+- **Rok hrambe: 180 dni** (odločitev lastnika 2026-10-29). Vsako noč ob 1.40 (slovenski čas) ukaz
+  `ai:prune-conversations` izbriše pogovore, v katerih ni bilo novega sporočila več kot 180 dni, skupaj z vsemi
+  sporočili. Ostane le zapis o strošku (čas, model, žetoni, strošek) brez povezave na pogovor, brez zgoščenega IP in
+  brez podatkov o brskalniku — zato statistika stroškov in dnevna omejitev ostaneta pravilni. Nakupi, krediti in
+  načrti potovanj (plačljivi načrtovalnik) se **ne** brišejo.
+- Izbrisanega pogovora v adminu ni več mogoče odpreti. V varnostnih kopijah baze ostane še največ toliko dni, kolikor
+  jih hranijo kopije (privzeto 14).
+- Če uporabnik prosi za izbris svojega pogovora prej, to zaenkrat naredi razvijalec (izbris seje izbriše tudi njena
+  sporočila). Anonimnega uporabnika prepoznaš le po času, strani in besedilu vprašanja, ki ga navede.
+- Politika zasebnosti (vseh 19 jezikov) to opisuje: pogovore hranimo in jih pregledujemo za izboljšave, 180 dni,
+  izbris prej na zahtevo na info@beachrex.com; ponudnika Anthropic (in OpenAI za nekatere funkcije), Cloudflare
+  Turnstile. Besedilo na spletu se spremeni šele, ko na okolju poženeš `static-pages:sync` (navodila
+  [staticne-strani.md](staticne-strani.md); ukaze za prod najdeš v `DEV_HANDOFF.md` 2026-10-29).
 
-## Odprte odločitve lastnika
+## Ukaz `ai:prune-conversations` (brisanje starih pogovorov)
 
-- **Rok hrambe:** predlog 180 dni (ali 90), nato samodejni izbris pogovorov; strošek (`ai_usage`) ostane brez povezave
-  na pogovor.
-- **Politika zasebnosti** (razdelek »AI beach assistant«) zdaj pravi le, da se vprašanja in odgovori »obdelajo, da se
-  pripravi odgovor«, in kot ponudnika navaja samo OpenAI. Dopolniti jo je treba: da pogovore hranimo in jih beremo za
-  izboljšanje storitve, rok hrambe, ponudnika Anthropic.
+Teče sam vsako noč (strežnik ga zažene sam, nič ti ni treba narediti). Ročno ga poženeš le, če želiš videti, koliko bi
+izbrisal, ali izbrisati z drugačnim rokom. Zamenjaj `<okolje>` z `dev`, `uat` ali `prod`:
+
+```
+docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.<okolje> exec -T api_<okolje> php artisan ai:prune-conversations --dry-run
+```
+
+| Možnost | Pomen |
+|---|---|
+| `--dry-run` | samo prešteje, ničesar ne izbriše |
+| `--days=90` | ta zagon briše pogovore, starejše od 90 dni (najmanj 1) |
+| `--chunk=200` | koliko pogovorov izbriše naenkrat (običajno ne rabiš) |
+
+Izpis: `[dry run] Older than 180 days (last activity before 2026-05-02 01:40:00): sessions 12 · messages 57 · usage
+rows to unlink 15` — toliko pogovorov in sporočil bi izbrisal, toliko zapisov o strošku bi ostalo brez povezave.
+Pravi zagon izpiše `deleted sessions … · messages … · usage rows unlinked …`.
+
+Rok spremeniš v `/opt/beachrex/envs/.env.<okolje>` z `AI_CHAT_RETENTION_DAYS=<dni>` (nato ponovni deploy API).
+`AI_CHAT_RETENTION_DAYS=0` izklopi nočno brisanje (pogovori se potem hranijo brez omejitve — politika zasebnosti pa
+obljublja 180 dni, zato tega ne delaj brez spremembe politike).
 
 ## Pogoste težave
 
@@ -100,6 +126,7 @@ omejitev stroškov, preveč vprašanj v kratkem času, neuspešno preverjanje Tu
 | Pogovor, ki sem ga pravkar imel, ni na seznamu | osveži stran; pogovor brez sporočil (samo odprt klepet) se ne prikaže |
 | Stari pogovori nimajo strani »Opened on« ali stroška po odgovoru | ti podatki se shranjujejo od 2026-10-29 naprej |
 | Strošek je »—« | za ta pogovor ni zapisa o porabi (npr. vsa vprašanja so ostala brez odgovora) |
+| Najstarejši pogovori so izginili | to je nočno brisanje po 180 dneh (zgoraj); izbrisanih ni mogoče obnoviti |
 
 ## Za razvijalce
 
@@ -110,4 +137,7 @@ omejitev stroškov, preveč vprašanj v kratkem času, neuspešno preverjanje Tu
   Migracija `2026_10_29_180000_add_chat_history_fields_to_ai_tables`.
 - Shranjevanje: `App\Http\Controllers\AI\ChatController` (`saveMessage`, `recordFailedTurn`). Vprašanja brez odgovora
   se ne pošiljajo modelu kot zgodovina.
-- ADR: `docs/ai/implementation/DECISIONS.md` »AI chat history in the admin« (2026-10-29).
+- Brisanje: `app/Console/Commands/PruneAiConversations.php`, urnik `routes/console.php`, nastavitev
+  `ai.chat.retention_days` (`AI_CHAT_RETENTION_DAYS`), testi `tests/Feature/AI/PruneAiConversationsTest.php`, politika
+  hrambe `docs/ai/architecture/data-retention-policy.md`.
+- ADR: `docs/ai/implementation/DECISIONS.md` »AI chat history in the admin« (2026-10-29, z dopolnitvijo o 180 dneh).
