@@ -12909,6 +12909,11 @@
                                         "type": "string",
                                         "example": "europe",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12933,6 +12938,11 @@
                                         "type": "string",
                                         "example": "croatia",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12952,6 +12962,11 @@
                                         "type": "string",
                                         "example": "dalmatia",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12971,6 +12986,11 @@
                                         "type": "string",
                                         "example": "split",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",
@@ -12990,6 +13010,11 @@
                                         "type": "string",
                                         "example": "hvar",
                                         "nullable": true
+                                    },
+                                    "beaches_count": {
+                                        "description": "Published beaches in this place (same count as its place page)",
+                                        "type": "integer",
+                                        "example": 42
                                     }
                                 },
                                 "type": "object",

@@ -52,6 +52,30 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Published beach counts per location level (beach details + place pages)
+
+### Overview
+`location.continent|country|region|island|city` in the beach details response now carry `beaches_count`: the number of published beaches (`status_id = 1`) in that place, the same count its place page shows. The web client shows it in the location pill tabs on the beach and place banners ("Beaches: 1167").
+
+### Changes Made
+- `app/Http/Resources/BeachDetailsResource.php`: `publishedBeachCount()` helper; `beaches_count` on each location level (absent levels stay absent).
+- `app/Swagger/Schemas/BeachDetailsSchema.php` + regenerated `storage/api-docs/api-docs.json`.
+- `tests/Feature/BeachDetailsApiTest.php`: counts per level, unpublished beaches not counted, levels without an island/city have no count.
+- Place show endpoints load the published count on their nested parents (`App\Support\PublishedBeachCounts`), so the place pages' pills can show it too: country → `continent.beaches_count`; region → `country.beaches_count`, `country.continent.beaches_count`; island → those + `region.beaches_count`; city → those + `island.beaches_count`. The nested schemas already documented `beaches_count`, so `api-docs.json` did not change for this part.
+- `tests/Feature/PlaceParentBeachCountsApiTest.php`: parent counts on all four show endpoints (unpublished not counted).
+
+### Cache
+Beach details are cached per beach and locale for 8 h (`CacheService::BEACH_DETAILS_TTL`). The counts are computed only on a cache miss, so after a beach is published or unpublished, the counts on *other* beaches' pages refresh within 8 h (saving a beach clears only its own cache). No command is needed. Cost on a miss: five `COUNT(*)` queries. Place details (country/region/island/city show) are cached 30 days (`REFERENCE_DATA_TTL`); the parent counts there follow the same cache as the place's own `beaches_count` (saving a beach clears the continent and country show caches).
+
+### Affected Endpoints
+- `GET /api/v1/beach-details/{identifier}` - new `location.*.beaches_count` (additive, non-breaking).
+- `GET /api/v1/countries/{codeOrSlug}`, `/regions/{slug}`, `/islands/{slug}`, `/cities/{slug}` - nested parents now carry `beaches_count` (additive).
+
+### Testing
+`php artisan test --filter='BeachDetails|SyncStaticPages|PlaceParentBeachCounts'`
+
+---
+
 ## 2026-10-29 - Pool types under "Pool" in the water body filter: tests and data note (owner report)
 
 ### Overview

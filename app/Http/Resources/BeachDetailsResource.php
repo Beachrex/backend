@@ -70,6 +70,15 @@ class BeachDetailsResource extends JsonResource
         return $list;
     }
 
+    /**
+     * Published beaches in a place (status 1), the same count its place page shows. Beach details are cached
+     * (BEACH_DETAILS_TTL), so this runs only on a cache miss. Used by the location pills on the beach banner.
+     */
+    private static function publishedBeachCount(\Illuminate\Database\Eloquent\Model $place): int
+    {
+        return (int) $place->beaches()->where('status_id', 1)->count();
+    }
+
     private function getLocationInfo(string $locale): array
     {
         return [
@@ -81,6 +90,7 @@ class BeachDetailsResource extends JsonResource
                     'code' => $this->continent->code,
                     'name' => $trans?->name ?? $this->continent->code,
                     'slug' => $trans?->slug ?? $transEn?->slug ?? null,
+                    'beaches_count' => self::publishedBeachCount($this->continent),
                 ];
             }),
             'country' => $this->when($this->country, function () use ($locale) {
@@ -92,6 +102,7 @@ class BeachDetailsResource extends JsonResource
                     'name' => $trans?->name ?? $this->country->code,
                     'full_name' => $trans?->full_name ?? null,
                     'slug' => $trans?->slug ?? $transEn?->slug ?? null,
+                    'beaches_count' => self::publishedBeachCount($this->country),
                 ];
             }),
             'region' => $this->when($this->region, function () use ($locale) {
@@ -102,6 +113,7 @@ class BeachDetailsResource extends JsonResource
                     'id' => $this->region->id,
                     'name' => $trans?->name ?? $transEn?->name ?? null,
                     'slug' => $trans?->slug ?? $transEn?->slug ?? null,
+                    'beaches_count' => self::publishedBeachCount($this->region),
                 ];
             }),
             'city' => $this->when($this->city, function () use ($locale) {
@@ -112,6 +124,7 @@ class BeachDetailsResource extends JsonResource
                     'id' => $this->city->id,
                     'name' => $trans?->name ?? $transEn?->name ?? null,
                     'slug' => $trans?->slug ?? $transEn?->slug ?? null,
+                    'beaches_count' => self::publishedBeachCount($this->city),
                 ];
             }),
             'island' => $this->when($this->island, function () use ($locale) {
@@ -122,6 +135,7 @@ class BeachDetailsResource extends JsonResource
                     'id' => $this->island->id,
                     'name' => $trans?->name ?? $transEn?->name ?? null,
                     'slug' => $trans?->slug ?? $transEn?->slug ?? null,
+                    'beaches_count' => self::publishedBeachCount($this->island),
                 ];
             }),
             'river' => $this->when($this->river, function () use ($locale) {

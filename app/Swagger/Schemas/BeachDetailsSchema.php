@@ -43,7 +43,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="code", type="string", example="EU"),
  *             @OA\Property(property="name", type="string", example="Europe"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="europe")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="europe"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="country",
@@ -52,7 +53,8 @@ namespace App\Swagger\Schemas;
  *             @OA\Property(property="code", type="string", example="HR"),
  *             @OA\Property(property="name", type="string", example="Croatia"),
  *             @OA\Property(property="full_name", type="string", nullable=true, example="Republic of Croatia"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="croatia")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="croatia"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="region",
@@ -60,7 +62,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="id", type="integer", example=1),
  *             @OA\Property(property="name", type="string", example="Dalmatia"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="dalmatia")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="dalmatia"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="city",
@@ -68,7 +71,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="id", type="integer", example=1),
  *             @OA\Property(property="name", type="string", example="Split"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="split")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="split"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="island",
@@ -76,7 +80,8 @@ namespace App\Swagger\Schemas;
  *             nullable=true,
  *             @OA\Property(property="id", type="integer", example=1),
  *             @OA\Property(property="name", type="string", example="Hvar"),
- *             @OA\Property(property="slug", type="string", nullable=true, example="hvar")
+ *             @OA\Property(property="slug", type="string", nullable=true, example="hvar"),
+ *             @OA\Property(property="beaches_count", type="integer", example=42, description="Published beaches in this place (same count as its place page)")
  *         ),
  *         @OA\Property(
  *             property="river",
