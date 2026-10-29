@@ -58,6 +58,7 @@ class ItineraryService
     public function generateFromInput(array $input, ?User $user, string $requestId): array
     {
         $startTime = microtime(true);
+        $spendMark = AiSpendMeter::current()->mark();
 
         $destination = $input['destination'];
         $days = (int) $input['duration_days'];
@@ -96,7 +97,7 @@ class ItineraryService
             'cached' => false,
         ];
 
-        $this->saveItineraryToDatabase($session, $input, $itinerary, $llmResponse);
+        $this->saveItineraryToDatabase($session, $input, $itinerary, $llmResponse, AiSpendMeter::current()->since($spendMark));
 
         return $itinerary;
     }
@@ -425,7 +426,11 @@ PROMPT;
         ]);
     }
 
-    private function saveItineraryToDatabase(AiSession $session, array $input, array $itinerary, ?ChatCompletionResponse $llm): void
+    /**
+     * @param array{cost: float, in: int, out: int} $spent every LLM call of this plan (also a failed first
+     *        narration attempt, whose tokens were billed too)
+     */
+    private function saveItineraryToDatabase(AiSession $session, array $input, array $itinerary, ?ChatCompletionResponse $llm, array $spent = ['cost' => 0.0, 'in' => 0, 'out' => 0]): void
     {
         AiMessage::create([
             'session_id' => $session->id,
@@ -464,10 +469,10 @@ PROMPT;
             'event_type' => 'itinerary',
             'llm_provider' => $llm?->provider ?? 'openai',
             'llm_model' => $llm?->model ?? 'none',
-            'tokens_input' => $llm?->inputTokens ?? 0,
-            'tokens_output' => $llm?->outputTokens ?? 0,
-            'tokens_total' => $llm?->totalTokens ?? 0,
-            'cost_usd' => $llm?->costUsd ?? 0,
+            'tokens_input' => max($llm?->inputTokens ?? 0, $spent['in']),
+            'tokens_output' => max($llm?->outputTokens ?? 0, $spent['out']),
+            'tokens_total' => max($llm?->totalTokens ?? 0, $spent['in'] + $spent['out']),
+            'cost_usd' => max($llm?->costUsd ?? 0, $spent['cost']),
             'latency_ms' => $itinerary['metadata']['response_time_ms'] ?? 0,
             'cache_hit' => false,
             'beaches_fetched' => $itinerary['metadata']['candidates_considered'] ?? 0,

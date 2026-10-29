@@ -310,9 +310,8 @@ class ChatControllerTest extends TestCase
     public function circuit_breaker_triggers_503()
     {
         // Set daily cost to exceed free tier limit (circuit breaker middleware blocks before LLM call)
-        $today = now()->format('Y-m-d');
-        $cacheKey = "ai:circuit_breaker:daily_cost:free:{$today}";
-        Cache::put($cacheKey, 600.00, now()->endOfDay());
+        $cacheKey = \App\Services\AI\AiDailySpend::cacheKey('free');
+        Cache::put($cacheKey, 600.00, 300);
 
         // No need to mock LLM - middleware will block the request
         $response = $this->postJson('/api/v1/ai/chat', [
@@ -322,10 +321,12 @@ class ChatControllerTest extends TestCase
         $response->assertStatus(503);
         $response->assertJson([
             'error' => 'service_unavailable',
+            'reason' => 'daily_limit',
         ]);
 
         $response->assertJsonStructure([
             'error',
+            'reason',
             'message',
             'retry_after',
         ]);
