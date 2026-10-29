@@ -369,7 +369,7 @@ namespace App\Swagger\Schemas;
  *     @OA\Property(property="file_name", type="string", example="hr-6-o-hvar-sl3.jpg"),
  *     @OA\Property(property="url", type="string", example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative media path without CDN/domain prefix. Frontend should prepend its own base URL or CDN."),
  *     @OA\Property(property="thumbnail_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/hr-6-o-hvar-sl3.jpg", description="Relative thumbnail path (same as url for now)."),
- *     @OA\Property(property="tour_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/vtour/tour.html", description="Virtual tour HTML path for 360 spheres (present only for spheres_360 collection)."),
+ *     @OA\Property(property="tour_url", type="string", nullable=true, example="img/beaches/hr-6-o-hvar/vtour/tour.html", description="Virtual tour HTML path for 360 spheres (spheres_360 only). Null when the tour was never generated: show the panorama in `url` in an own 360° viewer instead."),
  *     @OA\Property(property="mime_type", type="string", example="image/jpeg"),
  *     @OA\Property(property="width", type="integer", nullable=true, example=1920),
  *     @OA\Property(property="height", type="integer", nullable=true, example=1080),

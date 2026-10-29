@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\BeachGallery;
+use App\Support\SphereTour;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BeachResource extends JsonResource
@@ -119,7 +120,7 @@ class BeachResource extends JsonResource
             $mainImage ??= $gallery[0]['url'] ?? null;
 
         // Format videos - only essential fields, sorted by is_primary DESC, then order ASC
-        $videos = $mediaByCollection->get('beach_videos', collect())
+        $videos = BeachGallery::videos($mediaByCollection)
             ->sortBy([
                 fn($a, $b) => $b->is_primary <=> $a->is_primary,  // Primary first (DESC)
                 fn($a, $b) => $a->order <=> $b->order,             // Then by order (ASC)
@@ -138,11 +139,8 @@ class BeachResource extends JsonResource
         // uploads use img/beaches/. Using the wrong base folder caused the 360°
         // tour to 404 on mobile-uploaded beaches (e.g. Albania beaches).
         $spheres360Collection = $mediaByCollection->get('beach_360_sphere', collect());
-        $vtourUrl = null;
-        if ($this->folder_name && $spheres360Collection->isNotEmpty()) {
-            $baseFolder = $this->mobile_upload ? 'beaches_mobile' : 'beaches';
-            $vtourUrl = "img/{$baseFolder}/{$this->folder_name}/vtour/tour.html";
-        }
+        // Lists never ask storage: a tour known to be missing (beach.has_vtour = false) is left out (owner 2026-10-29).
+        $vtourUrl = $spheres360Collection->isNotEmpty() ? SphereTour::url($this->resource) : null;
 
         $spheres360 = [];
         if ($vtourUrl) {

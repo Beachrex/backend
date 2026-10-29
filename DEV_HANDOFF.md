@@ -52,6 +52,30 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Fix: 360° without a generated tour, videos inside the gallery (mobile uploads)
+
+**Owner report (dev, 2026-10-29):** Plage du Port Vieux (3247) — black "360° view" popup; also a `…-video.mp4` in the
+gallery shown as a broken photo and no "Video" card.
+
+**Findings:** the beach has its panorama but the krpano tour was never generated (checked all 2815 beaches with a
+panorama on dev: only this one is missing). 12 beaches have video files in the gallery collection.
+
+**Changes:**
+- `beach.has_vtour` (migration `2026_10_29_100000`; null = not checked). `App\Support\SphereTour`: beach details ask
+  storage once per unchecked beach and store the answer; a tour counts as missing only when the panorama next to it
+  is found (the disk does not throw, so unreachable storage never marks tours missing). Lists and map cards never ask
+  storage; they leave out a tour known to be missing.
+- `media:check-vtours [--all] [--dry-run]`, scheduled daily 04:40 (unchecked) and Sundays 04:50 (`--all`).
+- `BeachGallery::videos()` / `isVideo()` (MIME `video/*` or extension, MIME can be wrong on mobile uploads): video
+  files in photo collections move from `gallery` to `videos` in beach details, lists and map cards.
+- OpenAPI: `tour_url` null meaning; admin guide `mediji.md` + index row.
+
+**Affected endpoints:** `GET /api/v1/beach-details/{id}` (`spheres_360[].tour_url` can be null, `gallery` without video
+files, `videos` includes them), `GET /api/v1/beaches`, map/nearby endpoints (same media rules). No field added or removed.
+
+**Testing:** `MobileUploadMediaTest` 6 tests (against the old resources: 4 failed). Full suite: 716 tests, only the 4
+known API-key failures. Website part (panorama viewer, `<video>` for uploaded files): Beachrex/web-client follow-up PR.
+
 ## 2026-10-29 - TASK-009: AI guide on/off in admin (System → Site settings)
 
 **Owner request (2026-10-29):** switch the AI guide off on prod until Stripe is set up and the guide is tested.

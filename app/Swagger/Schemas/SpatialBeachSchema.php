@@ -56,7 +56,7 @@ namespace App\Swagger\Schemas;
  *             description="360-degree sphere tours (only present if beach has 360 degree spheres)",
  *             @OA\Items(
  *                 type="object",
- *                 @OA\Property(property="tour_url", type="string", example="img/beaches/br-1-copacabana/vtour/tour.html", description="URL to 360 degree virtual tour")
+ *                 @OA\Property(property="tour_url", type="string", example="img/beaches/br-1-copacabana/vtour/tour.html", description="URL to 360 degree virtual tour. spheres_360 is empty when the beach is known to have no generated tour.")
  *             )
  *         ),
  *         @OA\Property(

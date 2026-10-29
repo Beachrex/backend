@@ -28,13 +28,48 @@ class BeachGallery
      */
     public static function pick(Collection $mediaByCollection): Collection
     {
-        $gallery = $mediaByCollection->get(self::COLLECTION, collect());
+        $gallery = self::photos($mediaByCollection->get(self::COLLECTION, collect()));
         if ($gallery->isNotEmpty()) {
             return $gallery;
         }
 
         return collect(self::FALLBACK_COLLECTIONS)
-            ->flatMap(fn (string $code) => $mediaByCollection->get($code, collect()))
+            ->flatMap(fn (string $code) => self::photos($mediaByCollection->get($code, collect())))
             ->values();
+    }
+
+    /**
+     * Videos of a beach: the `beach_videos` collection plus video files that were uploaded into a photo collection
+     * (mobile app, e.g. Plage du Port Vieux: `…-video.mp4` in the gallery showed as a broken photo; owner 2026-10-29).
+     */
+    public static function videos(Collection $mediaByCollection): Collection
+    {
+        $misfiled = collect([self::COLLECTION, ...self::FALLBACK_COLLECTIONS])
+            ->flatMap(fn (string $code) => $mediaByCollection->get($code, collect())->filter(fn ($m) => self::isVideo($m)));
+
+        return $mediaByCollection->get('beach_videos', collect())->concat($misfiled)->values();
+    }
+
+    /** A video file by MIME type or by extension (mobile uploads can carry a wrong MIME type). */
+    public static function isVideo(mixed $media): bool
+    {
+        if (!is_object($media)) {
+            return false;
+        }
+        if (str_starts_with(strtolower((string) ($media->mime_type ?? '')), 'video/')) {
+            return true;
+        }
+        foreach (['url', 'file_path', 'file_name'] as $field) {
+            if (preg_match('/\.(mp4|m4v|mov|webm|ogv)$/i', (string) ($media->{$field} ?? ''))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function photos(Collection $items): Collection
+    {
+        return $items->reject(fn ($m) => self::isVideo($m))->values();
     }
 }
