@@ -89,7 +89,7 @@ bugfix/xxx  ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
 2. **Deploy job** (po uspešnem testu):
    - `rsync` kode na `/opt/beachrex/api_{env}/` (npr. `api_dev/`, `api_uat/`, `api_prod/`)
    - `rsync` deploy datotek na `/opt/beachrex/deploy/` (skupno)
-   - `docker compose build` + `up -d` + `migrate` + `cache:clear`
+   - brez izpada (ADR 2026-10-29): `deploy/scripts/api-rollout.sh <env>` — build, drugi `api_<env>` kontejner ob starem, `migrate` + `config:cache` + `route:cache` + `cache:clear` v novem, nato se stari ustavi; `web_<env>` ostane (samo reload). Runbook `docs/runbooks/zero-downtime-deploys.md`
    - **Samodejni rebuild MCP serverja** (če obstaja `mcp-server/package.json`)
    - Reload host Nginx
 
@@ -109,7 +109,8 @@ bugfix/xxx  ──PR──▶ dev ──PR──▶ uat ──PR──▶ main
 1. **Deploy job** (brez test joba):
    - `rsync` kode na `/opt/beachrex/front_{env}/` (npr. `front_dev/`, `front_uat/`, `front_prod/`)
    - `docker compose build` z `--env-file` za **oba** env file (backend `.env.{env}` + frontend `.env.front.{env}`), da se `NEXT_PUBLIC_*` variable pravilno substituirajo v `build.args`
-   - `docker compose up -d --force-recreate`
+   - brez izpada (ADR 2026-10-29): `deploy/scripts/front-deploy.sh <env>` — blue/green (`front_<env>` ↔ `front_<env>_green`),
+     preklop v host Nginx z graceful reload; runbook `docs/runbooks/zero-downtime-deploys.md`
    - Reload host Nginx
 
 > **Kritično:** `NEXT_PUBLIC_*` env variable se v Next.js inline-a ob **build time**, ne runtime. Zato mora `docker-compose.vps.yml` vsebovati `build.args` sekcijo za vsak `front_*` service, ki sklicuje `${NEXT_PUBLIC_*}`. Frontend workflow naloži oba env file preko `--env-file`, da compose lahko substituira te variable. Brez tega bi vsi frontend kontejnerji uporabljali fallback `http://localhost:8000` kot API URL.

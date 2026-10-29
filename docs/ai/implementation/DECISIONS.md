@@ -1387,3 +1387,44 @@ keeps them out of search engines). They show unreleased work and spend AI budget
 protect the API (by design), nor the public files the middleware never sees (sitemaps list dev URLs, but the pages
 behind them are closed). Testers without an admin account need their address in `PREVIEW_ALLOWED_EMAILS`. The
 sandbox cannot reach dev/uat: the live check (mail arrives, link opens the site) is the owner's.
+
+---
+
+## [2026-10-29] Zero-downtime deploys: website blue/green, API rolling replacement
+
+**Context**: beachrex.com went live on 2026-10-29. Every website deploy recreated `front_<env>` in place
+(`up -d --force-recreate`), so Next.js did not listen for a few seconds and Cloudflare showed "502 Bad Gateway"
+(owner got one at 20:27:23 UTC during prod run 40948577676). The API deploy recreated `web_<env>` (nginx) and,
+through `depends_on`, `api_<env>` (PHP-FPM): the same gap for the API. The image was already built before the
+recreate, so the gap was the container swap itself. Owner: "uredi".
+
+**Decision**:
+1. **Website: blue/green per environment.** `front_<env>` (blue, ports 3001/3002/3003) stays the normal container;
+   new `front_<env>_green` (3011/3012/3013, compose profile `green`, same image) runs only during a deploy.
+   `deploy/scripts/front-deploy.sh` builds, starts the idle color, waits for the new `GET /api/health` (web-client),
+   warms the main pages (ISR cache is per container), switches host nginx with a graceful reload, refreshes blue the
+   same way and stops green. **The end state is always blue**, so every older nginx config and compose file (which
+   only know blue) stays correct — important because `deploy/` is shared by all branches.
+2. **Switch = state file + reload**, not a stateless two-server upstream: `/opt/beachrex/nginx-state/front_<env>.conf`
+   (outside the `--delete`-synced `deploy/`) sets `$beachrex_front_pool` to the green upstream; it is included with a
+   glob, so a missing file/dir is valid nginx and means blue. A reload drains the old color precisely; a stateless
+   pool would also send requests to a container that is still starting (docker-proxy accepts, then resets) and would
+   log a refused connection every few seconds in steady state. Each upstream still has the other color as `backup`,
+   so a wrong or stale state file degrades to the other color instead of a 502.
+3. **API: rolling replacement, not blue/green.** `deploy/scripts/api-rollout.sh` scales `api_<env>` to two
+   containers (`--no-recreate`, new one has the new image), runs migrations/caches in the new one, waits out
+   web's 10 s DNS cache and stops the old one gracefully. `web_<env>` already resolves `api_<env>` per request;
+   new `fastcgi_connect_timeout 1s` + `fastcgi_next_upstream error timeout` retry the other address. `web_<env>` is
+   no longer recreated: `api.<env>.conf` is synced `--inplace` and reloaded (recreated only if the mounted file is
+   stale). No second port, no host nginx change for the API.
+4. **Proof built in:** both scripts probe their health URL through host nginx every 0.2 s and fail the run if any
+   request got no answer or a 5xx.
+5. Rollback = revert + redeploy (zero-downtime too); no previous-version container is kept (memory on the 8 GB VPS,
+   and a simpler state model). Emergency color switch by hand is in the runbook.
+
+**Consequences**: a website deploy takes ~30–60 s longer (two starts + warm-ups) and briefly runs two Next.js
+servers per environment. API container names become `deploy-api_<env>-N`. The backend must be promoted to all
+branches before the web-client change (runbook "Promotion order"). Runbook: `docs/runbooks/zero-downtime-deploys.md`.
+Local proof (sandbox, real nginx 1.24 + Docker, fake servers with the same start/stop behaviour, 12 concurrent
+GET/POST clients): blue/green 0 failed of 625; API rollout 0 failed of 744; the old in-place recreate under the
+same load: ~100 000 × 502 (website), 1 782 × 502 (API).

@@ -20,9 +20,15 @@
 #   docker compose -f deploy/docker-compose.vps.yml --env-file envs/.env.prod up -d
 #
 # Internal ports (NOT exposed publicly; host Nginx proxies 80/443):
-#   prod:  nginx 8081 | front 3001 | redis DB 0 | pgsql beachrex_prod
-#   uat:   nginx 8082 | front 3002 | redis DB 1 | pgsql beachrex_uat
-#   dev:   nginx 8083 | front 3003 | redis DB 2 | pgsql beachrex_dev
+#   prod:  nginx 8081 | front 3001 (green 3011) | redis DB 0 | pgsql beachrex_prod
+#   uat:   nginx 8082 | front 3002 (green 3012) | redis DB 1 | pgsql beachrex_uat
+#   dev:   nginx 8083 | front 3003 (green 3013) | redis DB 2 | pgsql beachrex_dev
+#
+# Zero-downtime deploys (ADR 2026-10-29, runbook docs/runbooks/zero-downtime-deploys.md):
+#   - website: blue/green. front_<env> (blue) is the normal container; front_<env>_green runs only while a
+#     deploy switches traffic (deploy/scripts/front-deploy.sh). Host nginx picks the color.
+#   - API: deploy/scripts/api-rollout.sh starts a second api_<env> container next to the old one, then retires
+#     the old one; web_<env> (nginx) keeps running and retries the other container.
 
 # Docker log rotation for app containers (json-file grows without limit by default).
 # Not applied to the shared pgsql/redis services: changing their config would
@@ -32,6 +38,15 @@ x-logging: &default-logging
   options:
     max-size: "10m"
     max-file: "5"
+
+# Liveness of a Next.js website container (web-client src/app/api/health: no API call, no page render).
+# Next.js standalone listens on the container's hostname, not on 127.0.0.1.
+x-front-healthcheck: &front-healthcheck
+  test: ["CMD-SHELL", "wget -q -O /dev/null http://$${HOSTNAME}:$${PORT}/api/health || exit 1"]
+  interval: 10s
+  timeout: 3s
+  retries: 3
+  start_period: 30s
 
 services:
   # ===================== SHARED DATA SERVICES =====================
@@ -158,8 +173,27 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
+      BEACHREX_COLOR: blue
     networks: [net_prod]
     ports: ["127.0.0.1:3001:3001"]
+    healthcheck: *front-healthcheck
+
+  front_prod_green:
+    # Blue/green partner of front_prod (ADR 2026-10-29): same image, own port, runs only during a website
+    # deploy (deploy/scripts/front-deploy.sh). The profile keeps a plain `docker compose up -d` from starting it.
+    profiles: [green]
+    logging: *default-logging
+    image: beachrex/front:prod
+    pull_policy: never
+    restart: unless-stopped
+    env_file: [../envs/.env.front.prod]
+    environment:
+      NODE_ENV: production
+      PORT: "3011"
+      BEACHREX_COLOR: green
+    networks: [net_prod]
+    ports: ["127.0.0.1:3011:3011"]
+    healthcheck: *front-healthcheck
 
   # ===================== UAT =====================
   api_uat:
@@ -251,8 +285,27 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3002"
+      BEACHREX_COLOR: blue
     networks: [net_uat]
     ports: ["127.0.0.1:3002:3002"]
+    healthcheck: *front-healthcheck
+
+  front_uat_green:
+    # Blue/green partner of front_uat (ADR 2026-10-29): same image, own port, runs only during a website
+    # deploy (deploy/scripts/front-deploy.sh). The profile keeps a plain `docker compose up -d` from starting it.
+    profiles: [green]
+    logging: *default-logging
+    image: beachrex/front:uat
+    pull_policy: never
+    restart: unless-stopped
+    env_file: [../envs/.env.front.uat]
+    environment:
+      NODE_ENV: production
+      PORT: "3012"
+      BEACHREX_COLOR: green
+    networks: [net_uat]
+    ports: ["127.0.0.1:3012:3012"]
+    healthcheck: *front-healthcheck
 
   # ===================== DEV =====================
   api_dev:
@@ -344,8 +397,27 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3003"
+      BEACHREX_COLOR: blue
     networks: [net_dev]
     ports: ["127.0.0.1:3003:3003"]
+    healthcheck: *front-healthcheck
+
+  front_dev_green:
+    # Blue/green partner of front_dev (ADR 2026-10-29): same image, own port, runs only during a website
+    # deploy (deploy/scripts/front-deploy.sh). The profile keeps a plain `docker compose up -d` from starting it.
+    profiles: [green]
+    logging: *default-logging
+    image: beachrex/front:dev
+    pull_policy: never
+    restart: unless-stopped
+    env_file: [../envs/.env.front.dev]
+    environment:
+      NODE_ENV: development
+      PORT: "3013"
+      BEACHREX_COLOR: green
+    networks: [net_dev]
+    ports: ["127.0.0.1:3013:3013"]
+    healthcheck: *front-healthcheck
 
 networks:
   net_prod:  { driver: bridge }
