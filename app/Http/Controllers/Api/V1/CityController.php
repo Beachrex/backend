@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CityResource;
 use App\Models\City;
 use App\Services\CacheService;
+use App\Support\PublishedBeachCounts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -324,6 +325,9 @@ class CityController extends Controller
 
                 // Get next and previous cities
                 $navigation = $this->getNavigationCities($city, $locale);
+
+                // Parent levels' published beach counts for the location pill tabs.
+                PublishedBeachCounts::loadOnParents($city, ['country', 'country.continent', 'region', 'island']);
 
                 $resource = new CityResource($city);
                 $resourceArray = $resource->toArray($request);

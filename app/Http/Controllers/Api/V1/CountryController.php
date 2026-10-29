@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CountryResource;
 use App\Models\Country;
 use App\Services\CacheService;
+use App\Support\PublishedBeachCounts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -264,6 +265,9 @@ class CountryController extends Controller
 
                 // Get next and previous countries
                 $navigation = $this->getNavigationCountries($country, $locale);
+
+                // Parent levels' published beach counts for the location pill tabs.
+                PublishedBeachCounts::loadOnParents($country, ['continent']);
 
                 $resource = new CountryResource($country);
                 $resourceArray = $resource->toArray($request);
