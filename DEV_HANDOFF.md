@@ -52,6 +52,27 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Watermark PNG for mobile-app photos (`media:publish-watermark`)
+
+**Owner request (2026-10-29):** photos uploaded from the mobile app have no Beachrex logo; add it. ADR 2026-10-29
+"Watermark mobile-app photos on the fly".
+
+**Changes:**
+- `resources/watermark/beachrex-watermark-v1.png` (808×260, transparent; white horizontal logo + "www.beachrex.com",
+  soft shadow) and its generator `resources/watermark/make_watermark.py`.
+- `App\Support\Watermark` (source file, Imagor path `img/watermark/beachrex-watermark-v1.png`, bucket key under `public/`).
+- Command `media:publish-watermark {--disk=spaces}`: uploads the PNG with public visibility only if the key is missing;
+  never overwrites; fails when the (non-throwing) spaces disk refuses the write.
+- `.github/workflows/deploy.yml`: runs `media:publish-watermark` after `cache:clear` on every deploy (not fatal: a
+  failure is a workflow warning; the next deploy retries).
+- The website adds Imagor's `watermark` filter to mobile-app photo URLs (Beachrex/web-client, same date).
+- Admin guide `docs/guides/admin/mediji.md`: section "Logotip na fotografijah iz mobilne aplikacije".
+
+**Affected endpoints:** none (no API change).
+
+**Testing:** `PublishWatermarkTest` (4 tests: asset is a transparent PNG; upload when missing, public, same bytes;
+second run never overwrites; write refused → failure). Deliberate break (no existence check, no write check): 2 fail.
+
 ## 2026-10-29 - TASK-009: AI guide on/off in admin (System → Site settings)
 
 **Owner request (2026-10-29):** switch the AI guide off on prod until Stripe is set up and the guide is tested.
