@@ -164,6 +164,20 @@ Zbirka pove, kje na strani se medij prikaže: **Beach Gallery**, **Beach Videos*
 Stolpci seznama: **Code**, **Name**, **Media count**, **Max items**, **Status**.
 Tudi te omejitve preverja samo nalaganje prek API, ne admin.
 
+## Logotip na fotografijah iz mobilne aplikacije
+
+Fotografije, naložene v adminu, imajo logotip Beachrex že vpisan v datoteko (spodaj desno). Fotografije, naložene
+iz mobilne aplikacije (mapa `img/beaches_mobile/`), ga nimajo. Od 29. 10. 2026 spletna stran logotip na te
+fotografije **doda ob prikazu** (Imagor): bel logotip in »www.beachrex.com« spodaj desno, širok do 20 % slike.
+
+- Originalna datoteka na Spaces se **ne spremeni**; v adminu (**Preview**) in v originalu logotipa ni.
+- Logotip se pokaže povsod na spletni strani: kartice, pasica, galerija, zemljevid, iskanje, slika ob deljenju
+  povezave (Facebook, X …) in podatki za Google.
+- Ne dobijo ga: fotografije iz admina (že imajo logotip), ikone, videi in 360° panorame.
+- Za to ne narediš ničesar. Datoteko z logotipom (`img/watermark/beachrex-watermark-v1.png`) naloži vsak deploy sam,
+  če je še ni.
+- Mobilna aplikacija in AI povezovalnik (MCP) slike prikazujeta po svoje — tam logotipa (še) ni.
+
 ## Avtorske pravice v fotografijah (IPTC)
 
 Fotografije na Beachrex so delo podjetja MOJA PLAŽA, d.o.o. (pogoji uporabe §6). Ob nalaganju z vklopljenim
@@ -215,6 +229,7 @@ datoteko, ki je ni.
 | Datoteka je prevelika | največ 10 MB; pomanjšaj fotografijo pred nalaganjem |
 | Fotografija je izginila tudi na drugem okolju | izbrisana je bila na dev/uat/prod — Spaces je skupen |
 | Sprememba se na strani ne vidi | stran se osveži v največ 1 uri; po potrebi `cache:clear-api --type=all` ([splosno.md](splosno.md)) |
+| Na fotografiji iz mobilne aplikacije ni logotipa | stran se osveži v največ 1 uri; če ga ni niti potem, sporoči razvijalcu (datoteka logotipa na Spaces, deploy korak `media:publish-watermark`) |
 | **Preview** je prazen | ni jasno iz kode — preveri (naslov predogleda v adminu je odvisen od `DO_SPACES_CDN_ENDPOINT_ADMIN`) |
 
 ## Za razvijalce
@@ -223,7 +238,8 @@ Nalaganje: `app/Filament/BrAdmin/Resources/BeachResource/RelationManagers/MediaR
 Viri: `MediaResource`, `MediaTypeResource`, `MediaCollectionResource` (+ `Pages/`). Model `App\Models\Media`
 (brisanje izbriše datoteko na disku). ASCII poti: TASK-002, `App\Support\AsciiPath`,
 `App\Models\Traits\HasAsciiPaths`, ozadje `docs/runbooks/ascii-storage-paths.md`. IPTC: `App\Support\ImageCopyright`,
-ukaz `app/Console/Commands/EmbedImageCopyright.php`. Galerija in glavna slika v API: `App\Http\Resources\BeachResource`,
+ukaz `app/Console/Commands/EmbedImageCopyright.php`. Logotip na fotografijah iz mobilne aplikacije: ADR 2026-10-29,
+`App\Support\Watermark`, ukaz `media:publish-watermark` (deploy), spletna stran `buildCdnUrl` v `beach-images.ts`. Galerija in glavna slika v API: `App\Http\Resources\BeachResource`,
 `App\Support\BeachGallery`. Odprto: `HANDOFF.md` → »Copyright backfill«.
 
 ## 360° ogledi in videi iz mobilne aplikacije (od 2026-10-29)
