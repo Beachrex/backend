@@ -429,4 +429,69 @@ class BeachDetailsApiTest extends TestCase
         $this->postJson('/api/v1/beaches/abc/view')->assertNotFound();
         $this->assertSame(0, (int) $inactive->fresh()->beach_views);
     }
+
+    public function test_location_levels_include_published_beach_counts()
+    {
+        Country::create(['code' => 'IT', 'continent_code' => 'EU']);
+
+        $make = function (string $slug, array $place, int $status = 1): Beach {
+            $beach = Beach::create(array_merge([
+                'latitude' => '44.9522',
+                'longitude' => '14.4606',
+                'continent_code' => 'EU',
+                'status_id' => $status,
+                'folder_name' => $slug,
+                'mobile_upload' => false,
+            ], $place));
+            BeachTranslation::create(['beach_id' => $beach->id, 'locale' => 'en', 'name' => $slug, 'slug' => $slug]);
+
+            return $beach;
+        };
+
+        $full = ['country_code' => 'HR', 'region_id' => 1, 'island_id' => 1, 'city_id' => 1];
+        $make('count-target', $full);
+        $make('count-sibling', $full);
+        $make('count-region-only', ['country_code' => 'HR', 'region_id' => 1]);
+        $make('count-other-country', ['country_code' => 'IT']);
+        // Unpublished beaches in every level: never counted.
+        $make('count-unpublished', $full, 2);
+
+        $response = $this->getJson('/api/v1/beach-details/count-target', ['Accept-Language' => 'en']);
+
+        $response->assertOk()
+            ->assertJsonPath('data.location.continent.beaches_count', 4)
+            ->assertJsonPath('data.location.country.beaches_count', 3)
+            ->assertJsonPath('data.location.region.beaches_count', 3)
+            ->assertJsonPath('data.location.island.beaches_count', 2)
+            ->assertJsonPath('data.location.city.beaches_count', 2);
+
+        foreach (['continent', 'country', 'region', 'island', 'city'] as $level) {
+            $this->assertIsInt($response->json("data.location.{$level}.beaches_count"), $level);
+        }
+    }
+
+    public function test_location_without_island_or_city_has_no_count_for_those_levels()
+    {
+        $beach = Beach::create([
+            'latitude' => '44.9522',
+            'longitude' => '14.4606',
+            'continent_code' => 'EU',
+            'country_code' => 'HR',
+            'region_id' => 1,
+            'status_id' => 1,
+            'folder_name' => 'mainland-beach',
+            'mobile_upload' => false,
+        ]);
+        BeachTranslation::create(['beach_id' => $beach->id, 'locale' => 'en', 'name' => 'Mainland', 'slug' => 'mainland-beach']);
+
+        $response = $this->getJson('/api/v1/beach-details/mainland-beach', ['Accept-Language' => 'en']);
+
+        $response->assertOk()
+            ->assertJsonPath('data.location.region.beaches_count', 1)
+            ->assertJsonPath('data.location.country.beaches_count', 1);
+        $this->assertEmpty($response->json('data.location.island'));
+        $this->assertEmpty($response->json('data.location.city'));
+        $response->assertJsonMissingPath('data.location.island.beaches_count')
+            ->assertJsonMissingPath('data.location.city.beaches_count');
+    }
 }

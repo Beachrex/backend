@@ -52,6 +52,27 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Beach details: published beach count per location level
+
+### Overview
+`location.continent|country|region|island|city` in the beach details response now carry `beaches_count`: the number of published beaches (`status_id = 1`) in that place, the same count its place page shows. The web client shows it in the location pill tabs on the beach banner ("Beaches: 1167").
+
+### Changes Made
+- `app/Http/Resources/BeachDetailsResource.php`: `publishedBeachCount()` helper; `beaches_count` on each location level (absent levels stay absent).
+- `app/Swagger/Schemas/BeachDetailsSchema.php` + regenerated `storage/api-docs/api-docs.json`.
+- `tests/Feature/BeachDetailsApiTest.php`: counts per level, unpublished beaches not counted, levels without an island/city have no count.
+
+### Cache
+Beach details are cached per beach and locale for 8 h (`CacheService::BEACH_DETAILS_TTL`). The counts are computed only on a cache miss, so after a beach is published or unpublished, the counts on *other* beaches' pages refresh within 8 h (saving a beach clears only its own cache). No command is needed. Cost on a miss: five `COUNT(*)` queries.
+
+### Affected Endpoints
+- `GET /api/v1/beach-details/{identifier}` - new `location.*.beaches_count` (additive, non-breaking).
+
+### Testing
+`php artisan test --filter='BeachDetails|SyncStaticPages'`
+
+---
+
 ## 2026-10-29 - Footer pages: share capital removed
 
 Owner, 2026-10-29: the share capital is not shown on the site (not confirmed, not needed). Removed from `about-us` (company details) and `contact` in all 19 locales (`database/content/static-pages/*.json`). Test `SyncStaticPagesTest::test_company_details_are_complete_and_not_vat_registered` now checks that no page shows it.
