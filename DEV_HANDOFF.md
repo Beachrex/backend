@@ -52,6 +52,29 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - TASK-009 amended: separate admin switches for AI chat and the AI trip planner
+
+**Owner (2026-10-29):** hide the paid trip planner, not the chat; switch either or both in admin. He will switch only
+the trip planner off on prod.
+
+### Changes
+- `site_settings` key `ai_assistant_enabled` now means **AI chat**; new key `ai_trip_planner_enabled` (default on,
+  idempotent migration `2026_10_29_150000_add_ai_trip_planner_enabled_site_setting`), `SiteSetting::aiTripPlannerEnabled()`.
+- New middleware `App\Http\Middleware\EnsureAiTripPlannerEnabled` → 503 `{"error":"ai_trip_planner_disabled"}`.
+- Admin System → Site settings: two toggles "AI chat" and "AI trip planner (paid)".
+- ADR 2026-10-29 (TASK-009) amended; admin guide `docs/guides/admin/nastavitve-strani.md` updated.
+
+### Affected Endpoints
+- `GET /api/v1/site-settings` → `data: {ai_assistant_enabled, ai_trip_planner_enabled}` (additive).
+- Chat switch (503 `ai_disabled`): `POST /api/v1/ai/chat`, `POST /api/v1/ai/test`.
+- Planner switch (503 `ai_trip_planner_disabled`): `POST /api/v1/ai/itineraries`, `POST /api/v1/ai/itinerary-plans`,
+  `GET /api/v1/payments/products` (new: was never gated), `POST /api/v1/payments/stripe/checkout` (was `ai_disabled`).
+- Never gated: `POST /api/v1/payments/stripe/webhook`, `GET /api/v1/me/entitlements`, `GET /api/v1/me/itinerary-plans[/{id}]`.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/SiteSettingsAiSwitchTest.php` (each switch closes only its own routes, both off,
+settings shape, idempotent migration, admin page 302/403).
+
 ## 2026-10-29 - nginx: HTTPS for beachrex.com (prod launch D3)
 
 - `deploy/nginx/beachrex.conf`: the HTTP-only placeholder for `beachrex.com` / `www.beachrex.com` is replaced by

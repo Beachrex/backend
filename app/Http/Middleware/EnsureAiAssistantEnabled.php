@@ -8,8 +8,9 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * TASK-009: the admin switch "AI guide on" (System → Site settings). Off → every AI route and the purchase of AI
- * credits answer 503 `ai_disabled`, for the website and the mobile app alike.
+ * TASK-009: the admin switch "AI chat" (System → Site settings, key `ai_assistant_enabled`). Off → the chat routes
+ * answer 503 `ai_disabled`, for the website and the mobile app alike. The trip planner has its own switch
+ * ({@see EnsureAiTripPlannerEnabled}).
  */
 class EnsureAiAssistantEnabled
 {
@@ -18,7 +19,7 @@ class EnsureAiAssistantEnabled
         if (!SiteSetting::aiAssistantEnabled()) {
             return response()->json([
                 'error' => 'ai_disabled',
-                'message' => 'The AI beach guide is currently turned off.',
+                'message' => 'The AI beach chat is currently turned off.',
                 'retry_after' => null,
             ], 503);
         }
