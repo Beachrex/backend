@@ -52,6 +52,13 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Docs: environment files inventory (names only)
+
+- New `docs/runbooks/environment-variables.md`: which env vars differ between dev/uat/prod on purpose (backups prod only,
+  Turnstile prod only, preview gate dev/uat only, per-env `SESSION_COOKIE`), known gaps (`OPEN_METEO_API_KEY` set
+  nowhere — needed before commercial use), the prod values checked on launch day, and the names-only comparison script.
+- `docs/HANDOFF.md` Open-Meteo owner action points to it.
+
 ## 2026-10-29 - AI chat retention (180 days) + privacy and cookie policy update
 
 ### Overview
