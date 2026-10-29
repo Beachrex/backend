@@ -43,3 +43,12 @@ Schedule::command('media:check-vtours')
 Schedule::command('media:check-vtours --all')
     ->weeklyOn(0, '04:50')
     ->withoutOverlapping();
+
+// AI chat retention (owner 2026-10-29, "hramba chatov ok"): conversations whose last activity is older than
+// AI_CHAT_RETENTION_DAYS (180) are deleted with their messages; ai_usage keeps the cost without the session link.
+// Night in Slovenia, before the backup (02:30 UTC) and the webcam/media jobs.
+Schedule::command('ai:prune-conversations')
+    ->dailyAt('01:40')
+    ->timezone('Europe/Ljubljana')
+    ->withoutOverlapping()
+    ->when(fn () => (int) config('ai.chat.retention_days') > 0);
