@@ -52,6 +52,56 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - AI chat retention (180 days) + privacy and cookie policy update
+
+### Overview
+Owner (2026-10-29): "Hramba chatov ok" (the proposed 180 days) and "Dopolni politiko". ADR "AI chat history in the
+admin" amended. Chat conversations are now deleted automatically 180 days after their last activity; the privacy and
+cookie policies (static pages, all 19 languages) describe what shipped on 2026-10-29: chats stored and reviewed,
+180-day retention, Anthropic (+ OpenAI for some features), Cloudflare Turnstile, Microsoft Clarity.
+
+### Changes
+- `app/Console/Commands/PruneAiConversations.php` — `php artisan ai:prune-conversations [--days=] [--chunk=200]
+  [--dry-run]`. A session is expired when `last_activity_at` (or `created_at` if null) is older than the cutoff **and**
+  it has no message at/after the cutoff. Per chunk of sessions, in one transaction: `ai_usage` rows of those sessions
+  keep time/model/tokens/cost but get `session_id`, `ip_address`, `user_agent` = NULL; `ai_messages` deleted;
+  `ai_sessions` deleted. Query builder only (no model events), logs counts only (`ai:prune-conversations` info line,
+  no chat text). `--days` < 1 or not an integer → error, nothing deleted. Never touches `purchases`,
+  `user_entitlements`, `itinerary_plans` or users.
+- `config/ai.php` `chat.retention_days` = `AI_CHAT_RETENTION_DAYS` (default 180; 0 = scheduled job off); `.env.example`.
+- `routes/console.php`: daily at 01:40 Europe/Ljubljana, `withoutOverlapping`, skipped when retention is 0.
+- `database/content/static-pages/{19 locales}.json` — `privacy-policy` and `cookie-policy` content (titles, slugs and
+  meta unchanged): AI section rewritten (providers Anthropic + OpenAI for some features such as the trip planner; what
+  is stored: questions, answers, page, language, time, browser type, account if signed in; reviewed by staff to
+  improve the service, legitimate interest; 180 days; earlier deletion on request to info@beachrex.com; cost records
+  without content; trip plans stored in the account; Cloudflare Turnstile as a necessary security check), cookie
+  paragraph + cookie policy name Microsoft Clarity (session recordings, heatmaps, consent only, cookies `_clck`,
+  `_clsk`, `CLID`, `MUID`, `ANONCHK`, `SM`), processors list adds Anthropic, Cloudflare, Microsoft, retention section
+  adds the 180 days, "last updated" 29 October 2026. Applied to a database only by `static-pages:sync` (owner).
+- Docs: `docs/ai/architecture/data-retention-policy.md` (rewritten to match the code), admin guide
+  `docs/guides/admin/ai-pogovori.md` (+ README command row), ADR amendment, HANDOFF.
+
+### Affected Endpoints
+None. `GET /api/v1/static-pages/{slug}` returns the new text once the owner runs `static-pages:sync` on an environment.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AI/PruneAiConversationsTest.php` (10 tests: 180 days ± 1 h boundary, messages
+deleted, usage cost kept and unlinked with IP hash/UA cleared, dry run changes nothing, trip-planner data and user
+untouched, recent message keeps a stale session, null `last_activity_at`, chunking, `--days`/config, invalid days
+refused, schedule 01:40 Europe/Ljubljana and off at 0). Deliberate break (dry run ignored / recent-message guard
+removed / `--days=0` allowed) → 3 failures. `SyncStaticPagesTest` validates the 19 content files.
+
+### Owner: apply the texts (prod; dev/uat the same with the env name)
+```
+docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.prod exec -T api_prod php artisan static-pages:sync --dry-run --locale=en
+docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.prod exec -T api_prod php artisan static-pages:sync --dry-run
+docker compose -f /opt/beachrex/deploy/docker-compose.vps.yml --env-file /opt/beachrex/envs/.env.prod exec -T api_prod php artisan static-pages:sync
+```
+Expected: `~ privacy-policy [xx] content` and `~ cookie-policy [xx] content` for each of the 19 languages (38 updates);
+any other `~` line means that page was edited in the admin — stop and move the edit into the file first. The command
+clears the API cache itself; the website shows the new text within 1 hour (ISR). The code must be on that
+environment first (prod: after the owner's promotion).
+
 ## 2026-10-29 - Closed dev/uat websites: e-mail magic link (preview access)
 
 ### Overview

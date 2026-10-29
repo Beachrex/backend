@@ -1,302 +1,117 @@
 # AI Data Retention & Redaction Policy
 
-**Last Updated**: 2025-12-23  
-**Status**: APPROVED  
+**Last Updated**: 2026-10-29
+**Status**: chat retention **Built** (`ai:prune-conversations`, scheduled daily; Live on an environment once deployed
+there) · everything else in this file describes the code as it is.
 
-> **Note 2026-10-29:** the cleanup jobs below were never implemented; nothing deletes `ai_sessions`, `ai_messages`
-> or `ai_usage` today. The retention period of chat conversations is an open owner decision (ADR 2026-10-29
-> "AI chat history in the admin").
-**GDPR Compliance**: YES
+> **History.** The 2025-12-23 version of this file ("APPROVED") set 30 days for messages, 90 days for sessions and
+> 365 days for usage rows, with an `ai:cleanup-expired-data` job. That job was never implemented: until 2026-10-29
+> nothing deleted `ai_sessions`, `ai_messages` or `ai_usage`. On 2026-10-29 the owner approved **180 days** for chat
+> conversations ("hramba chatov ok", ADR 2026-10-29 "AI chat history in the admin", amendment). This version replaces
+> the old periods.
 
 ---
 
 ## 1. Overview
 
-This document defines data retention and redaction policies for Beachrex AI Agent to ensure GDPR compliance and operational efficiency.
-
-**Key Principles**:
-- **Minimal retention**: Keep data only as long as needed for business purposes
-- **User control**: Users can request deletion of their AI history
-- **Privacy by design**: No PII in logs, hashed IPs only
-- **Audit trail**: Maintain compliance audit logs
-
----
-
-## 2. Data Storage
-
-### 2.1 Database Tables
-
-#### `ai_sessions`
-**Purpose**: Track AI conversation sessions  
-**Retention**: 90 days  
-**PII**: Hashed IP address (SHA-256), user_agent  
-**Redaction**: Delete on user request or after 90 days
-
-**Fields**:
-- `id` (UUID) - Session identifier
-- `user_id` (nullable) - User ID if authenticated
-- `tier` - User tier (free, basic, premium, enterprise)
-- `locale` - User locale (en, hr, sl, etc.)
-- `ip_address` - **SHA-256 hashed IP** (not raw IP)
-- `user_agent` - Browser user agent
-- `messages_count` - Number of messages in session
-- `tokens_used` - Total tokens consumed
-- `last_activity_at` - Last activity timestamp
-- `created_at`, `updated_at`
-
-#### `ai_messages`
-**Purpose**: Store conversation history for context  
-**Retention**: 30 days  
-**PII**: User message content (justification: required for multi-turn conversations)  
-**Redaction**: Delete on user request or after 30 days
-
-**Fields**:
-- `id` - Message ID
-- `session_id` - Session UUID
-- `role` - Message role (user, assistant, system)
-- `content` - **Message content** (user input or AI response)
-- `intent` - Detected intent (beach_search, etc.)
-- `context` - JSONB context (beaches returned, filters applied)
-- `tokens_input`, `tokens_output`, `tokens_total`
-- `created_at`, `updated_at`
-
-**Justification for storing message content**:
-- Required for multi-turn conversations (context from previous messages)
-- Required for debugging and improving AI responses
-- Required for user history (users can view their past conversations)
-- Retention limited to 30 days (not indefinite)
-
-#### `ai_usage`
-**Purpose**: Cost tracking and analytics  
-**Retention**: 365 days (1 year for financial records)  
-**PII**: Hashed IP address (SHA-256)  
-**Redaction**: Anonymize user_id on user request (keep aggregated data)
-
-**Fields**:
-- `id` - Usage record ID
-- `user_id` (nullable) - User ID if authenticated
-- `session_id` - Session UUID
-- `tier` - User tier
-- `event_type` - Event type (chat, beach_search, etc.)
-- `llm_provider`, `llm_model` - LLM provider and model
-- `tokens_input`, `tokens_output`, `tokens_total`
-- `cost_usd` - Cost in USD
-- `latency_ms` - Request latency
-- `cache_hit` - Whether response was cached
-- `beaches_fetched`, `beaches_returned`
-- `context_truncated` - Whether context was truncated
-- `locale` - User locale
-- `user_agent` - Browser user agent
-- `ip_address` - **SHA-256 hashed IP** (not raw IP)
-- `request_id` - Request UUID for tracing
-- `created_at`, `updated_at`
-
-**Justification for 1-year retention**:
-- Required for financial records and cost tracking
-- Required for B2B analytics product (beach search trends)
-- Anonymized on user request (user_id set to NULL, keep aggregated data)
+- Chat conversations (questions and answers) are kept **180 days after their last activity**, then deleted
+  automatically. They are kept that long so that the team can review them in the admin (**AI → Chat conversations**)
+  to improve the answers (owner 2026-10-29).
+- Cost rows stay for statistics and the daily cost limits, but lose the link to the deleted conversation and the
+  pseudonymous identifiers (IP hash, user agent).
+- Paid trip-planner data (purchases, credits, itinerary plans) is **not** part of chat retention: it lives with the
+  user account.
+- IP addresses are stored only as a SHA-256 hash. Chat text is not written to logs.
+- The privacy policy (static page `privacy-policy`, all 19 languages) states the 180 days and how to ask for earlier
+  deletion (`info@beachrex.com`).
 
 ---
 
-## 3. Retention Periods
+## 2. Data stored
 
-| Data Type | Retention Period | Justification |
-|-----------|------------------|---------------|
-| **ai_sessions** | 90 days | Session context for debugging and user history |
-| **ai_messages** | 30 days | Conversation history for multi-turn context |
-| **ai_usage** | 365 days | Financial records and analytics |
-| **Application logs** | 30 days | Debugging and monitoring |
-| **Metrics cache** | 7 days | Real-time monitoring dashboards |
+### `ai_sessions` — one chat conversation
+User (nullable), tier, locale, engine, `page_context` (first page the chat was opened on), message/token counters,
+`ip_address` (**SHA-256 hash**), `user_agent`, `last_activity_at`, `expires_at` (30 min sliding: ends the conversation
+for the model only, deletes nothing), timestamps.
+**Retention: 180 days after `last_activity_at`** (see §4).
+
+### `ai_messages` — the turns of a conversation
+Role, `content` (question or answer text), intent, `context` (tool calls / beaches shown), tokens, `page_context`,
+`error` (turn without an answer), `request_id`. FK `session_id → ai_sessions` **ON DELETE CASCADE**.
+**Retention: deleted together with their session.**
+
+### `ai_usage` — cost of each LLM call
+User (nullable, `ON DELETE SET NULL`), `session_id` (nullable, `ON DELETE SET NULL`), tier, event type, provider, model,
+tokens, `cost_usd`, latency, locale, `user_agent`, `ip_address` (hash), `request_id`, timestamps.
+**Retention: kept** (cost statistics, daily cost limits). When its conversation is deleted, the row keeps time, model,
+tokens and cost; `session_id`, `ip_address` and `user_agent` are set to NULL. No automatic deletion of usage rows
+(no period decided).
+
+### Not part of chat retention
+`purchases`, `user_entitlements`, `itinerary_plans` (paid trip planner) — kept while the user account exists (FK
+`user_id` cascade on account deletion); purchases are also accounting records.
 
 ---
 
-## 4. Automated Cleanup
+## 3. Retention periods
 
-### 4.1 Database Cleanup Jobs
+| Data | Retention | Mechanism |
+|---|---|---|
+| `ai_sessions` + `ai_messages` | 180 days after the last activity (`AI_CHAT_RETENTION_DAYS`) | `ai:prune-conversations`, daily 01:40 Europe/Ljubljana |
+| `ai_usage` | kept; unlinked and stripped of IP hash / user agent when its conversation is deleted | same command |
+| Trip plans, purchases, credits | while the account exists | FK cascade on user deletion |
+| Database backups | `BACKUP_KEEP_DAYS` (default 14) | `db:backup` prunes old dumps — a deleted conversation can stay in a backup that long |
+| Application logs | no chat text is logged | — |
 
-**Schedule**: Daily at 2:00 AM UTC
+---
 
-**Jobs**:
-1. **Delete expired sessions** (> 90 days)
-   ```sql
-   DELETE FROM ai_sessions WHERE created_at < NOW() - INTERVAL '90 days';
-   ```
+## 4. Automated cleanup — `ai:prune-conversations`
 
-2. **Delete expired messages** (> 30 days)
-   ```sql
-   DELETE FROM ai_messages WHERE created_at < NOW() - INTERVAL '30 days';
-   ```
+`app/Console/Commands/PruneAiConversations.php`, scheduled in `routes/console.php`.
 
-3. **Delete expired usage records** (> 365 days)
-   ```sql
-   DELETE FROM ai_usage WHERE created_at < NOW() - INTERVAL '365 days';
-   ```
-
-**Implementation**: Laravel scheduled command
-
-```php
-// app/Console/Kernel.php
-protected function schedule(Schedule $schedule)
-{
-    $schedule->command('ai:cleanup-expired-data')->dailyAt('02:00');
-}
+```
+php artisan ai:prune-conversations --dry-run      # counts only
+php artisan ai:prune-conversations                # delete (what the scheduler runs)
+php artisan ai:prune-conversations --days=90      # other period for this run
 ```
 
-### 4.2 Log Rotation
-
-**Application logs**: Rotate daily, keep 30 days
-
-**Laravel logging config** (`config/logging.php`):
-```php
-'daily' => [
-    'driver' => 'daily',
-    'path' => storage_path('logs/laravel.log'),
-    'level' => env('LOG_LEVEL', 'debug'),
-    'days' => 30, // Keep 30 days
-],
-```
+- **Expired** = `last_activity_at < now − days` (or `created_at` when `last_activity_at` is NULL) **and** no message
+  with `created_at ≥ now − days` (guard against a stale `last_activity_at`).
+- Per chunk (`--chunk`, default 200 sessions; a session has at most 50 messages) in one transaction:
+  `ai_usage` → `session_id`, `ip_address`, `user_agent` = NULL; delete `ai_messages`; delete `ai_sessions`.
+  Explicit statements, not only the FK actions; query builder, no model events.
+- Logs one info line with counts (`sessions`, `messages`, `usage_unlinked`, `days`, `cutoff`), never chat text.
+- `--days` must be an integer ≥ 1; `AI_CHAT_RETENTION_DAYS=0` turns the scheduled run off (the command itself refuses 0).
+- Schedule: daily 01:40 Europe/Ljubljana (before the 02:30 UTC backup), `withoutOverlapping`.
+- Tests: `tests/Feature/AI/PruneAiConversationsTest.php`.
 
 ---
 
-## 5. User Data Redaction (GDPR Right to Erasure)
+## 5. Deletion on request (GDPR right to erasure)
 
-### 5.1 User Request Process
-
-When a user requests deletion of their AI history:
-
-1. **Verify user identity** (authenticated request or email verification)
-2. **Execute redaction script** (see below)
-3. **Confirm deletion** (email confirmation to user)
-4. **Log redaction event** (audit trail)
-
-### 5.2 Redaction Script
-
-**Command**: `php artisan ai:redact-user-data {userId}`
-
-**Actions**:
-1. Delete all sessions for user:
-   ```sql
-   DELETE FROM ai_sessions WHERE user_id = ?;
-   -- Cascades to ai_messages via foreign key
-   ```
-
-2. Anonymize usage records (keep aggregated data for analytics):
-   ```sql
-   UPDATE ai_usage 
-   SET user_id = NULL, 
-       ip_address = 'REDACTED',
-       user_agent = 'REDACTED'
-   WHERE user_id = ?;
-   ```
-
-3. Log redaction event:
-   ```php
-   Log::info('User data redacted', [
-       'user_id' => $userId,
-       'timestamp' => now()->toIso8601String(),
-       'redacted_sessions' => $sessionCount,
-       'anonymized_usage_records' => $usageCount,
-   ]);
-   ```
-
-**Implementation**:
-```php
-// app/Console/Commands/RedactUserData.php
-public function handle()
-{
-    $userId = $this->argument('userId');
-    
-    DB::transaction(function () use ($userId) {
-        // Delete sessions (cascades to messages)
-        $sessionCount = AiSession::where('user_id', $userId)->count();
-        AiSession::where('user_id', $userId)->delete();
-        
-        // Anonymize usage records
-        $usageCount = AiUsage::where('user_id', $userId)
-            ->update([
-                'user_id' => null,
-                'ip_address' => 'REDACTED',
-                'user_agent' => 'REDACTED',
-            ]);
-        
-        // Log redaction
-        Log::info('User data redacted', [
-            'user_id' => $userId,
-            'redacted_sessions' => $sessionCount,
-            'anonymized_usage_records' => $usageCount,
-        ]);
-    });
-    
-    $this->info("User data redacted successfully.");
-}
-```
+- **One conversation / one visitor's chats:** no admin action or command yet. A developer deletes the `ai_sessions`
+  rows (messages cascade; set `ai_usage.session_id`, `ip_address`, `user_agent` to NULL for those sessions). Anonymous
+  visitors can be identified only by the time, the page and the question text they remember.
+- **Account deletion:** `ai_sessions.user_id` and `ai_usage.user_id` become NULL (FK `nullOnDelete`); trip plans,
+  credits and purchases are deleted with the account (cascade). The anonymous conversations then age out after 180
+  days.
+- **Planned (not built):** `ai:redact-user-data {userId}` and a self-service "delete my AI history" in the account.
 
 ---
 
-## 6. GDPR Compliance Checklist
+## 6. Open items
 
-- ✅ **Minimal data collection**: Only collect data necessary for service operation
-- ✅ **No raw IP addresses**: All IPs hashed with SHA-256
-- ✅ **No PII in logs**: Logs contain only request_id, session_id, metrics
-- ✅ **User consent**: Terms of Service include AI data collection disclosure
-- ✅ **Right to access**: Users can view their AI conversation history
-- ✅ **Right to erasure**: Users can request deletion of their AI data
-- ✅ **Data retention limits**: Automatic cleanup after retention periods
-- ✅ **Audit trail**: All redaction events logged
-- ✅ **Encryption at rest**: Database encrypted (PostgreSQL encryption)
-- ✅ **Encryption in transit**: HTTPS/TLS for all API requests
+- Retention of `ai_usage` itself (no period decided; rows hold no chat text).
+- Admin/command for deleting one conversation on request (today a developer task).
+- Monitoring: alert when the oldest `ai_sessions.last_activity_at` is older than retention + a few days (job not
+  running).
 
 ---
 
-## 7. Monitoring & Alerts
+## 7. References
 
-### 7.1 Retention Monitoring
-
-**Metrics to track**:
-- Total sessions in database
-- Total messages in database
-- Total usage records in database
-- Oldest session age
-- Oldest message age
-- Oldest usage record age
-
-**Alerts**:
-- Alert if oldest session > 95 days (cleanup job may be failing)
-- Alert if oldest message > 35 days (cleanup job may be failing)
-- Alert if oldest usage record > 370 days (cleanup job may be failing)
-
-### 7.2 Redaction Monitoring
-
-**Metrics to track**:
-- Total redaction requests per month
-- Average redaction time
-- Failed redaction attempts
-
-**Alerts**:
-- Alert if redaction fails (manual intervention required)
-
----
-
-## 8. Implementation Checklist
-
-- [ ] Create `ai:cleanup-expired-data` command
-- [ ] Create `ai:redact-user-data` command
-- [ ] Schedule daily cleanup job
-- [ ] Add redaction endpoint to user settings
-- [ ] Add "View AI History" page to user dashboard
-- [ ] Add "Delete AI History" button to user settings
-- [ ] Update Terms of Service with AI data collection disclosure
-- [ ] Update Privacy Policy with retention periods
-- [ ] Add monitoring dashboard for retention metrics
-- [ ] Add alerts for cleanup job failures
-
----
-
-## 9. References
-
-- **GDPR Article 17**: Right to erasure ("right to be forgotten")
-- **GDPR Article 5**: Principles relating to processing of personal data
-- **GDPR Article 25**: Data protection by design and by default
-- **docs/ai/architecture/api-contracts.md**: API contracts and privacy requirements
-- **docs/ai/implementation/STEP6_COMPLETION_REPORT.md**: Logging & observability implementation
-
+- ADR log `docs/ai/implementation/DECISIONS.md`: 2026-10-29 "AI chat history in the admin" (+ amendment, retention),
+  2026-10-29 "AI chat daily cost cap and Turnstile".
+- Admin guide `docs/guides/admin/ai-pogovori.md`.
+- Privacy and cookie policy texts: `database/content/static-pages/*.json` (applied with `static-pages:sync`).
+- GDPR Art. 5(1)(e) (storage limitation), Art. 17 (erasure), Art. 25 (data protection by design).

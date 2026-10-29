@@ -68,6 +68,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-29: **AI chat retention 180 days + privacy/cookie policy update** (owner: "Hramba chatov ok", "Dopolni
+  politiko"). Daily `ai:prune-conversations` (01:40 Europe/Ljubljana) deletes conversations 180 days after their last
+  activity; cost rows stay without the link. Privacy and cookie policy (19 languages) name what is stored and for how
+  long, Anthropic/OpenAI, Cloudflare Turnstile, Microsoft Clarity. Texts reach a database only via `static-pages:sync`
+  (owner action below). ADR 2026-10-29 amendment; status in DEV_HANDOFF.
+
 - 2026-10-29: **Closed dev/uat websites behind an e-mail magic link** (owner: "dev in uat stran bi morali zapreti —
   vpišem svoj mail, dobim magic link"). API `POST /api/v1/preview-access/request` + `/verify`, website middleware +
   `/preview-access` pages, signed 30-day cookie; off until the owner sets the env (owner action below), never on prod.
@@ -275,7 +281,8 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
      `/opt/beachrex/envs/.env.front.<env>` as `NEXT_PUBLIC_TURNSTILE_SITE_KEY=…`, secret key into
      `/opt/beachrex/envs/.env.<env>` as `TURNSTILE_SECRET_KEY=…`; then redeploy the **API first**, then the web
      (Actions → Deploy → Run workflow, or the next merge). Without both keys Turnstile stays off.
-  4. Privacy/cookie texts: name Cloudflare Turnstile as a strictly necessary security service (CookieYes: no consent needed).
+  4. Privacy/cookie texts: done in the repo 2026-10-29 (Cloudflare Turnstile named as a necessary security check);
+     applied by `static-pages:sync`, see "Privacy and cookie policy 2026-10-29" below.
 - **Pools (2026-10-29, ADR "Indoor / outdoor pools"):** dev has no pool places yet, so "Bazen", "Notranji bazen" and "Zunanji bazen" show 0. When pool places are added (importer or admin), set **Indoor pools count** / **Outdoor pools count** on each one (beach form), otherwise it is found only by "Bazen". The map and list filters read the database (no search index change).
 - **AI trip planner off on prod (TASK-009, 2026-10-29):** after the code is on prod, Admin (dock.beachrex.com) → System → Site settings → switch **AI trip planner (paid)** off (leave **AI chat** on) → Save. Guide `docs/guides/admin/nastavitve-strani.md`.
 - **Lake beaches (2026-10-22, `beaches:fix-lake-waterbody`, guide `docs/guides/admin/jezerske-plaze.md`):** on dev run the command without options (dry run, expect ~42 × `waterbody -> lake`), send the output, then `--apply` and `php artisan search:index Beach`. uat/prod only when the owner decides (the same two steps per environment).
@@ -297,8 +304,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 - **Legal translations:** terms §6 and the footer pages were machine-translated; have the main languages checked.
 - **Footer pages on dev (TASK-004):** run `static-pages:sync --dry-run`, then without `--dry-run` (commands in DEV_HANDOFF / the chat). Same on uat/prod at promotion (prod launch runbook B6).
 - **CookieYes:** enable "Google Consent Mode"; domain `beachrex.com`.
-- **Microsoft Clarity (web-client#138, 2026-10-29):** prod only, loaded after the CookieYes "analytics" consent. In CookieYes, run a scan / put the Clarity cookies (`_clck`, `_clsk`, `CLID`, `MUID`, `ANONCHK`, `SM`) in the "Analytics" category; the privacy and cookie policies (static pages) name only Google Analytics and should also name Microsoft Clarity (Microsoft Corporation) as an analytics provider.
-- **Legal texts:** the privacy policy, cookie policy and terms are drafts (they name OpenAI and Stripe, which the code uses); review, ideally with a lawyer.
+- **Microsoft Clarity (web-client#138, 2026-10-29):** prod only, loaded after the CookieYes "analytics" consent. In CookieYes, run a scan / put the Clarity cookies (`_clck`, `_clsk`, `CLID`, `MUID`, `ANONCHK`, `SM`) in the "Analytics" category; the privacy and cookie policies name Microsoft Clarity since 2026-10-29 (repo; applied with `static-pages:sync`, below).
+- **Legal texts:** the privacy policy, cookie policy and terms are drafts written by the AI agent; review, ideally with a lawyer (the 2026-10-29 update included).
+- **Privacy and cookie policy 2026-10-29 (chat retention 180 days, Anthropic/OpenAI, Turnstile, Clarity):** on each
+  environment where the code is deployed (prod after promotion), run `static-pages:sync --dry-run` → expect only
+  `~ privacy-policy [xx] content` and `~ cookie-policy [xx] content` for the 19 languages → run without `--dry-run`.
+  Exact commands in DEV_HANDOFF 2026-10-29. Any other `~` line = an admin edit that would be overwritten; stop first.
 
 - **Waterbody data (QA #69):** every beach has waterbody `sea` (3 774 on dev, 2026-10-08), so the lake/river/pool tiles and filters find nothing. Owner decision 2026-10-08: keep the tiles and add the data ("to zaenkrat pusti, samo zabeleži, moramo dodati podatke"). No code change.
 
