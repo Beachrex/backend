@@ -45,7 +45,7 @@ Stanje: ✅ napisano · ⏳ še ni napisano
 | Funkcija | Kje v adminu | Navodila | Stanje |
 |---|---|---|---|
 | Uporabniki, administratorji, uvoženi s stare strani | User Management → Users, Genders | [uporabniki.md](uporabniki.md) | ✅ |
-| Nastavitve strani: stikalo AI vodiča | System → Site settings | [nastavitve-strani.md](nastavitve-strani.md) | ✅ |
+| Nastavitve strani: stikali AI klepeta in AI načrtovalca | System → Site settings | [nastavitve-strani.md](nastavitve-strani.md) | ✅ |
 | Podvojeni slugi | System → Fix Duplicate Slugs | [podvojeni-slugi.md](podvojeni-slugi.md) | ✅ |
 | Statusi | System → Statuses | [sifranti.md](sifranti.md) | ✅ |
 
