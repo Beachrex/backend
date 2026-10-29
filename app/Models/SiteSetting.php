@@ -17,6 +17,9 @@ class SiteSetting extends Model
     /** AI trip planner (paid): itineraries, itinerary plans, credit products and Stripe checkout. */
     public const AI_TRIP_PLANNER_ENABLED = 'ai_trip_planner_enabled';
 
+    /** Google ads (AdSense) on the website. Default OFF (owner 2026-10-29). */
+    public const ADS_ENABLED = 'ads_enabled';
+
     public const CACHE_KEY = 'site_settings:all';
 
     protected $table = 'site_settings';
@@ -61,5 +64,11 @@ class SiteSetting extends Model
     public static function aiTripPlannerEnabled(): bool
     {
         return self::bool(self::AI_TRIP_PLANNER_ENABLED, true);
+    }
+
+    /** Google ads (AdSense) on the website. Default OFF: a missing key means no ads. */
+    public static function adsEnabled(): bool
+    {
+        return self::bool(self::ADS_ENABLED, false);
     }
 }

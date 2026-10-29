@@ -52,6 +52,29 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Site settings: Google ads (AdSense) switch, default off
+
+### Overview
+Owner (2026-10-29): "prosim izklopi mi Google ads na produkciji, pa dobro bi bilo, da bi jih lahko prek admina
+vklapljali ali izklapljali". Third site switch next to the AI ones (ADR 2026-10-29 TASK-009, amendment).
+
+### Changes
+- `database/migrations/2026_10_29_200000_add_ads_enabled_site_setting.php` — inserts `ads_enabled = 0` only when the
+  key is missing (idempotent; keeps a value set in admin), clears the `site_settings:all` cache.
+- `App\Models\SiteSetting::ADS_ENABLED`, `adsEnabled()` — default **false** (missing key = off).
+- Admin System → Site settings: section "Advertising", toggle **Google ads (AdSense)** with helper text; the save
+  notification names all three switches.
+- `GET /api/v1/site-settings` — additive `data.ads_enabled` (boolean). OpenAPI annotation + `l5-swagger:generate`.
+- Website (web-client PR): AdSense script only on prod **and** `ads_enabled`; `ads.txt` stays published.
+
+### Tests
+`tests/Feature/SiteSettingsAdsSwitchTest.php` (default off, missing key off, migration idempotent/keeps ON, API at once,
+admin toggle leaves AI switches alone, guest redirect / non-admin 403); `SiteSettingsAiSwitchTest` exact JSON now
+includes `ads_enabled: false`.
+
+### Owner
+Nothing to click: ads are off on prod once backend + web-client are promoted. Switch on in Site settings when ready.
+
 ## 2026-10-29 - Docs: environment files inventory (names only)
 
 - New `docs/runbooks/environment-variables.md`: which env vars differ between dev/uat/prod on purpose (backups prod only,
