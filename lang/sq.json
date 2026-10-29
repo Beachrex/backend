@@ -38,5 +38,12 @@
   "Parking Capacity": "Kapaciteti i parkimit",
   "Beach Inclination": "Pjerrësia e plazhit",
   "Swimming Depth": "Thellësia për not",
-  "Occupancy": "Frekuentimi"
+  "Occupancy": "Frekuentimi",
+  "Your link to the Beachrex test website": "Lidhja juaj për faqen testuese Beachrex",
+  "Use this link to open the Beachrex test website :host.": "Me këtë lidhje hapni faqen testuese Beachrex :host.",
+  "Open the test website": "Hap faqen testuese",
+  "It works once.": "Funksionon një herë.",
+  "If you did not ask for this link, you can ignore this email.": "Nëse nuk e keni kërkuar këtë lidhje, mund ta injoroni këtë email.",
+  "If this e-mail may open the test website, we have sent a link.": "Nëse ky email ka qasje në faqen testuese, kemi dërguar një lidhje.",
+  "This link is invalid, already used or expired.": "Lidhja është e pavlefshme, është përdorur ose ka skaduar."
 }

@@ -38,5 +38,12 @@
   "Parking Capacity": "Parking Capacity",
   "Beach Inclination": "Beach Inclination",
   "Swimming Depth": "Swimming Depth",
-  "Occupancy": "Occupancy"
+  "Occupancy": "Occupancy",
+  "Your link to the Beachrex test website": "Your link to the Beachrex test website",
+  "Use this link to open the Beachrex test website :host.": "Use this link to open the Beachrex test website :host.",
+  "Open the test website": "Open the test website",
+  "It works once.": "It works once.",
+  "If you did not ask for this link, you can ignore this email.": "If you did not ask for this link, you can ignore this email.",
+  "If this e-mail may open the test website, we have sent a link.": "If this e-mail may open the test website, we have sent a link.",
+  "This link is invalid, already used or expired.": "This link is invalid, already used or expired."
 }

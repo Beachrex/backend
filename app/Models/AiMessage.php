@@ -27,6 +27,9 @@ class AiMessage extends Model
         'tokens_input',
         'tokens_output',
         'tokens_total',
+        'page_context',
+        'error',
+        'request_id',
     ];
 
     /**
@@ -36,6 +39,7 @@ class AiMessage extends Model
     {
         return [
             'context' => 'array',
+            'page_context' => 'array',
             'tokens_input' => 'integer',
             'tokens_output' => 'integer',
             'tokens_total' => 'integer',

@@ -38,5 +38,12 @@
   "Parking Capacity": "Kapacitet parkirališta",
   "Beach Inclination": "Nagib plaže",
   "Swimming Depth": "Dubina za plivanje",
-  "Occupancy": "Popunjenost"
+  "Occupancy": "Popunjenost",
+  "Your link to the Beachrex test website": "Vaša poveznica na testnu stranicu Beachrex",
+  "Use this link to open the Beachrex test website :host.": "Ovom poveznicom otvarate testnu stranicu Beachrex :host.",
+  "Open the test website": "Otvori testnu stranicu",
+  "It works once.": "Radi jednom.",
+  "If you did not ask for this link, you can ignore this email.": "Ako niste zatražili ovu poveznicu, zanemarite ovu poruku.",
+  "If this e-mail may open the test website, we have sent a link.": "Ako ova e-adresa ima pristup testnoj stranici, poslali smo poveznicu.",
+  "This link is invalid, already used or expired.": "Poveznica nije valjana, već je iskorištena ili je istekla."
 }
