@@ -52,6 +52,43 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Admin "AI → Chat conversations": read-only history of the AI chat
+
+**Owner (2026-10-29):** "da v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore daje" — a history
+to learn from and improve the assistant.
+
+### What was stored before
+Every successful chat turn already saved the user question and the assistant answer (`ai_messages`, both engines,
+anonymous and signed-in), with the session (`ai_sessions`: user, locale, tier, tokens, hashed IP, user agent) and the
+cost row (`ai_usage`). Not stored: the engine, `page_context`, a link from a turn to its `ai_usage` row, and turns that
+failed (provider busy/timeout, server error, 402 for paid trip plans) — the question was lost. No pruning job exists:
+`expires_at` (30 min) only ends the conversation for the model, rows stay.
+
+### Changes
+- Migration `2026_10_29_180000_add_chat_history_fields_to_ai_tables` (additive, idempotent): `ai_sessions.engine`,
+  `ai_sessions.page_context` (first page), `ai_messages.page_context`, `ai_messages.error`, `ai_messages.request_id`;
+  index `ai_sessions(created_at)`, partial index on failed turns, `pg_trgm` GIN index on `ai_messages.content` when the
+  extension can be created (otherwise skipped, search still works); backfills `engine` of existing sessions.
+- `ChatController`: stores the engine on new sessions, the validated `page_context` on the user message (and the first
+  one on the session), the `request_id` on both messages, and a failed turn as a user message with `error`
+  (`ai_unavailable`, `internal_error`, `payment_required`). Failed turns are left out of the history sent to the model.
+  The API response is unchanged.
+- Admin **AI → Chat conversations** (`AiConversationResource`): list (started, last message, user e-mail or
+  "anonymous", language, engine, messages, first question, page, tokens, cost, errors), filters (date range, signed
+  in/anonymous, language, engine, has an error), search in all message text and the user e-mail, 25/50/100 per page,
+  all columns as subqueries (constant query count). View page: transcript with times, tools used, beaches shown,
+  failed turns; delete one conversation (confirmation; `ai_usage` rows stay). Stats above the list (14 days).
+  No IP hash or user agent is shown. No create/edit, no bulk delete, no global search.
+- Admin guide `docs/guides/admin/ai-pogovori.md`, ADR 2026-10-29 "AI chat history in the admin".
+
+### Affected Endpoints
+None changed. `POST /api/v1/ai/chat` stores more (see above); response shape unchanged.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AI/ChatHistoryAdminTest.php` (agent and pipeline storage, failed turns kept out of
+the model history, guest 302 / non-admin 403, anonymous + signed-in rows, search in assistant text with literal `%`,
+filters, constant query count, transcript escaping, delete).
+
 ## 2026-10-29 - TASK-009 amended: separate admin switches for AI chat and the AI trip planner
 
 **Owner (2026-10-29):** hide the paid trip planner, not the chat; switch either or both in admin. He will switch only

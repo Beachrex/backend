@@ -1236,3 +1236,25 @@ not see the split. The data model already has the split: `beach.indoor_pools_cou
 **Consequences**: The tiles and the nested options show results as soon as pool places with counts exist. The
 importer must map indoor/outdoor (e.g. OSM `indoor=yes`, `covered=yes`, `building`) to the counts.
 
+## [2026-10-29] AI chat history in the admin; retention is an owner decision
+
+**Status**: Accepted (owner 2026-10-29: "da v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu … da se lahko
+izboljšujemo na podlagi tega"). Amends the 2025-12-22 "No Long-Term User Memory" ADR in one point, see below.
+
+**Context**: The chat already stored every answered turn in `ai_messages` with no deletion, although the 2025-12-22
+ADR says "after session expires, all user data is deleted". That ADR is about the *model's* memory (it still sees only
+the current session's last turns); the stored rows were never pruned. The owner wants to read the conversations.
+
+**Decision**:
+1. Admin-only, read-only page **AI → Chat conversations** over the existing tables; the API response is unchanged.
+2. Store what the history needs, additively: engine, the validated `page_context`, `request_id` (link to `ai_usage`
+   cost), and failed turns (question + error code). Failed turns are not sent to the model as history.
+3. Privacy: chat text is shown only on this page (no global search, not logged elsewhere); the IP hash and user agent
+   are not shown. One conversation can be deleted from its page (e.g. a visitor's request); there is no bulk delete.
+4. No automatic deletion is added: how long chats are kept (e.g. 90 or 180 days, then delete or anonymise) and the
+   wording of the privacy policy (today it says questions are "processed", not that they are kept and read to improve
+   the service) are owner decisions. Until then the rows are kept indefinitely, as before.
+
+**Consequences**: The model's memory rule is unchanged (session only). A retention job, when decided, deletes
+`ai_sessions` (messages cascade; `ai_usage` keeps cost without the session link).
+
