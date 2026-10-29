@@ -11,7 +11,11 @@ use Illuminate\Support\Facades\Cache;
  */
 class SiteSetting extends Model
 {
+    /** AI chat (chat API, chat page, chat widget). The key name predates the trip planner switch. */
     public const AI_ASSISTANT_ENABLED = 'ai_assistant_enabled';
+
+    /** AI trip planner (paid): itineraries, itinerary plans, credit products and Stripe checkout. */
+    public const AI_TRIP_PLANNER_ENABLED = 'ai_trip_planner_enabled';
 
     public const CACHE_KEY = 'site_settings:all';
 
@@ -47,9 +51,15 @@ class SiteSetting extends Model
         static::query()->updateOrCreate(['key' => $key], ['value' => $stored]);
     }
 
-    /** The AI beach guide (chat, itineraries, buying credits). Default on. */
+    /** The AI chat (chat API, chat page, chat widget). Default on. */
     public static function aiAssistantEnabled(): bool
     {
         return self::bool(self::AI_ASSISTANT_ENABLED, true);
+    }
+
+    /** The paid AI trip planner (itineraries, plans, buying credits). Default on. */
+    public static function aiTripPlannerEnabled(): bool
+    {
+        return self::bool(self::AI_TRIP_PLANNER_ENABLED, true);
     }
 }
