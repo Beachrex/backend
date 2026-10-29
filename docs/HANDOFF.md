@@ -68,6 +68,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-29: **Google ads (AdSense) admin switch, off by default** (owner: "izklopi mi Google ads na produkciji …
+  prek admina vklapljali ali izklapljali"). New site setting `ads_enabled` (idempotent migration inserts **off**),
+  toggle "Google ads (AdSense)" in System → Site settings, `GET /api/v1/site-settings` → `data.ads_enabled`. The
+  website loads the AdSense script only on prod **and** with the switch on (fails closed); `ads.txt` stays published.
+  ADR 2026-10-29 TASK-009 amendment, guide `docs/guides/admin/nastavitve-strani.md`; status in DEV_HANDOFF of both repos.
+
 - 2026-10-29: **AI chat retention 180 days + privacy/cookie policy update** (owner: "Hramba chatov ok", "Dopolni
   politiko"). Daily `ai:prune-conversations` (01:40 Europe/Ljubljana) deletes conversations 180 days after their last
   activity; cost rows stay without the link. Privacy and cookie policy (19 languages) name what is stored and for how
@@ -284,6 +290,9 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
   4. Privacy/cookie texts: done in the repo 2026-10-29 (Cloudflare Turnstile named as a necessary security check);
      applied by `static-pages:sync`, see "Privacy and cookie policy 2026-10-29" below.
 - **Pools (2026-10-29, ADR "Indoor / outdoor pools"):** dev has no pool places yet, so "Bazen", "Notranji bazen" and "Zunanji bazen" show 0. When pool places are added (importer or admin), set **Indoor pools count** / **Outdoor pools count** on each one (beach form), otherwise it is found only by "Bazen". The map and list filters read the database (no search index change).
+- **Google ads on prod (2026-10-29):** ads are **off on prod by default** once the backend and web-client reach prod
+  (nothing to click). When you want them back: Admin (dock.beachrex.com) → System → Site settings → **Google ads
+  (AdSense)** on → Save; the website applies it within ~5 minutes. Guide `docs/guides/admin/nastavitve-strani.md`.
 - **AI trip planner off on prod (TASK-009, 2026-10-29):** after the code is on prod, Admin (dock.beachrex.com) → System → Site settings → switch **AI trip planner (paid)** off (leave **AI chat** on) → Save. Guide `docs/guides/admin/nastavitve-strani.md`.
 - **Lake beaches (2026-10-22, `beaches:fix-lake-waterbody`, guide `docs/guides/admin/jezerske-plaze.md`):** on dev run the command without options (dry run, expect ~42 × `waterbody -> lake`), send the output, then `--apply` and `php artisan search:index Beach`. uat/prod only when the owner decides (the same two steps per environment).
 - **TASK-006 Windy webcams (run in this order on dev, each with `--dry-run` first; send the outputs to the agent):**

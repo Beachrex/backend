@@ -38,6 +38,7 @@ class SiteSettings extends Page implements HasForms
         $this->form->fill([
             SiteSetting::AI_ASSISTANT_ENABLED => SiteSetting::aiAssistantEnabled(),
             SiteSetting::AI_TRIP_PLANNER_ENABLED => SiteSetting::aiTripPlannerEnabled(),
+            SiteSetting::ADS_ENABLED => SiteSetting::adsEnabled(),
         ]);
     }
 
@@ -55,6 +56,13 @@ class SiteSettings extends Page implements HasForms
                             ->label('AI trip planner (paid)')
                             ->helperText('Off: the AI trip planner disappears from the website menu and links, its pages and the payment pages answer 404, and the API refuses trip plans, credit prices and buying credits (website and mobile app). Nothing is deleted: plans and credits already bought come back when it is switched on again. The chat is not affected.'),
                     ]),
+                Section::make('Advertising')
+                    ->description('Applies to this environment only. Ads are shown only on the production website (beachrex.com), never on dev or uat.')
+                    ->schema([
+                        Toggle::make(SiteSetting::ADS_ENABLED)
+                            ->label('Google ads (AdSense)')
+                            ->helperText('Off (default): the website does not load the Google AdSense script and shows no ad spaces. On: ads are shown as before (production only, with the visitor\'s cookie consent). The ads.txt file stays published either way.'),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -64,12 +72,14 @@ class SiteSettings extends Page implements HasForms
         $state = $this->form->getState();
         $chat = (bool) ($state[SiteSetting::AI_ASSISTANT_ENABLED] ?? true);
         $planner = (bool) ($state[SiteSetting::AI_TRIP_PLANNER_ENABLED] ?? true);
+        $ads = (bool) ($state[SiteSetting::ADS_ENABLED] ?? false);
 
         SiteSetting::set(SiteSetting::AI_ASSISTANT_ENABLED, $chat);
         SiteSetting::set(SiteSetting::AI_TRIP_PLANNER_ENABLED, $planner);
+        SiteSetting::set(SiteSetting::ADS_ENABLED, $ads);
 
         Notification::make()
-            ->title('AI chat is '.($chat ? 'ON' : 'OFF').', AI trip planner is '.($planner ? 'ON' : 'OFF'))
+            ->title('AI chat is '.($chat ? 'ON' : 'OFF').', AI trip planner is '.($planner ? 'ON' : 'OFF').', Google ads are '.($ads ? 'ON' : 'OFF'))
             ->body('The website shows the change within about 5 minutes; the API immediately.')
             ->success()
             ->send();

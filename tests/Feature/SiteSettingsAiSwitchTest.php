@@ -73,6 +73,7 @@ class SiteSettingsAiSwitchTest extends TestCase
             ->assertExactJson(['success' => true, 'data' => [
                 'ai_assistant_enabled' => true,
                 'ai_trip_planner_enabled' => true,
+                'ads_enabled' => false,
             ]]);
     }
 
