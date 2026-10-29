@@ -2,6 +2,10 @@
 
 **Last Updated**: 2025-12-23  
 **Status**: APPROVED  
+
+> **Note 2026-10-29:** the cleanup jobs below were never implemented; nothing deletes `ai_sessions`, `ai_messages`
+> or `ai_usage` today. The retention period of chat conversations is an open owner decision (ADR 2026-10-29
+> "AI chat history in the admin").
 **GDPR Compliance**: YES
 
 ---

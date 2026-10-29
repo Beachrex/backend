@@ -52,6 +52,84 @@ How to test the changes
 
 ---
 
+## 2026-10-29 - Closed dev/uat websites: e-mail magic link (preview access)
+
+### Overview
+Owner: "dev in uat stran bi morali zapreti — vpišem svoj mail, dobim magic link, potem se v sejo shrani, da lahko
+gledam". ADR "Closed dev/uat websites behind an e-mail magic link". The website (web-client middleware) decides who
+sees a page; the API only sends and checks one-time links. Off unless `PREVIEW_GATE_ENABLED=true`; never on prod.
+
+### Changes
+- `config/preview_access.php`: `enabled` (`PREVIEW_GATE_ENABLED`), `allowed_emails` (`PREVIEW_ALLOWED_EMAILS`),
+  `ttl_minutes` 15, `emails_per_hour` 5.
+- Migration `2026_10_29_170000_create_preview_access_tokens_table` (email, `token_hash` SHA-256 unique, `return_path`,
+  `expires_at`, `used_at`, `created_at`); rows older than a day are deleted when new links are requested.
+- `App\Services\PreviewAccess\PreviewAccess`: `enabled()` (config + `app.frontend_url` not beachrex.com),
+  `safeReturnPath()`, `isAllowed()` (admin of this env or allow list, case-insensitive), `sendLink()` (per-address
+  1/min, 5/h, silent), `consume()` (atomic single use).
+- `PreviewAccessController` + routes (throttle 5/min per IP for request, 20/min for verify — its callers are the
+  website servers), `PreviewAccessLinkNotification` + `emails/preview-access(-text).blade.php` (password-reset look),
+  7 new strings in all 19 `lang/*.json`.
+
+### Affected Endpoints
+- `POST /api/v1/preview-access/request` `{email, return_path?}` → 200 same message for every address; 404 when off;
+  422 invalid e-mail or non-relative `return_path`; 429.
+- `POST /api/v1/preview-access/verify` `{token}` → 200 `{ok: true, email, return_path}`; 422 `{ok: false, message}`
+  for unknown/used/expired; 404 when off; 429.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/PreviewAccessApiTest.php` (15 tests): link only for admins/allow list with the
+same response, hashed storage, single use, expiry boundary (14 min ok, 15 min + 1 s rejected), per-address and per-IP
+limits, open-redirect paths rejected, default `/`, 404 when off and on prod, localized mail. Deliberate break
+(no `used_at` check / no allow check / no path check) → 3 failures.
+
+## 2026-10-29 - Admin "AI → Chat conversations": read-only history of the AI chat
+
+**Owner (2026-10-29):** "v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore daje — zgodovina, da
+se lahko izboljšujemo." ADR 2026-10-29 "AI chat history in the admin; retention is an owner decision".
+
+### What was stored before
+Every answered chat turn: question and answer text in `ai_messages` (both engines, anonymous and signed-in; tool calls
+or returned beaches in `context`), the session in `ai_sessions` (user, locale, tier, tokens, hashed IP, user agent), the
+cost in `ai_usage`. Not stored: the engine, `page_context`, a link from a turn to its `ai_usage` row (model, cost),
+and turns that failed (provider busy/timeout, server error, 402 trip plan) — the question was lost. Nothing prunes these
+tables: the 30-min `expires_at` only ends the conversation for the model; the 30/90-day cleanup in
+`docs/ai/architecture/data-retention-policy.md` was never implemented (note added there).
+
+### Changes
+- Migration `2026_10_29_180000_add_chat_history_fields_to_ai_tables` (additive, idempotent): `ai_sessions.engine`,
+  `ai_sessions.page_context`, `ai_messages.page_context`, `ai_messages.error`, `ai_messages.request_id`; indexes
+  `ai_sessions(created_at)`, `ai_messages(session_id, created_at, id)`, partial `ai_messages(session_id) WHERE error`,
+  `ai_usage(request_id)`, and a `pg_trgm` GIN index on `ai_messages.content` when the extension can be created
+  (otherwise skipped; search still works). Backfills `engine` of existing sessions from the message intent.
+- `ChatController`: stores the engine on new sessions, the validated `page_context` (first one on the session, each
+  on its user message), the `request_id` on both messages, and a failed turn as a user message with `error`
+  (`ai_unavailable`, `internal_error` incl. unexpected agent exceptions, `payment_required`). Failed turns are left
+  out of the history sent to the model. API response unchanged; no new logging of chat text.
+- Admin **AI → Chat conversations** (`/ai-conversations`, `AiConversationResource`), read-only (no create/edit/delete):
+  list (started, last message, user e-mail or "anonymous", language, engine, messages, first question, page, tokens,
+  cost, errors; newest first), filters (date range, signed in/anonymous, language, engine, has an error), search in
+  all message text and the user e-mail (LIKE wildcards escaped), columns as subqueries (query count independent of
+  rows). View: metadata (incl. models used) and a transcript with times, page, tools used, beaches shown, model and
+  cost per answer, failed turns. Stats widget (14 days). No IP hash or user agent shown; no global search.
+- Docs: admin guide `docs/guides/admin/ai-pogovori.md` (+ README row), ADR.
+
+### Owner decisions open
+Retention period (proposal 180 days, then delete) and the privacy policy wording ("AI beach assistant" says questions
+are processed to answer and names only OpenAI; it should say chats are kept and read to improve the service, for how
+long, and name Anthropic).
+
+### Affected Endpoints
+None changed. `POST /api/v1/ai/chat` stores more (see above); response shape unchanged.
+
+### Testing
+`php vendor/bin/phpunit tests/Feature/AI/ChatHistoryAdminTest.php` (12 tests: agent and pipeline storage through a
+real chat request with faked LLM, failed turns incl. unexpected errors and kept out of the model history, guest
+redirect / non-admin 403, anonymous + signed-in rows, search in assistant text, filters, constant query count,
+transcript escaping and per-turn model/cost, read-only, conversations still listed after session expiry).
+
+---
+
 ## 2026-10-29 - AI chat: $5/day free limit with real Anthropic cost, Cloudflare Turnstile
 
 **Owner (2026-10-29):** "Anthropic uporabljamo … brezplačni uporabniki 5 $ na dan; če je preseženo, se chat izklopi in

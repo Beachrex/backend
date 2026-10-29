@@ -40,12 +40,19 @@ Stanje: ✅ napisano · ⏳ še ni napisano
 |---|---|---|---|
 | Fotografije, videi, 360° | Media → Media, Media Collections, Media Types | [mediji.md](mediji.md) | ✅ |
 
+## AI
+
+| Funkcija | Kje v adminu | Navodila | Stanje |
+|---|---|---|---|
+| Pogovori z AI klepetom (zgodovina vprašanj in odgovorov) | AI → Chat conversations | [ai-pogovori.md](ai-pogovori.md) | ✅ |
+
 ## Uporabniki in sistem
 
 | Funkcija | Kje v adminu | Navodila | Stanje |
 |---|---|---|---|
 | Uporabniki, administratorji, uvoženi s stare strani | User Management → Users, Genders | [uporabniki.md](uporabniki.md) | ✅ |
 | Nastavitve strani: stikali AI klepeta in AI načrtovalca | System → Site settings | [nastavitve-strani.md](nastavitve-strani.md) | ✅ |
+| Zaprta testna stran dev/uat (e-poštna povezava) | strežnik: `.env.front.<okolje>`, `.env.<okolje>` | [zaprta-testna-stran.md](zaprta-testna-stran.md) | ✅ |
 | Podvojeni slugi | System → Fix Duplicate Slugs | [podvojeni-slugi.md](podvojeni-slugi.md) | ✅ |
 | Statusi | System → Statuses | [sifranti.md](sifranti.md) | ✅ |
 

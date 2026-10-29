@@ -38,5 +38,12 @@
   "Parking Capacity": "Parkeercapaciteit",
   "Beach Inclination": "Helling van het strand",
   "Swimming Depth": "Zwemdiepte",
-  "Occupancy": "Drukte"
+  "Occupancy": "Drukte",
+  "Your link to the Beachrex test website": "Je link naar de Beachrex-testwebsite",
+  "Use this link to open the Beachrex test website :host.": "Met deze link open je de Beachrex-testwebsite :host.",
+  "Open the test website": "Testwebsite openen",
+  "It works once.": "Hij werkt één keer.",
+  "If you did not ask for this link, you can ignore this email.": "Heb je deze link niet aangevraagd, dan kun je deze e-mail negeren.",
+  "If this e-mail may open the test website, we have sent a link.": "Als dit e-mailadres toegang heeft tot de testwebsite, hebben we een link gestuurd.",
+  "This link is invalid, already used or expired.": "Deze link is ongeldig, al gebruikt of verlopen."
 }

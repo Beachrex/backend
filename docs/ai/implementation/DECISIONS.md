@@ -1292,3 +1292,82 @@ message until midnight. Cookie consent: Turnstile is a strictly necessary securi
 category needed); the privacy policy should name Cloudflare Turnstile. The site sends no Content-Security-Policy
 header today; if one is added, it must allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
 
+## [2026-10-29] AI chat history in the admin; retention is an owner decision
+
+**Status**: Accepted (owner 2026-10-29: "v adminu vidimo, kaj vse se ljudje pogovarjajo v chatu in kakšne odgovore
+daje — zgodovina, da se lahko izboljšujemo"). Clarifies the 2025-12-22 "No Long-Term User Memory" ADR, see below.
+
+**Context**: The chat already stored every answered turn (`ai_messages`: question and answer text, intent, tool calls
+or beaches in `context`, tokens) for both engines, anonymous and signed-in, with the session (`ai_sessions`) and the
+cost row (`ai_usage`). Nothing deletes these rows: `expires_at` (30 min, sliding) only ends the conversation for the
+model, and the cleanup jobs in `docs/ai/architecture/data-retention-policy.md` (30 days messages / 90 days sessions,
+"APPROVED" 2025-12-23) were never implemented. Missing for a useful history: the engine, the page the chat was opened
+on, a link from a turn to its cost/model, and turns that got no answer (the question was lost).
+
+**Decision**:
+1. Admin-only, read-only page **AI → Chat conversations** (`AiConversationResource`) over the existing tables; no
+   create, edit or delete; the public API response is unchanged.
+2. Store additively: `ai_sessions.engine`, `ai_sessions.page_context` (first page), `ai_messages.page_context`,
+   `ai_messages.request_id` (= `ai_usage.request_id`, gives model and cost per turn), and failed turns as a user
+   message with `ai_messages.error` (`ai_unavailable`, `internal_error`, `payment_required`). Failed turns are never
+   sent to the model as history. Requests rejected before the controller (AI switched off, daily cost limit, rate
+   limit, Turnstile) are not stored.
+3. Privacy: chat text is shown only on this page (no global search, not logged anywhere else); the IP hash and user
+   agent are not shown.
+4. No automatic deletion is added. The retention period (proposal: 180 days, then delete the session and its
+   messages; `ai_usage` keeps the cost without the session link) and the privacy policy wording are owner decisions.
+   The repo's policy text (`database/content/static-pages/*.json`, "AI beach assistant") says questions and answers
+   are "processed to generate a reply" and names only OpenAI; it does not say that conversations are kept and read
+   to improve the service, and does not name Anthropic. Until decided, rows are kept indefinitely, as before.
+
+**Consequences**: The model's memory rule (current session only) is unchanged; the 2025-12-22 "all user data is
+deleted after the session expires" statement never matched the code and does not hold. A retention job, once decided,
+is a scheduled command deleting old `ai_sessions` (messages cascade). Deleting one visitor's conversation on request
+is a developer task until then.
+
+
+## [2026-10-29] Closed dev/uat websites behind an e-mail magic link
+
+**Status**: Accepted (owner 2026-10-29: "dev in uat stran bi morali zapreti — vpišem svoj mail, dobim magic link,
+potem se v sejo shrani, da lahko gledam; da ne bo kdorkoli vtipkal dev/uat in prišel na stran")
+
+**Context**: dev.beachrex.com and uat.beachrex.com are reachable by anyone who types the address (only `noindex`
+keeps them out of search engines). They show unreleased work and spend AI budget.
+
+**Decision**:
+1. Only the **web frontends** dev/uat are closed. Not production (`beachrex.com`, live), not the APIs (the mobile dev
+   builds use dev-api; the API is not secret), not the admin (dock-dev/dock-uat have their own login).
+2. Off unless `PREVIEW_GATE_ENABLED=true`: in `.env.front.<env>` (website) and `.env.<env>` (API). **Never** active
+   on production, whatever the env says: the website checks `isProductionSite(NEXT_PUBLIC_BASE_URL)`, the API checks
+   `FRONTEND_URL` against `beachrex.com` / `www.beachrex.com`.
+3. Who may enter: the admins of that environment (`users.is_admin`) plus `PREVIEW_ALLOWED_EMAILS` (API env, comma
+   list). `POST /api/v1/preview-access/request` answers the same for every address (no enumeration) and sends the
+   e-mail after the response (same timing). One-time token: 64 random characters, only its SHA-256 stored
+   (`preview_access_tokens`), 15 minutes, single use (atomic `UPDATE … WHERE used_at IS NULL`). Limits: 5 requests
+   per minute per IP; per address 1 e-mail per minute and 5 per hour (silently skipped). `return_path` must be a
+   relative path (422 otherwise). Both endpoints answer 404 when the gate is off for that environment.
+4. The e-mail link opens `/preview-access/callback?token=…` on the website, a page with a button; the button POSTs
+   the token to the website's `/preview-access/verify`, which calls `POST /api/v1/preview-access/verify` **server
+   side** and sets its own cookie. The return path is stored with the token on the API (not in the link) and
+   sanitized again by the website.
+   *Deviation from the first sketch (link → route handler that verifies on GET):* mail link scanners (Outlook Safe
+   Links, corporate gateways) open every URL in an e-mail and would use up a single-use token before the person
+   clicks. A GET that only shows a button cannot be spent that way.
+5. The cookie `beachrex_preview` = `v1.<expires>.<nonce>.<HMAC-SHA256>`, signed with the server-only
+   `PREVIEW_GATE_SECRET` (≥ 32 characters; `openssl rand -hex 32`), HttpOnly, Secure, SameSite=Lax, 30 days, host-only.
+   The Next.js middleware verifies it with Web Crypto before the locale handling; no valid cookie → 307
+   `/preview-access?return=<path>`. Exempt: `/preview-access*`, `/_next/`, `robots.txt`, favicon, static files (and
+   everything the middleware matcher already skips: `/api`, `/images`, `/brand/`, `/vendor/`, sitemaps, `ads.txt`,
+   `llms.txt`).
+6. Enabled without a usable secret → every gated page answers 503 "This test website is closed" (fail closed, no
+   crash loop).
+7. Env plumbing: non-`NEXT_PUBLIC_` variables are **not** inlined into the Next 14.2 middleware bundle (checked in
+   the build output: the bundle reads `process.env.PREVIEW_GATE_*`, the middleware manifest `env` lists only Next's
+   own keys; the edge sandbox copies the server's `process.env` per request). The front containers already get
+   `.env.front.<env>` through `env_file`, so no build args and no compose change. Changing the values needs only a
+   container restart (the deploy recreates it).
+
+**Consequences**: Revoking all cookies = change `PREVIEW_GATE_SECRET` and redeploy the website. The gate does not
+protect the API (by design), nor the public files the middleware never sees (sitemaps list dev URLs, but the pages
+behind them are closed). Testers without an admin account need their address in `PREVIEW_ALLOWED_EMAILS`. The
+sandbox cannot reach dev/uat: the live check (mail arrives, link opens the site) is the owner's.

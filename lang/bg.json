@@ -38,5 +38,12 @@
   "Parking Capacity": "Капацитет на паркинга",
   "Beach Inclination": "Наклон на плажа",
   "Swimming Depth": "Дълбочина за плуване",
-  "Occupancy": "Натовареност"
+  "Occupancy": "Натовареност",
+  "Your link to the Beachrex test website": "Вашият линк към тестовия сайт на Beachrex",
+  "Use this link to open the Beachrex test website :host.": "С този линк отваряте тестовия сайт на Beachrex :host.",
+  "Open the test website": "Отвори тестовия сайт",
+  "It works once.": "Работи веднъж.",
+  "If you did not ask for this link, you can ignore this email.": "Ако не сте поискали този линк, игнорирайте този имейл.",
+  "If this e-mail may open the test website, we have sent a link.": "Ако този имейл има достъп до тестовия сайт, изпратихме линк.",
+  "This link is invalid, already used or expired.": "Линкът е невалиден, вече е използван или е изтекъл."
 }
