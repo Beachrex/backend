@@ -1504,3 +1504,45 @@ gets the deterministic text and the credit back (existing rule). The synchronous
 the website, which uses the queued `/ai/itinerary-plans`) runs under PHP-FPM's 60 s and can time out on long plans
 with these models. Token counts for new models (thinking, extra tool rounds) may be higher than the profile; the page
 shows measured averages once there is traffic. Guide: `docs/guides/admin/ai-modeli.md`.
+
+## [2026-10-30] Bounded Next.js cache: pages in a memory LRU, scanner URLs 404 before rendering
+
+**Status**: Accepted (owner 2026-10-30, third disk-filling issue: "stran mora biti hitra, light in strežnik prazen;
+najprej raziskava, kaj je narobe")
+
+**Context**: the `front_prod` container's writable layer reached 16.3 GB about 16 h after the prod deploy
+(dev/uat: 32 MB). On the server: `.next/server/app` 13.9 GB in 178 057 files, `.next/cache` 1.2 GB (fetch-cache
+139 955 files); the newest files were scanner paths cached as pages (`api/proc/self/environ`, `api/public/.env.*`,
+`api/..;/.env.*`, `api/graphql`, ...). Causes, reproduced locally (production build, standalone server, mock API):
+1. Next 14's default cache handler writes **every** ISR render (HTML + RSC: ~260 KB per beach page and language,
+   ~125 KB per 404) to `.next/server/app` and every cached `fetch` to `.next/cache/fetch-cache`, and never deletes.
+   Next also stores **404 and redirect renders** of ISR routes.
+2. The URL space is unbounded: the middleware matcher skipped every path starting with `api`, so `/api/<anything>`
+   rendered `[locale]/layout` with locale `api` (no locale check) and `[locale]/[...rest]` (ISR, 1 day), which also
+   called the legacy-redirect API with the path (one fetch-cache file per path). Other junk (`/.env`, `/wp-login.php`)
+   was redirected to `/en/...` and cached the same way. Legitimate pages alone are 19 × (3 774 beaches + places).
+Nothing secret was served: these paths rendered the normal 404 page.
+
+**Decision**:
+1. **Custom cache handler** (web-client `cache-handler.cjs`, `next.config.js` `cacheHandler`,
+   `cacheMaxMemorySize: 0`): ISR pages, route handlers and the fetch Data Cache live in one in-memory LRU with a byte
+   budget (`NEXT_CACHE_MAX_MB`: prod 256, uat/dev 64; default 128), entries gzip-compressed (a beach page ~260 KB →
+   ~60 KB). It never writes to disk; build-time files are read from the image read-only. Non-200 pages/routes are
+   not stored. `revalidateTag` is honoured in memory. Each process (blue/green) has its own cache, empty after a
+   deploy — as before, when every deploy recreated the container.
+2. **Scanner URLs get a 9-byte 404 in the middleware** before anything renders (`src/lib/utils/junk-paths.ts`:
+   `/api/*` except `/api/health`, dot segments, `..`, `;`, `/proc/self`, `/etc/passwd`, script/config/dump
+   extensions, `wp-*`, `cgi-bin`, `phpmyadmin`, ...). The matcher now skips only `api/health`.
+3. `[locale]/layout` returns 404 for a locale that is not one of the 19; `[locale]/[...rest]` (the catch-all for
+   unknown URLs and old-site redirects) is `force-dynamic`: no ISR file, no cached API response per invented URL.
+4. **Safety net**: `/app/.next/cache` is a 256 MB tmpfs in every `front_*` service (empty while the handler works).
+5. **Visibility**: `/api/health` returns the cache numbers (`entries`, `mb`, `maxMb`, `evictions`, `hits`,
+   `misses`, `skipped`) and `rssMb`; the deploy "Disk report" lists per website container its writable layer,
+   `.next/cache` and `.next/server/app` size/files and those numbers, with a WARNING when a layer reaches GBs.
+
+**Consequences**: disk use of the website no longer depends on traffic. A page evicted from the LRU is rendered again
+on its next visit (locally ~65 ms vs ~16 ms from cache, same as before the change); popular pages stay cached.
+Memory: the budget plus Next's normal render heap (RSS ~1.1–1.5 GB under a crawl both with a 1 MB and a 128 MB
+budget). Measured locally: 950 beach pages, 38 place pages and 500 unknown/redirect URLs wrote 318 MB (1 489 pages ×
+html/rsc/meta) + 15 MB (2 505 fetch files) before; after, the same plus 480 scanner probes wrote 0 bytes; TTFB unchanged (miss 64 → 67 ms, hit 15.3 → 15.9 ms avg).
+Runbook: `docs/runbooks/disk-cleanup.md` "Website cache".

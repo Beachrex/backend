@@ -69,13 +69,77 @@ unused > 72 h + 6.6 GB above the 8 GB cap removed (~8.7 GB). The "After" part wa
 
 Found, not deleted:
 - **`front_prod` writable layer 14.3 GB** (the Next.js cache in the container: ISR pages / fetch cache; the
-  site went live 2026-10-29). It is dropped when `front_prod` is recreated (every prod website deploy), but it grows
-  fast — the biggest single disk user. Needs a web-client decision (cache limits or a cache handler); tracked in HANDOFF.
+  site went live 2026-10-29). Root cause and fix: section "Website cache" below.
 - Five manual DB dumps in `/root` (`*_dev-before-ascii-20261008-0825.dump`, `*_uat-before-promote-20261008-0906.dump`,
   `*_uat-before-promote-20261009.dump`, `*_prod-before-copy-20261029-1113.dump`, `*_uat-before-copy-20261029-1113.dump`),
   ~337–339 MB each, ~1.7 GB together: the owner decides.
 - Container logs all small (largest `web_prod` 7 MB, `api_prod` 6 MB; every container has a size limit, pgsql/redis
   `10m x 3` from the daemon default). Laravel `laravel.log` 1–3 MB per env.
+
+## Website cache: `front_prod` 16 GB in a day (root cause and fix, 2026-10-30)
+
+ADR 2026-10-30 "Bounded Next.js cache". Measured on prod by the owner (13:56, container up since the 2026-10-29 21:33
+deploy; the writable layer survived the 09:22 reboot because a reboot restarts, not recreates, the container):
+writable layer **16.3 GB** (dev/uat 32 MB); `.next/server/app` 13.9 GB in 178 057 files; `.next/cache` 1.2 GB
+(`fetch-cache` 139 955 files). Newest files: scanner paths stored as pages, e.g. `api/proc/self/environ.{html,rsc,meta}`,
+`api/public/.env.*`, `api/..;/.env.*`, `api/graphql.*`, `api/auth/session.*`.
+
+**Why.** Next.js 14 (`output: standalone`) keeps its ISR/data cache inside the container by default and never deletes:
+- every ISR render is written as `.html` + `.rsc` + `.meta` (beach page ~260 KB per language, 404 page ~125 KB),
+  **including 404 and redirect renders**; every cached `fetch` is one file in `.next/cache/fetch-cache`;
+- the middleware matcher skipped all paths starting with `api`, so `/api/<anything>` rendered as locale `api` through
+  `[locale]/[...rest]` (ISR, 1 day), which also called the legacy-redirect API with the path → one page and one fetch
+  file per invented URL. `/.env`, `/wp-login.php` etc. were redirected to `/en/...` and cached the same way;
+- 178 057 files / 3 ≈ 59 000 pages × ~235 KB ≈ 13.9 GB: crawlers and scanners in the first day.
+
+Nothing secret was served: those URLs rendered the normal 404 page (checked locally: `/api/.env`,
+`/api/proc/self/environ`, `/api/..;/.env` → 404 with the site's 404 HTML, no environment values).
+
+**Why the earlier fixes did not catch it.** The 2026-10-26 slowdown fix bounded *memory* (slug lists); the image and
+build-cache cleanup covers images and BuildKit, not container layers. Dev/uat get little traffic and are recreated by
+frequent deploys (32 MB), so it showed only on prod after launch, sitemap submission and the first scanners.
+
+**Fix (web-client).**
+- `cache-handler.cjs`: pages, route handlers and fetch responses in one gzip-compressed in-memory LRU with a byte
+  budget (`NEXT_CACHE_MAX_MB`: prod 256, uat/dev 64, set in `docker-compose.vps.yml`); nothing is written to disk;
+  404/redirect renders are not stored.
+- Middleware: scanner URLs (`src/lib/utils/junk-paths.ts`) get a 9-byte 404 before anything renders; the matcher
+  skips only `api/health`. Unknown locales → 404 in `[locale]/layout`; `[locale]/[...rest]` is `force-dynamic`.
+- Safety net: `/app/.next/cache` is a 256 MB tmpfs in every `front_*` service.
+
+Local proof (production build + standalone server + mock API; growth of `.next/cache` + `.next/server/app`):
+
+| Requests | Before | After |
+|---|---|---|
+| 50 beaches × 19 languages | +247 MB: 950 pages, 2 019 fetch files | 0 |
+| same again (served from cache) | 0 | 0 |
+| 200 query-string variants of one page | 0 | 0 |
+| 200 unknown beach slugs (404) | +24 MB, 200 pages | 0 |
+| 200 unknown `[...rest]` paths (404) | +24 MB, 200 pages, 200 fetch files | 0 |
+| 100 wrong-parent beach URLs (redirect) | +12 MB, 100 pages | 0 |
+| 480 scanner probes (`/api/.env`, `/api/proc/self/environ`, ...) | ~125 KB each (as the 404s above) | 0, 9-byte 404 in 2 ms |
+
+TTFB (avg of 950 requests): first render 64 → 67 ms, from cache 15.3 → 15.9 ms. Memory: cache 63.5 MB for ~1 000 pages
+plus their API responses (budget 128 MB); RSS ~1.1–1.5 GB under the crawl with a 1 MB or a 128 MB budget alike
+(Next's render heap, not the cache).
+
+**What to watch.** `https://beachrex.com/api/health` → `cache.mb` stays ≤ `cache.maxMb`; `evictions` rising fast with
+low `hits` means the budget is small for the traffic (raise `NEXT_CACHE_MAX_MB` in the compose file; mind the 8 GB
+VPS). The deploy "Disk report" lists each website container's writable layer, `.next/cache`, `.next/server/app` and
+these numbers, with a WARNING when a layer reaches GBs. The current 16 GB on prod go away with the next prod website
+deploy (the container is recreated); until then they stay.
+
+**Cloudflare (owner, optional; stops scanner traffic before it reaches the VPS).** WAF → Custom rules → Block (or
+Managed Challenge) on host `beachrex.com` / `www.beachrex.com` (never `api.beachrex.com`) when the lower-cased URI path
+- starts with `/api/` and is not `/api/health`;
+- contains `/.env`, `/.git`, `/.aws`, `/.ssh`, `..;`, `/proc/self`, `/etc/passwd`, `wp-admin`, `wp-login`,
+  `wp-content`, `wp-includes`, `xmlrpc.php`, `phpmyadmin`, `cgi-bin`, `/actuator`;
+- ends with `.php`, `.asp`, `.aspx`, `.jsp`, `.cgi`, `.env`, `.bak`, `.sql`, `.yml`, `.ini`, `.log`.
+
+Also worth considering: Security → Bots → "Block AI Scrapers and Crawlers" (if AI crawlers are not wanted) and the free
+Cloudflare managed ruleset. HTML is not edge-cached today (Cloudflare does not cache HTML by default; pages send
+`s-maxage=300, stale-while-revalidate`); a "Cache Everything" rule for public pages (excluding `/api/*`, `/*/ai*`,
+`/*/favorites*`, `/*/auth/*`, `/*/payment/*`) would take most page traffic off the server — a separate decision.
 
 ## Quick rollback to the previous image (owner, on the VPS)
 

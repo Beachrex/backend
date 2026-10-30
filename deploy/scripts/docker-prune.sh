@@ -261,6 +261,21 @@ fi
   echo "container writable layers >= 10 MB (e.g. the Next.js .next/cache; gone when the container is recreated):"
   docker ps -a --size --filter "label=com.docker.compose.project=${PROJECT_LABEL}" --format '{{.Names}} {{.Size}}' 2> /dev/null \
     | awk '$2 ~ /GB$/ || ($2 ~ /MB$/ && $2 + 0 >= 10) {print "  " $1, $2}'
+  # Website cache (ADR 2026-10-30 "Bounded Next.js cache"): the pages live in memory (bounded LRU, numbers from
+  # /api/health); on disk .next/cache (tmpfs) and the ISR files in .next/server/app must stay near their image size.
+  echo "website cache (memory LRU from /api/health; disk folders that must not grow):"
+  for e in prod uat dev; do
+    for svc in "front_${e}" "front_${e}_green"; do
+      cid="$(docker ps -q --filter "label=com.docker.compose.service=${svc}" 2> /dev/null | head -1)"
+      [ -n "$cid" ] || continue
+      layer="$(docker ps --size --filter "id=${cid}" --format '{{.Size}}' 2> /dev/null | cut -d' ' -f1)"
+      info="$(docker exec "$cid" sh -c 'c=$(du -sm .next/cache 2>/dev/null | cut -f1); a=$(du -sm .next/server/app 2>/dev/null | cut -f1); n=$(find .next/server/app -type f 2>/dev/null | wc -l); h=$(wget -q -T 3 -O- "http://${HOSTNAME}:${PORT}/api/health" 2>/dev/null | grep -o "\"cache\":{[^}]*}\|\"rssMb\":[0-9]*" | tr "\n" " "); echo ".next/cache ${c:-0} MB, .next/server/app ${a:-0} MB (${n} files), ${h:-no health}"' 2> /dev/null)"
+      echo "  ${svc}: writable layer ${layer:-?}; ${info:-not readable}"
+      case "$layer" in
+        *GB) echo "  WARNING ${svc}: writable layer ${layer} - the website cache is writing to disk again (runbook disk-cleanup.md)" ;;
+      esac
+    done
+  done
   echo "volumes:"
   docker system df -v 2> /dev/null | awk '/^Local Volumes space usage/{f=1; next} /^Build cache usage/{f=0} f && NF >= 3 && $1 != "VOLUME" {print "  " $1, $NF}'
   echo "host folders:"
