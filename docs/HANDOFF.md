@@ -68,6 +68,13 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-30: **AI model picker in admin; trip planner on Claude Opus 5.5** (owner: "v adminu seznam modelov in
+  približne cene … za chat posebej, za AI itinerary posebej", "AI trip planner mora biti najdražji/najboljši model").
+  Admin **AI → AI models**: chat and planner model, prices from `ModelPricing`, cost per answer / per plan, test
+  buttons. Chat unchanged until the owner picks (prod: Opus 5.5). Planner default Claude Opus 5.5 where
+  `ANTHROPIC_API_KEY` is set; GPT-6 Astra selectable for the planner (not the chat). ADR 2026-10-30, guide
+  `docs/guides/admin/ai-modeli.md`; status in DEV_HANDOFF.
+
 - 2026-10-30: **Deploys clean up old Docker images** (owner: disk 71 % full, "da deploy samodejno čisti stare Docker
   slike — ja"). Last step of both deploy workflows: `deploy/scripts/docker-prune.sh` keeps the current + one previous
   image per service (`<tag>-previous`) and any image a container uses, removes older ones and BuildKit cache unused

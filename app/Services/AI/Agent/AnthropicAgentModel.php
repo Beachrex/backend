@@ -21,7 +21,8 @@ class AnthropicAgentModel implements AgentModel
 
     public function converse(string $system, array $history, string $message, array $tools, callable $runTool, int $maxToolRounds): AgentResult
     {
-        $client = $this->client ?? new Client(
+        // A bound client (tests) wins over a new one; the model id still comes from the caller.
+        $client = $this->client ?? (app()->bound(Client::class) ? app(Client::class) : null) ?? new Client(
             apiKey: (string) config('ai.providers.anthropic.api_key'),
             // The whole chat request must finish inside php-fpm/nginx's 60 s.
             requestOptions: ['timeout' => 25.0, 'maxRetries' => 1],

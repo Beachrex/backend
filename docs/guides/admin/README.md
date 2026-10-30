@@ -45,6 +45,7 @@ Stanje: ✅ napisano · ⏳ še ni napisano
 | Funkcija | Kje v adminu | Navodila | Stanje |
 |---|---|---|---|
 | Pogovori z AI klepetom (zgodovina vprašanj in odgovorov) | AI → Chat conversations | [ai-pogovori.md](ai-pogovori.md) | ✅ |
+| Izbira AI modela za klepet in načrtovalec, cene | AI → AI models | [ai-modeli.md](ai-modeli.md) | ✅ |
 
 ## Uporabniki in sistem
 
