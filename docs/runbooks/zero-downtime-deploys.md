@@ -63,7 +63,10 @@ curl -sk --resolve beachrex.com:443:127.0.0.1 https://beachrex.com/api/health   
 ### Roll back
 
 The previous version is not kept in a container (both colors end on the new image). Roll back by reverting the
-PR on the branch and letting the deploy run again — it switches with zero downtime like any deploy.
+PR on the branch and letting the deploy run again — it switches with zero downtime like any deploy. Since
+2026-10-30 the previous **image** stays on disk as `beachrex/front:<env>-previous` (and `beachrex/api:<env>-previous`);
+older images and old build cache are removed at the end of every deploy — runbook `disk-cleanup.md`, which also has
+a quick rollback to that image.
 
 Emergency (owner, on the VPS) — blue misbehaves right after a deploy and green was stopped: start green and switch
 to it (it runs the same image, so this helps only when the blue *container* is broken, not the code):
@@ -91,7 +94,11 @@ sudo nginx -t && sudo systemctl reload nginx
 4. Wait until PHP-FPM listens in the new container, then `migrate --force`, `config:cache`, `route:cache`,
    `cache:clear` **in the new container**.
 5. Wait 12 s (web's DNS cache), `docker stop -t 70` the old container (php-fpm SIGQUIT: open requests finish), remove it.
-6. The workflow continues as before (scheduler, watermark, worker, search index, MCP).
+6. The workflow continues as before (scheduler, watermark, worker, search index, MCP), then cleans up old images
+   and build cache (`deploy/scripts/docker-prune.sh`, runbook `disk-cleanup.md`).
+
+Both scripts hold `/opt/beachrex/.docker-build.lock` shared while they build, so the cleanup (exclusive) never runs
+during a build of the other repo.
 
 The same probe runs against `https://<api host>/api/v1/health`; failed requests make the run fail at the end
 (exit 3 from the script, after the remaining steps).

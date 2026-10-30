@@ -202,10 +202,23 @@ finish() {
 }
 trap finish EXIT
 
+# Builds hold the Docker lock shared; docker-prune.sh (end of every deploy, both repos) takes it exclusively,
+# so an image cleanup never runs while the other repo's deploy builds. Never blocks a deploy for long.
+build_locked() {
+  local lock="${BEACHREX_DOCKER_LOCK:-$ROOT/.docker-build.lock}"
+  if command -v flock > /dev/null 2>&1 && exec 8>> "$lock"; then
+    flock -s -w 600 8 || log "Docker lock busy for 600 s; building anyway."
+  fi
+  local rc=0
+  dc build "$@" || rc=$?
+  flock -u 8 2> /dev/null || true
+  return "$rc"
+}
+
 # ---------- main ----------
 log "Website deploy of ${ENV_NAME} (${SITE_HOST}); $(docker compose version 2>/dev/null || echo 'docker compose ?')"
 log "Building beachrex/front:${ENV_NAME} (the live container keeps serving)."
-dc build "$BLUE"
+build_locked "$BLUE"
 
 ACTIVE="$(active_color)"
 log "Active color before the deploy: ${ACTIVE}."
