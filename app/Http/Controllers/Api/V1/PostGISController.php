@@ -249,35 +249,40 @@ class PostGISController extends Controller
             'limit' => 'sometimes|integer|min:1|max:10000'
         ]);
 
-        // Generate cache key based on coordinates, radius, filters, and locale
-        $locale = app()->getLocale();
+        // Bounded cache key space (ADR 2026-10-30 "API performance"): the point is rounded to 3 decimals (~110 m) and
+        // the radius to 0.1 km, and the query uses the same rounded values, so one cache entry answers every request
+        // that rounds the same. Before, the key had 4 decimals, the TTL was 30 days and the query used the raw
+        // values. Cache entries live 1 h and are cleared on content changes (ApiResponseCache generation).
         $filterSuffix = $this->filterService->generateCacheKeySuffix($request);
-        $lat = round($request->latitude, 4);
-        $lng = round($request->longitude, 4);
-        $radius = round($request->radius, 2);
-        $cacheKey = "beaches:within_radius:{$locale}:lat={$lat}:lng={$lng}:radius={$radius}:{$filterSuffix}";
+        $lat = round((float) $request->latitude, 3);
+        $lng = round((float) $request->longitude, 3);
+        $radius = max(0.1, round((float) $request->radius, 1));
+        $limit = (int) $request->get('limit', 5000);
+        $cacheKey = \App\Support\ApiResponseCache::key('spatial.within-radius', [
+            'lat' => $lat, 'lng' => $lng, 'radius' => $radius, 'limit' => $limit, 'f' => $filterSuffix,
+        ]);
 
-        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request) {
+        $data = $this->cacheRemember($cacheKey, \App\Support\ApiResponseCache::TTL_QUERY, function () use ($request, $lat, $lng, $radius, $limit) {
             $beaches = $this->postGISService->getBeachesWithinRadius(
-                $request->latitude,
-                $request->longitude,
-                $request->radius,
-                $request->get('limit', 5000),
+                $lat,
+                $lng,
+                $radius,
+                $limit,
                 $request  // Pass the request for filtering
             );
 
             // Calculate centroid of returned beaches
             $centroid = $this->postGISService->calculateCentroid(
-                $request->latitude,
-                $request->longitude,
-                $request->radius,
+                $lat,
+                $lng,
+                $radius,
                 $request
             );
 
             // Reverse geocode the search center to find nearest city
             $location = $this->postGISService->reverseGeocodePoint(
-                $request->latitude,
-                $request->longitude
+                $lat,
+                $lng
             );
 
             return [

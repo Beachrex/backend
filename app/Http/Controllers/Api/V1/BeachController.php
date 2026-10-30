@@ -68,9 +68,8 @@ class BeachController extends Controller
      */
     public function mapBounds()
     {
-        $cacheKey = 'beaches:map_bounds';
-
-        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+        // Not locale-specific; cached per locale like every ApiResponseCache response (tiny, cleared on changes).
+        return \App\Support\ApiResponseCache::json('beaches.map-bounds', [], \App\Support\ApiResponseCache::TTL_REFERENCE, function () {
             $geoData = Beach::where('status_id', 1)
                 ->selectRaw('
                     ST_Y(ST_Centroid(ST_Collect(location))) as center_lat,
@@ -98,8 +97,6 @@ class BeachController extends Controller
                 'total_beaches' => $geoData?->total ? (int) $geoData->total : 0,
             ];
         });
-
-        return response()->json($data);
     }
 
     /**
@@ -231,9 +228,7 @@ class BeachController extends Controller
     public function index(Request $request)
     {
         // Generate cache key based on filters and locale
-        $locale = app()->getLocale();
         $filterSuffix = $this->filterService->generateCacheKeySuffix($request);
-        $cacheKey = "beaches:index:{$locale}:{$filterSuffix}";
 
         // Cache the already-transformed array (not Eloquent models).
         // Caching Eloquent collections with eager loading causes huge
@@ -246,7 +241,9 @@ class BeachController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         $sort = $request->input('sort') === 'newest' ? 'newest' : 'popular';
 
-        $data = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($request, $perPage, $page, $sort) {
+        // Whole response cached per locale, filters, page and sort (ApiResponseCache; 1 h, cleared on content
+        // changes). The key holds only whitelisted filters (BeachFilterService), so invented parameters share it.
+        return \App\Support\ApiResponseCache::json('beaches.index', ['f' => $filterSuffix, 'per_page' => $perPage, 'page' => $page, 'sort' => $sort], \App\Support\ApiResponseCache::TTL_QUERY, function () use ($request, $perPage, $page, $sort) {
 
             // Only load relationships that are actually used in BeachResource
             $query = Beach::where('status_id', 1)
@@ -277,7 +274,7 @@ class BeachController extends Controller
             $beaches = $query->forPage($page, $perPage)->get();
 
             return [
-                'beaches' => BeachResource::collection($beaches)->resolve(),
+                'data' => BeachResource::collection($beaches)->resolve(),
                 'meta' => [
                     'center' => [
                         'latitude' => $geoData?->center_lat ? (float) $geoData->center_lat : null,
@@ -298,11 +295,6 @@ class BeachController extends Controller
                 ]
             ];
         });
-
-        return response()->json([
-            'data' => $data['beaches'],
-            'meta' => $data['meta'],
-        ]);
     }
 
     /**
@@ -546,12 +538,9 @@ class BeachController extends Controller
             'limit' => $limit,
         ])->filter()->map(fn($value, $key) => "{$key}:{$value}")->implode('_');
 
-        $cacheKey = "beaches:most_visited:{$locale}:" . ($cacheKeySuffix ?: 'all');
-
-        // Cache for 24 hours (86400 seconds)
-        // Cache the resolved resource array, not Eloquent models, to keep
-        // Redis keys small and avoid memory exhaustion on unserialize.
-        $data = $this->cacheRemember($cacheKey, 86400, function () use ($request, $limit) {
+        // Whole response cached per locale, place and limit (ApiResponseCache; cleared on content changes).
+        // Views change the order slowly; the 6 h safety TTL also picks those up.
+        return \App\Support\ApiResponseCache::json('beaches.most-visited', ['k' => $cacheKeySuffix ?: 'all'], \App\Support\ApiResponseCache::TTL_REFERENCE, function () use ($request, $limit) {
             $query = Beach::where('status_id', 1)
                 ->with([
                     'shownWebcams',
@@ -608,21 +597,15 @@ class BeachController extends Controller
                 ->get();
 
             return [
-                'beaches' => BeachResource::collection($beaches)->resolve(),
-                'total' => $beaches->count(),
-                'limit' => $limit,
+                'success' => true,
+                'data' => BeachResource::collection($beaches)->resolve(),
+                'message' => 'Most visited beaches retrieved successfully',
+                'meta' => [
+                    'total' => $beaches->count(),
+                    'limit' => $limit,
+                ],
             ];
         });
-
-        return response()->json([
-            'success' => true,
-            'data' => $data['beaches'],
-            'message' => 'Most visited beaches retrieved successfully',
-            'meta' => [
-                'total' => $data['total'],
-                'limit' => $data['limit'],
-            ],
-        ], 200);
     }
 
     /**
@@ -658,11 +641,8 @@ class BeachController extends Controller
      */
     public function footerMostVisited()
     {
-        $locale = app()->getLocale();
-        $cacheKey = "beaches:footer:{$locale}";
-
-        // Cache the resolved resource array, not Eloquent models.
-        $data = $this->cacheRemember($cacheKey, 86400, function () {
+        // Whole response cached per locale (ApiResponseCache; cleared on content changes).
+        return \App\Support\ApiResponseCache::json('beaches.footer', [], \App\Support\ApiResponseCache::TTL_REFERENCE, function () {
             $beaches = Beach::where('status_id', 1)
                 ->with([
                     'shownWebcams',
@@ -678,13 +658,11 @@ class BeachController extends Controller
                 ->limit(6)
                 ->get();
 
-            return BeachFooterResource::collection($beaches)->resolve();
+            return [
+                'success' => true,
+                'data' => BeachFooterResource::collection($beaches)->resolve(),
+                'message' => 'Footer beaches retrieved successfully',
+            ];
         });
-
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-            'message' => 'Footer beaches retrieved successfully',
-        ], 200);
     }
 }

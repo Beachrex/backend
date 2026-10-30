@@ -96,14 +96,8 @@ class CityController extends Controller
             $regionFilter = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
             $islandFilter = $request->get('island_code');    // e.g., krk, rab, hvar
 
-            // Build cache key based on active filters to ensure proper cache segmentation
-            $filterParts = [];
-            if ($countryFilter) $filterParts[] = "country:{$countryFilter}";
-            if ($regionFilter) $filterParts[] = "region:{$regionFilter}";
-            if ($islandFilter) $filterParts[] = "island:{$islandFilter}";
-            $cacheKey = "cities:index:{$locale}:" . (count($filterParts) > 0 ? implode(':', $filterParts) : "all");
-
-            $cities = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter, $regionFilter, $islandFilter) {
+            // Whole response cached per locale and filter (ApiResponseCache: JSON, not models; cleared on content changes).
+            return \App\Support\ApiResponseCache::json('cities.index', ['country_code' => $countryFilter, 'region_code' => $regionFilter, 'island_code' => $islandFilter], \App\Support\ApiResponseCache::TTL_REFERENCE, function () use ($countryFilter, $regionFilter, $islandFilter) {
                 $query = City::with([
                         'country.continent.translations',
                         'country.translations',
@@ -127,7 +121,7 @@ class CityController extends Controller
                     $query->byIsland($islandFilter);    // Filter by island code or ID
                 }
 
-                return $query->get([
+                $cities = $query->get([
                     'id',
                     'code',
                     'country_code',
@@ -136,13 +130,13 @@ class CityController extends Controller
                     'main_image',
                     'status_id'
                 ]);
-            });
 
-            return response()->json([
-                'success' => true,
-                'data' => CityResource::collection($cities),
-                'message' => 'Cities retrieved successfully'
-            ], 200);
+                return [
+                    'success' => true,
+                    'data' => CityResource::collection($cities),
+                    'message' => 'Cities retrieved successfully'
+                ];
+            });
 
         } catch (\Exception $e) {
             return response()->json([

@@ -97,6 +97,25 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        // Same database for GET /api/v1/health, with a persistent connection (ADR 2026-10-30 "API performance"):
+        // health runs in its own small PHP-FPM pool (2 workers), so this keeps at most a few connections open and
+        // saves the ~15 ms SCRAM login on every probe (deploy probe every 0.2 s, uptime monitor).
+        'pgsql_health' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+            'options' => extension_loaded('pdo_pgsql') ? [PDO::ATTR_PERSISTENT => true] : [],
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

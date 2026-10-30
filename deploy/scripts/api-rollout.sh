@@ -210,4 +210,15 @@ if [ "$BAD" -gt 0 ]; then
   exit 3
 fi
 log "API rollout of ${ENV_NAME} complete: ${NEW_NAME} serves the new version."
+# Micro-cache check through host nginx (ADR 2026-10-30 "API performance"): the second identical request must be a
+# HIT (answered by nginx without PHP). Report only, never fatal.
+for i in 1 2; do
+  MC="$(curl -sk -o /dev/null -D - --max-time 10 -H 'Accept-Language: de' --resolve "${API_HOST}:${PROBE_HTTPS_PORT}:127.0.0.1" \
+    "https://${API_HOST}:${PROBE_HTTPS_PORT}/api/v1/continents" 2>/dev/null | tr -d '\r' | awk -F': ' 'tolower($1)=="x-micro-cache"{print $2}' || true)"
+  log "Micro-cache check ${i}: GET /api/v1/continents → X-Micro-Cache: ${MC:-none}"
+done
+# Performance numbers in the same annotation (cache hit rate, Redis, PHP-FPM pools, DB; never fatal).
+# ADR 2026-10-30 "API performance", runbook docs/runbooks/performance-and-bots.md.
+PERF="$(docker exec "$NEW_ID" php artisan ops:perf-report --sample=500 2>&1 | head -40 || true)"
+[ -n "$PERF" ] && { log "Performance report (ops:perf-report):"; printf '%s\n' "$PERF" | sed 's/^/    /' | tee -a "$SUMMARY_FILE"; }
 annotate
