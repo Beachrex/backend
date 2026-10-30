@@ -52,6 +52,25 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Fix: API status server had no DNS resolver; micro-cache check in the rollout
+
+### Overview
+After #195 the dev rollout annotation showed `PHP-FPM www: RequestException … 502` from `ops:perf-report`: the
+internal `:8080` server in `deploy/nginx/api.<env>.conf` uses `api_<env>` through a variable but had no `resolver`
+(it was set only inside the public server block) → "no resolver defined" → 502. The deploy itself was fine (probe
+61 × 200).
+
+### Changes Made
+- `deploy/nginx/api.<env>.conf`: `resolver 127.0.0.11 valid=10s ipv6=off;` moved to http level (covers both servers).
+- `deploy/scripts/api-rollout.sh`: after the rollout, two identical `GET /api/v1/continents` through host nginx;
+  the annotation shows their `X-Micro-Cache` (the second must be HIT).
+- `tests/Unit/NginxConfigTest.php`: resolver at http level, exactly once (fails on the previous file).
+
+### Testing
+- `nginx -t` with the unmodified dev file (only paths/ports changed); `NginxConfigTest` 7/7.
+
+---
+
 ## 2026-10-30 - API nginx micro-cache, health PHP-FPM pool, per-network rate limits, timed logs, ops:perf-report
 
 ### Overview

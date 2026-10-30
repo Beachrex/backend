@@ -95,6 +95,17 @@ class NginxConfigTest extends TestCase
     }
 
     #[Test]
+    public function every_server_block_can_resolve_the_php_containers(): void
+    {
+        // Upstreams are variables (api_<env> changes address on deploys), so nginx needs a resolver in every
+        // server block that uses them; at http level it covers all (the :8080 status server had none → 502).
+        $conf = $this->file('api.prod.conf');
+        $beforeFirstServer = substr($conf, 0, strpos($conf, "\nserver {"));
+        $this->assertMatchesRegularExpression('/^resolver 127\.0\.0\.11 /m', $beforeFirstServer);
+        $this->assertSame(1, preg_match_all('/^\s*resolver /m', $conf));
+    }
+
+    #[Test]
     public function health_has_its_own_pool_with_a_fallback_to_the_main_pool(): void
     {
         $conf = $this->file('api.prod.conf');
