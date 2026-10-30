@@ -210,4 +210,8 @@ if [ "$BAD" -gt 0 ]; then
   exit 3
 fi
 log "API rollout of ${ENV_NAME} complete: ${NEW_NAME} serves the new version."
+# Performance numbers in the same annotation (cache hit rate, Redis, PHP-FPM pools, DB; never fatal).
+# ADR 2026-10-30 "API performance", runbook docs/runbooks/performance-and-bots.md.
+PERF="$(docker exec "$NEW_ID" php artisan ops:perf-report --sample=500 2>&1 | head -40 || true)"
+[ -n "$PERF" ] && { log "Performance report (ops:perf-report):"; printf '%s\n' "$PERF" | sed 's/^/    /' | tee -a "$SUMMARY_FILE"; }
 annotate

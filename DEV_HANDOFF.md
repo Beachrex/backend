@@ -52,6 +52,46 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - API nginx micro-cache, health PHP-FPM pool, per-network rate limits, timed logs, ops:perf-report
+
+### Overview
+Second part of ADR 2026-10-30 "API performance" (incident 2026-10-30). Removes PHP from the hit path of public
+GETs, keeps health answering when the main PHP pool is full, limits scrapers that spread over a /24, and makes the
+numbers visible. Runbook: `docs/runbooks/performance-and-bots.md`; admin guide `docs/guides/admin/zmogljivost.md`.
+
+### Changes Made
+- `deploy/nginx/api.<env>.conf` (same file for all envs, test-enforced): `Accept-Language` normalized to one of the
+  19 codes and passed to PHP; micro-cache for answers with `X-Accel-Expires` (opt-in from `public.cache:60`), key
+  method + host + URI + language, never with `Authorization`, cache lock + stale-while-updating + stale on PHP
+  errors, 256 MB max; `/api/v1/health` → PHP-FPM pool `health` (port 9001) with fallback to the main pool;
+  internal server on :8080 (`/fpm-status`, `/fpm-status-health`, `/nginx-status`, Docker network only);
+  access log with `rt=`, `urt=`, `cache=`, `lang=`, visitor IP and UA.
+- `Dockerfile.prod`: second FPM pool `health` (2 workers, 15 s), `pm.status_path` on both pools.
+- `deploy/nginx/beachrex.conf` (host): API also limited per /24 (IPv6 /64) at 60 r/s, burst 300; website pages
+  8 r/s per IP (burst 80) and 25 r/s per /24 (burst 250), static files unlimited; our server and private networks
+  exempt; `beachrex_timed` access log (real IP, times, upstream status, CF ray/country) on every HTTPS server.
+- `deploy/docker-compose.vps.yml`: `PHP_FPM_MAX_CHILDREN=8` for api_uat/api_dev; `OPS_FPM_STATUS_URL`,
+  `OPS_FPM_HEALTH_STATUS_URL` for api/scheduler; `API_INTERNAL_URL=http://web_<env>` for the websites (used by the
+  web-client from its next deploy: server-side API calls stay inside the Docker network).
+- `app/Console/Commands/OpsPerfReport.php` + `config/ops.php`: `ops:perf-report [--json] [--alert]`; scheduled
+  every 10 min with `--alert` when `OPS_ALERT_EMAIL` is set (one e-mail per hour at most).
+- `deploy/scripts/api-rollout.sh`: the rollout annotation ends with the `ops:perf-report` output.
+
+### Affected Endpoints
+- All API answers pass through the micro-cache logic; only `public.cache` routes are stored. `X-Micro-Cache`
+  response header (HIT/MISS/STALE/UPDATING/BYPASS).
+
+### Testing
+- `tests/Unit/NginxConfigTest.php` (env files identical, language map = `SUPPORTED_LOCALES`, nginx/PHP language
+  parsing equal on 13 headers, cache opt-in/bypass directives, health pool, rate-limit zones),
+  `tests/Feature/OpsPerfReportTest.php`.
+- Local nginx 1.24 + PHP-FPM 8.3 with these files: `nginx -t` ok (host file without `http2 on`, a 1.25 directive);
+  scraper simulation 130 IPs of one /24 at 100 r/s for 10 s → 898 × 200, 59 × 429; 40 r/s → all 200.
+- NOT RUN: the Dockerfile build (no Docker Hub access in the sandbox); the pool file it writes was extracted and
+  checked with `php-fpm -t`.
+
+---
+
 ## 2026-10-30 - API response cache (JSON, not models), public cache headers, persistent health DB connection
 
 ### Overview
