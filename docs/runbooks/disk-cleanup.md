@@ -20,7 +20,7 @@ Per compose service that builds an image (`api_<env>`, `front_<env>`):
 | Image | What happens |
 |---|---|
 | current (`beachrex/api:<env>`, `beachrex/front:<env>`) | kept |
-| the newest other image of the service | kept and tagged `<tag>-previous` (e.g. `beachrex/front:prod-previous`) |
+| previous: the image that was live before the build — the build step tags it `<tag>-previous` (e.g. `beachrex/front:prod-previous`) just before `docker compose build`; without that tag, the newest other image of the service | kept |
 | any image a container uses (running or stopped: old API replica, scheduler/worker before their recreate, stopped `front_<env>_green`) | kept ("a container uses it" in the log) |
 | everything older | `docker image rm <id>` (no `-f`: Docker refuses anything in use or multi-tagged; that is logged, never forced) |
 
@@ -60,7 +60,10 @@ items are left out):
 ## First run (dev, 2026-10-30, run 41036884533)
 
 Before: `/` 56 GB of 75 GB used (78 %); Build Cache 20.75 GB (176 entries), images 6.7 GB, volumes 5.3 GB (pgsql 5.0 GB).
-No old images of our services were left (all six services had only their current image). Build cache: 2.1 GB
+No old images of our services were left (all six services had only their current image): the VPS Docker uses the
+containerd image store, where an image that loses its tag and is not in use is gone at once — so images never piled
+up, and a "previous" image only survives because the build step now tags it before building (follow-up PR).
+Build cache: 2.1 GB
 unused > 72 h + 6.6 GB above the 8 GB cap removed (~8.7 GB). The "After" part was cut by the 4096-character limit
 (fixed in the next PR).
 

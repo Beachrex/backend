@@ -209,6 +209,14 @@ build_locked() {
   if command -v flock > /dev/null 2>&1 && exec 8>> "$lock"; then
     flock -s -w 600 8 || log "Docker lock busy for 600 s; building anyway."
   fi
+  # Keep the image that is live now as <image>-previous (quick rollback; docker-prune.sh keeps exactly that one).
+  local svc img
+  for svc in "$@"; do
+    img="$(dc config --images "$svc" 2> /dev/null | head -1 || true)"
+    if [ -n "$img" ] && docker image inspect "$img" > /dev/null 2>&1; then
+      docker tag "$img" "${img}-previous" || log "Could not tag ${img} as ${img}-previous."
+    fi
+  done
   local rc=0
   dc build "$@" || rc=$?
   flock -u 8 2> /dev/null || true
