@@ -38,16 +38,25 @@ LOCK_FILE="${BEACHREX_DOCKER_LOCK:-$ROOT/.docker-build.lock}"
 LOCK_WAIT_S="${BEACHREX_PRUNE_LOCK_WAIT_S:-600}"
 DRY_RUN="${BEACHREX_PRUNE_DRY_RUN:-0}"
 
+# Two notices: the cleanup itself, then the report of other disk users. A GitHub annotation keeps only 4096
+# characters, so each is split into parts at line boundaries.
 SUMMARY_FILE="$(mktemp)"
+REPORT_FILE="$(mktemp)"
 log() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$SUMMARY_FILE"; }
 indent() { sed 's/^/    /' | tee -a "$SUMMARY_FILE"; }
+# shellcheck disable=SC2329 # used by annotate (EXIT trap)
+notice_parts() { # <file> <title>
+  [ -s "$1" ] || return 0
+  awk -v title="$2" -v max=3900 '
+    function flush() { if (body != "") { n++; printf "::notice title=%s (part %d)::%s\n", title, n, body }; body = "" }
+    { gsub(/%/, "%25"); gsub(/\r/, ""); line = $0 "%0A"; if (length(body) + length(line) > max) flush(); body = body line }
+    END { flush() }' "$1"
+}
 # shellcheck disable=SC2329 # used by the EXIT trap
 annotate() {
-  [ -s "$SUMMARY_FILE" ] || return 0
-  local body
-  body="$(sed -e 's/%/%25/g' "$SUMMARY_FILE" | awk 'BEGIN{ORS="%0A"} {print}')"
-  echo "::notice title=Disk cleanup (${KIND} ${ENV_NAME})::${body}"
-  rm -f "$SUMMARY_FILE"
+  notice_parts "$SUMMARY_FILE" "Disk cleanup (${KIND} ${ENV_NAME})"
+  notice_parts "$REPORT_FILE" "Disk report (${KIND} ${ENV_NAME})"
+  rm -f "$SUMMARY_FILE" "$REPORT_FILE"
 }
 trap 'annotate; exit 0' EXIT
 
@@ -194,15 +203,24 @@ fi
 
 flock -u 9 2> /dev/null || true
 
-# ---------- 3. report other disk users (nothing deleted) ----------
-log "Other disk users (report only):"
+log "After:"
+disk_report
+USED_AFTER="$(used_bytes)"
+if [ -n "$USED_BEFORE" ] && [ -n "$USED_AFTER" ]; then
+  log "Freed on /: $(human $((USED_BEFORE - USED_AFTER)))."
+fi
+
+# ---------- 3. report other disk users (nothing deleted; second notice) ----------
 {
-  echo "container logs (json-file; limit per container):"
+  echo "Other disk users (report only, nothing deleted):"
+  echo "container logs (json-file) >= 1 MB or without a size limit:"
   docker ps -aq 2> /dev/null | xargs -r docker inspect \
     --format '{{.Name}} {{.LogPath}} {{with index .HostConfig.LogConfig.Config "max-size"}}{{.}}{{else}}NO-LIMIT{{end}}x{{with index .HostConfig.LogConfig.Config "max-file"}}{{.}}{{else}}1{{end}}' 2> /dev/null \
     | while read -r name path limit; do
-      size="$(sdu -sh "$path" | cut -f1)"
-      echo "  ${name#/} ${size:-?} (limit ${limit})"
+      kb="$(sdu -sk "$path" | cut -f1)"
+      if [ "${kb:-0}" -ge 1024 ] || case "$limit" in NO-LIMIT*) true ;; *) false ;; esac; then
+        echo "  ${name#/} $(human $((${kb:-0} * 1024))) (limit ${limit})"
+      fi
     done
   echo "Laravel logs (storage/logs in the api container):"
   for e in prod uat dev; do
@@ -222,8 +240,9 @@ log "Other disk users (report only):"
     pgd="$(docker exec "$pg" sh -c 'du -ch /tmp/*.dump 2>/dev/null | tail -1' 2> /dev/null || true)"
     [ -n "$pgd" ] && echo "  inside the pgsql container /tmp/*.dump: ${pgd}"
   fi
-  echo "container writable layers (Next.js cache etc., gone on recreate):"
-  docker ps -a --size --filter "label=com.docker.compose.project=${PROJECT_LABEL}" --format '  {{.Names}} {{.Size}}' 2> /dev/null
+  echo "container writable layers >= 10 MB (e.g. the Next.js .next/cache; gone when the container is recreated):"
+  docker ps -a --size --filter "label=com.docker.compose.project=${PROJECT_LABEL}" --format '{{.Names}} {{.Size}}' 2> /dev/null \
+    | awk '$2 ~ /GB$/ || ($2 ~ /MB$/ && $2 + 0 >= 10) {print "  " $1, $2}'
   echo "volumes:"
   docker system df -v 2> /dev/null | awk '/^Local Volumes space usage/{f=1; next} /^Build cache usage/{f=0} f && NF >= 3 && $1 != "VOLUME" {print "  " $1, $NF}'
   echo "host folders:"
@@ -232,12 +251,6 @@ log "Other disk users (report only):"
   done
   j="$(journalctl --disk-usage 2> /dev/null | grep -o '[0-9.]*[KMGT]\?B\?' | head -1)"
   [ -n "$j" ] && echo "  journald ${j}"
-} 2>&1 | indent
+} 2>&1 | tee -a "$REPORT_FILE"
 
-log "After:"
-disk_report
-USED_AFTER="$(used_bytes)"
-if [ -n "$USED_BEFORE" ] && [ -n "$USED_AFTER" ]; then
-  log "Freed on /: $(human $((USED_BEFORE - USED_AFTER)))."
-fi
 exit 0
