@@ -62,6 +62,11 @@ Owner, 2026-10-30: the beach panel on the map loaded slowly on first open. `GET 
 
 **Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key only.
 
+## 2026-10-30 - Docs: server reboot checklist, pm2 startup for the MCP servers
+
+- `docs/runbooks/environment-variables.md`: after the 2026-10-30 reboot the MCP servers (pm2, user `beachrex`) did not
+  start; the owner enabled the systemd unit `pm2-beachrex`. Added a post-reboot checklist. Docs only.
+
 ## 2026-10-29 - Zero-downtime deploys: probe details as annotations, nginx reload before failing
 
 ### Overview
