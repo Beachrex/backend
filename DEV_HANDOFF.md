@@ -52,6 +52,27 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Weather publicly cacheable, status timeouts, performance runbook (Cloudflare rules), owner actions
+
+### Overview
+Last part of ADR 2026-10-30 "API performance"; new ADR "Bot traffic: Cloudflare rules on the website only …".
+
+### Changes Made
+- `routes/api.php`: the five weather endpoints get `public.cache:300` (anonymous, same per language, cached 1 h in
+  Laravel; every beach page view asked it again from the browser).
+- `deploy/nginx/api.<env>.conf`: `/fpm-status*` locations fail fast and retry the other container (right after a
+  rollout the 10 s DNS cache still returned the stopped one: `ops:perf-report` timed out in run 41109448585).
+- `docs/runbooks/performance-and-bots.md` §7 Cloudflare (exact rule expressions), §8 optional PostgreSQL settings,
+  §9 measured effect; `docs/HANDOFF.md` Done + owner actions; ADR.
+
+### Affected Endpoints
+- `GET /api/v1/{beach-details,countries,regions,islands,cities}/{id}/weather`: `Cache-Control: public …`, ETag.
+
+### Testing
+- `PublicCacheHeadersTest` (27+ public routes, never `beach-details/{identifier}`), `NginxConfigTest`.
+
+---
+
 ## 2026-10-30 - SQL hot paths: nested continent count, nearest-city index, fixed join order
 
 ### Overview

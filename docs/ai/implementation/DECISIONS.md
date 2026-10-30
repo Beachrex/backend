@@ -1604,3 +1604,24 @@ parameterized requests unique (misses); reference mix 24 → ~6 400 req/s, p95 5
 ~35–55 ms under load; Redis 454 MB after one minute → 7 MB. Public answers can be up to 60 s old after an admin edit.
 The remaining cost under a crawl is uncached work per unique URL (beach details, beach pages), which the website
 side and rate limits address (separate PRs, runbook `docs/runbooks/performance-and-bots.md`).
+
+## [2026-10-30] Bot traffic: Cloudflare rules on the website only, no Bot Fight Mode, no API edge cache (amends "API performance")
+
+**Context**: the 2026-10-30 scraper (Chrome/133 UA, ~130 IPs of 202.46.62.0/24) stayed under every per-IP limit;
+the owner blocked the /24 by hand. The next one will come from elsewhere. Cloudflare Free plan: 5 custom rules,
+1 rate-limiting rule (10 s period, per IP), Bot Fight Mode zone-wide and not skippable.
+
+**Decision**:
+1. Origin protection is the base (no dashboard work needed): API micro-cache, response cache, health pool, nginx
+   limits per IP **and per /24** for API and website pages (#194–#197).
+2. Cloudflare (owner, runbook `performance-and-bots.md` §7): keep the /24 block rule; **Managed Challenge** for
+   Chrome UAs older than ~10 releases on the website host only, never on API hosts; one rate-limiting rule for
+   website pages (50 per 10 s per IP, static paths and our server excluded); ASN rules only with evidence.
+3. **Bot Fight Mode stays off**: zone-wide on Free, would challenge the mobile app, the MCP server and the
+   website server's own API calls.
+4. **No Cloudflare cache for the API** (Free cannot key on `Accept-Language`); the origin micro-cache replaces it.
+5. The website's server calls the API inside the Docker network (`API_INTERNAL_URL`), so Cloudflare rules and
+   host rate limits never touch server-side rendering.
+
+**Consequences**: a few real visitors with very old browsers see a challenge once. The UA list needs a refresh
+every ~3 months (runbook). PostgreSQL tuning is documented as an optional owner step (restart of the shared DB).
