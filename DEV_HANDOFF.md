@@ -52,6 +52,35 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Deploys clean up old Docker images and build cache
+
+### Overview
+Owner: VPS disk 71 % full; every deploy left the replaced image as a dangling `<none>` image, and BuildKit cache grew.
+"da deploy samodejno čisti stare Docker slike — ja". ADR 2026-10-30, runbook `docs/runbooks/disk-cleanup.md`.
+
+### Changes
+- New `deploy/scripts/docker-prune.sh <env> <api|front>`: per building service (`api_<env>`, `front_<env>`, all
+  envs) keeps the current image, one previous (tagged `<tag>-previous`) and every image a container uses; removes
+  older ones (`docker image rm`, no `-f`); labelled dangling images; BuildKit cache unused > 72 h, capped at 8 GB.
+  Only images with the compose label `com.docker.compose.project=deploy` or named `beachrex/*`; volumes, networks,
+  base and foreign images untouched. Reports `df -h /`, `docker system df` before/after, freed bytes, container log
+  sizes + limits, Laravel log sizes, `*.dump` files (never deleted), volumes, host folders — as one `::notice`.
+  Always exits 0.
+- `.github/workflows/deploy.yml`: new step "Clean up old Docker images and build cache" after "Reload Nginx"
+  (`continue-on-error`). Web-client workflow has the same step (calls the script if present).
+- `api-rollout.sh`, `front-deploy.sh`: the image build holds `/opt/beachrex/.docker-build.lock` shared, the cleanup
+  takes it exclusively, so it never runs during the other repo's build.
+- Logging check: every app service in `docker-compose.vps.yml` (incl. `front_<env>_green`, scheduler, worker) has
+  json-file `10m x 5`; `pgsql`/`redis` have none on purpose (see the compose comment).
+
+### Testing
+shellcheck clean. Local Docker 29 (classic overlay2 store) with a compose project named `deploy`: 5 builds each of
+api_dev/front_dev, scheduler on build 1, stopped green on build 3, plus a foreign `other/x` image rebuilt twice →
+kept current + `dev-previous` + the 2 images used by containers, removed the other 4, foreign dangling image left
+and reported; a second run moved `-previous` to the next image. Lock held by a fake build → cleanup skipped, exit 0.
+
+---
+
 ## 2026-10-30 - Beach details: one cache entry per beach (id and slug share it)
 
 Owner, 2026-10-30: the beach panel on the map loaded slowly on first open. `GET /api/v1/beach-details/{identifier}` was cached per identifier, so the beach page (slug) and the map panel (id) built and cached the ~70-query response separately; a page visit never warmed the panel.
