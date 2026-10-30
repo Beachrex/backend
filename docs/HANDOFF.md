@@ -75,6 +75,12 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
   `ANTHROPIC_API_KEY` is set; GPT-6 Astra selectable for the planner (not the chat). ADR 2026-10-30, guide
   `docs/guides/admin/ai-modeli.md`; status in DEV_HANDOFF.
 
+- 2026-10-30: **Deploys clean up old Docker images** (owner: disk 71 % full, "da deploy samodejno čisti stare Docker
+  slike — ja"). Last step of both deploy workflows: `deploy/scripts/docker-prune.sh` keeps the current + one previous
+  image per service (`<tag>-previous`) and any image a container uses, removes older ones and BuildKit cache unused
+  > 72 h (cap 8 GB), and reports disk usage, logs and `*.dump` files in a notice. ADR 2026-10-30, runbook
+  `docs/runbooks/disk-cleanup.md`.
+
 - 2026-10-29: **Zero-downtime deploys** (owner: 502 "Host Error" during every website deploy, "uredi"). Website:
   blue/green `front_<env>` ↔ `front_<env>_green` switched in host nginx by a state file + graceful reload, end state
   always blue; API: second `api_<env>` container next to the old one, migrations in the new one, old one stopped

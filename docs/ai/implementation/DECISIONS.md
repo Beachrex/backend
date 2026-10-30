@@ -1429,6 +1429,30 @@ Local proof (sandbox, real nginx 1.24 + Docker, fake servers with the same start
 GET/POST clients): blue/green 0 failed of 625; API rollout 0 failed of 744; the old in-place recreate under the
 same load: ~100 000 × 502 (website), 1 782 × 502 (API).
 
+## [2026-10-30] Deploys prune old Docker images (amends "Zero-downtime deploys" 2026-10-29, point 5)
+
+**Context**: the VPS disk (75 GB) was 71 % full. Every deploy builds `beachrex/api:<env>` / `beachrex/front:<env>`;
+the replaced image stayed as a dangling `<none>` image and BuildKit cache grew. Owner 2026-10-30: "da deploy
+samodejno čisti stare Docker slike — ja".
+
+**Decision**:
+1. Both deploy workflows end with a step that runs `deploy/scripts/docker-prune.sh` (after "Reload Nginx",
+   `continue-on-error`, the script always exits 0). It covers all environments with one rule.
+2. **Retention per building service** (`api_<env>`, `front_<env>`): the current image, **one previous** (the newest
+   other image of the service, tagged `<tag>-previous` so it is never dangling) and every image any container uses
+   (running or stopped, incl. `front_<env>_green`). Older ones: `docker image rm` without `-f`. Selected by the
+   compose build label `com.docker.compose.project=deploy` or the name `beachrex/*`; base images, other projects,
+   volumes and networks are never touched; no `docker system prune`. Unlabelled dangling images are only reported.
+   Created date decides "previous", not tags written at build time, so it also covers images built before this.
+3. BuildKit cache: entries unused > 72 h removed, total capped at 8 GB.
+4. No overlap with a build of the other repo: builds hold `/opt/beachrex/.docker-build.lock` shared, the cleanup
+   exclusively (waits ≤ 10 min, else skips; a build waits ≤ 10 min, else builds anyway).
+5. Disk numbers before/after and other space users (container logs and their limits, Laravel logs, `*.dump` from
+   manual backups, volumes, host folders) go into one `::notice`. Dumps are never deleted automatically.
+
+**Amends** the zero-downtime ADR point 5: still no previous-version *container*, but the previous *image* is kept
+on disk (`<tag>-previous`) for a quick manual rollback. Runbook: `docs/runbooks/disk-cleanup.md`.
+
 ## [2026-10-30] AI models are picked in admin per feature; the trip planner defaults to Claude Opus 5.5
 
 **Status**: Accepted (owner 2026-10-30: "Kateri model zdaj uporabljamo za AI chat? Damo enega cenejšega …? … v adminu

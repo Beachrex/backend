@@ -107,7 +107,7 @@ class PlaceWebcamReview
         }
     }
 
-    /** Beach details are cached per locale and identifier (id or slug) for 8 hours. */
+    /** Beach details are cached per locale and beach id for 8 hours (slug keys only from before 2026-10-30). */
     public function forgetPlace(int $placeId): void
     {
         $identifiers = DB::table('beach_translation')->where('beach_id', $placeId)->pluck('slug')->filter()->push((string) $placeId)->unique();
