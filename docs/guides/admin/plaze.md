@@ -103,7 +103,31 @@ Stran ima tri dele:
 2. Pod obrazcem zavihka **Translations** in **Media**. Spremembe tam se shranijo takoj, ločeno od **Save changes**.
 3. Na dnu zemljevid **GPS Location Map**.
 
-Zgoraj desno sta gumba **Translate Beach** in **Delete**.
+Zgoraj desno so gumbi **Translate Beach**, **Počisti predpomnilnik** in **Delete**.
+
+### Kdaj so spremembe vidne (predpomnilnik)
+
+Podatki plaže za spletno stran in aplikacijo so v predpomnilniku 30 dni, da se plaža hitro odpre. Ob vsaki
+spremembi se predpomnilnik te plaže **sam počisti**:
+
+- ob **Save changes** v obrazcu,
+- ob shranjevanju ali brisanju **prevoda** (zavihek Translations),
+- ob shranjevanju, brisanju ali obnovi **fotografije, videa ali 360°** (zavihek Media).
+
+Ko plažo **dodaš, izbrišeš, objaviš/skriješ** (status) ali jo **premakneš** v drugo državo, regijo, otok ali mesto,
+se počisti predpomnilnik **vseh** plaž, ker druge plaže kažejo njeno ime v navigaciji »prejšnja/naslednja« in v
+številu plaž na kraju.
+
+**Gumb »Počisti predpomnilnik«**: če sprememba plaže na strani še vedno ni vidna, klikni ta gumb. Počisti samo to
+plažo, v vseh jezikih. Prikaže se obvestilo »Predpomnilnik plaže je počiščen«.
+
+Kdaj vidiš spremembo:
+
+- v **panelu na zemljevidu** in v aplikaciji: takoj (ob naslednjem odprtju plaže),
+- na **celi strani plaže**: v največ **eni uri** (spletna stran ima svoj predpomnilnik strani, ki se osveži vsako uro).
+
+Ukazi za AI vsebino (`content:ai`, `translations:ai`) pišejo neposredno v bazo; po njih zaženi
+`php artisan cache:clear-api --type=all`, kot ukaza sama izpišeta.
 
 ### Polja obrazca
 
@@ -349,9 +373,10 @@ plaži.
 - Lokacija: trigger `beach_location_trigger` (migracija `2025_10_23_182615_add_spatial_columns_to_beach_table.php`).
 - AI prevod: `app/Console/Commands/TranslateBeaches.php` (`beaches:translate`, samo `status_id = 1`, vir en/hr, OpenAI
   `gpt-4o-mini`, slug = `Str::slug(name)`).
-- Predpomnilnik: `app/Services/CacheService.php` (`BEACH_DETAILS_TTL` 8 h), `BeachDetailsController` (ključ
-  `beach_details:{locale}:{id|slug}`), `BeachController` (`beaches:index:*`, `beaches:map_bounds`, …); spletna stran
+- Predpomnilnik: `app/Support/BeachDetailsCache.php` (30 dni, ključ `beach_details:g{generacija}:{locale}:{id}`,
+  brisanje v `Beach::clearModelCache()`, `BeachTranslation::booted()`, `Media::boot()`, `EditBeach::afterSave()` in
+  gumbu `clearCache`), `BeachController` (`beaches:index:*`, `beaches:map_bounds`, …); spletna stran
   `revalidate = 3600` v `web-client/src/app/[locale]/beaches/[continent]/[country]/[...segments]/page.tsx`.
 - Znane pomanjkljivosti: števec `14` v `BeachResource` (stolpec/filter Translations) in `EditBeach` (Translate Beach)
   namesto 19 (`SetLocaleFromHeader::SUPPORTED_LOCALES`); zastave v `TranslationsRelationManager` samo za 14 jezikov;
-  shranjevanje plaže/prevoda ne počisti `beach_details:*` in `beaches:*`.
+  shranjevanje plaže/prevoda ne počisti seznamov `beaches:*`.

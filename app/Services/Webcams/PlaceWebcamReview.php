@@ -2,10 +2,8 @@
 
 namespace App\Services\Webcams;
 
-use App\Http\Middleware\SetLocaleFromHeader;
 use App\Models\PlaceWebcam;
 use App\Models\WindyWebcam;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -107,14 +105,9 @@ class PlaceWebcamReview
         }
     }
 
-    /** Beach details are cached per locale and beach id for 8 hours (slug keys only from before 2026-10-30). */
+    /** Beach details show the webcam: clear that beach's cache. */
     public function forgetPlace(int $placeId): void
     {
-        $identifiers = DB::table('beach_translation')->where('beach_id', $placeId)->pluck('slug')->filter()->push((string) $placeId)->unique();
-        foreach (SetLocaleFromHeader::SUPPORTED_LOCALES as $locale) {
-            foreach ($identifiers as $identifier) {
-                Cache::forget("beach_details:{$locale}:{$identifier}");
-            }
-        }
+        \App\Support\BeachDetailsCache::forget($placeId);
     }
 }
