@@ -52,6 +52,20 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Website containers: bounded Next.js cache settings, tmpfs, cache numbers in the disk report
+
+Root cause of the 16.3 GB `front_prod` writable layer and the web-client fix: ADR 2026-10-30 "Bounded Next.js cache",
+runbook `docs/runbooks/disk-cleanup.md` "Website cache". Here:
+- `deploy/docker-compose.vps.yml`: every `front_*` service gets `NEXT_CACHE_MAX_MB` (prod 256, uat/dev 64; read by
+  web-client `cache-handler.cjs`) and `tmpfs: /app/.next/cache` (256 MB, uid/gid 1001 = the image's `nextjs`
+  user) as a safety net. Takes effect on the next website deploy of each environment (containers are recreated).
+- `deploy/scripts/docker-prune.sh` "Disk report": per website container the writable layer, `.next/cache` and
+  `.next/server/app` size and file count, the cache numbers from `/api/health` and RSS; WARNING when a layer is GBs.
+Test: `docker compose config` with empty env files renders the tmpfs and env for all six services; `bash -n` and
+`shellcheck -S warning` clean.
+
+---
+
 ## 2026-10-30 - Spec: TASK-011 premium trip planner (docs only)
 
 ### Overview
