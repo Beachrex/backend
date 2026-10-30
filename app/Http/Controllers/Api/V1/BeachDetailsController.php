@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BeachDetailsResource;
 use App\Models\Beach;
+use App\Support\BeachDetailsCache;
 use App\Support\BeachViewCounter;
 use App\Models\BeachTranslation;
-use App\Services\CacheService;
 use App\Traits\CacheAware;
 use App\Traits\ProvidesWeather;
 use Illuminate\Http\JsonResponse;
@@ -82,11 +82,11 @@ class BeachDetailsController extends Controller
                 'message' => 'Beach not found'
             ], 404);
         }
-        $cacheKey = "beach_details:{$locale}:{$beachId}";
+        $cacheKey = BeachDetailsCache::key($locale, $beachId);
 
-        // Cache the beach details for 8 hours
-        // Weather data is fetched separately via /beach-details/{id}/weather with 1-hour cache
-        $data = $this->cacheRemember($cacheKey, CacheService::BEACH_DETAILS_TTL, function () use ($request, $beachId, $locale) {
+        // Cached for 30 days and cleared on every change (BeachDetailsCache). Weather is fetched separately via
+        // /beach-details/{id}/weather with a 1-hour cache.
+        $data = $this->cacheRemember($cacheKey, BeachDetailsCache::TTL, function () use ($request, $beachId, $locale) {
             $beach = $this->loadBeachWithRelations($beachId);
 
             if (!$beach) {

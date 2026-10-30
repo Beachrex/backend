@@ -80,6 +80,30 @@ where `ANTHROPIC_API_KEY` is set (was gpt-4o-mini); `POST /api/v1/ai/chat` uses 
 planner (Claude, GPT-6 Astra), truncated Claude narration retried and both attempts costed, invalid model / no key /
 Astra for chat rejected, 403 for non-admin, cost recorded with the chosen model's price, test buttons.
 
+## 2026-10-30 - Beach details cache: 30 days, cleared on every change, admin "clear cache" button
+
+Owner, 2026-10-30: keep beach details cached long (beach data rarely changes), clear them whenever a beach changes, and give each beach a "clear cache" button in the admin.
+
+- `app/Support/BeachDetailsCache.php` (new): key `beach_details:g{generation}:{locale}:{id}`, TTL 30 days, `forget($id)` (one beach, 19 locales), `forgetAll()` (bumps the generation; old entries are never read again and expire).
+- Cleared on: `Beach` saved/deleted (`clearModelCache`; created, deleted, status or place change → `forgetAll`, since other beaches show it in previous/next navigation and place counts; any other change → that beach, `Beach::affectsOtherBeachDetails()`), `BeachTranslation` saved/deleted, beach `Media` saved/deleted/restored, `EditBeach::afterSave()` (relations are saved after the record), webcam review (`PlaceWebcamReview::forgetPlace`). `cache:clear-api --type=all` (the AI content commands ask for it) still flushes everything.
+- Admin: `EditBeach` header action **Počisti predpomnilnik** (`clearCache`). Admin guide `docs/guides/admin/plaze.md` updated.
+- `CacheService::BEACH_DETAILS_TTL` now points to the new TTL (deprecated).
+- Tests: `tests/Feature/BeachDetailsCacheTest.php` (6), updated cache keys in `BeachDetailsApiTest` and `WebcamEmbedRecheckTest`. Full suite: 10 failures, the same 10 as on plain `dev` (env-dependent AI cost cap, plan enforcement, weather).
+- The website's beach page has its own ISR cache (`revalidate = 3600`), so a change shows there within an hour; the map panel fetches the API directly.
+
+**Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key and lifetime only.
+
+## 2026-10-30 - Disk cleanup notice split into parts (4096-character annotation limit)
+
+First dev run of `docker-prune.sh` (Beachrex/backend#184, run 41036884533) worked but its notice was cut at 4096
+characters (GitHub's annotation limit), so the "After" numbers were lost. Now: one notice for the cleanup (before,
+actions, after, freed) and one for the report, each split into parts of ≤ 3900 characters; the report lists only
+container logs ≥ 1 MB or without a limit and writable layers ≥ 10 MB. Findings of the first run are in
+`docs/runbooks/disk-cleanup.md` (front_prod writable layer 14.3 GB, 1.7 GB of manual dumps in /root).
+Test: shellcheck; a 300-line summary → 4 notices of ≤ 3900 characters with all lines; local Docker run.
+
+---
+
 ## 2026-10-30 - Deploys clean up old Docker images and build cache
 
 ### Overview

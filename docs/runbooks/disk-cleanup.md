@@ -42,17 +42,37 @@ waits at most 10 min for the lock and then builds anyway.
 
 ## Reading the result
 
-The step prints one `::notice` titled **"Disk cleanup (<api|front> <env>)"** (readable through the check-run
-annotations API): `df -h /` and `docker system df` before and after, "Freed on /: …", what was kept per service,
-and a report of other disk users (nothing in the report is deleted):
+The step prints notices (readable through the check-run annotations API; GitHub keeps 4096 characters per
+annotation, so long ones come in parts): **"Disk cleanup (<api|front> <env>) (part n)"** with `df -h /` and
+`docker system df` before and after, "Freed on /: …" and what was kept per service; then
+**"Disk report (<api|front> <env>) (part n)"** with other disk users (nothing in the report is deleted; small
+items are left out):
 
 - container logs per container with its json-file limit (`10m x 5` for every app service incl. the green ones;
-  `NO-LIMIT` for `pgsql`/`redis` on purpose: changing their logging would recreate the shared database);
+  `pgsql`/`redis` have no compose logging section on purpose (it would recreate the shared database), the VPS
+  Docker daemon default `10m x 3` applies to them — seen in the first run; `NO-LIMIT` would mean no limit at all);
 - Laravel `storage/logs` per environment (if it is large: `LOG_STACK=daily` keeps 14 days, `LOG_DAILY_DAYS`);
 - `*.dump` files in `/root` and `/tmp` from manual backups, and `/tmp/*.dump` inside the pgsql container
   (the prod-launch runbook leaves `/tmp/uat.dump` there unless removed) — **the owner decides and deletes by hand**;
 - container writable layers (Next.js `.next/cache` lives there; it is gone when the container is recreated);
 - volume sizes, `/opt/beachrex/api_*`, `front_*`, MCP `node_modules`, `~/.npm`, journald.
+
+## First run (dev, 2026-10-30, run 41036884533)
+
+Before: `/` 56 GB of 75 GB used (78 %); Build Cache 20.75 GB (176 entries), images 6.7 GB, volumes 5.3 GB (pgsql 5.0 GB).
+No old images of our services were left (all six services had only their current image). Build cache: 2.1 GB
+unused > 72 h + 6.6 GB above the 8 GB cap removed (~8.7 GB). The "After" part was cut by the 4096-character limit
+(fixed in the next PR).
+
+Found, not deleted:
+- **`front_prod` writable layer 14.3 GB** (the Next.js cache in the container: ISR pages / fetch cache; the
+  site went live 2026-10-29). It is dropped when `front_prod` is recreated (every prod website deploy), but it grows
+  fast — the biggest single disk user. Needs a web-client decision (cache limits or a cache handler); tracked in HANDOFF.
+- Five manual DB dumps in `/root` (`*_dev-before-ascii-20261008-0825.dump`, `*_uat-before-promote-20261008-0906.dump`,
+  `*_uat-before-promote-20261009.dump`, `*_prod-before-copy-20261029-1113.dump`, `*_uat-before-copy-20261029-1113.dump`),
+  ~337–339 MB each, ~1.7 GB together: the owner decides.
+- Container logs all small (largest `web_prod` 7 MB, `api_prod` 6 MB; every container has a size limit, pgsql/redis
+  `10m x 3` from the daemon default). Laravel `laravel.log` 1–3 MB per env.
 
 ## Quick rollback to the previous image (owner, on the VPS)
 
