@@ -52,6 +52,18 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Fix: tag-before-build picked a depends_on image
+
+Third dev run (Beachrex/backend#188, run 41041857625) still showed "previous none": `docker compose config --images
+api_<env>` also lists the images of its `depends_on` (redis, postgis) in no fixed order, and `head -1` took
+`redis:alpine`, so it was tagged `redis:alpine-previous` instead of `beachrex/api:<env>-previous`. Now only a
+`beachrex/` line is taken, the build step logs what it kept ("Kept the live image as …-previous"), and
+`docker-prune.sh` removes such stray `<non-beachrex>-previous` tags when they point at the same image as their base
+tag (untag only). Test: local compose with a `depends_on` → `beachrex/api:dev-previous` = the image before; a stray
+`local/mini:1-previous` tag removed, `local/mini:1` intact.
+
+---
+
 ## 2026-10-30 - Deploys keep the previous image (tag before build)
 
 The second dev run of the cleanup (run 41038089475) showed "previous none" for every service: the VPS Docker uses

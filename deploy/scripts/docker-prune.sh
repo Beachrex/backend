@@ -186,6 +186,16 @@ for g in $(printf '%s\n' "${!IMG_GROUPS[@]}" | sort); do
 done
 log "Images: removed ${REMOVED} old image(s) of our services; ${KEPT_IN_USE} old image(s) kept because a container uses them."
 
+# One-off repair: the first tag-before-build version (2026-10-30) tagged a depends_on image (redis:alpine,
+# postgis/postgis:15-3.4) as <tag>-previous. Removing such a tag only untags: the image keeps its real tag.
+for t in $(docker image ls --format '{{.Repository}}:{{.Tag}}' 2> /dev/null | grep -- '-previous$' | grep -v '^beachrex/' || true); do
+  base="${t%-previous}"
+  if docker image inspect "$base" > /dev/null 2>&1 \
+    && [ "$(docker image inspect -f '{{.Id}}' "$base")" = "$(docker image inspect -f '{{.Id}}' "$t")" ]; then
+    run docker image rm "$t" > /dev/null 2>&1 && log "Removed the stray tag ${t} (${base} unchanged)."
+  fi
+done
+
 # Dangling images with our label (e.g. a failed build's leftovers); in-use ones are skipped by Docker.
 out="$(run docker image prune -f --filter "label=com.docker.compose.project=${PROJECT_LABEL}" 2>&1 | tail -1)"
 log "Dangling images of our project: ${out:-nothing}"
