@@ -119,9 +119,16 @@ build_locked() {
   # Keep the image that is live now as <image>-previous (quick rollback; docker-prune.sh keeps exactly that one).
   local svc img
   for svc in "$@"; do
-    img="$(dc config --images "$svc" 2> /dev/null | head -1 || true)"
+    # `config --images <svc>` also lists the images of its depends_on (redis, postgis): take ours only.
+    img="$(dc config --images "$svc" 2> /dev/null | grep -m1 '^beachrex/' || true)"
     if [ -n "$img" ] && docker image inspect "$img" > /dev/null 2>&1; then
-      docker tag "$img" "${img}-previous" || log "Could not tag ${img} as ${img}-previous."
+      if docker tag "$img" "${img}-previous"; then
+        log "Kept the live image as ${img}-previous ($(docker image inspect -f '{{.Id}}' "$img" | cut -c8-19))."
+      else
+        log "Could not tag ${img} as ${img}-previous."
+      fi
+    else
+      log "No live image for ${svc} to keep as previous."
     fi
   done
   local rc=0
