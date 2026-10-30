@@ -45,14 +45,21 @@ class OpenAIProvider implements LLMProviderInterface
                 'messages' => $request->getMessagesArray(),
             ];
             
+            $reasoning = self::isReasoningModel($model);
+
             // Add optional parameters
-            if ($request->temperature !== null) {
+            if ($request->temperature !== null && ! $reasoning) {
                 $params['temperature'] = $request->temperature;
             }
-            if ($request->maxTokens !== null) {
+            if ($reasoning) {
+                // Reasoning models (GPT-6 Astra): max_tokens is not accepted; the cap covers the reasoning
+                // tokens too, so the answer budget gets the same headroom as Claude's thinking.
+                $params['max_completion_tokens'] = ($request->maxTokens ?? 1000) + AnthropicProvider::THINKING_HEADROOM;
+                $params['reasoning_effort'] = 'low';
+            } elseif ($request->maxTokens !== null) {
                 $params['max_tokens'] = $request->maxTokens;
             }
-            if ($request->topP !== null) {
+            if ($request->topP !== null && ! $reasoning) {
                 $params['top_p'] = $request->topP;
             }
             if ($request->n !== null) {
@@ -68,8 +75,8 @@ class OpenAIProvider implements LLMProviderInterface
                 $params['response_format'] = $request->responseFormat;
             }
             
-            // Make API call
-            $response = OpenAI::chat()->create($params);
+            // Make API call (a reasoning model writes slowly: its own client with a longer timeout)
+            $response = ($reasoning ? self::slowClient() : OpenAI::getFacadeRoot())->chat()->create($params);
             
             // Extract response data
             $content = $response->choices[0]->message->content ?? '';
@@ -112,6 +119,39 @@ class OpenAIProvider implements LLMProviderInterface
         }
     }
     
+    /** Models that reason before answering (no temperature, max_completion_tokens instead of max_tokens). */
+    public static function isReasoningModel(string $model): bool
+    {
+        return (bool) preg_match('/^(gpt-6|gpt-5|o[134])(\b|-|$)/', strtolower($model));
+    }
+
+    /**
+     * Client for reasoning models: the default client times out after OPENAI_REQUEST_TIMEOUT (30 s), too short for a
+     * 14-day narration. Tests fake the facade, so a faked facade is used as is.
+     */
+    private static function slowClient(): mixed
+    {
+        $facade = OpenAI::getFacadeRoot();
+        if ($facade instanceof \OpenAI\Testing\ClientFake) {
+            return $facade;
+        }
+
+        $factory = \OpenAI::factory()
+            ->withApiKey((string) config('openai.api_key'))
+            ->withHttpClient(new \GuzzleHttp\Client(['timeout' => (float) config('ai.itinerary.timeout', 110)]));
+        if ($org = config('openai.organization')) {
+            $factory = $factory->withOrganization((string) $org);
+        }
+        if ($project = config('openai.project')) {
+            $factory = $factory->withProject((string) $project);
+        }
+        if ($base = config('openai.base_uri')) {
+            $factory = $factory->withBaseUri((string) $base);
+        }
+
+        return $factory->make();
+    }
+
     /**
      * {@inheritDoc}
      */

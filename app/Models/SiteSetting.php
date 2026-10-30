@@ -20,6 +20,12 @@ class SiteSetting extends Model
     /** Google ads (AdSense) on the website. Default OFF (owner 2026-10-29). */
     public const ADS_ENABLED = 'ads_enabled';
 
+    /** Model of the AI chat (AiModelCatalog id); null/missing = env/config default (owner 2026-10-30). */
+    public const AI_CHAT_MODEL = 'ai_chat_model';
+
+    /** Model of the AI trip planner narration (AiModelCatalog id); null/missing = env/config default. */
+    public const AI_ITINERARY_MODEL = 'ai_itinerary_model';
+
     public const CACHE_KEY = 'site_settings:all';
 
     protected $table = 'site_settings';
@@ -46,6 +52,13 @@ class SiteSetting extends Model
         }
 
         return filter_var($values[$key], FILTER_VALIDATE_BOOLEAN);
+    }
+
+    public static function string(string $key): ?string
+    {
+        $value = self::allValues()[$key] ?? null;
+
+        return $value === null ? null : (string) $value;
     }
 
     public static function set(string $key, bool|string|null $value): void

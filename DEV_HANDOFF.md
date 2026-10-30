@@ -52,6 +52,34 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Admin: AI model picker for the chat and the trip planner; planner default Claude Opus 5.5
+
+### Overview
+Owner: pick the AI chat model and the AI trip planner model in admin, with approximate prices; the paid planner must
+run on the best model. ADR 2026-10-30 "AI models are picked in admin per feature".
+
+### Changes Made
+- New admin page **AI → AI models** (`app/Filament/BrAdmin/Pages/AiModels.php`, view `ai-models.blade.php`): two selects
+  (chat, trip planner), price per 1M tokens, estimated cost per chat answer and per 3/7/14-day plan (with share of the
+  Stripe price), answers per $5 day, measured 30-day averages, "test this model" buttons.
+- `AiModelCatalog`: supported models, resolution admin → env → default, estimates. Site settings `ai_chat_model`,
+  `ai_itinerary_model` (migration `2026_10_30_090000_add_ai_model_site_settings`, inserts NULL, idempotent).
+- `LLMService` multi-provider (`ChatCompletionRequest::$provider`); new `AnthropicProvider`; `OpenAIProvider` handles
+  reasoning models (`max_completion_tokens`, `reasoning_effort`, no temperature, longer timeout).
+- `ModelPricing`: `gpt-6-astra` ($10/$50, >272K tier); OpenAI fallback output $75.
+- Chat (`ChatAgent`, `ChatController`, `QueryUnderstandingService`) and planner (`ItineraryService`) read the choice.
+- Config: `ai.itinerary.model` (`AI_ITINERARY_MODEL`, default `claude-opus-5-5`), `ai.itinerary.timeout`
+  (`AI_ITINERARY_TIMEOUT`, 110); `ANTHROPIC_MODEL` default `claude-sonnet-5-5` (old default was a retired model).
+
+### Affected Endpoints
+None changed in shape. Behaviour: `POST /api/v1/ai/itinerary-plans` / `/ai/itineraries` narrate with Claude Opus 5.5
+where `ANTHROPIC_API_KEY` is set (was gpt-4o-mini); `POST /api/v1/ai/chat` uses the admin choice when set.
+
+### Testing
+`tests/Feature/AI/AiModelSettingsTest.php` (21 tests): defaults, admin choice used by chat (Claude and OpenAI) and
+planner (Claude, GPT-6 Astra), truncated Claude narration retried and both attempts costed, invalid model / no key /
+Astra for chat rejected, 403 for non-admin, cost recorded with the chosen model's price, test buttons.
+
 ## 2026-10-30 - Docs: server reboot checklist, pm2 startup for the MCP servers
 
 - `docs/runbooks/environment-variables.md`: after the 2026-10-30 reboot the MCP servers (pm2, user `beachrex`) did not

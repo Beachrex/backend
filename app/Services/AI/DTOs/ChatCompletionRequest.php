@@ -23,6 +23,8 @@ class ChatCompletionRequest
         public readonly ?string $user = null,
         // e.g. ['type' => 'json_object'] (OpenAI JSON mode)
         public readonly ?array $responseFormat = null,
+        // 'openai' | 'anthropic'; null = the configured provider (AI_PROVIDER). Set from AiModelCatalog.
+        public readonly ?string $provider = null,
     ) {}
     
     /**

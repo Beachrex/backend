@@ -68,6 +68,13 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-30: **AI model picker in admin; trip planner on Claude Opus 5.5** (owner: "v adminu seznam modelov in
+  približne cene … za chat posebej, za AI itinerary posebej", "AI trip planner mora biti najdražji/najboljši model").
+  Admin **AI → AI models**: chat and planner model, prices from `ModelPricing`, cost per answer / per plan, test
+  buttons. Chat unchanged until the owner picks (prod: Opus 5.5). Planner default Claude Opus 5.5 where
+  `ANTHROPIC_API_KEY` is set; GPT-6 Astra selectable for the planner (not the chat). ADR 2026-10-30, guide
+  `docs/guides/admin/ai-modeli.md`; status in DEV_HANDOFF.
+
 - 2026-10-29: **Zero-downtime deploys** (owner: 502 "Host Error" during every website deploy, "uredi"). Website:
   blue/green `front_<env>` ↔ `front_<env>_green` switched in host nginx by a state file + graceful reload, end state
   always blue; API: second `api_<env>` container next to the old one, migrations in the new one, old one stopped
