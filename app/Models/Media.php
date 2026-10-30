@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\HasAsciiPaths;
+use App\Support\BeachDetailsCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -226,6 +227,16 @@ class Media extends Model
     protected static function boot()
     {
         parent::boot();
+
+        // A beach photo/video/360 saved, deleted or restored clears that beach's details cache (owner 2026-10-30).
+        $forgetBeach = function (self $media) {
+            if ($media->mediable_type === Beach::class && $media->mediable_id) {
+                BeachDetailsCache::forget((int) $media->mediable_id);
+            }
+        };
+        static::saved($forgetBeach);
+        static::deleted($forgetBeach);
+        static::restored($forgetBeach);
 
         // Set status to deleted (3) when soft deleting
         static::deleting(function ($media) {

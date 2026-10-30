@@ -52,6 +52,19 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Beach details cache: 30 days, cleared on every change, admin "clear cache" button
+
+Owner, 2026-10-30: keep beach details cached long (beach data rarely changes), clear them whenever a beach changes, and give each beach a "clear cache" button in the admin.
+
+- `app/Support/BeachDetailsCache.php` (new): key `beach_details:g{generation}:{locale}:{id}`, TTL 30 days, `forget($id)` (one beach, 19 locales), `forgetAll()` (bumps the generation; old entries are never read again and expire).
+- Cleared on: `Beach` saved/deleted (`clearModelCache`; created, deleted, status or place change → `forgetAll`, since other beaches show it in previous/next navigation and place counts; any other change → that beach, `Beach::affectsOtherBeachDetails()`), `BeachTranslation` saved/deleted, beach `Media` saved/deleted/restored, `EditBeach::afterSave()` (relations are saved after the record), webcam review (`PlaceWebcamReview::forgetPlace`). `cache:clear-api --type=all` (the AI content commands ask for it) still flushes everything.
+- Admin: `EditBeach` header action **Počisti predpomnilnik** (`clearCache`). Admin guide `docs/guides/admin/plaze.md` updated.
+- `CacheService::BEACH_DETAILS_TTL` now points to the new TTL (deprecated).
+- Tests: `tests/Feature/BeachDetailsCacheTest.php` (6), updated cache keys in `BeachDetailsApiTest` and `WebcamEmbedRecheckTest`. Full suite: 10 failures, the same 10 as on plain `dev` (env-dependent AI cost cap, plan enforcement, weather).
+- The website's beach page has its own ISR cache (`revalidate = 3600`), so a change shows there within an hour; the map panel fetches the API directly.
+
+**Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key and lifetime only.
+
 ## 2026-10-30 - Beach details: one cache entry per beach (id and slug share it)
 
 Owner, 2026-10-30: the beach panel on the map loaded slowly on first open. `GET /api/v1/beach-details/{identifier}` was cached per identifier, so the beach page (slug) and the map panel (id) built and cached the ~70-query response separately; a page visit never warmed the panel.
