@@ -258,12 +258,10 @@ class FilterController extends Controller
         $regionId = $this->resolveRegionParameter($regionParam);
         $islandId = $this->resolveIslandParameter($islandParam);
 
-        // Generate cache key based on filters
+        // Whole response cached per locale and resolved places (ApiResponseCache; cleared on content changes).
         $cacheKeySuffix = $this->generateCacheKeySuffix($continentCode, $countryCode, $regionId, $islandId);
-        $cacheKey = "beaches:filters:{$locale}:{$cacheKeySuffix}";
 
-        // Use cache with filter-aware key
-        $filters = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($locale, $continentCode, $countryCode, $regionId, $islandId) {
+        return \App\Support\ApiResponseCache::json('beaches.filters', ['scope' => $cacheKeySuffix], \App\Support\ApiResponseCache::TTL_REFERENCE, function () use ($locale, $continentCode, $countryCode, $regionId, $islandId) {
             $filters = [];
 
             // Build country filter from database
@@ -399,12 +397,8 @@ class FilterController extends Controller
 
             $filters['pool_type'] = $this->getPoolTypeFilterData($locale);
 
-            return $filters;
+            return ['data' => $filters];
         });
-
-        return response()->json([
-            'data' => $filters
-        ]);
     }
 
     /**

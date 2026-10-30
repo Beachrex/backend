@@ -16,6 +16,15 @@ All protected endpoints require an `Authorization` header:
 Authorization: Bearer YOUR_API_TOKEN
 
 You can get your token via the `/api/v1/login` endpoint.
+
+ **Caching**
+
+Public list and reference endpoints (continents, countries, regions, islands, cities, filters, map bounds, most
+visited, footer, static pages, first-page content, site settings, beach lists, within-radius, legacy redirects) answer
+anonymous GET requests with `Cache-Control: public, max-age=60, s-maxage=<n>, stale-while-revalidate=<n>`,
+`Vary: Accept-Language` and an `ETag`; a request with a matching `If-None-Match` gets `304 Not Modified`.
+The answer follows the first language of `Accept-Language`. Requests with an `Authorization` header are never shared.
+Content edits are visible within about a minute.
 "
  * )
  *
@@ -63,6 +72,16 @@ You can get your token via the `/api/v1/login` endpoint.
  *         header="X-Response-Time",
  *         description="Response time in milliseconds",
  *         @OA\Schema(type="string", example="11.35ms")
+ *     ),
+ *     @OA\Header(
+ *         header="Cache-Control",
+ *         description="Public GET lists: public, max-age=60, s-maxage, stale-while-revalidate, stale-if-error; otherwise no-cache, private",
+ *         @OA\Schema(type="string", example="max-age=60, public, s-maxage=60, stale-if-error=86400, stale-while-revalidate=60")
+ *     ),
+ *     @OA\Header(
+ *         header="ETag",
+ *         description="Public GET lists: hash of the body; send it back as If-None-Match to get 304",
+ *         @OA\Schema(type="string", example="W/ad4b0f69852f00f7f4a4106df7a92c8b")
  *     ),
  *     @OA\Header(
  *         header="X-Locale",
