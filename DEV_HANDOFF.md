@@ -52,6 +52,22 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Spec: TASK-011 premium trip planner (docs only)
+
+### Overview
+Owner request 2026-10-30: a far more detailed paid trip plan, researched on the web by Gemini (Google Search
+grounding) and GPT-6 Astra in parallel, verified, merged and written by Claude Opus 5.5, delivered by e-mail link to a
+web page and (later) a designed PDF. `docs/tasks/TASK-011-premium-trip-planner.md` covers the questionnaire, the
+queued resumable pipeline, quality gate, output, cost per 3/7/14-day plan (estimates, prices checked 2026-10-30),
+model picker extension, privacy (health data, Art. 9 consent), evaluation with 10 briefs, milestones and open owner
+questions. Status: Proposed — waiting for owner approval.
+
+### Changes
+- New `docs/tasks/TASK-011-premium-trip-planner.md`; row in `docs/tasks/README.md`.
+- No code, API, DB or config change.
+
+---
+
 ## 2026-10-30 - Fix: tag-before-build picked a depends_on image
 
 Third dev run (Beachrex/backend#188, run 41041857625) still showed "previous none": `docker compose config --images
