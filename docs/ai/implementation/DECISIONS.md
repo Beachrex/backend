@@ -1428,3 +1428,121 @@ branches before the web-client change (runbook "Promotion order"). Runbook: `doc
 Local proof (sandbox, real nginx 1.24 + Docker, fake servers with the same start/stop behaviour, 12 concurrent
 GET/POST clients): blue/green 0 failed of 625; API rollout 0 failed of 744; the old in-place recreate under the
 same load: ~100 000 × 502 (website), 1 782 × 502 (API).
+
+## [2026-10-30] Deploys prune old Docker images (amends "Zero-downtime deploys" 2026-10-29, point 5)
+
+**Context**: the VPS disk (75 GB) was 71 % full. Every deploy builds `beachrex/api:<env>` / `beachrex/front:<env>`;
+the replaced image stayed as a dangling `<none>` image and BuildKit cache grew. Owner 2026-10-30: "da deploy
+samodejno čisti stare Docker slike — ja".
+
+**Decision**:
+1. Both deploy workflows end with a step that runs `deploy/scripts/docker-prune.sh` (after "Reload Nginx",
+   `continue-on-error`, the script always exits 0). It covers all environments with one rule.
+2. **Retention per building service** (`api_<env>`, `front_<env>`): the current image, **one previous** (the newest
+   other image of the service, tagged `<tag>-previous` so it is never dangling) and every image any container uses
+   (running or stopped, incl. `front_<env>_green`). Older ones: `docker image rm` without `-f`. Selected by the
+   compose build label `com.docker.compose.project=deploy` or the name `beachrex/*`; base images, other projects,
+   volumes and networks are never touched; no `docker system prune`. Unlabelled dangling images are only reported.
+   "Previous" is the image the build step tagged `<tag>-previous` right before `docker compose build` (the VPS uses
+   Docker's containerd image store, which deletes an untagged unused image at once, so it must be tagged before the
+   build); without that tag, the newest other image by created date.
+3. BuildKit cache: entries unused > 72 h removed, total capped at 8 GB.
+4. No overlap with a build of the other repo: builds hold `/opt/beachrex/.docker-build.lock` shared, the cleanup
+   exclusively (waits ≤ 10 min, else skips; a build waits ≤ 10 min, else builds anyway).
+5. Disk numbers before/after and other space users (container logs and their limits, Laravel logs, `*.dump` from
+   manual backups, volumes, host folders) go into one `::notice`. Dumps are never deleted automatically.
+
+**Amends** the zero-downtime ADR point 5: still no previous-version *container*, but the previous *image* is kept
+on disk (`<tag>-previous`) for a quick manual rollback. Runbook: `docs/runbooks/disk-cleanup.md`.
+
+## [2026-10-30] AI models are picked in admin per feature; the trip planner defaults to Claude Opus 5.5
+
+**Status**: Accepted (owner 2026-10-30: "Kateri model zdaj uporabljamo za AI chat? Damo enega cenejšega …? … v adminu
+seznam modelov in približne cene … za chat posebej, za AI itinerary posebej"; later: "AI trip planner mora biti
+najdražji/najboljši model, ali GPT Astra mogoče")
+
+**Context**: The chat model was set only in the server `.env` (prod: agent engine, Anthropic, no
+`AI_CHAT_ANTHROPIC_MODEL` → code default `claude-opus-5-5`). The trip planner narration called `LLMService`, which
+supported OpenAI only (`OPENAI_MODEL`, `gpt-4o-mini`); `AI_PROVIDER=anthropic` threw.
+
+**Decision**:
+1. New admin page **AI → AI models** (`AiModels`), two selects stored as site settings `ai_chat_model` and
+   `ai_itinerary_model` (idempotent migration inserts NULL; NULL = env/config default, so the chat does not change on
+   deploy). Order: admin choice → env/config → code default. A saved model that is no longer usable (not in the list,
+   or its provider's key is missing) is ignored with a log warning; the feature keeps running.
+2. The supported list is `AiModelCatalog::MODELS`: Claude Opus 5.5, Sonnet 5.5, Haiku 5.5 (`claude-opus-5-5`,
+   `claude-sonnet-5-5`, `claude-haiku-5-5`), OpenAI GPT-6 Astra (`gpt-6-astra`), GPT-4o, GPT-4o mini. Only models whose
+   provider has an API key in that environment can be saved (validated in the select and again in `save()`).
+3. Prices come only from `ModelPricing` (also used by the daily cost cap). Added `gpt-6-astra`: $10 input / $50 output
+   per MTok, cached input $1 (counted as normal input, a small over-count), prompts over 272K input tokens 2x input and
+   1.5x output — sources https://developers.openai.com/api/docs/pricing and
+   https://developers.openai.com/api/docs/models/gpt-6-astra (checked 2026-10-30). Claude prices re-checked against
+   https://platform.claude.com/docs/en/about-claude/pricing (unchanged). The OpenAI unknown-model fallback output price
+   was raised to $75 so it stays above every listed model.
+4. Estimated cost per answer = `ModelPricing` × a token profile: the 30-day average of this environment's `ai_usage`
+   when it has ≥ 20 answered requests, else an assumption (chat: 6,000 input + 4,000 cached + 600 output, calibrated
+   to the 2026-10-09 evaluation's ~$0.036 per Opus 5.5 answer; planner: 7-day plan 4,000 input + 3,500 output, scaled
+   by days for 3/14). The planner table shows the AI cost as a share of the Stripe price of the plan.
+5. **Chat**: both engines use the choice. A Claude model always runs on the agent engine (the pipeline engine is
+   OpenAI JSON mode), so picking one on a pipeline environment switches it to agent. GPT-6 Astra is not offered for the
+   chat: OpenAI's Chat Completions API, which our agent uses, has no function calling for it (Responses API only).
+6. **Trip planner**: `LLMService` now has an `AnthropicProvider` (official SDK, same output contract: text, tokens,
+   cost, `finishReason` "length" on `max_tokens`). Claude has no JSON mode without a schema: the JSON requirement goes
+   into the system prompt and the outermost JSON object is returned. Claude thinks adaptively, so effort `low` and
+   `max_tokens` = answer budget + 4,000. OpenAI reasoning models (gpt-6/gpt-5/o-series) get `max_completion_tokens`
+   (+4,000), `reasoning_effort: low`, no temperature, and a client with the longer timeout. Timeout per narration call
+   `AI_ITINERARY_TIMEOUT` (110 s; two attempts fit the worker's 240 s; no SDK retries).
+7. **Planner default** (no admin choice): `AI_ITINERARY_MODEL`, default **`claude-opus-5-5`** (owner: best model). If
+   that provider has no key in the environment, the planner stays on `AI_PROVIDER` / `OPENAI_MODEL` as before.
+8. Admin-only "Test the chat model" / "Test the trip planner model" buttons send one fixed question to the selected
+   (even unsaved) model and show answer, time and cost; the cost is recorded in `ai_usage` (`event_type=test`,
+   tier free), so it counts toward the daily limits; refused when the $20 emergency limit is reached.
+
+**Consequences**: no public API change. A plan costs about $0.04–0.16 with Opus 5.5 and $0.11–0.40 with GPT-6 Astra
+(< 1 % of the $19–59 price). Slower models: a 14-day narration can take 60–100 s; if both attempts time out the buyer
+gets the deterministic text and the credit back (existing rule). The synchronous `POST /ai/itineraries` (not used by
+the website, which uses the queued `/ai/itinerary-plans`) runs under PHP-FPM's 60 s and can time out on long plans
+with these models. Token counts for new models (thinking, extra tool rounds) may be higher than the profile; the page
+shows measured averages once there is traffic. Guide: `docs/guides/admin/ai-modeli.md`.
+
+## [2026-10-30] Bounded Next.js cache: pages in a memory LRU, scanner URLs 404 before rendering
+
+**Status**: Accepted (owner 2026-10-30, third disk-filling issue: "stran mora biti hitra, light in strežnik prazen;
+najprej raziskava, kaj je narobe")
+
+**Context**: the `front_prod` container's writable layer reached 16.3 GB about 16 h after the prod deploy
+(dev/uat: 32 MB). On the server: `.next/server/app` 13.9 GB in 178 057 files, `.next/cache` 1.2 GB (fetch-cache
+139 955 files); the newest files were scanner paths cached as pages (`api/proc/self/environ`, `api/public/.env.*`,
+`api/..;/.env.*`, `api/graphql`, ...). Causes, reproduced locally (production build, standalone server, mock API):
+1. Next 14's default cache handler writes **every** ISR render (HTML + RSC: ~260 KB per beach page and language,
+   ~125 KB per 404) to `.next/server/app` and every cached `fetch` to `.next/cache/fetch-cache`, and never deletes.
+   Next also stores **404 and redirect renders** of ISR routes.
+2. The URL space is unbounded: the middleware matcher skipped every path starting with `api`, so `/api/<anything>`
+   rendered `[locale]/layout` with locale `api` (no locale check) and `[locale]/[...rest]` (ISR, 1 day), which also
+   called the legacy-redirect API with the path (one fetch-cache file per path). Other junk (`/.env`, `/wp-login.php`)
+   was redirected to `/en/...` and cached the same way. Legitimate pages alone are 19 × (3 774 beaches + places).
+Nothing secret was served: these paths rendered the normal 404 page.
+
+**Decision**:
+1. **Custom cache handler** (web-client `cache-handler.cjs`, `next.config.js` `cacheHandler`,
+   `cacheMaxMemorySize: 0`): ISR pages, route handlers and the fetch Data Cache live in one in-memory LRU with a byte
+   budget (`NEXT_CACHE_MAX_MB`: prod 256, uat/dev 64; default 128), entries gzip-compressed (a beach page ~260 KB →
+   ~60 KB). It never writes to disk; build-time files are read from the image read-only. Non-200 pages/routes are
+   not stored. `revalidateTag` is honoured in memory. Each process (blue/green) has its own cache, empty after a
+   deploy — as before, when every deploy recreated the container.
+2. **Scanner URLs get a 9-byte 404 in the middleware** before anything renders (`src/lib/utils/junk-paths.ts`:
+   `/api/*` except `/api/health`, dot segments, `..`, `;`, `/proc/self`, `/etc/passwd`, script/config/dump
+   extensions, `wp-*`, `cgi-bin`, `phpmyadmin`, ...). The matcher now skips only `api/health`.
+3. `[locale]/layout` returns 404 for a locale that is not one of the 19; `[locale]/[...rest]` (the catch-all for
+   unknown URLs and old-site redirects) is `force-dynamic`: no ISR file, no cached API response per invented URL.
+4. **Safety net**: `/app/.next/cache` is a 256 MB tmpfs in every `front_*` service (empty while the handler works).
+5. **Visibility**: `/api/health` returns the cache numbers (`entries`, `mb`, `maxMb`, `evictions`, `hits`,
+   `misses`, `skipped`) and `rssMb`; the deploy "Disk report" lists per website container its writable layer,
+   `.next/cache` and `.next/server/app` size/files and those numbers, with a WARNING when a layer reaches GBs.
+
+**Consequences**: disk use of the website no longer depends on traffic. A page evicted from the LRU is rendered again
+on its next visit (locally ~65 ms vs ~16 ms from cache, same as before the change); popular pages stay cached.
+Memory: the budget plus Next's normal render heap (RSS ~1.1–1.5 GB under a crawl both with a 1 MB and a 128 MB
+budget). Measured locally: 950 beach pages, 38 place pages and 500 unknown/redirect URLs wrote 318 MB (1 489 pages ×
+html/rsc/meta) + 15 MB (2 505 fetch files) before; after, the same plus 480 scanner probes wrote 0 bytes; TTFB unchanged (miss 64 → 67 ms, hit 15.3 → 15.9 ms avg).
+Runbook: `docs/runbooks/disk-cleanup.md` "Website cache".

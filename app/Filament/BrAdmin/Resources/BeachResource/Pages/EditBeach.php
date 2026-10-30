@@ -5,6 +5,7 @@ namespace App\Filament\BrAdmin\Resources\BeachResource\Pages;
 use App\Filament\BrAdmin\Resources\BeachResource;
 use App\Filament\BrAdmin\Resources\BeachResource\Widgets\BeachMapWidget;
 use App\Models\BeachTranslation;
+use App\Support\BeachDetailsCache;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -78,8 +79,31 @@ class EditBeach extends EditRecord
                     }
                 }),
 
+            // Owner 2026-10-30: clears this beach's cached page data by hand, in case a change did not show.
+            Actions\Action::make('clearCache')
+                ->label('Počisti predpomnilnik')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->action(function () use ($beach) {
+                    BeachDetailsCache::forget((int) $beach->id);
+                    Notification::make()
+                        ->success()
+                        ->title('Predpomnilnik plaže je počiščen')
+                        ->body('API vrne sveže podatke takoj. Spletna stran plaže se osveži v največ eni uri.')
+                        ->send();
+                }),
+
             Actions\DeleteAction::make(),
         ];
+    }
+
+    /**
+     * Relations (amenities, types, …) are saved after the beach record, so the model event alone could cache the
+     * old relations again in between; clear once more when everything is saved.
+     */
+    protected function afterSave(): void
+    {
+        BeachDetailsCache::forget((int) $this->getRecord()->id);
     }
 
     public function getTitle(): string

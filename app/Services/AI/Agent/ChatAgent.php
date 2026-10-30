@@ -2,6 +2,7 @@
 
 namespace App\Services\AI\Agent;
 
+use App\Services\AI\AiModelCatalog;
 use App\Services\AI\ItineraryService;
 
 /**
@@ -40,9 +41,10 @@ PROMPT;
      * @param array<int, array{role: string, content: string}> $history
      * @param array{latitude: float, longitude: float}|null $location
      * @param string|null $pageHint TASK-010: server-built line about the page the user is on (PageContextHint)
+     * @param AgentModel|null $model a specific model (admin "test this model"); null = the chat's model
      * @return array{message: string, beaches: array, result: AgentResult}
      */
-    public function answer(string $message, array $history, string $apiLocale, ?array $location, ?string $pageHint = null): array
+    public function answer(string $message, array $history, string $apiLocale, ?array $location, ?string $pageHint = null, ?AgentModel $model = null): array
     {
         $tools = new BeachTools($this->api);
         $webLocale = self::WEB_LOCALES[$apiLocale] ?? $apiLocale;
@@ -57,7 +59,7 @@ PROMPT;
         }
         $context .= ']';
 
-        $result = $this->model()->converse(
+        $result = ($model ?? $this->model())->converse(
             self::SYSTEM_PROMPT,
             array_values(array_filter($history, fn ($t) => in_array($t['role'] ?? '', ['user', 'assistant'], true) && ($t['content'] ?? '') !== '')),
             $context."\n".$message,
@@ -75,8 +77,16 @@ PROMPT;
             return app(AgentModel::class);
         }
 
-        return config('ai.chat.provider') === 'anthropic'
-            ? new AnthropicAgentModel((string) config('ai.chat.anthropic_model'), (string) config('ai.chat.effort'))
-            : new OpenAIAgentModel((string) config('ai.chat.openai_model'));
+        // Admin choice (AI → Models) first, then AI_CHAT_PROVIDER / AI_CHAT_*_MODEL.
+        $chat = AiModelCatalog::chat();
+
+        return self::modelFor($chat['provider'], $chat['model']);
+    }
+
+    public static function modelFor(string $provider, string $model): AgentModel
+    {
+        return $provider === 'anthropic'
+            ? new AnthropicAgentModel($model, (string) config('ai.chat.effort'))
+            : new OpenAIAgentModel($model);
     }
 }

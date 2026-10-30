@@ -238,6 +238,19 @@ jobs:
         run: |
           ssh ${VPS_USER}@${VPS_HOST} "sudo systemctl reload nginx"
 
+      - name: Clean up old Docker images and build cache
+        # Keeps the current + one previous image per service, removes older ones and BuildKit cache unused > 72 h,
+        # and reports disk usage as a notice (ADR 2026-10-30, docs/runbooks/disk-cleanup.md). Never fails the deploy.
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          ENV_NAME: ${{ steps.env.outputs.name }}
+        run: |
+          ssh ${VPS_USER}@${VPS_HOST} "bash /opt/beachrex/deploy/scripts/docker-prune.sh ${ENV_NAME} api" \
+            || echo "::warning::Disk cleanup did not run (see the log); the deploy itself succeeded."
+
       - name: Fail if the zero-downtime probe saw failed requests
         if: steps.build.outputs.probe_failed == 'true'
         run: |

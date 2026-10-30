@@ -202,10 +202,38 @@ finish() {
 }
 trap finish EXIT
 
+# Builds hold the Docker lock shared; docker-prune.sh (end of every deploy, both repos) takes it exclusively,
+# so an image cleanup never runs while the other repo's deploy builds. Never blocks a deploy for long.
+build_locked() {
+  local lock="${BEACHREX_DOCKER_LOCK:-$ROOT/.docker-build.lock}"
+  if command -v flock > /dev/null 2>&1 && exec 8>> "$lock"; then
+    flock -s -w 600 8 || log "Docker lock busy for 600 s; building anyway."
+  fi
+  # Keep the image that is live now as <image>-previous (quick rollback; docker-prune.sh keeps exactly that one).
+  local svc img
+  for svc in "$@"; do
+    # `config --images <svc>` also lists the images of its depends_on (redis, postgis): take ours only.
+    img="$(dc config --images "$svc" 2> /dev/null | grep -m1 '^beachrex/' || true)"
+    if [ -n "$img" ] && docker image inspect "$img" > /dev/null 2>&1; then
+      if docker tag "$img" "${img}-previous"; then
+        log "Kept the live image as ${img}-previous ($(docker image inspect -f '{{.Id}}' "$img" | cut -c8-19))."
+      else
+        log "Could not tag ${img} as ${img}-previous."
+      fi
+    else
+      log "No live image for ${svc} to keep as previous."
+    fi
+  done
+  local rc=0
+  dc build "$@" || rc=$?
+  flock -u 8 2> /dev/null || true
+  return "$rc"
+}
+
 # ---------- main ----------
 log "Website deploy of ${ENV_NAME} (${SITE_HOST}); $(docker compose version 2>/dev/null || echo 'docker compose ?')"
 log "Building beachrex/front:${ENV_NAME} (the live container keeps serving)."
-dc build "$BLUE"
+build_locked "$BLUE"
 
 ACTIVE="$(active_color)"
 log "Active color before the deploy: ${ACTIVE}."

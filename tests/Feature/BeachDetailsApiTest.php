@@ -398,6 +398,26 @@ class BeachDetailsApiTest extends TestCase
         $this->assertSame(2, (int) $beach->fresh()->beach_views);
     }
 
+    /** Owner 2026-10-30: the map panel (by id) and the beach page (by slug) share one cache entry. */
+    public function test_slug_and_id_requests_share_one_cache_entry()
+    {
+        $beach = $this->createViewsBeach();
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->getJson('/api/v1/beach-details/count-beach', ['Accept-Language' => 'en'])->assertOk(); // by slug
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has(\App\Support\BeachDetailsCache::key('en', $beach->id)));
+
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $this->getJson("/api/v1/beach-details/{$beach->id}", ['Accept-Language' => 'en'])
+            ->assertOk()
+            ->assertJsonPath('data.basic_info.id', $beach->id);
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        // A cache hit: at most the view counter update, never the ~70-query rebuild.
+        $this->assertLessThanOrEqual(1, count($queries), json_encode(array_column($queries, 'query')));
+    }
+
     public function test_browser_view_endpoint_counts_once_per_visitor_and_window()
     {
         $beach = $this->createViewsBeach();

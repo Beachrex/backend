@@ -6,6 +6,7 @@ use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\DTOs\ChatCompletionRequest;
 use App\Services\AI\DTOs\ChatCompletionResponse;
 use App\Services\AI\DTOs\ChatMessage;
+use App\Services\AI\Providers\AnthropicProvider;
 use App\Services\AI\Providers\OpenAIProvider;
 use App\Services\AI\Exceptions\LLMException;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +22,9 @@ use Illuminate\Support\Facades\Log;
 class LLMService
 {
     private LLMProviderInterface $provider;
+
+    /** @var array<string, LLMProviderInterface> other providers, created when a request names one */
+    private array $others = [];
     
     public function __construct()
     {
@@ -37,18 +41,19 @@ class LLMService
     public function chatCompletion(ChatCompletionRequest $request): ChatCompletionResponse
     {
         $startTime = microtime(true);
+        $provider = $this->providerFor($request->provider);
         
         try {
-            $response = $this->provider->chatCompletion($request);
+            $response = $provider->chatCompletion($request);
 
             // Counted as soon as it is billed, so a later failure in the same request keeps this cost.
-            AiSpendMeter::current()->add($response->provider ?? $this->provider->getProviderName(), (string) $response->model,
+            AiSpendMeter::current()->add($response->provider ?? $provider->getProviderName(), (string) $response->model,
                 $response->inputTokens, $response->outputTokens, $response->costUsd);
             
             $latencyMs = (int) round((microtime(true) - $startTime) * 1000);
             
             Log::info('LLM chat completion successful', [
-                'provider' => $this->provider->getProviderName(),
+                'provider' => $provider->getProviderName(),
                 'model' => $response->model,
                 'input_tokens' => $response->inputTokens,
                 'output_tokens' => $response->outputTokens,
@@ -63,7 +68,7 @@ class LLMService
             $latencyMs = (int) round((microtime(true) - $startTime) * 1000);
             
             Log::error('LLM chat completion failed', [
-                'provider' => $this->provider->getProviderName(),
+                'provider' => $provider->getProviderName(),
                 'error' => $e->getMessage(),
                 'error_code' => $e->statusCode,
                 'latency_ms' => $latencyMs,
@@ -167,15 +172,26 @@ class LLMService
      * @return LLMProviderInterface
      * @throws \RuntimeException
      */
-    private function createProvider(): LLMProviderInterface
+    private function createProvider(?string $providerName = null): LLMProviderInterface
     {
-        $providerName = config('ai.provider', 'openai');
+        $providerName ??= config('ai.provider', 'openai');
         
         return match ($providerName) {
             'openai' => new OpenAIProvider(),
-            // Future: 'anthropic' => new AnthropicProvider(),
+            // Resolved from the container so tests can bind one with a fake HTTP client.
+            'anthropic' => app(AnthropicProvider::class),
             default => throw new \RuntimeException("Unsupported LLM provider: {$providerName}"),
         };
+    }
+
+    /** The configured provider, or the one the request names (owner 2026-10-30: model picked in admin). */
+    private function providerFor(?string $name): LLMProviderInterface
+    {
+        if ($name === null || $name === $this->provider->getProviderName()) {
+            return $this->provider;
+        }
+
+        return $this->others[$name] ??= $this->createProvider($name);
     }
 }
 
