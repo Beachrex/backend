@@ -83,11 +83,11 @@ class CountryController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $locale = app()->getLocale();
             $continentFilter = $request->get('continent');
-            $cacheKey = "countries:index:{$locale}:" . ($continentFilter ? "continent:{$continentFilter}" : "all");
+            $continentFilter = is_string($continentFilter) && $continentFilter !== '' ? $continentFilter : null;
 
-            $countries = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($continentFilter) {
+            // Whole response cached per locale (ApiResponseCache: JSON, not models; cleared on content changes).
+            return \App\Support\ApiResponseCache::json('countries.index', ['continent' => $continentFilter], \App\Support\ApiResponseCache::TTL_REFERENCE, function () use ($continentFilter) {
                 $query = Country::with(['continent.translations', 'translations'])
                     ->withBeaches()
                     ->withCount(['beaches' => function ($q) {
@@ -99,19 +99,19 @@ class CountryController extends Controller
                     $query->byContinent($continentFilter);
                 }
 
-                return $query->get([
+                $countries = $query->get([
                     'code',
                     'iso3',
                     'continent_code',
                     'image_path'
                 ]);
-            });
 
-            return response()->json([
-                'success' => true,
-                'data' => CountryResource::collection($countries),
-                'message' => 'Countries retrieved successfully'
-            ], 200);
+                return [
+                    'success' => true,
+                    'data' => CountryResource::collection($countries),
+                    'message' => 'Countries retrieved successfully'
+                ];
+            });
 
         } catch (\Exception $e) {
             return response()->json([

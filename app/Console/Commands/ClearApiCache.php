@@ -37,6 +37,8 @@ class ClearApiCache extends Command
 
             case 'reference':
                 $cacheService->clearReferenceCache();
+                // Cached public responses (countries, filters, lists ...): new generation, rebuilt on next request.
+                \App\Support\ApiResponseCache::flush();
                 $this->info('✅ Reference data caches cleared');
                 break;
 

@@ -40,7 +40,8 @@ class HealthController extends Controller
     public function __invoke(): JsonResponse
     {
         $checks = [
-            'database' => $this->check(fn () => DB::select('select 1')),
+            // Persistent connection when the app runs on PostgreSQL (config/database.php `pgsql_health`).
+            'database' => $this->check(fn () => DB::connection(config('database.default') === 'pgsql' ? 'pgsql_health' : null)->select('select 1')),
             'redis' => $this->check(fn () => config('cache.default') === 'redis'
                 ? Redis::connection(config('cache.stores.redis.connection', 'cache'))->ping()
                 : Cache::get('health:ping')),

@@ -42,11 +42,21 @@ final class BeachDetailsCache
     /** Invalidates every beach in every locale. */
     public static function forgetAll(): void
     {
-        Cache::forever(self::GENERATION_KEY, self::generation() + 1);
+        Cache::forever(self::GENERATION_KEY, max(self::now(), self::generation() + 1));
     }
 
+    /**
+     * A millisecond timestamp, not a counter starting at 1: the shared Redis evicts any key under memory pressure
+     * (allkeys-lru). A counter that restarted at 1 would make old `g1` entries current again (stale beach data);
+     * a fresh timestamp is always newer than every earlier generation (ADR 2026-10-30 "API performance").
+     */
     private static function generation(): int
     {
-        return (int) Cache::rememberForever(self::GENERATION_KEY, fn () => 1);
+        return (int) Cache::rememberForever(self::GENERATION_KEY, fn () => self::now());
+    }
+
+    private static function now(): int
+    {
+        return (int) floor(microtime(true) * 1000);
     }
 }

@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Beachrex API",
-        "description": "\nThis is the API documentation for the Beachrex backend. Some of the endpoints use token-based authentication via Laravel Sanctum.\n\n **Authentication**\n\nAll protected endpoints require an `Authorization` header:\n\nAuthorization: Bearer YOUR_API_TOKEN\n\nYou can get your token via the `/api/v1/login` endpoint.\n",
+        "description": "\nThis is the API documentation for the Beachrex backend. Some of the endpoints use token-based authentication via Laravel Sanctum.\n\n **Authentication**\n\nAll protected endpoints require an `Authorization` header:\n\nAuthorization: Bearer YOUR_API_TOKEN\n\nYou can get your token via the `/api/v1/login` endpoint.\n\n **Caching**\n\nPublic list and reference endpoints (continents, countries, regions, islands, cities, filters, map bounds, most\nvisited, footer, static pages, first-page content, site settings, beach lists, within-radius, legacy redirects) answer\nanonymous GET requests with `Cache-Control: public, max-age=60, s-maxage=<n>, stale-while-revalidate=<n>`,\n`Vary: Accept-Language` and an `ETag`; a request with a matching `If-None-Match` gets `304 Not Modified`.\nThe answer follows the first language of `Accept-Language`. Requests with an `Authorization` header are never shared.\nContent edits are visible within about a minute.\n",
         "version": "1.0.0"
     },
     "servers": [
@@ -17285,6 +17285,20 @@
                         "schema": {
                             "type": "string",
                             "example": "11.35ms"
+                        }
+                    },
+                    "Cache-Control": {
+                        "description": "Public GET lists: public, max-age=60, s-maxage, stale-while-revalidate, stale-if-error; otherwise no-cache, private",
+                        "schema": {
+                            "type": "string",
+                            "example": "max-age=60, public, s-maxage=60, stale-if-error=86400, stale-while-revalidate=60"
+                        }
+                    },
+                    "ETag": {
+                        "description": "Public GET lists: hash of the body; send it back as If-None-Match to get 304",
+                        "schema": {
+                            "type": "string",
+                            "example": "W/ad4b0f69852f00f7f4a4106df7a92c8b"
                         }
                     },
                     "X-Locale": {

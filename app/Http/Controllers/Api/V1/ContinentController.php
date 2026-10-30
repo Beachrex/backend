@@ -74,24 +74,22 @@ class ContinentController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $locale = app()->getLocale();
-            $cacheKey = 'continents:index';
-
-            // Get only continents that have beaches, with beaches count
-            $continents = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
-                return Continent::withBeaches()
+            // Whole response cached per locale (ApiResponseCache: JSON, not models; cleared on content changes).
+            return \App\Support\ApiResponseCache::json('continents.index', [], \App\Support\ApiResponseCache::TTL_REFERENCE, function () {
+                // Only continents that have beaches, with beaches count
+                $continents = Continent::withBeaches()
                     ->with('translations')
                     ->withCount(['beaches' => function ($q) {
                         $q->where('status_id', 1);
                     }])
                     ->get(['code', 'main_image']);
-            });
 
-            return response()->json([
-                'success' => true,
-                'data' => ContinentResource::collection($continents),
-                'message' => 'Continents retrieved successfully'
-            ], 200);
+                return [
+                    'success' => true,
+                    'data' => ContinentResource::collection($continents),
+                    'message' => 'Continents retrieved successfully'
+                ];
+            });
 
         } catch (\Exception $e) {
             return response()->json([

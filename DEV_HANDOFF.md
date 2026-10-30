@@ -52,6 +52,42 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - API response cache (JSON, not models), public cache headers, persistent health DB connection
+
+### Overview
+Incident 2026-10-30 (prod API ~16 s per request, health 25 s): list endpoints cached Eloquent model graphs (a cache
+HIT still cost 0.15–1.4 s of PHP; one `cities` key ~50 MB per language filled Redis), most list caches were never
+cleared on admin edits, and keys of parameterized endpoints were unbounded. ADR 2026-10-30 "API performance:
+layered caching, bounded keys, protected health". Response bodies are unchanged (byte-identical, checked locally for
+17 endpoint/parameter combinations in 2 languages against origin/dev).
+
+### Changes Made
+- `app/Support/ApiResponseCache.php` (new): caches the finished JSON (gzip) per endpoint + locale + normalized
+  parameters, atomic-lock stampede protection, one generation (ms timestamp) cleared by content model events,
+  `cache:clear-api --type=reference|all` and the deploy's `cache:clear`; daily hit/miss counters.
+- Controllers: `continents`, `countries`, `regions`, `islands`, `cities`, `first-page-content`, `static-pages`
+  (index), `beaches/filters`, `beaches/footer`, `beaches/most-visited`, `beaches/map-bounds`, `beaches` use it.
+  `spatial/beaches/within-radius`: point rounded to 3 decimals and radius to 0.1 km (key **and** query), TTL 1 h.
+- `app/Providers/AppServiceProvider.php`: `eloquent.saved/deleted` of content models → `ApiResponseCache::flush()`.
+- `app/Http/Middleware/PublicCacheHeaders.php` (new, alias `public.cache:<s>`) on 22 anonymous GET routes:
+  `Cache-Control: public, max-age=60, s-maxage=60, stale-while-revalidate=60, stale-if-error=86400`,
+  `Vary: Accept-Language`, `ETag`/304, `X-Accel-Expires` (opt-in for the nginx micro-cache, next PR).
+- `app/Support/BeachDetailsCache.php`: generation is a ms timestamp (an LRU-evicted counter restarted at 1).
+- `config/database.php` + `HealthController`: health checks the DB over `pgsql_health` (persistent connection).
+- `app/Swagger/Swagger.php`: caching section and `Cache-Control`/`ETag` headers; `storage/api-docs` regenerated.
+- `scripts/loadtest/api-mix.mjs` (new): load test with the incident's endpoint mix.
+
+### Affected Endpoints
+- Same responses; new headers on the 22 public GET routes listed in `routes/api.php` (`public.cache:60`).
+- `GET /api/v1/spatial/beaches/within-radius`: results for the point rounded to ~110 m.
+
+### Testing
+- `tests/Feature/ApiResponseCacheTest.php`, `tests/Feature/PublicCacheHeadersTest.php`, `HealthApiTest`.
+- Local load test (2 vCPU, 3 800 beaches; numbers in the PR): reference mix 24 → ~6 400 req/s with the nginx
+  micro-cache of the next PR; without it the PHP hit path alone is ~35–45 ms per request.
+
+---
+
 ## 2026-10-30 - Website containers: bounded Next.js cache settings, tmpfs, cache numbers in the disk report
 
 Root cause of the 16.3 GB `front_prod` writable layer and the web-client fix: ADR 2026-10-30 "Bounded Next.js cache",
