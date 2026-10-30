@@ -68,6 +68,21 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-30: **API performance after the bot incident** (prod 14:40 UTC: API ~16 s, health 25 s; owner: "naj naredi
+  proper, kot se spodobi, da imamo mir za naprej"). Root causes (reproduced locally): model graphs cached in Redis
+  (a HIT still cost 0.15–1.4 s of PHP; one `cities` key 50 MB/language filled Redis), every hit through PHP, health
+  in the same FPM queue, unbounded keys, a scraper spread over a /24, browsers re-fetching global lists on every page.
+  | PR | Change | Deploy run (dev) |
+  |---|---|---|
+  | Beachrex/backend#194 | `ApiResponseCache` (JSON, lock, generation invalidation), public cache headers, `pgsql_health` | 41106001408 |
+  | Beachrex/backend#195 | nginx micro-cache + language normalization, health FPM pool, per-/24 + page limits, timed logs, `ops:perf-report` | 41108199073 |
+  | Beachrex/backend#196 | resolver fix for the status server; micro-cache check in the rollout (dev: MISS → HIT) | 41109448585 |
+  | Beachrex/backend#197 | SQL: no continent beach rows in lists, nearest-city index, fixed join order | 41112584623 |
+  | Beachrex/web-client#162 | global lists from the server, lazy menu filters, SSR via `API_INTERNAL_URL` | web 41112594372 |
+  | this PR | weather endpoints publicly cacheable, status timeouts, runbook §7–9 (Cloudflare), ADR, owner actions | – |
+  Numbers: runbook `docs/runbooks/performance-and-bots.md` §9 (incident rate: p50 20.5 s → 1 ms, health 26 s → 76 ms
+  p95). ADRs 2026-10-30 "API performance …" and "Bot traffic …". **Prod gets it only with a promotion (owner).**
+
 - 2026-10-30: **AI model picker in admin; trip planner on Claude Opus 5.5** (owner: "v adminu seznam modelov in
   približne cene … za chat posebej, za AI itinerary posebej", "AI trip planner mora biti najdražji/najboljši model").
   Admin **AI → AI models**: chat and planner model, prices from `ModelPricing`, cost per answer / per plan, test
@@ -292,6 +307,16 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Owner's open actions
 
+- **Performance + bots (2026-10-30, runbook `docs/runbooks/performance-and-bots.md`):**
+  1. Promote when ready: **backend** dev → uat → main first (each deploy reloads host nginx with the new limits and
+     log format), **then web-client** dev → uat → main (it reads `API_INTERNAL_URL` from the backend compose).
+     After the prod API deploy, the rollout annotation must show "Micro-cache check 2 … HIT" and a PHP-FPM line.
+  2. Cloudflare (website only, never the API hosts): keep the 202.46.62.0/24 block rule; add the "outdated Chrome"
+     Managed Challenge rule and the "Website pages per IP" rate-limiting rule exactly as in runbook §7; leave Bot
+     Fight Mode off.
+  3. Optional: `OPS_ALERT_EMAIL=<your address>` in `/opt/beachrex/envs/.env.prod` (performance alert e-mail, ≤ 1 per
+     hour), then any prod deploy. Optional, later: PostgreSQL settings (runbook §8, short DB restart).
+  4. Read-only checks during an incident: runbook §2 (`ops:perf-report`, log one-liners).
 - **Close dev/uat websites (2026-10-29, ADR "Closed dev/uat websites behind an e-mail magic link", guide
   `docs/guides/admin/zaprta-testna-stran.md`):** nothing changes until these steps.
   1. `openssl rand -hex 32` (a new value per environment; never paste it in chat).

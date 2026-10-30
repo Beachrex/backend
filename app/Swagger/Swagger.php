@@ -20,7 +20,7 @@ You can get your token via the `/api/v1/login` endpoint.
  **Caching**
 
 Public list and reference endpoints (continents, countries, regions, islands, cities, filters, map bounds, most
-visited, footer, static pages, first-page content, site settings, beach lists, within-radius, legacy redirects) answer
+visited, footer, static pages, first-page content, site settings, beach lists, within-radius, legacy redirects, weather) answer
 anonymous GET requests with `Cache-Control: public, max-age=60, s-maxage=<n>, stale-while-revalidate=<n>`,
 `Vary: Accept-Language` and an `ETag`; a request with a matching `If-None-Match` gets `304 Not Modified`.
 The answer follows the first language of `Accept-Language`. Requests with an `Authorization` header are never shared.

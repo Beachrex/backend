@@ -119,6 +119,7 @@ Route::prefix('api/v1')
 
         // `public.cache:<s>` (PublicCacheHeaders): public Cache-Control/ETag and the nginx micro-cache TTL for anonymous
         // GETs (ADR 2026-10-30 "API performance"). Only routes whose answer is the same for every visitor of a language.
+        // Weather: 300 s (the API caches it 1 h; one beach page view asked it again from every browser).
         // Beach routes - filters, map-bounds, and most-visited must come before {id} route
         Route::get('/beaches/map-bounds', [BeachController::class, 'mapBounds'])->middleware('public.cache:60');
         Route::get('/beaches/filters', [FilterController::class, 'index'])->middleware('public.cache:60');
@@ -133,7 +134,7 @@ Route::prefix('api/v1')
 
         // Beach Details routes - comprehensive beach information for detail pages
         Route::get('/beach-details/{identifier}', [BeachDetailsController::class, 'show']);
-        Route::get('/beach-details/{identifier}/weather', [BeachDetailsController::class, 'weather']);
+        Route::get('/beach-details/{identifier}/weather', [BeachDetailsController::class, 'weather'])->middleware('public.cache:300');
 
         // Slug Resolver - determine entity type from slug
         Route::get('/resolve-slug/{slug}', [SlugResolverController::class, 'resolve']);
@@ -151,22 +152,22 @@ Route::prefix('api/v1')
 
         Route::get('/countries', [CountryController::class, 'index'])->middleware('public.cache:60');
         Route::get('/countries/{codeOrSlug}', [CountryController::class, 'show'])->middleware('public.cache:60');
-        Route::get('/countries/{codeOrSlug}/weather', [CountryController::class, 'weather']);
+        Route::get('/countries/{codeOrSlug}/weather', [CountryController::class, 'weather'])->middleware('public.cache:300');
 
         // Region routes
         Route::get('/regions', [RegionController::class, 'index'])->middleware('public.cache:60');
         Route::get('/regions/{slug}', [RegionController::class, 'show'])->middleware('public.cache:60');
-        Route::get('/regions/{slug}/weather', [RegionController::class, 'weather']);
+        Route::get('/regions/{slug}/weather', [RegionController::class, 'weather'])->middleware('public.cache:300');
 
         // Island routes
         Route::get('/islands', [IslandController::class, 'index'])->middleware('public.cache:60');
         Route::get('/islands/{slug}', [IslandController::class, 'show'])->middleware('public.cache:60');
-        Route::get('/islands/{slug}/weather', [IslandController::class, 'weather']);
+        Route::get('/islands/{slug}/weather', [IslandController::class, 'weather'])->middleware('public.cache:300');
 
         // City routes
         Route::get('/cities', [CityController::class, 'index'])->middleware('public.cache:60');
         Route::get('/cities/{slug}', [CityController::class, 'show'])->middleware('public.cache:60');
-        Route::get('/cities/{slug}/weather', [CityController::class, 'weather']);
+        Route::get('/cities/{slug}/weather', [CityController::class, 'weather'])->middleware('public.cache:300');
 
         // Waterbody routes
         Route::get('/waterbodies', [WaterbodyController::class, 'index']);

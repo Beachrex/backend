@@ -75,14 +75,14 @@ class PublicCacheHeadersTest extends TestCase
                 fn ($m) => is_string($m) && (str_starts_with($m, 'public.cache') || str_starts_with($m, PublicCacheHeaders::class))
             ));
 
-        $this->assertGreaterThanOrEqual(20, $public->count());
+        $this->assertGreaterThanOrEqual(27, $public->count());
         foreach ($public as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods(), $route->uri());
             $middleware = $route->gatherMiddleware();
             $this->assertNotContains('auth:sanctum', $middleware, $route->uri());
             $this->assertNotContains('admin', $middleware, $route->uri());
             // Beach details counts a view per request: it must reach PHP every time.
-            $this->assertStringNotContainsString('beach-details', $route->uri());
+            $this->assertNotSame('api/v1/beach-details/{identifier}', $route->uri());
         }
     }
 }

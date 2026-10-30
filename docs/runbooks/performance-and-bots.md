@@ -20,8 +20,12 @@ on a cache hit, Redis filled up (one `cities` key ~50 MB per language), the PHP-
 
 Routes with `public.cache:60`: site-settings, beaches (list, filters, map-bounds, most-visited, footer),
 legacy-redirect, continents, countries, regions, islands, cities (lists and single), first-page-content, static-pages,
-spatial within-radius. Not cached publicly: anything with `Authorization`, POST, errors, `beach-details` (counts views),
-weather, search, AI.
+spatial within-radius; `public.cache:300`: the five weather endpoints. Not cached publicly: anything with
+`Authorization`, POST, errors, `beach-details/{id}` (counts views), search, AI.
+
+The website (web-client) puts continents, countries, footer pages and footer beaches into every page from the server
+(`src/lib/server/global-data.ts`), so browsers do not fetch them; its server calls the API over the Docker network
+(`API_INTERNAL_URL=http://web_<env>`), not through Cloudflare.
 
 **Admin edits** are visible within about a minute (micro-cache 60 s; the Laravel cache is cleared at once).
 After a raw-SQL bulk change (a command that does not use Eloquent), run `php artisan cache:clear-api --type=all`.
@@ -88,3 +92,70 @@ node scripts/loadtest/api-mix.mjs --base http://127.0.0.1:8090 --fixture fixture
 Cloudflare's cache key cannot include `Accept-Language` on the Free plan and Cloudflare ignores `Vary` for JSON, so a
 cached API answer could reach a visitor in another language. The origin micro-cache gives the same protection
 without that risk. Do **not** add a Cache Rule for `api.beachrex.com`.
+
+## 7. Cloudflare rules for bots (Free plan) — owner, in the Cloudflare dashboard
+
+Order of defence: Cloudflare (blocks before the VPS) → host nginx limits (per IP and per /24) → caches. Keep
+verified bots (Googlebot, Bingbot …: `cf.client.bot`) allowed everywhere. Rules apply to the **website**
+(`beachrex.com`); never challenge `api.beachrex.com` / `*-api` hosts (the mobile app, the MCP server and our
+website server call them without a browser, a challenge breaks them).
+
+Security → WAF → Custom rules (Free: 5 rules). Keep the existing block rule first:
+
+1. **Block a known scraper network** (exists since 2026-10-30): expression
+   `(ip.src in {202.46.62.0/24} and not cf.client.bot)` → **Block**. Add further ranges only with evidence
+   (Security → Events, or §2 above: many IPs of one /24 with one UA).
+2. **Challenge outdated Chrome on the website** (the scraper used Chrome/133 while current is 155/156): expression
+   ```
+   (http.host in {"beachrex.com" "www.beachrex.com"} and not cf.client.bot and
+    (http.user_agent contains "Chrome/5" or http.user_agent contains "Chrome/6" or http.user_agent contains "Chrome/7"
+     or http.user_agent contains "Chrome/8" or http.user_agent contains "Chrome/9" or http.user_agent contains "Chrome/10"
+     or http.user_agent contains "Chrome/11" or http.user_agent contains "Chrome/12" or http.user_agent contains "Chrome/13"
+     or http.user_agent contains "Chrome/140." or http.user_agent contains "Chrome/141." or http.user_agent contains "Chrome/142."
+     or http.user_agent contains "Chrome/143." or http.user_agent contains "Chrome/144."))
+   ```
+   → **Managed Challenge** (not Block: real people on old phones/TVs pass the challenge). "Chrome/1x" prefixes cover
+   100–139; versions 140–144 are listed one by one; 145+ (about the last 10 releases) pass. Raise the list every
+   ~3 months (Chrome releases every 4 weeks). Check after a day in Security → Events how many solved the challenge
+   (people) vs. not (bots); if many solve it, narrow the list.
+3. Optional, only with evidence: **challenge a hosting network (ASN)** that sends a scraper:
+   `(ip.src.asnum in {<ASN>} and not cf.client.bot and http.host eq "beachrex.com")` → Managed Challenge. The ASN is
+   shown in Security → Events for the offending requests.
+
+Security → WAF → Rate limiting rules (Free: 1 rule, 10-second period, blocks by IP):
+
+- Name: `Website pages per IP`. If incoming requests match:
+  `(http.host eq "beachrex.com" and not starts_with(http.request.uri.path, "/_next/") and not starts_with(http.request.uri.path, "/images/") and not starts_with(http.request.uri.path, "/brand/") and ip.src ne 2.28.76.142)`
+  (if the editor offers it, add `and not cf.client.bot`). Characteristics: IP. Rate: **50 requests per 10 seconds**.
+  Action: **Block** for 10 seconds (the Free plan duration). A person reading pages never reaches 5 page requests
+  per second for 10 seconds (link prefetching is ~10–30 per page view, in one burst); a crawler at full speed does.
+
+Other switches:
+- **Bot Fight Mode: leave OFF.** On Free it applies to the whole zone (website and API hosts) and cannot be skipped
+  by custom rules, so it can challenge the mobile app, the MCP server and our server's own API calls.
+- **AI crawlers** (Security → Bots / AI Crawl Control): Beachrex wants to be found by AI assistants (`llms.txt`,
+  MCP); blocking AI *training* crawlers is a product choice, not a load fix — the rules above already stop
+  impolite crawlers.
+- **Under Attack Mode** (Security → Settings): emergency only (§3); it also challenges real visitors.
+- **Do not** add a Cache Rule for the API (§6).
+
+## 8. Database settings (optional, owner, needs a short PostgreSQL restart for all environments)
+
+The shared `pgsql` container runs PostGIS defaults (`shared_buffers` 128 MB) on an 8 GB VPS whose databases are
+~5 GB. The load fixes above do not need a change. If `ops:perf-report` shows slow statements under normal traffic,
+plan a quiet moment and add to the `pgsql` service in `deploy/docker-compose.vps.yml` (PR), then let one deploy
+recreate it (every environment's API is unavailable for a few seconds; the deploy probe of that run fails):
+`command: ["postgres", "-c", "shared_buffers=512MB", "-c", "effective_cache_size=2GB", "-c", "work_mem=8MB",
+"-c", "shared_preload_libraries=pg_stat_statements"]` and run `CREATE EXTENSION IF NOT EXISTS pg_stat_statements;`
+in each database (a migration can do that). `ops:perf-report` then lists the top statements.
+
+## 9. Measured effect (local reproduction, 2 vCPU, copy-like data; ADR 2026-10-30)
+
+| | before (origin/dev 2026-10-30) | after (#194 #195 #196 #197 + web-client #162) |
+|---|---:|---:|
+| API at the incident's rate (35 req/s, incident endpoint mix) | p50 20.5 s, p95 36.9 s, health 11.6 s / 26.1 s | p50 1.0 ms, p95 147 ms, health 41 / 76 ms |
+| Reference endpoints, closed loop | 24 req/s, p95 5.4 s | 6 386 req/s, p95 16 ms |
+| Reference endpoints at 300 req/s | – | p95 1.3 ms, health p95 53 ms |
+| Redis after 1 min of the incident mix | 454 MB (one `cities` key 50 MB) | 7 MB |
+| Browser API requests, 8 page loads | 55 | 18 |
+| Misses: beach-details / within-radius / nearest city | 92 / 39 / 14.8 ms | 64 / 24 / 4.2 ms |
