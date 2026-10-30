@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\HasAsciiPaths;
 use App\Models\Traits\HasMedia;
+use App\Support\BeachDetailsCache;
 use App\Traits\Cacheable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Traits\IndexesPlaceNames;
@@ -359,6 +360,27 @@ class Beach extends Model
 
         // Clear beach count caches
         $this->cacheService()->clearBeachCountCache();
+
+        // Beach details (owner 2026-10-30): this beach always; every beach when it appears, disappears or moves,
+        // because the others show it in their previous/next navigation and place beach counts.
+        $this->affectsOtherBeachDetails() ? BeachDetailsCache::forgetAll() : BeachDetailsCache::forget((int) $this->id);
+    }
+
+    /**
+     * True when this save or delete changes what OTHER beaches' details show: the beach was just created or deleted,
+     * published/unpublished, or moved to another place (their previous/next navigation and place beach counts).
+     * `wasRecentlyCreated` stays true on the instance after later updates, so "just created" also needs no changes.
+     */
+    public function affectsOtherBeachDetails(): bool
+    {
+        if (! $this->exists) {
+            return true;
+        }
+        if ($this->wasRecentlyCreated && $this->getChanges() === []) {
+            return true;
+        }
+
+        return $this->wasChanged(['status_id', 'continent_code', 'country_code', 'region_id', 'island_id', 'city_id']);
     }
 
     /**

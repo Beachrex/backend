@@ -29,7 +29,8 @@ return [
         ],
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
-            'default_model' => env('ANTHROPIC_MODEL', 'claude-3-haiku-20240307'),
+            // Used only when AI_PROVIDER=anthropic (claude-3-haiku, the old default, is retired).
+            'default_model' => env('ANTHROPIC_MODEL', 'claude-sonnet-5-5'),
             'timeout' => env('ANTHROPIC_TIMEOUT', 30), // seconds
         ],
     ],
@@ -68,6 +69,20 @@ return [
         // Owner 2026-10-29 ("hramba chatov ok"): conversations are deleted this many days after their last activity
         // by the daily `ai:prune-conversations` (routes/console.php). 0 = the scheduled job does not run.
         'retention_days' => (int) env('AI_CHAT_RETENTION_DAYS', 180),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trip planner narration model (owner 2026-10-30)
+    |--------------------------------------------------------------------------
+    | Used when nothing is picked in admin (AI → AI models). Must be an AiModelCatalog id; if its provider has no
+    | API key in this environment, the planner falls back to AI_PROVIDER / OPENAI_MODEL.
+    */
+    'itinerary' => [
+        'model' => env('AI_ITINERARY_MODEL', 'claude-opus-5-5'),
+        // One narration call with Claude or a reasoning OpenAI model (they think first; a 14-day plan can take over a
+        // minute). Runs in the queue worker: job timeout 240 s, two attempts, so keep this under 115.
+        'timeout' => (int) env('AI_ITINERARY_TIMEOUT', 110), // seconds
     ],
 
     /*

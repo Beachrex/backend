@@ -174,6 +174,11 @@ services:
       NODE_ENV: production
       PORT: "3001"
       BEACHREX_COLOR: blue
+      # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
+      NEXT_CACHE_MAX_MB: "256"
+    # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
+    # handler works; full = cache writes fail, pages still render). uid/gid = the image's nextjs user.
+    tmpfs: ["/app/.next/cache:size=256m,uid=1001,gid=1001,mode=0755"]
     networks: [net_prod]
     ports: ["127.0.0.1:3001:3001"]
     healthcheck: *front-healthcheck
@@ -191,6 +196,11 @@ services:
       NODE_ENV: production
       PORT: "3011"
       BEACHREX_COLOR: green
+      # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
+      NEXT_CACHE_MAX_MB: "256"
+    # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
+    # handler works; full = cache writes fail, pages still render). uid/gid = the image's nextjs user.
+    tmpfs: ["/app/.next/cache:size=256m,uid=1001,gid=1001,mode=0755"]
     networks: [net_prod]
     ports: ["127.0.0.1:3011:3011"]
     healthcheck: *front-healthcheck
@@ -286,6 +296,11 @@ services:
       NODE_ENV: production
       PORT: "3002"
       BEACHREX_COLOR: blue
+      # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
+      NEXT_CACHE_MAX_MB: "64"
+    # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
+    # handler works; full = cache writes fail, pages still render). uid/gid = the image's nextjs user.
+    tmpfs: ["/app/.next/cache:size=256m,uid=1001,gid=1001,mode=0755"]
     networks: [net_uat]
     ports: ["127.0.0.1:3002:3002"]
     healthcheck: *front-healthcheck
@@ -303,6 +318,11 @@ services:
       NODE_ENV: production
       PORT: "3012"
       BEACHREX_COLOR: green
+      # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
+      NEXT_CACHE_MAX_MB: "64"
+    # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
+    # handler works; full = cache writes fail, pages still render). uid/gid = the image's nextjs user.
+    tmpfs: ["/app/.next/cache:size=256m,uid=1001,gid=1001,mode=0755"]
     networks: [net_uat]
     ports: ["127.0.0.1:3012:3012"]
     healthcheck: *front-healthcheck
@@ -398,6 +418,11 @@ services:
       NODE_ENV: development
       PORT: "3003"
       BEACHREX_COLOR: blue
+      # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
+      NEXT_CACHE_MAX_MB: "64"
+    # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
+    # handler works; full = cache writes fail, pages still render). uid/gid = the image's nextjs user.
+    tmpfs: ["/app/.next/cache:size=256m,uid=1001,gid=1001,mode=0755"]
     networks: [net_dev]
     ports: ["127.0.0.1:3003:3003"]
     healthcheck: *front-healthcheck
@@ -415,6 +440,11 @@ services:
       NODE_ENV: development
       PORT: "3013"
       BEACHREX_COLOR: green
+      # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
+      NEXT_CACHE_MAX_MB: "64"
+    # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
+    # handler works; full = cache writes fail, pages still render). uid/gid = the image's nextjs user.
+    tmpfs: ["/app/.next/cache:size=256m,uid=1001,gid=1001,mode=0755"]
     networks: [net_dev]
     ports: ["127.0.0.1:3013:3013"]
     healthcheck: *front-healthcheck

@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Log;
  * conservative fallback (the most expensive tier of its provider) and a warning is logged.
  *
  * Prices are USD per 1M tokens. Anthropic: https://platform.claude.com/docs/en/about-claude/pricing (checked
- * 2026-10-29). OpenAI: https://openai.com/api/pricing/ (the chat no longer uses OpenAI; kept for the pipeline
- * engine and the trip planner narration, which still call it).
+ * 2026-10-29). OpenAI: https://developers.openai.com/api/docs/pricing (gpt-6-astra checked 2026-10-30; the
+ * pipeline engine and the trip planner can call OpenAI models).
  */
 class ModelPricing
 {
@@ -47,8 +47,13 @@ class ModelPricing
 
     private const ANTHROPIC_FALLBACK = [10.00, 50.00, 0.1];
 
-    /** OpenAI: [input, output]. */
+    /**
+     * OpenAI: [input, output]. Cached input (gpt-6-astra: $1) is reported inside prompt_tokens and priced as normal
+     * input here (a small over-count, never an under-count). gpt-6-astra: https://developers.openai.com/api/docs/pricing
+     * and /api/docs/models/gpt-6-astra (checked 2026-10-30).
+     */
     private const OPENAI = [
+        'gpt-6-astra' => [10.00, 50.00],
         'gpt-4o-mini' => [0.15, 0.60],
         'gpt-4o' => [2.50, 10.00],
         'gpt-4-turbo' => [10.00, 30.00],
@@ -56,7 +61,10 @@ class ModelPricing
         'gpt-3.5-turbo' => [0.50, 1.50],
     ];
 
-    private const OPENAI_FALLBACK = [30.00, 60.00];
+    /** gpt-6-astra prompts over 272K input tokens pay 2x input and 1.5x output for the whole request. */
+    private const OPENAI_LONG_PROMPT = ['gpt-6-astra' => [272_000, 20.00, 75.00]];
+
+    private const OPENAI_FALLBACK = [30.00, 75.00];
 
     /** Warn once per process and model, not on every call. */
     private static array $warned = [];
@@ -81,6 +89,10 @@ class ModelPricing
         }
 
         [$in, $out] = self::lookup(self::OPENAI, $model) ?? self::unknown($provider, $model, self::OPENAI_FALLBACK);
+        $long = self::lookupKey(array_keys(self::OPENAI_LONG_PROMPT), $model);
+        if ($long !== null && $inputTokens > self::OPENAI_LONG_PROMPT[$long][0]) {
+            [, $in, $out] = self::OPENAI_LONG_PROMPT[$long];
+        }
 
         return round($inputTokens / 1e6 * $in + $outputTokens / 1e6 * $out, 6);
     }

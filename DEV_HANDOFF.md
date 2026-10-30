@@ -52,6 +52,156 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Website containers: bounded Next.js cache settings, tmpfs, cache numbers in the disk report
+
+Root cause of the 16.3 GB `front_prod` writable layer and the web-client fix: ADR 2026-10-30 "Bounded Next.js cache",
+runbook `docs/runbooks/disk-cleanup.md` "Website cache". Here:
+- `deploy/docker-compose.vps.yml`: every `front_*` service gets `NEXT_CACHE_MAX_MB` (prod 256, uat/dev 64; read by
+  web-client `cache-handler.cjs`) and `tmpfs: /app/.next/cache` (256 MB, uid/gid 1001 = the image's `nextjs`
+  user) as a safety net. Takes effect on the next website deploy of each environment (containers are recreated).
+- `deploy/scripts/docker-prune.sh` "Disk report": per website container the writable layer, `.next/cache` and
+  `.next/server/app` size and file count, the cache numbers from `/api/health` and RSS; WARNING when a layer is GBs.
+Test: `docker compose config` with empty env files renders the tmpfs and env for all six services; `bash -n` and
+`shellcheck -S warning` clean.
+
+---
+
+## 2026-10-30 - Spec: TASK-011 premium trip planner (docs only)
+
+### Overview
+Owner request 2026-10-30: a far more detailed paid trip plan, researched on the web by Gemini (Google Search
+grounding) and GPT-6 Astra in parallel, verified, merged and written by Claude Opus 5.5, delivered by e-mail link to a
+web page and (later) a designed PDF. `docs/tasks/TASK-011-premium-trip-planner.md` covers the questionnaire, the
+queued resumable pipeline, quality gate, output, cost per 3/7/14-day plan (estimates, prices checked 2026-10-30),
+model picker extension, privacy (health data, Art. 9 consent), evaluation with 10 briefs, milestones and open owner
+questions. Status: Proposed — waiting for owner approval.
+
+### Changes
+- New `docs/tasks/TASK-011-premium-trip-planner.md`; row in `docs/tasks/README.md`.
+- No code, API, DB or config change.
+
+---
+
+## 2026-10-30 - Fix: tag-before-build picked a depends_on image
+
+Third dev run (Beachrex/backend#188, run 41041857625) still showed "previous none": `docker compose config --images
+api_<env>` also lists the images of its `depends_on` (redis, postgis) in no fixed order, and `head -1` took
+`redis:alpine`, so it was tagged `redis:alpine-previous` instead of `beachrex/api:<env>-previous`. Now only a
+`beachrex/` line is taken, the build step logs what it kept ("Kept the live image as …-previous"), and
+`docker-prune.sh` removes such stray `<non-beachrex>-previous` tags when they point at the same image as their base
+tag (untag only). Test: local compose with a `depends_on` → `beachrex/api:dev-previous` = the image before; a stray
+`local/mini:1-previous` tag removed, `local/mini:1` intact.
+
+---
+
+## 2026-10-30 - Deploys keep the previous image (tag before build)
+
+The second dev run of the cleanup (run 41038089475) showed "previous none" for every service: the VPS Docker uses
+the containerd image store, where an image that loses its tag and is not in use is deleted at once, so the image
+that was live before a deploy never survived for a rollback. Now `api-rollout.sh` and `front-deploy.sh` tag the live
+image `<image>-previous` (`dc config --images <svc>`) just before `docker compose build`, and `docker-prune.sh`
+treats that tagged image as the previous one (fallback: newest other). Non-fatal if tagging fails.
+Test: local Docker, two builds through the same `build_locked` → `beachrex/api:dev` + `beachrex/api:dev-previous`
+(the image before), the older one removed by the cleanup.
+
+---
+
+## 2026-10-30 - Admin: AI model picker for the chat and the trip planner; planner default Claude Opus 5.5
+
+### Overview
+Owner: pick the AI chat model and the AI trip planner model in admin, with approximate prices; the paid planner must
+run on the best model. ADR 2026-10-30 "AI models are picked in admin per feature".
+
+### Changes Made
+- New admin page **AI → AI models** (`app/Filament/BrAdmin/Pages/AiModels.php`, view `ai-models.blade.php`): two selects
+  (chat, trip planner), price per 1M tokens, estimated cost per chat answer and per 3/7/14-day plan (with share of the
+  Stripe price), answers per $5 day, measured 30-day averages, "test this model" buttons.
+- `AiModelCatalog`: supported models, resolution admin → env → default, estimates. Site settings `ai_chat_model`,
+  `ai_itinerary_model` (migration `2026_10_30_090000_add_ai_model_site_settings`, inserts NULL, idempotent).
+- `LLMService` multi-provider (`ChatCompletionRequest::$provider`); new `AnthropicProvider`; `OpenAIProvider` handles
+  reasoning models (`max_completion_tokens`, `reasoning_effort`, no temperature, longer timeout).
+- `ModelPricing`: `gpt-6-astra` ($10/$50, >272K tier); OpenAI fallback output $75.
+- Chat (`ChatAgent`, `ChatController`, `QueryUnderstandingService`) and planner (`ItineraryService`) read the choice.
+- Config: `ai.itinerary.model` (`AI_ITINERARY_MODEL`, default `claude-opus-5-5`), `ai.itinerary.timeout`
+  (`AI_ITINERARY_TIMEOUT`, 110); `ANTHROPIC_MODEL` default `claude-sonnet-5-5` (old default was a retired model).
+
+### Affected Endpoints
+None changed in shape. Behaviour: `POST /api/v1/ai/itinerary-plans` / `/ai/itineraries` narrate with Claude Opus 5.5
+where `ANTHROPIC_API_KEY` is set (was gpt-4o-mini); `POST /api/v1/ai/chat` uses the admin choice when set.
+
+### Testing
+`tests/Feature/AI/AiModelSettingsTest.php` (21 tests): defaults, admin choice used by chat (Claude and OpenAI) and
+planner (Claude, GPT-6 Astra), truncated Claude narration retried and both attempts costed, invalid model / no key /
+Astra for chat rejected, 403 for non-admin, cost recorded with the chosen model's price, test buttons.
+
+## 2026-10-30 - Beach details cache: 30 days, cleared on every change, admin "clear cache" button
+
+Owner, 2026-10-30: keep beach details cached long (beach data rarely changes), clear them whenever a beach changes, and give each beach a "clear cache" button in the admin.
+
+- `app/Support/BeachDetailsCache.php` (new): key `beach_details:g{generation}:{locale}:{id}`, TTL 30 days, `forget($id)` (one beach, 19 locales), `forgetAll()` (bumps the generation; old entries are never read again and expire).
+- Cleared on: `Beach` saved/deleted (`clearModelCache`; created, deleted, status or place change → `forgetAll`, since other beaches show it in previous/next navigation and place counts; any other change → that beach, `Beach::affectsOtherBeachDetails()`), `BeachTranslation` saved/deleted, beach `Media` saved/deleted/restored, `EditBeach::afterSave()` (relations are saved after the record), webcam review (`PlaceWebcamReview::forgetPlace`). `cache:clear-api --type=all` (the AI content commands ask for it) still flushes everything.
+- Admin: `EditBeach` header action **Počisti predpomnilnik** (`clearCache`). Admin guide `docs/guides/admin/plaze.md` updated.
+- `CacheService::BEACH_DETAILS_TTL` now points to the new TTL (deprecated).
+- Tests: `tests/Feature/BeachDetailsCacheTest.php` (6), updated cache keys in `BeachDetailsApiTest` and `WebcamEmbedRecheckTest`. Full suite: 10 failures, the same 10 as on plain `dev` (env-dependent AI cost cap, plan enforcement, weather).
+- The website's beach page has its own ISR cache (`revalidate = 3600`), so a change shows there within an hour; the map panel fetches the API directly.
+
+**Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key and lifetime only.
+
+## 2026-10-30 - Disk cleanup notice split into parts (4096-character annotation limit)
+
+First dev run of `docker-prune.sh` (Beachrex/backend#184, run 41036884533) worked but its notice was cut at 4096
+characters (GitHub's annotation limit), so the "After" numbers were lost. Now: one notice for the cleanup (before,
+actions, after, freed) and one for the report, each split into parts of ≤ 3900 characters; the report lists only
+container logs ≥ 1 MB or without a limit and writable layers ≥ 10 MB. Findings of the first run are in
+`docs/runbooks/disk-cleanup.md` (front_prod writable layer 14.3 GB, 1.7 GB of manual dumps in /root).
+Test: shellcheck; a 300-line summary → 4 notices of ≤ 3900 characters with all lines; local Docker run.
+
+---
+
+## 2026-10-30 - Deploys clean up old Docker images and build cache
+
+### Overview
+Owner: VPS disk 71 % full; every deploy left the replaced image as a dangling `<none>` image, and BuildKit cache grew.
+"da deploy samodejno čisti stare Docker slike — ja". ADR 2026-10-30, runbook `docs/runbooks/disk-cleanup.md`.
+
+### Changes
+- New `deploy/scripts/docker-prune.sh <env> <api|front>`: per building service (`api_<env>`, `front_<env>`, all
+  envs) keeps the current image, one previous (tagged `<tag>-previous`) and every image a container uses; removes
+  older ones (`docker image rm`, no `-f`); labelled dangling images; BuildKit cache unused > 72 h, capped at 8 GB.
+  Only images with the compose label `com.docker.compose.project=deploy` or named `beachrex/*`; volumes, networks,
+  base and foreign images untouched. Reports `df -h /`, `docker system df` before/after, freed bytes, container log
+  sizes + limits, Laravel log sizes, `*.dump` files (never deleted), volumes, host folders — as one `::notice`.
+  Always exits 0.
+- `.github/workflows/deploy.yml`: new step "Clean up old Docker images and build cache" after "Reload Nginx"
+  (`continue-on-error`). Web-client workflow has the same step (calls the script if present).
+- `api-rollout.sh`, `front-deploy.sh`: the image build holds `/opt/beachrex/.docker-build.lock` shared, the cleanup
+  takes it exclusively, so it never runs during the other repo's build.
+- Logging check: every app service in `docker-compose.vps.yml` (incl. `front_<env>_green`, scheduler, worker) has
+  json-file `10m x 5`; `pgsql`/`redis` have none on purpose (see the compose comment).
+
+### Testing
+shellcheck clean. Local Docker 29 (classic overlay2 store) with a compose project named `deploy`: 5 builds each of
+api_dev/front_dev, scheduler on build 1, stopped green on build 3, plus a foreign `other/x` image rebuilt twice →
+kept current + `dev-previous` + the 2 images used by containers, removed the other 4, foreign dangling image left
+and reported; a second run moved `-previous` to the next image. Lock held by a fake build → cleanup skipped, exit 0.
+
+---
+
+## 2026-10-30 - Beach details: one cache entry per beach (id and slug share it)
+
+Owner, 2026-10-30: the beach panel on the map loaded slowly on first open. `GET /api/v1/beach-details/{identifier}` was cached per identifier, so the beach page (slug) and the map panel (id) built and cached the ~70-query response separately; a page visit never warmed the panel.
+
+- `BeachDetailsController::show`: resolves the identifier to the active beach id first (`resolveBeachId`: number as is, slug or old slug with one indexed lookup) and caches under `beach_details:{locale}:{id}`. Unknown or inactive: 404 as before.
+- `PlaceWebcamReview::forgetPlace` already forgets the id key (comment updated); old slug keys expire with their TTL.
+- Test: `BeachDetailsApiTest::test_slug_and_id_requests_share_one_cache_entry` (fails without the change).
+
+**Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key only.
+
+## 2026-10-30 - Docs: server reboot checklist, pm2 startup for the MCP servers
+
+- `docs/runbooks/environment-variables.md`: after the 2026-10-30 reboot the MCP servers (pm2, user `beachrex`) did not
+  start; the owner enabled the systemd unit `pm2-beachrex`. Added a post-reboot checklist. Docs only.
+
 ## 2026-10-29 - Zero-downtime deploys: probe details as annotations, nginx reload before failing
 
 ### Overview

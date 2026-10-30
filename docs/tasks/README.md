@@ -14,3 +14,4 @@ Take the next free number from this table.
 | TASK-008 | Interactive "View beaches from all angles" on the homepage — `TASK-008-homepage-media-showcase.md` | In progress | |
 | TASK-009 | Switch the AI beach guide on/off in admin (per environment) — `TASK-009-ai-assistant-switch.md` | In progress | |
 | TASK-010 | AI chat widget on every page, knows the current page — `TASK-010-ai-chat-widget.md` | In progress | |
+| TASK-011 | Premium trip planner: Gemini + GPT-6 Astra research, Opus 5.5 verifies and writes, e-mail when ready, web page + PDF — `TASK-011-premium-trip-planner.md` | Proposed — waiting for owner approval | |
