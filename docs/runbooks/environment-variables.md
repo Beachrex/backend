@@ -78,3 +78,21 @@ A variable missing in **all** files is not listed by the comparison; check the i
 ```bash
 for v in APP_KEY APP_URL APP_DEBUG FRONTEND_URL FILAMENT_DOMAIN SCOUT_PREFIX MEILISEARCH_HOST MEILISEARCH_KEY ANTHROPIC_API_KEY AI_CHAT_PROVIDER OPENAI_API_KEY OPENWEATHER_API_KEY OPEN_METEO_API_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET STRIPE_ENABLED STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET MAIL_HOST MAIL_PASSWORD DO_SPACES_KEY SANCTUM_STATEFUL_DOMAINS SESSION_DOMAIN BACKUP_ENABLED BACKUP_S3_BUCKET TURNSTILE_SECRET_KEY; do grep -q "^$v=.\+" /opt/beachrex/envs/.env.prod && echo "ok      $v" || echo "MISSING $v"; done
 ```
+
+## Server reboot (checked 2026-10-30)
+
+The owner rebooted the VPS for pending Ubuntu updates on 2026-10-30. All Docker containers came back on their own
+(`restart: unless-stopped`; the `front_<env>_green` containers only run during a website deploy). The MCP servers did
+**not**: they run under pm2 as the deploy user `beachrex` (not root), and pm2 had no startup unit for that user.
+Fixed the same day: `sudo -iu beachrex pm2 resurrect`, `sudo -iu beachrex pm2 save`,
+`pm2 startup systemd -u beachrex --hp /home/beachrex` → systemd unit `pm2-beachrex` (enabled).
+
+Checklist after any reboot:
+```bash
+docker ps --format '{{.Names}} {{.Status}}' | sort      # all Up; front_* (healthy)
+systemctl is-active nginx                                # active
+sudo -iu beachrex pm2 list                               # beachrex-mcp-dev/uat/prod online (never run pm2 as root)
+curl -s https://api.beachrex.com/api/v1/health
+curl -s https://mcp-dev.beachrex.com/health
+```
+Deploys run `pm2 save` for the `beachrex` user, so the saved list stays current.
