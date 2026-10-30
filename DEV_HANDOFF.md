@@ -52,6 +52,40 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - SQL hot paths: nested continent count, nearest-city index, fixed join order
+
+### Overview
+Third part of ADR 2026-10-30 "API performance". Makes the cache-miss path cheaper (a crawl hits every beach page
+once per language, so misses are real traffic). Measured on a copy-like local DB (3 800 beaches, 1 200 cities,
+19 languages), 50 different beaches each, after warm-up:
+
+| miss | before | after |
+|---|---:|---:|
+| `GET /beach-details/{id}` | 91.6 ms mean (p95 108) | 63.7 ms (p95 76.5) |
+| `GET /spatial/beaches/within-radius` | 39.0 ms (p95 52.8) | 23.5 ms (p95 30.5) |
+| nearest city for a point (`reverseGeocodePoint`) | 14.8 ms | 4.2 ms (same answers for 300 points) |
+| `GET /countries` (one miss) | 199 ms, 11 queries | 68 ms, 5 queries |
+| `GET /regions` / `GET /islands` | 280 / 140 ms | 193 / 61 ms |
+
+### Changes Made
+- `ContinentResource`: `when(cond, $this->beaches->count())` evaluated its value eagerly, so every continent
+  nested in a city/region/island/country lazy-loaded **all beach rows of the continent** (and then, for every item
+  but the first, showed `beaches_count`). Now one grouped count per request; the nested `continent.beaches_count`
+  is always present with the same value (additive: checked old ⊆ new for cities, countries, regions, islands).
+- Migration `2026_10_30_200000_add_city_point_geography_index` (GiST expression index on the city point) and
+  `PostGISService::reverseGeocodePoint`: ST_DWithin through the index, same spheroid order → identical results.
+- `App\Support\FixedJoinOrder`: the 15-join beach queries spent 10–25 ms in the PostgreSQL planner for < 1 ms of
+  execution; they now run with `SET LOCAL join_collapse_limit = 1, from_collapse_limit = 1` (written order:
+  beach first, lookups by key). Used by beach-details navigation, within-radius and the nearest-city query.
+
+### Affected Endpoints
+- `GET /api/v1/cities`, `/countries`, `/regions`, `/islands` (and their single views): nested
+  `continent.beaches_count` now on every item (was missing on the first).
+
+### Testing
+- `tests/Feature/SqlHotPathsTest.php` (nearest city incl. inactive/beach-less/out-of-range cases and the index;
+  no continent beach rows loaded; join settings do not outlive the query). Deliberate breaks: old
+  `ContinentResource` → fails; `SET` instead of `SET LOCAL` → fails.
 ## 2026-10-30 - Fix: API status server had no DNS resolver; micro-cache check in the rollout
 
 ### Overview
