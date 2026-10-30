@@ -8,8 +8,9 @@
 #
 # Retention rule (per compose service that builds an image: api_<env>, front_<env>):
 #   - keep the CURRENT image: the one with the service's tag (beachrex/api:<env>, beachrex/front:<env>);
-#   - keep ONE PREVIOUS image: the newest other image of that service; it is tagged <tag>-previous
-#     (beachrex/api:dev-previous) so it is never dangling and a quick rollback can use it;
+#   - keep ONE PREVIOUS image: the build step tags the live image <tag>-previous before it builds
+#     (beachrex/api:dev-previous), so it is never dangling — with Docker's containerd image store (the VPS) an
+#     untagged image is gone at once. Without such a tag: the newest other image of the service, tagged now;
 #   - remove the others, but never an image a container uses (running or stopped, incl. the blue/green
 #     front_<env>_green and the scheduler/worker): such an image is skipped, and `docker image rm` without -f
 #     refuses anyway.
@@ -149,9 +150,16 @@ for g in $(printf '%s\n' "${!IMG_GROUPS[@]}" | sort); do
     log "${g}: no current tagged image found; nothing removed."
     continue
   fi
+  # Previous = the image the build step tagged <tag>-previous (api-rollout.sh / front-deploy.sh, before building);
+  # without one (images from before that), the newest other image of the service.
   previous_id=""
   while read -r _ id tags; do
     [ "$id" = "$current_id" ] && continue
+    case ",${tags}," in *",${current_tag}-previous,"*) previous_id="$id" ;; esac
+  done <<< "$lines"
+  while read -r _ id tags; do
+    [ "$id" = "$current_id" ] && continue
+    [ "$id" = "$previous_id" ] && continue
     if [ -z "$previous_id" ]; then
       previous_id="$id"
       if ! printf '%s' "$tags" | grep -q -- "${current_tag}-previous"; then

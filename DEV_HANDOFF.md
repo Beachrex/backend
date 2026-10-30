@@ -52,6 +52,18 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Deploys keep the previous image (tag before build)
+
+The second dev run of the cleanup (run 41038089475) showed "previous none" for every service: the VPS Docker uses
+the containerd image store, where an image that loses its tag and is not in use is deleted at once, so the image
+that was live before a deploy never survived for a rollback. Now `api-rollout.sh` and `front-deploy.sh` tag the live
+image `<image>-previous` (`dc config --images <svc>`) just before `docker compose build`, and `docker-prune.sh`
+treats that tagged image as the previous one (fallback: newest other). Non-fatal if tagging fails.
+Test: local Docker, two builds through the same `build_locked` → `beachrex/api:dev` + `beachrex/api:dev-previous`
+(the image before), the older one removed by the cleanup.
+
+---
+
 ## 2026-10-30 - Disk cleanup notice split into parts (4096-character annotation limit)
 
 First dev run of `docker-prune.sh` (Beachrex/backend#184, run 41036884533) worked but its notice was cut at 4096

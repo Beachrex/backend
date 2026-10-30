@@ -1443,7 +1443,9 @@ samodejno čisti stare Docker slike — ja".
    (running or stopped, incl. `front_<env>_green`). Older ones: `docker image rm` without `-f`. Selected by the
    compose build label `com.docker.compose.project=deploy` or the name `beachrex/*`; base images, other projects,
    volumes and networks are never touched; no `docker system prune`. Unlabelled dangling images are only reported.
-   Created date decides "previous", not tags written at build time, so it also covers images built before this.
+   "Previous" is the image the build step tagged `<tag>-previous` right before `docker compose build` (the VPS uses
+   Docker's containerd image store, which deletes an untagged unused image at once, so it must be tagged before the
+   build); without that tag, the newest other image by created date.
 3. BuildKit cache: entries unused > 72 h removed, total capped at 8 GB.
 4. No overlap with a build of the other repo: builds hold `/opt/beachrex/.docker-build.lock` shared, the cleanup
    exclusively (waits ≤ 10 min, else skips; a build waits ≤ 10 min, else builds anyway).
