@@ -64,6 +64,47 @@ Test: local Docker, two builds through the same `build_locked` → `beachrex/api
 
 ---
 
+## 2026-10-30 - Admin: AI model picker for the chat and the trip planner; planner default Claude Opus 5.5
+
+### Overview
+Owner: pick the AI chat model and the AI trip planner model in admin, with approximate prices; the paid planner must
+run on the best model. ADR 2026-10-30 "AI models are picked in admin per feature".
+
+### Changes Made
+- New admin page **AI → AI models** (`app/Filament/BrAdmin/Pages/AiModels.php`, view `ai-models.blade.php`): two selects
+  (chat, trip planner), price per 1M tokens, estimated cost per chat answer and per 3/7/14-day plan (with share of the
+  Stripe price), answers per $5 day, measured 30-day averages, "test this model" buttons.
+- `AiModelCatalog`: supported models, resolution admin → env → default, estimates. Site settings `ai_chat_model`,
+  `ai_itinerary_model` (migration `2026_10_30_090000_add_ai_model_site_settings`, inserts NULL, idempotent).
+- `LLMService` multi-provider (`ChatCompletionRequest::$provider`); new `AnthropicProvider`; `OpenAIProvider` handles
+  reasoning models (`max_completion_tokens`, `reasoning_effort`, no temperature, longer timeout).
+- `ModelPricing`: `gpt-6-astra` ($10/$50, >272K tier); OpenAI fallback output $75.
+- Chat (`ChatAgent`, `ChatController`, `QueryUnderstandingService`) and planner (`ItineraryService`) read the choice.
+- Config: `ai.itinerary.model` (`AI_ITINERARY_MODEL`, default `claude-opus-5-5`), `ai.itinerary.timeout`
+  (`AI_ITINERARY_TIMEOUT`, 110); `ANTHROPIC_MODEL` default `claude-sonnet-5-5` (old default was a retired model).
+
+### Affected Endpoints
+None changed in shape. Behaviour: `POST /api/v1/ai/itinerary-plans` / `/ai/itineraries` narrate with Claude Opus 5.5
+where `ANTHROPIC_API_KEY` is set (was gpt-4o-mini); `POST /api/v1/ai/chat` uses the admin choice when set.
+
+### Testing
+`tests/Feature/AI/AiModelSettingsTest.php` (21 tests): defaults, admin choice used by chat (Claude and OpenAI) and
+planner (Claude, GPT-6 Astra), truncated Claude narration retried and both attempts costed, invalid model / no key /
+Astra for chat rejected, 403 for non-admin, cost recorded with the chosen model's price, test buttons.
+
+## 2026-10-30 - Beach details cache: 30 days, cleared on every change, admin "clear cache" button
+
+Owner, 2026-10-30: keep beach details cached long (beach data rarely changes), clear them whenever a beach changes, and give each beach a "clear cache" button in the admin.
+
+- `app/Support/BeachDetailsCache.php` (new): key `beach_details:g{generation}:{locale}:{id}`, TTL 30 days, `forget($id)` (one beach, 19 locales), `forgetAll()` (bumps the generation; old entries are never read again and expire).
+- Cleared on: `Beach` saved/deleted (`clearModelCache`; created, deleted, status or place change → `forgetAll`, since other beaches show it in previous/next navigation and place counts; any other change → that beach, `Beach::affectsOtherBeachDetails()`), `BeachTranslation` saved/deleted, beach `Media` saved/deleted/restored, `EditBeach::afterSave()` (relations are saved after the record), webcam review (`PlaceWebcamReview::forgetPlace`). `cache:clear-api --type=all` (the AI content commands ask for it) still flushes everything.
+- Admin: `EditBeach` header action **Počisti predpomnilnik** (`clearCache`). Admin guide `docs/guides/admin/plaze.md` updated.
+- `CacheService::BEACH_DETAILS_TTL` now points to the new TTL (deprecated).
+- Tests: `tests/Feature/BeachDetailsCacheTest.php` (6), updated cache keys in `BeachDetailsApiTest` and `WebcamEmbedRecheckTest`. Full suite: 10 failures, the same 10 as on plain `dev` (env-dependent AI cost cap, plan enforcement, weather).
+- The website's beach page has its own ISR cache (`revalidate = 3600`), so a change shows there within an hour; the map panel fetches the API directly.
+
+**Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key and lifetime only.
+
 ## 2026-10-30 - Disk cleanup notice split into parts (4096-character annotation limit)
 
 First dev run of `docker-prune.sh` (Beachrex/backend#184, run 41036884533) worked but its notice was cut at 4096

@@ -404,7 +404,7 @@ class BeachDetailsApiTest extends TestCase
         $beach = $this->createViewsBeach();
         \Illuminate\Support\Facades\Cache::flush();
         $this->getJson('/api/v1/beach-details/count-beach', ['Accept-Language' => 'en'])->assertOk(); // by slug
-        $this->assertTrue(\Illuminate\Support\Facades\Cache::has("beach_details:en:{$beach->id}"));
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has(\App\Support\BeachDetailsCache::key('en', $beach->id)));
 
         \Illuminate\Support\Facades\DB::flushQueryLog();
         \Illuminate\Support\Facades\DB::enableQueryLog();

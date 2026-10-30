@@ -74,8 +74,7 @@ class WebcamEmbedRecheckTest extends TestCase
         PlaceWebcam::create(['place_id' => $nice, 'windy_id' => 1000000001, 'source' => 'matcher', 'review_status' => 'auto_approved', 'is_primary' => true, 'match_score' => 90]);
         PlaceWebcam::create(['place_id' => $nice, 'windy_id' => 1000000002, 'source' => 'matcher', 'review_status' => 'approved', 'is_primary' => false, 'match_score' => 80]);
         PlaceWebcam::create(['place_id' => $nice, 'windy_id' => 1000000003, 'source' => 'matcher', 'review_status' => 'pending', 'match_score' => 50]);
-        Cache::put("beach_details:en:b-{$nice}", ['cached' => true], 3600);
-        Cache::put("beach_details:en:{$nice}", ['cached' => true], 3600);
+        Cache::put(\App\Support\BeachDetailsCache::key('en', $nice), ['cached' => true], 3600);
         $this->fakePlayer([1000000001 => self::NOT_PUBLIC, 1000000002 => self::OK]);
 
         // Checked 5 days ago: the stale-based run has nothing to do, which is how the broken embed stayed visible.
@@ -91,8 +90,7 @@ class WebcamEmbedRecheckTest extends TestCase
         Http::assertSentCount(2);
         $this->assertSame([1000000001 => false, 1000000002 => true, 1000000003 => false],
             PlaceWebcam::orderBy('windy_id')->pluck('is_primary', 'windy_id')->all());
-        $this->assertFalse(Cache::has("beach_details:en:b-{$nice}"));
-        $this->assertFalse(Cache::has("beach_details:en:{$nice}"));
+        $this->assertFalse(Cache::has(\App\Support\BeachDetailsCache::key('en', $nice)));
 
         $this->assertSame([1000000002], Beach::findOrFail($nice)->shownWebcams->pluck('windy_id')->all());
     }

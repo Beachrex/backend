@@ -15,7 +15,8 @@ class CacheService
     const TRANSLATION_TTL = 2592000; // 30 days (translations almost never change)
     const REFERENCE_DATA_TTL = 2592000; // 30 days (reference data rarely changes)
     const BEACH_COUNT_TTL = 2592000; // 30 days (beaches added once, cache cleared on admin updates)
-    const BEACH_DETAILS_TTL = 28800; // 8 hours (beach details can be updated, but not frequently)
+    /** @deprecated beach details use App\Support\BeachDetailsCache::TTL (30 days, cleared on every change). */
+    const BEACH_DETAILS_TTL = \App\Support\BeachDetailsCache::TTL;
 
     const SHORT_TTL = 28800; // 8 hours search api. Meilisearch
 

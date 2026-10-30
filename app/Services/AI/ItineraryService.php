@@ -114,13 +114,19 @@ class ItineraryService
         $days = count($skeleton);
         $lastResponse = null;
 
+        // Admin choice (AI → Models) first, then AI_PROVIDER / OPENAI_MODEL.
+        $llm = AiModelCatalog::itinerary();
+
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             try {
                 $lastResponse = $this->llmService->chatCompletion(new ChatCompletionRequest(
                     messages: $messages,
-                    temperature: 0.6,
+                    model: $llm['model'],
+                    // Claude thinks adaptively; a sampling temperature is an OpenAI-only setting here.
+                    temperature: $llm['provider'] === 'openai' ? 0.6 : null,
                     maxTokens: min(8000, 800 + 450 * $days),
                     responseFormat: ['type' => 'json_object'],
+                    provider: $llm['provider'],
                 ));
 
                 if ($lastResponse->finishReason === 'length') {

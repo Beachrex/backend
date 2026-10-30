@@ -11,6 +11,7 @@ use App\Models\AiSession;
 use App\Models\AiUsage;
 use App\Models\Beach;
 use App\Models\BeachTranslation;
+use App\Services\AI\AiModelCatalog;
 use App\Services\AI\AiSpendMeter;
 use App\Services\AI\Agent\ChatAgent;
 use App\Services\AI\Chat\PageContextHint;
@@ -207,8 +208,9 @@ class ChatController extends Controller
         // Get conversation history (last 5 messages)
         $conversationHistory = $this->getConversationHistory($session);
 
-        // AI-2: the model works with the beach tools like the MCP server (config ai.chat.engine).
-        if (config('ai.chat.engine') === 'agent') {
+        // AI-2: the model works with the beach tools like the MCP server (config ai.chat.engine). An Anthropic model
+        // picked in admin (AI → Models) always runs on the agent engine.
+        if (AiModelCatalog::chat()['engine'] === 'agent') {
             return $this->agentReply($request, $session, $userMessage, array_values($conversationHistory), $requestId, $startTime, $pageContext);
         }
 
@@ -239,7 +241,7 @@ class ChatController extends Controller
         try {
             $llmRequest = new ChatCompletionRequest(
                 messages: $messages,
-                model: config('ai.providers.openai.default_model'),
+                model: AiModelCatalog::pipelineModel(),
                 temperature: 0.4,
                 maxTokens: 1000,
                 responseFormat: ['type' => 'json_object'],
@@ -457,7 +459,7 @@ class ChatController extends Controller
             'user_agent' => $request->userAgent(),
             'last_activity_at' => now(),
             'expires_at' => now()->addMinutes(config('ai.session.ttl', 30)),
-            'engine' => config('ai.chat.engine') === 'agent' ? 'agent' : 'pipeline',
+            'engine' => AiModelCatalog::chat()['engine'],
         ]);
     }
 
