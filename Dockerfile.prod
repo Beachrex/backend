@@ -57,6 +57,10 @@ ENV PHP_FPM_PM=dynamic \
     PHP_FPM_MIN_SPARE_SERVERS=2 \
     PHP_FPM_MAX_SPARE_SERVERS=8 \
     PHP_FPM_MAX_REQUESTS=1000
+# Second pool `health` (port 9001, 2 workers): only GET /api/v1/health (deploy/nginx/api.<env>.conf), so a full
+# main pool cannot make health time out (prod 2026-10-30: health took 25 s). `/fpm-status` on both pools is
+# reachable only through web_<env>:8080 inside the Docker network (ops:perf-report). Slow requests are found in
+# web_<env>'s access log (rt=/urt= per request), not an FPM slowlog (that needs ptrace, i.e. CAP_SYS_PTRACE).
 RUN { \
         echo "[www]"; \
         echo "pm = \${PHP_FPM_PM}"; \
@@ -66,6 +70,17 @@ RUN { \
         echo "pm.max_spare_servers = \${PHP_FPM_MAX_SPARE_SERVERS}"; \
         echo "pm.max_requests = \${PHP_FPM_MAX_REQUESTS}"; \
         echo "request_terminate_timeout = 60s"; \
+        echo "pm.status_path = /fpm-status"; \
+        echo "[health]"; \
+        echo "user = www-data"; \
+        echo "group = www-data"; \
+        echo "listen = 9001"; \
+        echo "pm = static"; \
+        echo "pm.max_children = 2"; \
+        echo "pm.max_requests = 5000"; \
+        echo "request_terminate_timeout = 15s"; \
+        echo "pm.status_path = /fpm-status"; \
+        echo "clear_env = no"; \
     } > /usr/local/etc/php-fpm.d/zz-beachrex-pool.conf
 
 WORKDIR /var/www/html
