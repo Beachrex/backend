@@ -81,6 +81,16 @@ and reported; a second run moved `-previous` to the next image. Lock held by a f
 
 ---
 
+## 2026-10-30 - Beach details: one cache entry per beach (id and slug share it)
+
+Owner, 2026-10-30: the beach panel on the map loaded slowly on first open. `GET /api/v1/beach-details/{identifier}` was cached per identifier, so the beach page (slug) and the map panel (id) built and cached the ~70-query response separately; a page visit never warmed the panel.
+
+- `BeachDetailsController::show`: resolves the identifier to the active beach id first (`resolveBeachId`: number as is, slug or old slug with one indexed lookup) and caches under `beach_details:{locale}:{id}`. Unknown or inactive: 404 as before.
+- `PlaceWebcamReview::forgetPlace` already forgets the id key (comment updated); old slug keys expire with their TTL.
+- Test: `BeachDetailsApiTest::test_slug_and_id_requests_share_one_cache_entry` (fails without the change).
+
+**Affected endpoints:** `GET /api/v1/beach-details/{identifier}`: same response, cache key only.
+
 ## 2026-10-30 - Docs: server reboot checklist, pm2 startup for the MCP servers
 
 - `docs/runbooks/environment-variables.md`: after the 2026-10-30 reboot the MCP servers (pm2, user `beachrex`) did not
