@@ -68,6 +68,14 @@ There is **no** Laravel Cloud anymore. The prod DB was loaded on 2026-10-09 (see
 
 ## Done
 
+- 2026-10-30: **Deploys clean up old Docker images** (owner: disk 71 % full, "da deploy samodejno čisti stare Docker
+  slike — ja"). Last step of both deploy workflows: `deploy/scripts/docker-prune.sh` keeps the current + one previous
+  image per service (`<tag>-previous`) and any image a container uses, removes older ones and BuildKit cache unused
+  > 72 h (cap 8 GB), and reports disk usage, logs and `*.dump` files in a notice. ADR 2026-10-30, runbook
+  `docs/runbooks/disk-cleanup.md`. First dev run freed ~8.7 GB of build cache (`/` was 78 %). **Open:** the
+  `front_prod` container's writable layer (Next.js cache) was 14.3 GB a day after launch — reset by every prod
+  website deploy, but it needs a web-client fix; 5 manual `*.dump` files in `/root` (~1.7 GB) for the owner.
+
 - 2026-10-29: **Zero-downtime deploys** (owner: 502 "Host Error" during every website deploy, "uredi"). Website:
   blue/green `front_<env>` ↔ `front_<env>_green` switched in host nginx by a state file + graceful reload, end state
   always blue; API: second `api_<env>` container next to the old one, migrations in the new one, old one stopped

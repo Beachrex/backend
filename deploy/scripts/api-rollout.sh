@@ -109,10 +109,23 @@ fpm_ready() {
   docker exec "$1" php -r 'exit(@fsockopen("127.0.0.1", 9000) ? 0 : 1);' 2>/dev/null
 }
 
+# Builds hold the Docker lock shared; docker-prune.sh (end of every deploy, both repos) takes it exclusively,
+# so an image cleanup never runs while the other repo's deploy builds. Never blocks a deploy for long.
+build_locked() {
+  local lock="${BEACHREX_DOCKER_LOCK:-$ROOT/.docker-build.lock}"
+  if command -v flock > /dev/null 2>&1 && exec 8>> "$lock"; then
+    flock -s -w 600 8 || log "Docker lock busy for 600 s; building anyway."
+  fi
+  local rc=0
+  dc build "$@" || rc=$?
+  flock -u 8 2> /dev/null || true
+  return "$rc"
+}
+
 # ---------- main ----------
 log "API rollout of ${ENV_NAME} (${API_HOST}); $(docker compose version 2>/dev/null || echo 'docker compose ?')"
 log "Building ${API} (the running container keeps serving)."
-dc build "$API"
+build_locked "$API"
 dc up -d pgsql redis
 start_probe
 
