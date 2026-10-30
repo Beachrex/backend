@@ -54,11 +54,8 @@ class StaticPageController extends Controller
      */
     public function index(): JsonResponse
     {
-        $locale = app()->getLocale();
-        $cacheKey = "static_pages:footer:{$locale}";
-
-        // Cache the resolved resource array, not Eloquent models.
-        $pages = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
+        // Whole response cached per locale (ApiResponseCache; cleared on content changes).
+        return \App\Support\ApiResponseCache::json('static-pages.index', [], \App\Support\ApiResponseCache::TTL_REFERENCE, function () {
             $pages = StaticPage::with('translations')
                 ->active()
                 ->inFooter()
@@ -66,14 +63,12 @@ class StaticPageController extends Controller
                 ->orderBy('id')
                 ->get();
 
-            return StaticPageFooterResource::collection($pages)->resolve();
+            return [
+                'success' => true,
+                'data' => StaticPageFooterResource::collection($pages)->resolve(),
+                'message' => 'Static pages retrieved successfully',
+            ];
         });
-
-        return response()->json([
-            'success' => true,
-            'data' => $pages,
-            'message' => 'Static pages retrieved successfully',
-        ], 200);
     }
 
     /**

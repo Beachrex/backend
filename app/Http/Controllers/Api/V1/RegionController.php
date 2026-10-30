@@ -77,9 +77,9 @@ class RegionController extends Controller
         try {
             $locale = app()->getLocale();
             $countryFilter = $request->get('country_code');
-            $cacheKey = "regions:index:{$locale}:" . ($countryFilter ? "country:{$countryFilter}" : "all");
 
-            $regions = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter) {
+            // Whole response cached per locale and filter (ApiResponseCache: JSON, not models; cleared on content changes).
+            return \App\Support\ApiResponseCache::json('regions.index', ['country_code' => $countryFilter], \App\Support\ApiResponseCache::TTL_REFERENCE, function () use ($countryFilter) {
                 $query = Region::with(['country.continent.translations', 'country.translations', 'translations'])
                     ->withBeaches()
                     ->withCount(['beaches' => function ($q) {
@@ -91,20 +91,20 @@ class RegionController extends Controller
                     $query->byCountry($countryFilter);
                 }
 
-                return $query->get([
+                $regions = $query->get([
                     'id',
                     'code',
                     'country_code',
                     'main_image',
                     'status_id'
                 ]);
-            });
 
-            return response()->json([
-                'success' => true,
-                'data' => RegionResource::collection($regions),
-                'message' => 'Regions retrieved successfully'
-            ], 200);
+                return [
+                    'success' => true,
+                    'data' => RegionResource::collection($regions),
+                    'message' => 'Regions retrieved successfully'
+                ];
+            });
 
         } catch (\Exception $e) {
             return response()->json([

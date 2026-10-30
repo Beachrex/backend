@@ -75,6 +75,7 @@ navodilih). Vsak ukaz, ki spreminja podatke, ima `--dry-run`; vedno ga poženi n
 | `users:migrate-from-old-db` | uvoz uporabnikov s stare strani | [uporabniki.md](uporabniki.md) | ✅ |
 | `beaches:fix-lake-waterbody` | 42 jezerskim plažam s stare baze nastavi vodno površino »jezero« (predogled je privzet, piše samo z `--apply`) | [jezerske-plaze.md](jezerske-plaze.md) | ✅ |
 | `cache:clear-api`, `search:index` | osvežitev predpomnilnika in iskalnika | [splosno.md](splosno.md) | ✅ |
+| `ops:perf-report` | hitrost API: predpomnilnik, Redis, PHP-FPM, baza; opozorilo po e-pošti | [zmogljivost.md](zmogljivost.md) | ✅ |
 
 Enkratni tehnični postopki (zagon produkcije, obnova varnostne kopije, ASCII poti) ostanejo v angleških runbookih v
 `docs/runbooks/`.
@@ -88,7 +89,7 @@ Navodila jih opisujejo, kjer zadevajo uporabo. Popravki še niso narejeni (sezna
 | System → Fix Duplicate Slugs | **Preview Changes (Dry Run)** in **Fix All Duplicates** vedno javita napako: stran kliče ukaz `beach:fix-duplicate-slugs`, pravi se `beaches:fix-duplicate-slugs`. Zaenkrat ukaz poženi na strežniku ([podvojeni-slugi.md](podvojeni-slugi.md)). |
 | Countries (in verjetno Regions, Cities, Islands, Lakes, Rivers, Badges, šifranti) | iskanje v seznamu javi napako SQL, ker je ime v prevodih (preverjeno na Countries). |
 | Beaches, Articles, Badges, nadzorna plošča | števec in filter prevodov računata s 14 jeziki, podprtih je 19. |
-| Večina seznamov (države, regije, mesta, značke, šifranti, prva stran) | shranjevanje ne počisti predpomnilnika API; spremembe so na strani vidne šele po deployu ali `cache:clear-api`. |
+| ~~Večina seznamov (države, regije, mesta, značke, šifranti, prva stran)~~ | ~~shranjevanje ne počisti predpomnilnika API~~ — popravljeno 2026-10-30: vsako shranjevanje vsebine počisti predpomnjene sezname API; na strani je sprememba vidna v ~1 minuti. |
 | Beaches | shranjevanje ne počisti predpomnjenih podrobnosti plaže (8 ur). |
 | Badges | izbirnik ikon shrani ime ikone Font Awesome, stran pa ikono naloži kot sliko; ikone značk se verjetno ne prikažejo. |
 | Beaches | več lastnosti (nastanitev, kulinarika, infrastruktura, šport, tipi obiskovalcev …) v obrazcu plaže nima polja. |

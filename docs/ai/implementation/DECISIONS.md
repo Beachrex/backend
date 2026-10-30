@@ -1546,3 +1546,82 @@ Memory: the budget plus Next's normal render heap (RSS ~1.1–1.5 GB under a cra
 budget). Measured locally: 950 beach pages, 38 place pages and 500 unknown/redirect URLs wrote 318 MB (1 489 pages ×
 html/rsc/meta) + 15 MB (2 505 fetch files) before; after, the same plus 480 scanner probes wrote 0 bytes; TTFB unchanged (miss 64 → 67 ms, hit 15.3 → 15.9 ms avg).
 Runbook: `docs/runbooks/disk-cleanup.md` "Website cache".
+
+## [2026-10-30] API performance: layered caching, bounded keys, protected health (incident 2026-10-30)
+
+**Status**: Accepted (owner 2026-10-30: "ni treba z ožjim obsegom, naj naredi proper, kot se spodobi, da imamo mir za
+naprej")
+
+**Context**: On 2026-10-30 ~14:40 UTC (site public since 2026-10-29, sitemap submitted) uncached pages took up to
+~2 min, every API call ~16 s and `GET /api/v1/health` 25 s. The PHP-FPM queue of `api_prod` was saturated (CPU 187 %),
+PostgreSQL at 123 %, Redis at its 1 GB cap (976 MiB). A headless scraper (Chrome/133 UA, ~130 IPs of
+202.46.62.0/24, ~0.5 r/s per IP, so far below the per-IP limit) loaded pages whose browser code called ~10 API
+endpoints each; the web_prod log showed 10 400 API requests in 5 min (filters 1 852, countries 1 071, continents
+1 026, ...). Reproduced locally (PHP-FPM + nginx + PostGIS + Redis, 3 800 beaches / 41 822 media / 72 200 beach
+translations, the incident's endpoint mix; `scripts/loadtest/api-mix.mjs`): 15 req/s, health p50 1.6 s. Causes found:
+1. **Model graphs in Redis.** `countries`, `continents`, `regions`, `islands`, `cities` and `first-page-content`
+   cached Eloquent collections with every translation. A HIT still unserialized the graph: countries 188 ms,
+   islands 148 ms, regions 388 ms, cities 1.45 s of PHP per request; one `cities:index:<locale>:all` key was
+   ~50 MB, i.e. ~1 GB for 19 languages — alone enough to fill Redis and evict everything else (misses everywhere).
+2. **Every hit cost a PHP request** (~35–45 ms of Laravel boot), so even perfect Redis hits capped the API at a few
+   hundred req/s on 4 vCPUs shared with Next.js and PostgreSQL; health waited in the same FPM queue.
+3. **Unbounded keys / no invalidation**: within-radius keys per 4-decimal point and locale for 30 days; most list
+   keys were never cleared on admin edits (model hooks forgot `…:index:all` but the keys are `…:index:<locale>:…`),
+   only by the deploy's `cache:clear`. No stampede protection.
+4. A generation counter that restarts at 1 after an LRU eviction would make old `beach_details:g1:*` entries current.
+
+**Decision**:
+1. **Response cache in Laravel** (`App\Support\ApiResponseCache`): the finished JSON body, gzip-compressed, per
+   endpoint + locale + normalized whitelisted parameters; built under an atomic lock (one worker per key, others wait
+   ≤ 10 s, fail open). Used by the list endpoints above plus filters, footer, most-visited, map-bounds, static pages,
+   first-page content and the beach list. TTL 6 h (reference) / 1 h (parameterized) as a safety net only.
+2. **Invalidation by generation**: any Eloquent `saved`/`deleted` of an `App\Models` content model (everything
+   except users, AI, purchases, newsletter) moves one generation; `cache:clear-api --type=reference|all` and the deploy's
+   `cache:clear` too. Generations are millisecond timestamps (also `BeachDetailsCache`), so an evicted generation
+   can never revive old entries. Raw-SQL bulk commands end with `cache:clear-api` (they already say so).
+3. **HTTP caching** (`public.cache:60` middleware on 22 anonymous GET routes): `Cache-Control: public, max-age=60,
+   s-maxage=60, stale-while-revalidate=60, stale-if-error=86400`, `Vary: Accept-Language`, `ETag`/304. Routes with
+   per-request side effects (beach-details counts views) are excluded; a test enforces "GET only, no auth".
+4. **nginx micro-cache in `web_<env>`** (deploy/nginx/api.<env>.conf): stores only answers carrying
+   `X-Accel-Expires` (opt-in from 3.), never with `Authorization`; key = method + host + URI + normalized language;
+   `fastcgi_cache_lock` + `use_stale updating` + background update: a burst of identical requests costs PHP one
+   request per minute and language. nginx normalizes `Accept-Language` to one supported code and passes only that
+   to PHP, so the cached language always equals the computed one (test keeps the map = `SUPPORTED_LOCALES`).
+   Bounded at 256 MB per container. Visible delay for admin edits: ≤ 60 s.
+5. **Health is isolated**: a second PHP-FPM pool `health` (port 9001, 2 workers) serves only `/api/v1/health`
+   (nginx falls back to the main pool if it is missing), with a persistent DB connection (`pgsql_health`).
+6. **Bounded parameterized keys**: within-radius rounds the point to 3 decimals and the radius to 0.1 km, and the
+   query uses the rounded values (≤ ~55 m difference), TTL 1 h.
+7. **Cloudflare does not cache the API**: the Free plan cannot add `Accept-Language` to the cache key and ignores
+   `Vary`, so a cached answer could be served in the wrong language. The origin micro-cache does that job.
+
+**Delivery**: 1–3, 5 (`pgsql_health`) and 6 in the first PR (application); 4, the `health` pool of 5, rate limits
+and logs in the second (deploy/nginx, Dockerfile.prod); the website side in web-client. Numbers below are for all
+of them together.
+
+**Consequences**: measured locally (same data and load generator, 2 vCPU): incident mix 15 → 65 req/s with all
+parameterized requests unique (misses); reference mix 24 → ~6 400 req/s, p95 5.4 s → 16 ms; health p50 1.6 s →
+~35–55 ms under load; Redis 454 MB after one minute → 7 MB. Public answers can be up to 60 s old after an admin edit.
+The remaining cost under a crawl is uncached work per unique URL (beach details, beach pages), which the website
+side and rate limits address (separate PRs, runbook `docs/runbooks/performance-and-bots.md`).
+
+## [2026-10-30] Bot traffic: Cloudflare rules on the website only, no Bot Fight Mode, no API edge cache (amends "API performance")
+
+**Context**: the 2026-10-30 scraper (Chrome/133 UA, ~130 IPs of 202.46.62.0/24) stayed under every per-IP limit;
+the owner blocked the /24 by hand. The next one will come from elsewhere. Cloudflare Free plan: 5 custom rules,
+1 rate-limiting rule (10 s period, per IP), Bot Fight Mode zone-wide and not skippable.
+
+**Decision**:
+1. Origin protection is the base (no dashboard work needed): API micro-cache, response cache, health pool, nginx
+   limits per IP **and per /24** for API and website pages (#194–#197).
+2. Cloudflare (owner, runbook `performance-and-bots.md` §7): keep the /24 block rule; **Managed Challenge** for
+   Chrome UAs older than ~10 releases on the website host only, never on API hosts; one rate-limiting rule for
+   website pages (50 per 10 s per IP, static paths and our server excluded); ASN rules only with evidence.
+3. **Bot Fight Mode stays off**: zone-wide on Free, would challenge the mobile app, the MCP server and the
+   website server's own API calls.
+4. **No Cloudflare cache for the API** (Free cannot key on `Accept-Language`); the origin micro-cache replaces it.
+5. The website's server calls the API inside the Docker network (`API_INTERNAL_URL`), so Cloudflare rules and
+   host rate limits never touch server-side rendering.
+
+**Consequences**: a few real visitors with very old browsers see a challenge once. The UA list needs a refresh
+every ~3 months (runbook). PostgreSQL tuning is documented as an optional owner step (restart of the shared DB).

@@ -256,7 +256,7 @@ class BeachDetailsController extends Controller
         }
 
         // Get previous beach: highest ID < current ID in same region
-        $previousBeach = DB::select("
+        $previousBeach = \App\Support\FixedJoinOrder::select("
             SELECT
                 b.id,
                 b.folder_name,
@@ -336,7 +336,7 @@ class BeachDetailsController extends Controller
         ]);
 
         // Get next beach: lowest ID > current ID in same region
-        $nextBeach = DB::select("
+        $nextBeach = \App\Support\FixedJoinOrder::select("
             SELECT
                 b.id,
                 b.folder_name,

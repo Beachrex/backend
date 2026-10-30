@@ -88,13 +88,8 @@ class IslandController extends Controller
             $countryFilter = $request->get('country_code');  // e.g., HR, IT, SI
             $regionFilter = $request->get('region_code');    // e.g., istria, kvarner, dalmatia-split
 
-            // Build cache key based on active filters to ensure proper cache segmentation
-            $filterParts = [];
-            if ($countryFilter) $filterParts[] = "country:{$countryFilter}";
-            if ($regionFilter) $filterParts[] = "region:{$regionFilter}";
-            $cacheKey = "islands:index:{$locale}:" . (count($filterParts) > 0 ? implode(':', $filterParts) : "all");
-
-            $islands = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () use ($countryFilter, $regionFilter) {
+            // Whole response cached per locale and filter (ApiResponseCache: JSON, not models; cleared on content changes).
+            return \App\Support\ApiResponseCache::json('islands.index', ['country_code' => $countryFilter, 'region_code' => $regionFilter], \App\Support\ApiResponseCache::TTL_REFERENCE, function () use ($countryFilter, $regionFilter) {
                 $query = Island::with([
                         'country.continent.translations',
                         'country.translations',
@@ -114,7 +109,7 @@ class IslandController extends Controller
                     $query->byRegion($regionFilter);    // Filter by region code or ID
                 }
 
-                return $query->get([
+                $islands = $query->get([
                     'id',
                     'code',
                     'country_code',
@@ -122,13 +117,13 @@ class IslandController extends Controller
                     'main_image',
                     'status_id'
                 ]);
-            });
 
-            return response()->json([
-                'success' => true,
-                'data' => IslandResource::collection($islands),
-                'message' => 'Islands retrieved successfully'
-            ], 200);
+                return [
+                    'success' => true,
+                    'data' => IslandResource::collection($islands),
+                    'message' => 'Islands retrieved successfully'
+                ];
+            });
 
         } catch (\Exception $e) {
             return response()->json([

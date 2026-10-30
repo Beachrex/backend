@@ -63,11 +63,9 @@ class FirstPageContentController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $locale = app()->getLocale();
-            $cacheKey = "first_page_content:index:{$locale}";
-
-            $content = $this->cacheRemember($cacheKey, CacheService::REFERENCE_DATA_TTL, function () {
-                return FirstPageContent::with([
+            // Whole response cached per locale (ApiResponseCache: JSON, not models; cleared on content changes).
+            return \App\Support\ApiResponseCache::json('first-page-content.index', [], \App\Support\ApiResponseCache::TTL_REFERENCE, function () {
+                $content = FirstPageContent::with([
                     'translations',
                     'items.translations',
                     'media.mediaType',
@@ -78,13 +76,13 @@ class FirstPageContentController extends Controller
                     ->active()
                     ->ordered()
                     ->get();
-            });
 
-            return response()->json([
-                'success' => true,
-                'data' => FirstPageContentResource::collection($content),
-                'message' => 'First page content retrieved successfully'
-            ], 200);
+                return [
+                    'success' => true,
+                    'data' => FirstPageContentResource::collection($content),
+                    'message' => 'First page content retrieved successfully'
+                ];
+            });
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

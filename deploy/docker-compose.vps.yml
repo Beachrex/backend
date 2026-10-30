@@ -95,6 +95,9 @@ services:
       DB_DATABASE: beachrex_prod
       REDIS_DB: "0"
       APP_ENV: production
+      # PHP-FPM status for `php artisan ops:perf-report` (internal port of web_prod, ADR 2026-10-30 "API performance").
+      OPS_FPM_STATUS_URL: http://web_prod:8080/fpm-status?json
+      OPS_FPM_HEALTH_STATUS_URL: http://web_prod:8080/fpm-status-health?json
     volumes:
       - api-storage-prod:/var/www/html/storage
     networks: [net_prod]
@@ -128,6 +131,9 @@ services:
       DB_DATABASE: beachrex_prod
       REDIS_DB: "0"
       APP_ENV: production
+      # PHP-FPM status for `ops:perf-report --alert` (scheduled here) (internal port of web_prod, ADR 2026-10-30 "API performance").
+      OPS_FPM_STATUS_URL: http://web_prod:8080/fpm-status?json
+      OPS_FPM_HEALTH_STATUS_URL: http://web_prod:8080/fpm-status-health?json
     volumes:
       - api-storage-prod:/var/www/html/storage
     networks: [net_prod]
@@ -174,6 +180,9 @@ services:
       NODE_ENV: production
       PORT: "3001"
       BEACHREX_COLOR: blue
+      # Server-side rendering calls the API inside the Docker network (web_prod nginx → PHP), not through
+      # Cloudflare and the public host (web-client API_INTERNAL_URL; ADR 2026-10-30 "API performance").
+      API_INTERNAL_URL: http://web_prod
       # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
       NEXT_CACHE_MAX_MB: "256"
     # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
@@ -196,6 +205,9 @@ services:
       NODE_ENV: production
       PORT: "3011"
       BEACHREX_COLOR: green
+      # Server-side rendering calls the API inside the Docker network (web_prod nginx → PHP), not through
+      # Cloudflare and the public host (web-client API_INTERNAL_URL; ADR 2026-10-30 "API performance").
+      API_INTERNAL_URL: http://web_prod
       # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
       NEXT_CACHE_MAX_MB: "256"
     # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
@@ -218,6 +230,11 @@ services:
       DB_DATABASE: beachrex_uat
       REDIS_DB: "1"
       APP_ENV: production
+      # PHP-FPM status for `php artisan ops:perf-report` (internal port of web_uat, ADR 2026-10-30 "API performance").
+      OPS_FPM_STATUS_URL: http://web_uat:8080/fpm-status?json
+      OPS_FPM_HEALTH_STATUS_URL: http://web_uat:8080/fpm-status-health?json
+      # Test environments get half the PHP workers of prod: they share the 4 vCPUs (ADR 2026-10-30 "API performance").
+      PHP_FPM_MAX_CHILDREN: "8"
     volumes:
       - api-storage-uat:/var/www/html/storage
     networks: [net_uat]
@@ -250,6 +267,9 @@ services:
       DB_DATABASE: beachrex_uat
       REDIS_DB: "1"
       APP_ENV: production
+      # PHP-FPM status for `ops:perf-report --alert` (scheduled here) (internal port of web_uat, ADR 2026-10-30 "API performance").
+      OPS_FPM_STATUS_URL: http://web_uat:8080/fpm-status?json
+      OPS_FPM_HEALTH_STATUS_URL: http://web_uat:8080/fpm-status-health?json
     volumes:
       - api-storage-uat:/var/www/html/storage
     networks: [net_uat]
@@ -296,6 +316,9 @@ services:
       NODE_ENV: production
       PORT: "3002"
       BEACHREX_COLOR: blue
+      # Server-side rendering calls the API inside the Docker network (web_uat nginx → PHP), not through
+      # Cloudflare and the public host (web-client API_INTERNAL_URL; ADR 2026-10-30 "API performance").
+      API_INTERNAL_URL: http://web_uat
       # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
       NEXT_CACHE_MAX_MB: "64"
     # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
@@ -318,6 +341,9 @@ services:
       NODE_ENV: production
       PORT: "3012"
       BEACHREX_COLOR: green
+      # Server-side rendering calls the API inside the Docker network (web_uat nginx → PHP), not through
+      # Cloudflare and the public host (web-client API_INTERNAL_URL; ADR 2026-10-30 "API performance").
+      API_INTERNAL_URL: http://web_uat
       # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
       NEXT_CACHE_MAX_MB: "64"
     # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
@@ -340,6 +366,11 @@ services:
       DB_DATABASE: beachrex_dev
       REDIS_DB: "2"
       APP_ENV: local
+      # PHP-FPM status for `php artisan ops:perf-report` (internal port of web_dev, ADR 2026-10-30 "API performance").
+      OPS_FPM_STATUS_URL: http://web_dev:8080/fpm-status?json
+      OPS_FPM_HEALTH_STATUS_URL: http://web_dev:8080/fpm-status-health?json
+      # Test environments get half the PHP workers of prod: they share the 4 vCPUs (ADR 2026-10-30 "API performance").
+      PHP_FPM_MAX_CHILDREN: "8"
     volumes:
       - api-storage-dev:/var/www/html/storage
     networks: [net_dev]
@@ -372,6 +403,9 @@ services:
       DB_DATABASE: beachrex_dev
       REDIS_DB: "2"
       APP_ENV: local
+      # PHP-FPM status for `ops:perf-report --alert` (scheduled here) (internal port of web_dev, ADR 2026-10-30 "API performance").
+      OPS_FPM_STATUS_URL: http://web_dev:8080/fpm-status?json
+      OPS_FPM_HEALTH_STATUS_URL: http://web_dev:8080/fpm-status-health?json
     volumes:
       - api-storage-dev:/var/www/html/storage
     networks: [net_dev]
@@ -418,6 +452,9 @@ services:
       NODE_ENV: development
       PORT: "3003"
       BEACHREX_COLOR: blue
+      # Server-side rendering calls the API inside the Docker network (web_dev nginx → PHP), not through
+      # Cloudflare and the public host (web-client API_INTERNAL_URL; ADR 2026-10-30 "API performance").
+      API_INTERNAL_URL: http://web_dev
       # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
       NEXT_CACHE_MAX_MB: "64"
     # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded
@@ -440,6 +477,9 @@ services:
       NODE_ENV: development
       PORT: "3013"
       BEACHREX_COLOR: green
+      # Server-side rendering calls the API inside the Docker network (web_dev nginx → PHP), not through
+      # Cloudflare and the public host (web-client API_INTERNAL_URL; ADR 2026-10-30 "API performance").
+      API_INTERNAL_URL: http://web_dev
       # Bounded in-memory page/fetch cache (web-client cache-handler.cjs, ADR 2026-10-30 "Bounded Next.js cache")
       NEXT_CACHE_MAX_MB: "64"
     # Safety net: the Next.js cache folder is a size-limited tmpfs, never the disk (empty while the bounded

@@ -9,6 +9,9 @@ use App\Models\Beach;
 
 class PostGISService
 {
+    /** The indexed city point (GiST expression index `city_point_geography_idx`); keep both identical. */
+    public const CITY_POINT_SQL = 'ST_SetSRID(ST_MakePoint(city.longitude::double precision, city.latitude::double precision), 4326)::geography';
+
     protected BeachFilterService $filterService;
 
     public function __construct(BeachFilterService $filterService)
@@ -35,7 +38,7 @@ class PostGISService
         $filterSql = $filterData['sql'];
         $filterBindings = $filterData['bindings'];
 
-        $results = DB::select("
+        $results = \App\Support\FixedJoinOrder::select("
             SELECT
                 b.id,
                 b.folder_name,
@@ -608,7 +611,7 @@ class PostGISService
     {
         $locale = app()->getLocale();
 
-        $result = DB::selectOne("
+        $result = \App\Support\FixedJoinOrder::selectOne("
             SELECT
                 COALESCE(city_t.name, city_t_en.name) as city_name,
                 COALESCE(city_t.slug, city_t_en.slug) as city_slug,
@@ -618,7 +621,7 @@ class PostGISService
                 c.code as country_code,
                 COALESCE(cont_t.slug, cont_t_en.slug) as continent_slug,
                 ST_Distance(
-                    ST_SetSRID(ST_MakePoint(city.longitude, city.latitude), 4326)::geography,
+                    " . self::CITY_POINT_SQL . ",
                     ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
                 ) / 1000.0 as distance_km
             FROM city
@@ -640,14 +643,10 @@ class PostGISService
                   SELECT 1 FROM beach b
                   WHERE b.city_id = city.id AND b.status_id = 1
               )
-              AND ST_Distance(
-                  ST_SetSRID(ST_MakePoint(city.longitude, city.latitude), 4326)::geography,
-                  ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
-              ) <= 100000
-            ORDER BY ST_Distance(
-                ST_SetSRID(ST_MakePoint(city.longitude, city.latitude), 4326)::geography,
-                ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
-            )
+              -- Same nearest city within 100 km as before (same spheroid distance order), but only the cities the
+              -- GiST index on the city point finds within 100 km are measured (migration add_city_point_geography_index).
+              AND ST_DWithin(" . self::CITY_POINT_SQL . ", ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, 100000)
+            ORDER BY ST_Distance(" . self::CITY_POINT_SQL . ", ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography)
             LIMIT 1
         ", [$lng, $lat, $locale, $locale, $locale, $locale, $lng, $lat, $lng, $lat]);
 

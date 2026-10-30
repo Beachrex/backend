@@ -52,6 +52,156 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Weather publicly cacheable, status timeouts, performance runbook (Cloudflare rules), owner actions
+
+### Overview
+Last part of ADR 2026-10-30 "API performance"; new ADR "Bot traffic: Cloudflare rules on the website only …".
+
+### Changes Made
+- `routes/api.php`: the five weather endpoints get `public.cache:300` (anonymous, same per language, cached 1 h in
+  Laravel; every beach page view asked it again from the browser).
+- `deploy/nginx/api.<env>.conf`: `/fpm-status*` locations fail fast and retry the other container (right after a
+  rollout the 10 s DNS cache still returned the stopped one: `ops:perf-report` timed out in run 41109448585).
+- `docs/runbooks/performance-and-bots.md` §7 Cloudflare (exact rule expressions), §8 optional PostgreSQL settings,
+  §9 measured effect; `docs/HANDOFF.md` Done + owner actions; ADR.
+
+### Affected Endpoints
+- `GET /api/v1/{beach-details,countries,regions,islands,cities}/{id}/weather`: `Cache-Control: public …`, ETag.
+
+### Testing
+- `PublicCacheHeadersTest` (27+ public routes, never `beach-details/{identifier}`), `NginxConfigTest`.
+
+---
+
+## 2026-10-30 - SQL hot paths: nested continent count, nearest-city index, fixed join order
+
+### Overview
+Third part of ADR 2026-10-30 "API performance". Makes the cache-miss path cheaper (a crawl hits every beach page
+once per language, so misses are real traffic). Measured on a copy-like local DB (3 800 beaches, 1 200 cities,
+19 languages), 50 different beaches each, after warm-up:
+
+| miss | before | after |
+|---|---:|---:|
+| `GET /beach-details/{id}` | 91.6 ms mean (p95 108) | 63.7 ms (p95 76.5) |
+| `GET /spatial/beaches/within-radius` | 39.0 ms (p95 52.8) | 23.5 ms (p95 30.5) |
+| nearest city for a point (`reverseGeocodePoint`) | 14.8 ms | 4.2 ms (same answers for 300 points) |
+| `GET /countries` (one miss) | 199 ms, 11 queries | 68 ms, 5 queries |
+| `GET /regions` / `GET /islands` | 280 / 140 ms | 193 / 61 ms |
+
+### Changes Made
+- `ContinentResource`: `when(cond, $this->beaches->count())` evaluated its value eagerly, so every continent
+  nested in a city/region/island/country lazy-loaded **all beach rows of the continent** (and then, for every item
+  but the first, showed `beaches_count`). Now one grouped count per request; the nested `continent.beaches_count`
+  is always present with the same value (additive: checked old ⊆ new for cities, countries, regions, islands).
+- Migration `2026_10_30_200000_add_city_point_geography_index` (GiST expression index on the city point) and
+  `PostGISService::reverseGeocodePoint`: ST_DWithin through the index, same spheroid order → identical results.
+- `App\Support\FixedJoinOrder`: the 15-join beach queries spent 10–25 ms in the PostgreSQL planner for < 1 ms of
+  execution; they now run with `SET LOCAL join_collapse_limit = 1, from_collapse_limit = 1` (written order:
+  beach first, lookups by key). Used by beach-details navigation, within-radius and the nearest-city query.
+
+### Affected Endpoints
+- `GET /api/v1/cities`, `/countries`, `/regions`, `/islands` (and their single views): nested
+  `continent.beaches_count` now on every item (was missing on the first).
+
+### Testing
+- `tests/Feature/SqlHotPathsTest.php` (nearest city incl. inactive/beach-less/out-of-range cases and the index;
+  no continent beach rows loaded; join settings do not outlive the query). Deliberate breaks: old
+  `ContinentResource` → fails; `SET` instead of `SET LOCAL` → fails.
+## 2026-10-30 - Fix: API status server had no DNS resolver; micro-cache check in the rollout
+
+### Overview
+After #195 the dev rollout annotation showed `PHP-FPM www: RequestException … 502` from `ops:perf-report`: the
+internal `:8080` server in `deploy/nginx/api.<env>.conf` uses `api_<env>` through a variable but had no `resolver`
+(it was set only inside the public server block) → "no resolver defined" → 502. The deploy itself was fine (probe
+61 × 200).
+
+### Changes Made
+- `deploy/nginx/api.<env>.conf`: `resolver 127.0.0.11 valid=10s ipv6=off;` moved to http level (covers both servers).
+- `deploy/scripts/api-rollout.sh`: after the rollout, two identical `GET /api/v1/continents` through host nginx;
+  the annotation shows their `X-Micro-Cache` (the second must be HIT).
+- `tests/Unit/NginxConfigTest.php`: resolver at http level, exactly once (fails on the previous file).
+
+### Testing
+- `nginx -t` with the unmodified dev file (only paths/ports changed); `NginxConfigTest` 7/7.
+
+---
+
+## 2026-10-30 - API nginx micro-cache, health PHP-FPM pool, per-network rate limits, timed logs, ops:perf-report
+
+### Overview
+Second part of ADR 2026-10-30 "API performance" (incident 2026-10-30). Removes PHP from the hit path of public
+GETs, keeps health answering when the main PHP pool is full, limits scrapers that spread over a /24, and makes the
+numbers visible. Runbook: `docs/runbooks/performance-and-bots.md`; admin guide `docs/guides/admin/zmogljivost.md`.
+
+### Changes Made
+- `deploy/nginx/api.<env>.conf` (same file for all envs, test-enforced): `Accept-Language` normalized to one of the
+  19 codes and passed to PHP; micro-cache for answers with `X-Accel-Expires` (opt-in from `public.cache:60`), key
+  method + host + URI + language, never with `Authorization`, cache lock + stale-while-updating + stale on PHP
+  errors, 256 MB max; `/api/v1/health` → PHP-FPM pool `health` (port 9001) with fallback to the main pool;
+  internal server on :8080 (`/fpm-status`, `/fpm-status-health`, `/nginx-status`, Docker network only);
+  access log with `rt=`, `urt=`, `cache=`, `lang=`, visitor IP and UA.
+- `Dockerfile.prod`: second FPM pool `health` (2 workers, 15 s), `pm.status_path` on both pools.
+- `deploy/nginx/beachrex.conf` (host): API also limited per /24 (IPv6 /64) at 60 r/s, burst 300; website pages
+  8 r/s per IP (burst 80) and 25 r/s per /24 (burst 250), static files unlimited; our server and private networks
+  exempt; `beachrex_timed` access log (real IP, times, upstream status, CF ray/country) on every HTTPS server.
+- `deploy/docker-compose.vps.yml`: `PHP_FPM_MAX_CHILDREN=8` for api_uat/api_dev; `OPS_FPM_STATUS_URL`,
+  `OPS_FPM_HEALTH_STATUS_URL` for api/scheduler; `API_INTERNAL_URL=http://web_<env>` for the websites (used by the
+  web-client from its next deploy: server-side API calls stay inside the Docker network).
+- `app/Console/Commands/OpsPerfReport.php` + `config/ops.php`: `ops:perf-report [--json] [--alert]`; scheduled
+  every 10 min with `--alert` when `OPS_ALERT_EMAIL` is set (one e-mail per hour at most).
+- `deploy/scripts/api-rollout.sh`: the rollout annotation ends with the `ops:perf-report` output.
+
+### Affected Endpoints
+- All API answers pass through the micro-cache logic; only `public.cache` routes are stored. `X-Micro-Cache`
+  response header (HIT/MISS/STALE/UPDATING/BYPASS).
+
+### Testing
+- `tests/Unit/NginxConfigTest.php` (env files identical, language map = `SUPPORTED_LOCALES`, nginx/PHP language
+  parsing equal on 13 headers, cache opt-in/bypass directives, health pool, rate-limit zones),
+  `tests/Feature/OpsPerfReportTest.php`.
+- Local nginx 1.24 + PHP-FPM 8.3 with these files: `nginx -t` ok (host file without `http2 on`, a 1.25 directive);
+  scraper simulation 130 IPs of one /24 at 100 r/s for 10 s → 898 × 200, 59 × 429; 40 r/s → all 200.
+- NOT RUN: the Dockerfile build (no Docker Hub access in the sandbox); the pool file it writes was extracted and
+  checked with `php-fpm -t`.
+
+---
+
+## 2026-10-30 - API response cache (JSON, not models), public cache headers, persistent health DB connection
+
+### Overview
+Incident 2026-10-30 (prod API ~16 s per request, health 25 s): list endpoints cached Eloquent model graphs (a cache
+HIT still cost 0.15–1.4 s of PHP; one `cities` key ~50 MB per language filled Redis), most list caches were never
+cleared on admin edits, and keys of parameterized endpoints were unbounded. ADR 2026-10-30 "API performance:
+layered caching, bounded keys, protected health". Response bodies are unchanged (byte-identical, checked locally for
+17 endpoint/parameter combinations in 2 languages against origin/dev).
+
+### Changes Made
+- `app/Support/ApiResponseCache.php` (new): caches the finished JSON (gzip) per endpoint + locale + normalized
+  parameters, atomic-lock stampede protection, one generation (ms timestamp) cleared by content model events,
+  `cache:clear-api --type=reference|all` and the deploy's `cache:clear`; daily hit/miss counters.
+- Controllers: `continents`, `countries`, `regions`, `islands`, `cities`, `first-page-content`, `static-pages`
+  (index), `beaches/filters`, `beaches/footer`, `beaches/most-visited`, `beaches/map-bounds`, `beaches` use it.
+  `spatial/beaches/within-radius`: point rounded to 3 decimals and radius to 0.1 km (key **and** query), TTL 1 h.
+- `app/Providers/AppServiceProvider.php`: `eloquent.saved/deleted` of content models → `ApiResponseCache::flush()`.
+- `app/Http/Middleware/PublicCacheHeaders.php` (new, alias `public.cache:<s>`) on 22 anonymous GET routes:
+  `Cache-Control: public, max-age=60, s-maxage=60, stale-while-revalidate=60, stale-if-error=86400`,
+  `Vary: Accept-Language`, `ETag`/304, `X-Accel-Expires` (opt-in for the nginx micro-cache, next PR).
+- `app/Support/BeachDetailsCache.php`: generation is a ms timestamp (an LRU-evicted counter restarted at 1).
+- `config/database.php` + `HealthController`: health checks the DB over `pgsql_health` (persistent connection).
+- `app/Swagger/Swagger.php`: caching section and `Cache-Control`/`ETag` headers; `storage/api-docs` regenerated.
+- `scripts/loadtest/api-mix.mjs` (new): load test with the incident's endpoint mix.
+
+### Affected Endpoints
+- Same responses; new headers on the 22 public GET routes listed in `routes/api.php` (`public.cache:60`).
+- `GET /api/v1/spatial/beaches/within-radius`: results for the point rounded to ~110 m.
+
+### Testing
+- `tests/Feature/ApiResponseCacheTest.php`, `tests/Feature/PublicCacheHeadersTest.php`, `HealthApiTest`.
+- Local load test (2 vCPU, 3 800 beaches; numbers in the PR): reference mix 24 → ~6 400 req/s with the nginx
+  micro-cache of the next PR; without it the PHP hit path alone is ~35–45 ms per request.
+
+---
+
 ## 2026-10-30 - Website containers: bounded Next.js cache settings, tmpfs, cache numbers in the disk report
 
 Root cause of the 16.3 GB `front_prod` writable layer and the web-client fix: ADR 2026-10-30 "Bounded Next.js cache",
