@@ -52,6 +52,17 @@ How to test the changes
 
 ---
 
+## 2026-10-30 - Disk cleanup notice split into parts (4096-character annotation limit)
+
+First dev run of `docker-prune.sh` (Beachrex/backend#184, run 41036884533) worked but its notice was cut at 4096
+characters (GitHub's annotation limit), so the "After" numbers were lost. Now: one notice for the cleanup (before,
+actions, after, freed) and one for the report, each split into parts of ≤ 3900 characters; the report lists only
+container logs ≥ 1 MB or without a limit and writable layers ≥ 10 MB. Findings of the first run are in
+`docs/runbooks/disk-cleanup.md` (front_prod writable layer 14.3 GB, 1.7 GB of manual dumps in /root).
+Test: shellcheck; a 300-line summary → 4 notices of ≤ 3900 characters with all lines; local Docker run.
+
+---
+
 ## 2026-10-30 - Deploys clean up old Docker images and build cache
 
 ### Overview
