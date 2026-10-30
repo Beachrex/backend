@@ -52,3 +52,10 @@ Schedule::command('ai:prune-conversations')
     ->timezone('Europe/Ljubljana')
     ->withoutOverlapping()
     ->when(fn () => (int) config('ai.chat.retention_days') > 0);
+
+// Performance alert (ADR 2026-10-30 "API performance", runbook docs/runbooks/performance-and-bots.md): PHP-FPM queue
+// or workers running out, Redis full and evicting → e-mail OPS_ALERT_EMAIL (at most one per hour). Off without it.
+Schedule::command('ops:perf-report --alert --sample=0')
+    ->everyTenMinutes()
+    ->withoutOverlapping()
+    ->when(fn () => (bool) config('ops.alert_email'));
