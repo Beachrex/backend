@@ -71,13 +71,23 @@ class BeachDetailsController extends Controller
     public function show(Request $request, $identifier)
     {
         $locale = app()->getLocale();
-        $cacheKey = "beach_details:{$locale}:{$identifier}";
+
+        // One cache entry per beach and locale, whether the request names it by id or by slug (owner 2026-10-30:
+        // the map panel asks by id, the beach page and hover prefetch by slug; separate keys meant a full page visit
+        // never warmed the panel and the first panel open always rebuilt the ~70-query response). A slug costs one
+        // indexed lookup here.
+        $beachId = $this->resolveBeachId($identifier);
+        if ($beachId === null) {
+            return response()->json([
+                'message' => 'Beach not found'
+            ], 404);
+        }
+        $cacheKey = "beach_details:{$locale}:{$beachId}";
 
         // Cache the beach details for 8 hours
         // Weather data is fetched separately via /beach-details/{id}/weather with 1-hour cache
-        $data = $this->cacheRemember($cacheKey, CacheService::BEACH_DETAILS_TTL, function () use ($request, $identifier, $locale) {
-            // Determine if identifier is ID or slug
-            $beach = $this->findBeachByIdentifier($identifier);
+        $data = $this->cacheRemember($cacheKey, CacheService::BEACH_DETAILS_TTL, function () use ($request, $beachId, $locale) {
+            $beach = $this->loadBeachWithRelations($beachId);
 
             if (!$beach) {
                 return null;
@@ -116,6 +126,26 @@ class BeachDetailsController extends Controller
     /**
      * Find beach by ID or slug (in any language)
      */
+    /** Id of the active beach an id or slug (current or old) names; null when there is none. */
+    private function resolveBeachId($identifier): ?int
+    {
+        if (is_numeric($identifier)) {
+            return (int) $identifier;
+        }
+
+        $beachId = BeachTranslation::where('slug', $identifier)
+            ->whereHas('beach', fn ($query) => $query->where('status_id', 1))
+            ->value('beach_id');
+
+        if (! $beachId && ($oldId = \App\Support\BeachSlugRedirects::beachId((string) $identifier))) {
+            $beachId = BeachTranslation::where('beach_id', $oldId)
+                ->whereHas('beach', fn ($query) => $query->where('status_id', 1))
+                ->value('beach_id');
+        }
+
+        return $beachId ? (int) $beachId : null;
+    }
+
     private function findBeachByIdentifier($identifier): ?Beach
     {
         // If identifier is numeric, search by ID
